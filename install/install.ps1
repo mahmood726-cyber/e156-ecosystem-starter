@@ -149,12 +149,12 @@ function Write-Ok($msg)   { Write-Host "    $msg" -ForegroundColor Green }
 function Write-Warn2($msg){ Write-Warning $msg }
 
 $starterRoot = Get-EcoStarterRoot
-$homeDir = $env:USERPROFILE
-if (-not $homeDir) { $homeDir = $HOME }
+$userHome = $env:USERPROFILE
+if (-not $userHome) { $userHome = $HOME }
 
 Write-Host ""
 Write-Host "e156-ecosystem-starter bootstrap" -ForegroundColor Cyan
-Write-Host "Installing Mahmood's quality-dev environment to $homeDir"
+Write-Host "Installing Mahmood's quality-dev environment to $userHome"
 Write-Host ""
 
 # --- Step 1: agent CLI detection -------------------------------------------
@@ -178,9 +178,9 @@ if (-not ($foundClaude -or $foundGemini -or $foundCodex)) {
 Write-Step "Copying rules/*.md"
 $sourceRules = Join-Path $starterRoot 'rules'
 
-$claudeRulesDir = Join-Path $homeDir '.claude\rules'
-$geminiRulesDir = Join-Path $homeDir '.gemini\rules'
-$codexRulesDir  = Join-Path $homeDir '.codex\rules'
+$claudeRulesDir = Join-Path $userHome '.claude\rules'
+$geminiRulesDir = Join-Path $userHome '.gemini\rules'
+$codexRulesDir  = Join-Path $userHome '.codex\rules'
 
 foreach ($target in @($claudeRulesDir, $geminiRulesDir, $codexRulesDir)) {
     $r = Copy-RulesToAgent -SourceRulesDir $sourceRules -TargetRulesDir $target -Force:$Force
@@ -190,7 +190,7 @@ foreach ($target in @($claudeRulesDir, $geminiRulesDir, $codexRulesDir)) {
 # --- Step 3: drop context files (AGENTS.md / CLAUDE.md / GEMINI.md / CODEX.md)
 
 Write-Step "Writing context files to ~/.claude, ~/.gemini, ~/.codex"
-foreach ($dir in @((Join-Path $homeDir '.claude'), (Join-Path $homeDir '.gemini'), (Join-Path $homeDir '.codex'))) {
+foreach ($dir in @((Join-Path $userHome '.claude'), (Join-Path $userHome '.gemini'), (Join-Path $userHome '.codex'))) {
     $r = Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $dir -Force:$Force
     Write-Ok "$dir  ($($r.Count) context files)"
 }
@@ -199,8 +199,8 @@ foreach ($dir in @((Join-Path $homeDir '.claude'), (Join-Path $homeDir '.gemini'
 
 Write-Step "Setting up memory scaffolding"
 $sourceMemory = Join-Path $starterRoot 'memory'
-$claudeMemoryDir = Join-Path $homeDir '.claude\memory'
-$geminiMemoryDir = Join-Path $homeDir '.gemini\memory'
+$claudeMemoryDir = Join-Path $userHome '.claude\memory'
+$geminiMemoryDir = Join-Path $userHome '.gemini\memory'
 
 foreach ($target in @($claudeMemoryDir, $geminiMemoryDir)) {
     $bootstrapped = Copy-MemoryScaffold -SourceMemoryDir $sourceMemory -TargetMemoryDir $target

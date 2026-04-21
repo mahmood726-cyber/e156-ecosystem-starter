@@ -15,7 +15,7 @@ TruthCert, and Overmind-lite.
 | `rules/*.md` | v0.1.0 | Four curated rules files copied to `~/.claude/rules/`, `~/.gemini/rules/`, `~/.codex/rules/`: workflow + testing + HTML-app patterns (`rules.md`), E156 format (`e156.md`), statistics gotchas (`advanced-stats.md`), bug-prevention lessons (`lessons.md`). |
 | `AGENTS.md` + `CLAUDE.md` / `GEMINI.md` / `CODEX.md` | v0.1.0 | Canonical + per-agent context files. Each agent auto-reads its own pointer; all pointers agree that `AGENTS.md` wins. |
 | `memory/` scaffold | v0.1.0 | Starter `MEMORY.md` index + 4 type templates (`user` / `feedback` / `project` / `reference`). Dropped only when your memory dir is empty — never clobbers existing memory. |
-| Sentinel pre-push hook | v0.5.0 (Phase 2) | Clones & installs the fail-closed rule engine in your workbook repo. |
+| Sentinel pre-push hook | **v0.2.0** | `scripts/install-sentinel.ps1 -Repo <path>` pip-installs `sentinel` from the public repo and installs a pre-push hook with 20 rules (blocks: hardcoded paths, placeholder HMAC, silent sentinels, committed `.claude/` configs, empty-DataFrame access, stale agent-config versions). Bypass via `SENTINEL_BYPASS=1 git push` (logged to `~/.sentinel-logs/bypass.log`). |
 | TruthCert CLI | v0.5.0 (Phase 3) | HMAC-signed bundle certification for submissions. |
 | Overmind-lite | v0.5.0 (Phase 3) | On-demand portfolio verifier. |
 | `student` CLI | separate repo | Narrow submission pipeline: see [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter). |
@@ -46,6 +46,31 @@ Flags:
 - `-DryRun` — only verify the SHA gate, exit 0
 - `-Force` — overwrite existing user-edited rules (default: back them up as `*.user`)
 - `-Import` — dot-source helpers only (used by Pester tests)
+
+### Adding Sentinel to your workbook (v0.2.0)
+
+```powershell
+# From the ecosystem-starter dir, pointing at the repo you want protected:
+.\scripts\install-sentinel.ps1 -Repo C:\Projects\my-paper
+```
+
+This `pip install`s the [Sentinel](https://github.com/mahmood726-cyber/Sentinel)
+rule engine from its GitHub repo (if not already present on PATH) and writes a
+pre-push hook at `<repo>\.git\hooks\pre-push`. From then on, every `git push`
+runs the 20-rule scan in ~2 seconds and blocks on P0 violations.
+
+Flags:
+- `-Mode warn` (default) — log findings, allow push
+- `-Mode block` — abort push on any BLOCK
+- `-SkipPipInstall` — assume `sentinel` is already on PATH, skip pip
+- `-Import` — dot-source helpers only (used by Pester tests)
+
+To bypass a BLOCK when you're confident it's a false positive:
+```powershell
+$env:SENTINEL_BYPASS = '1'; git push; $env:SENTINEL_BYPASS = $null
+```
+Each bypass is logged to `~/.sentinel-logs/bypass.log` — the log path cannot
+be redirected to `NUL`.
 
 ## Design principles (from `AGENTS.md`)
 
