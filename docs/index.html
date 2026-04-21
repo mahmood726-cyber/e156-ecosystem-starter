@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E156 Ecosystem Starter</title>
+<meta name="description" content="Set up your research laptop with Mahmood's quality-dev environment: AI agent rules, memory, Sentinel, Overmind, TruthCert. One click.">
+<meta property="og:title" content="E156 Ecosystem Starter">
+<meta property="og:description" content="Mahmood's quality-dev environment, as a machine bootstrap. For African research students.">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+    color: #1a1a1a;
+    line-height: 1.55;
+  }
+  header { text-align: center; margin-bottom: 48px; }
+  h1 { font-size: 2.8em; margin: 0 0 0.3em; letter-spacing: -0.02em; }
+  p.sub { color: #555; font-size: 1.2em; margin: 0; }
+  .cta-wrap { text-align: center; margin: 40px 0 56px; }
+  .cta {
+    display: inline-block;
+    background: #0366d6;
+    color: white;
+    padding: 20px 48px;
+    font-size: 1.25em;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(3, 102, 214, 0.25);
+    transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+  }
+  .cta:hover { background: #0255b3; box-shadow: 0 6px 16px rgba(3, 102, 214, 0.35); }
+  .cta:active { transform: translateY(1px); }
+  .cta-hint { font-size: 0.9em; color: #777; margin-top: 12px; }
+  h2 { font-size: 1.5em; margin-top: 48px; border-bottom: 1px solid #e1e4e8; padding-bottom: 6px; }
+  ul { padding-left: 22px; }
+  code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; font-family: "SF Mono", "Consolas", monospace; }
+  pre { background: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.9em; }
+  pre code { background: none; padding: 0; }
+  .step { border-left: 3px solid #0366d6; padding: 8px 0 8px 18px; margin: 16px 0; }
+  .step strong { color: #0366d6; font-size: 1.1em; }
+  .warning { background: #fff5b1; border-left: 3px solid #ffd33d; padding: 12px 16px; border-radius: 4px; margin: 24px 0; font-size: 0.95em; }
+  .footer { margin-top: 80px; color: #999; font-size: 0.9em; text-align: center; }
+  .footer a { color: #555; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.95em; }
+  th, td { padding: 10px 12px; border-bottom: 1px solid #e1e4e8; text-align: left; vertical-align: top; }
+  th { background: #f6f8fa; font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>E156 Ecosystem Starter</h1>
+  <p class="sub">Set up your research laptop the way Mahmood does. One click.</p>
+</header>
+
+<div class="cta-wrap">
+  <a class="cta" href="https://raw.githubusercontent.com/mahmood726-cyber/e156-ecosystem-starter/main/bootstrap/e156-setup.bat" download="e156-setup.bat">
+    Download for Windows
+  </a>
+  <div class="cta-hint">Downloads <code>e156-setup.bat</code> &mdash; double-click to install.</div>
+</div>
+
+<div class="warning">
+  <strong>Note on Windows SmartScreen:</strong> The first time you run <code>e156-setup.bat</code>,
+  Windows may show a blue "Windows protected your PC" dialog. This happens for any script downloaded
+  from the internet that isn't signed with a paid code-signing certificate. Click <strong>More info</strong>
+  &rarr; <strong>Run anyway</strong>. The source is open and auditable
+  <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/bootstrap/e156-setup.bat">here</a>.
+</div>
+
+<h2>What this installs</h2>
+<table>
+  <tr><th>Layer</th><th>Purpose</th></tr>
+  <tr><td>AI agent rules</td><td>Four curated rules files that load into Claude Code, Gemini CLI, and Codex automatically.</td></tr>
+  <tr><td>Memory scaffold</td><td>Cross-session memory the AI grows as you work. Four types: user profile, working-style rules, project notes, external references.</td></tr>
+  <tr><td>AGENTS.md / CLAUDE.md / GEMINI.md / CODEX.md</td><td>Per-agent context files so all three CLIs behave consistently.</td></tr>
+  <tr><td>Sentinel (optional)</td><td>Pre-push hook with 20 rules that block the common AI-agent defects (hardcoded paths, placeholder HMAC, silent sentinels, XSS sinks, empty-DataFrame access) in about 2 seconds per push.</td></tr>
+  <tr><td>Overmind + TruthCert (optional)</td><td>On-demand verifier that runs tests + smoke + numerical baselines and emits HMAC-signed certification bundles for submissions.</td></tr>
+  <tr><td>ProjectIndex (optional)</td><td>Portfolio tracker + fail-closed reconcile script that catches registry drift.</td></tr>
+</table>
+
+<h2>Install in 3 steps</h2>
+<div class="step"><strong>1.</strong> Click <em>Download for Windows</em> above.</div>
+<div class="step"><strong>2.</strong> Open your Downloads folder and double-click <code>e156-setup.bat</code>.</div>
+<div class="step"><strong>3.</strong> Answer the Yes/No prompts (all default to Yes). Done in about 2 minutes.</div>
+
+<h2>Prerequisites</h2>
+<ul>
+  <li>Windows 10 or 11</li>
+  <li><a href="https://www.python.org/downloads/">Python 3.11 or newer</a> &mdash; tick "Add Python to PATH" during install</li>
+  <li>At least one of: <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>, <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a>, or <a href="https://github.com/openai/codex">Codex</a></li>
+  <li>Internet connection for the install itself (about 50 MB of pip deps if you opt into Sentinel + Overmind)</li>
+</ul>
+
+<h2>Power users</h2>
+
+<p>Prefer git? Clone and run directly:</p>
+<pre><code>git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
+cd e156-ecosystem-starter
+.\install\install.ps1 -Full</code></pre>
+
+<p>CI / unattended:</p>
+<pre><code>.\install\install.ps1 -NonInteractive</code></pre>
+
+<h2>What if something goes wrong</h2>
+<ul>
+  <li>Python not found &rarr; install from <a href="https://www.python.org/downloads/">python.org</a>, <strong>tick Add Python to PATH</strong>.</li>
+  <li>Download blocked &rarr; check your firewall isn't blocking <code>github.com</code>.</li>
+  <li>Install failed mid-way &rarr; the installer writes a log to <code>%LOCALAPPDATA%\e156\logs\</code>. Open an issue with that log attached.</li>
+  <li>SmartScreen blocked the .bat &rarr; click <em>More info</em> &rarr; <em>Run anyway</em> (see note above).</li>
+</ul>
+
+<div class="footer">
+  Source: <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter">github.com/mahmood726-cyber/e156-ecosystem-starter</a>
+  &middot; <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/releases">Releases</a>
+  &middot; <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/issues">Issues</a>
+</div>
+</body>
+</html>
