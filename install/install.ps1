@@ -35,7 +35,16 @@ param(
     [switch]$NonInteractive,
     [string]$InstallSentinel,
     [switch]$InstallOvermind,
-    [string]$ProjectIndexRoot
+    [string]$ProjectIndexRoot,
+    # Rules-template variables (substituted into rules/*.md + AGENTS.md on copy).
+    # Defaults match Mahmood's working layout. Pass your own here to make the
+    # rules point at YOUR paths. Leave $GitHubUser empty to keep the literal
+    # {{GITHUB_USER}} placeholder (so you can see it and edit in place).
+    [string]$E156Home        = 'C:\E156',
+    [string]$PortfolioRoot   = 'C:\ProjectIndex',
+    [string]$SentinelRoot    = 'C:\Sentinel',
+    [string]$OvermindRoot    = 'C:\overmind',
+    [string]$GitHubUser      = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -72,32 +81,62 @@ function Get-EcoStarterRoot {
     return (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 }
 
+function Render-Template {
+    [CmdletBinding()]
+    param(
+        [string]$Text,
+        [hashtable]$Vars
+    )
+    # Global literal-replace of {{NAME}} placeholders. String.Replace, not
+    # regex, so dollar signs / backslashes in values pass through untouched.
+    foreach ($k in $Vars.Keys) {
+        $Text = $Text.Replace('{{' + $k + '}}', [string]$Vars[$k])
+    }
+    return $Text
+}
+
 function Copy-RulesToAgent {
     [CmdletBinding()]
     param(
         [string]$SourceRulesDir,
         [string]$TargetRulesDir,
-        [switch]$Force
+        [switch]$Force,
+        [hashtable]$Vars = $null,
+        [PSCustomObject]$Manifest = $null
     )
     if (-not (Test-Path $SourceRulesDir)) {
         throw "Source rules dir not found: $SourceRulesDir"
     }
+    $newDir = -not (Test-Path $TargetRulesDir)
     New-Item -ItemType Directory -Force -Path $TargetRulesDir | Out-Null
+    if ($newDir -and $Manifest) { $Manifest.CreatedDirs.Add($TargetRulesDir) }
 
     $copied = @()
     $backed = @()
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
     Get-ChildItem -Path $SourceRulesDir -Filter "*.md" | ForEach-Object {
         $dest = Join-Path $TargetRulesDir $_.Name
-        if ((Test-Path $dest) -and -not $Force) {
-            # Preserve any student edits by renaming their version to .user.md
-            # and dropping our canonical in place.
-            $backup = "$dest.user"
-            if (-not (Test-Path $backup)) {
-                Copy-Item $dest $backup
+        $preExisted = Test-Path $dest
+        $backupPath = "$dest.user"
+        $newBackup = $false
+        if ($preExisted -and -not $Force) {
+            if (-not (Test-Path $backupPath)) {
+                Copy-Item $dest $backupPath
+                $newBackup = $true
                 $backed += $_.Name
+                if ($Manifest) { $Manifest.BackedUp.Add($backupPath) }
             }
         }
-        Copy-Item $_.FullName $dest -Force
+        # Render template if $Vars given; else straight copy.
+        if ($Vars) {
+            $text = [System.IO.File]::ReadAllText($_.FullName, [System.Text.Encoding]::UTF8)
+            $rendered = Render-Template -Text $text -Vars $Vars
+            [System.IO.File]::WriteAllText($dest, $rendered, $utf8NoBom)
+        } else {
+            Copy-Item $_.FullName $dest -Force
+        }
+        # Track net-new files (not pre-existing overwrites -- the backup covers those)
+        if (-not $preExisted -and $Manifest) { $Manifest.CreatedFiles.Add($dest) }
         $copied += $_.Name
     }
     return [PSCustomObject]@{ Copied = $copied; Backed = $backed }
@@ -108,19 +147,36 @@ function Copy-ContextFiles {
     param(
         [string]$SourceRoot,
         [string]$TargetDir,
-        [switch]$Force
+        [switch]$Force,
+        [hashtable]$Vars = $null,
+        [PSCustomObject]$Manifest = $null
     )
+    $newDir = -not (Test-Path $TargetDir)
     New-Item -ItemType Directory -Force -Path $TargetDir | Out-Null
+    if ($newDir -and $Manifest) { $Manifest.CreatedDirs.Add($TargetDir) }
+
     $results = @{}
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
     foreach ($name in @('AGENTS.md', 'CLAUDE.md', 'GEMINI.md', 'CODEX.md')) {
         $src = Join-Path $SourceRoot $name
         if (-not (Test-Path $src)) { continue }
         $dst = Join-Path $TargetDir $name
-        if ((Test-Path $dst) -and -not $Force) {
-            $backup = "$dst.user"
-            if (-not (Test-Path $backup)) { Copy-Item $dst $backup }
+        $preExisted = Test-Path $dst
+        if ($preExisted -and -not $Force) {
+            $backupPath = "$dst.user"
+            if (-not (Test-Path $backupPath)) {
+                Copy-Item $dst $backupPath
+                if ($Manifest) { $Manifest.BackedUp.Add($backupPath) }
+            }
         }
-        Copy-Item $src $dst -Force
+        if ($Vars) {
+            $text = [System.IO.File]::ReadAllText($src, [System.Text.Encoding]::UTF8)
+            $rendered = Render-Template -Text $text -Vars $Vars
+            [System.IO.File]::WriteAllText($dst, $rendered, $utf8NoBom)
+        } else {
+            Copy-Item $src $dst -Force
+        }
+        if (-not $preExisted -and $Manifest) { $Manifest.CreatedFiles.Add($dst) }
         $results[$name] = $dst
     }
     return $results
@@ -153,6 +209,53 @@ function Test-ToolInstalled {
     return $?
 }
 
+# --- Rollback support ------------------------------------------------------
+# We track every file we create so that a mid-install failure can undo
+# itself. Net-new files are deleted. Existing user files we preemptively
+# moved to .user (as "backup") are restored. Pre-existing user memory is
+# never touched (Copy-MemoryScaffold already short-circuits).
+
+function New-RollbackManifest {
+    [CmdletBinding()]
+    param()
+    return [PSCustomObject]@{
+        CreatedFiles = New-Object System.Collections.Generic.List[string]
+        CreatedDirs  = New-Object System.Collections.Generic.List[string]
+        BackedUp     = New-Object System.Collections.Generic.List[string]  # original .user paths created as backup
+    }
+}
+
+function Invoke-InstallRollback {
+    [CmdletBinding()]
+    param([PSCustomObject]$Manifest, [string]$Reason)
+    Write-Host ""
+    Write-Host "Rollback triggered: $Reason" -ForegroundColor Yellow
+    # Delete net-new files first (in reverse order so nested paths go before parents)
+    $createdReversed = @($Manifest.CreatedFiles) ; [Array]::Reverse($createdReversed)
+    foreach ($f in $createdReversed) {
+        if (Test-Path $f) {
+            Remove-Item $f -Force -ErrorAction SilentlyContinue
+        }
+    }
+    # Restore .user backups back to their original names. Each entry is the
+    # backup path ("<orig>.user"); we move it back to <orig>.
+    foreach ($backup in $Manifest.BackedUp) {
+        if (Test-Path $backup) {
+            $orig = $backup.Substring(0, $backup.Length - 5)  # strip ".user"
+            Move-Item $backup $orig -Force -ErrorAction SilentlyContinue
+        }
+    }
+    # Then remove net-new directories (in reverse so deepest first)
+    $dirsReversed = @($Manifest.CreatedDirs) ; [Array]::Reverse($dirsReversed)
+    foreach ($d in $dirsReversed) {
+        if ((Test-Path $d) -and
+            ((Get-ChildItem $d -Force -ErrorAction SilentlyContinue).Count -eq 0)) {
+            Remove-Item $d -Force -ErrorAction SilentlyContinue
+        }
+    }
+    Write-Host "Rollback complete. Any pre-existing user files were restored." -ForegroundColor Green
+}
+
 if ($Import) { return }   # dot-sourced by tests -- no execution
 
 # === Real install flow =====================================================
@@ -170,6 +273,12 @@ Write-Host "e156-ecosystem-starter bootstrap" -ForegroundColor Cyan
 Write-Host "Installing Mahmood's quality-dev environment to $userHome"
 Write-Host ""
 
+# Manifest drives rollback. Steps 2-4 push onto it via helper functions.
+# If any step throws, Invoke-InstallRollback undoes everything it did.
+$manifest = New-RollbackManifest
+
+try {
+
 # --- Step 1: agent CLI detection -------------------------------------------
 
 Write-Step "Detecting agent CLIs"
@@ -186,9 +295,27 @@ if (-not ($foundClaude -or $foundGemini -or $foundCodex)) {
     Write-Host "  (We'll still copy rules + context files for when you do install.)" -ForegroundColor DarkGray
 }
 
+# --- Step 1.5: resolve rules-template vars ---------------------------------
+# These are substituted into {{E156_HOME}}, {{PROJECTINDEX_ROOT}}, etc.
+# Prompt only for GitHub user (no reasonable default); others already have
+# defaults from the param block (Mahmood-style layout). Students can override
+# any of them with install.ps1 -E156Home D:\MyE156 etc.
+
+if (-not $GitHubUser -and -not $NonInteractive -and [Console]::IsInputRedirected -eq $false) {
+    $GitHubUser = (Read-Host "Your GitHub username (or Enter to leave placeholder)").Trim()
+}
+
+$rulesVars = @{
+    'E156_HOME'         = $E156Home
+    'PROJECTINDEX_ROOT' = $PortfolioRoot
+    'SENTINEL_ROOT'     = $SentinelRoot
+    'OVERMIND_ROOT'     = $OvermindRoot
+    'GITHUB_USER'       = if ($GitHubUser) { $GitHubUser } else { '{{GITHUB_USER}}' }
+}
+
 # --- Step 2: copy rules to each detected agent's config dir -----------------
 
-Write-Step "Copying rules/*.md"
+Write-Step "Copying rules/*.md (with your paths substituted in)"
 $sourceRules = Join-Path $starterRoot 'rules'
 
 $claudeRulesDir = Join-Path $userHome '.claude\rules'
@@ -196,7 +323,7 @@ $geminiRulesDir = Join-Path $userHome '.gemini\rules'
 $codexRulesDir  = Join-Path $userHome '.codex\rules'
 
 foreach ($target in @($claudeRulesDir, $geminiRulesDir, $codexRulesDir)) {
-    $r = Copy-RulesToAgent -SourceRulesDir $sourceRules -TargetRulesDir $target -Force:$Force
+    $r = Copy-RulesToAgent -SourceRulesDir $sourceRules -TargetRulesDir $target -Force:$Force -Vars $rulesVars -Manifest $manifest
     Write-Ok "$target  ($($r.Copied.Count) files copied, $($r.Backed.Count) backed up as .user)"
 }
 
@@ -204,7 +331,7 @@ foreach ($target in @($claudeRulesDir, $geminiRulesDir, $codexRulesDir)) {
 
 Write-Step "Writing context files to ~/.claude, ~/.gemini, ~/.codex"
 foreach ($dir in @((Join-Path $userHome '.claude'), (Join-Path $userHome '.gemini'), (Join-Path $userHome '.codex'))) {
-    $r = Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $dir -Force:$Force
+    $r = Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $dir -Force:$Force -Vars $rulesVars -Manifest $manifest
     Write-Ok "$dir  ($($r.Count) context files)"
 }
 
@@ -364,3 +491,15 @@ Write-Host "=====================================================" -ForegroundCo
 Write-Host ""
 
 exit 0
+
+}  # end try
+catch {
+    Invoke-InstallRollback -Manifest $manifest -Reason $_.Exception.Message
+    Write-Host ""
+    Write-Host "Install FAILED. No partial state left on disk." -ForegroundColor Red
+    Write-Host "If you want to report this, include:"
+    Write-Host "  - error: $($_.Exception.Message)"
+    Write-Host "  - rolled-back files: $($manifest.CreatedFiles.Count)"
+    Write-Host "  - restored backups:  $($manifest.BackedUp.Count)"
+    exit 1
+}

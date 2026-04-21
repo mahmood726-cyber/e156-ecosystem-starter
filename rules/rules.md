@@ -59,18 +59,18 @@
 ### Registry & lifecycle gates
 
 **Authoritative sources:**
-- Portfolio count: `C:\ProjectIndex\agent-records\restart-manifest.json` (`overview.projectCount`).
-- Dev status: `C:\ProjectIndex\INDEX.md`. Submission status: `C:\E156\rewrite-workbook.txt`. On conflict: INDEX.md wins for dev, workbook wins for submission.
+- Portfolio count: `{{PROJECTINDEX_ROOT}}\agent-records\restart-manifest.json` (`overview.projectCount`).
+- Dev status: `{{PROJECTINDEX_ROOT}}\INDEX.md`. Submission status: `{{E156_HOME}}\rewrite-workbook.txt`. On conflict: INDEX.md wins for dev, workbook wins for submission.
 
-**Gate: run `python C:\ProjectIndex\reconcile_counts.py`** before citing any portfolio count, promoting any lifecycle status, or launching portfolio-wide verifier runs. Script fails closed (exit 1) on missing paths or registry disagreement. Do NOT quote numbers from INDEX.md prose, workbook headers, or agent memory without a fresh reconcile run.
+**Gate: run `python {{PROJECTINDEX_ROOT}}\reconcile_counts.py`** before citing any portfolio count, promoting any lifecycle status, or launching portfolio-wide verifier runs. Script fails closed (exit 1) on missing paths or registry disagreement. Do NOT quote numbers from INDEX.md prose, workbook headers, or agent memory without a fresh reconcile run.
 
 **Path contract:** Before implementation, verification, or status changes, confirm the exact project path resolves consistently in INDEX.md, `repo-status.json`, SubmissionCockpit, and the workbook when those systems apply. If the path is generic/stale/moved, repair the registry first.
 
 **Lifecycle evidence:** Do not mark a project Active, Submission ready, or Shipped unless the exact path exists and current evidence is explicit. If the latest Overmind verdict is missing/FAIL/REJECT, mark the project unverified or triage-needed. Numerical witness skips due to missing baselines are NOT release evidence.
 
 ### Enforcement layer (Sentinel + Overmind)
-- **Sentinel** (`C:\Sentinel\`) is the pre-push rule engine. 12 rules (6 YAML + 6 plugin) block P0 violations and surface P1/P2 WARNs (hardcoded paths, placeholder HMAC, silent-failure sentinels, committed `.claude/` configs, stale agent-config version claims, empty-DataFrame access). Active in ≥10 repos. BLOCK → `STUCK_FAILURES.md`/`.jsonl`; WARN → `sentinel-findings.md`/`.jsonl`. Override: `SENTINEL_BYPASS=1 git push` (logged to `~/.sentinel-logs/bypass.log`; the log path cannot be redirected to `/dev/null` / `NUL` — discard targets are rejected). Install/uninstall: `python -m sentinel install-hook --repo <path>` / `uninstall-hook`. When a Sentinel BLOCK fires, fix the underlying violation rather than bypassing — the rule encodes a past-incident lesson.
-- **Overmind** (`C:\overmind\`) is the nightly portfolio verifier. Its verdict is the authoritative ship gate. Overmind reads Sentinel's per-repo `STUCK_FAILURES.jsonl` as one of its witnesses.
+- **Sentinel** (`{{SENTINEL_ROOT}}\`) is the pre-push rule engine. 12 rules (6 YAML + 6 plugin) block P0 violations and surface P1/P2 WARNs (hardcoded paths, placeholder HMAC, silent-failure sentinels, committed `.claude/` configs, stale agent-config version claims, empty-DataFrame access). Active in ≥10 repos. BLOCK → `STUCK_FAILURES.md`/`.jsonl`; WARN → `sentinel-findings.md`/`.jsonl`. Override: `SENTINEL_BYPASS=1 git push` (logged to `~/.sentinel-logs/bypass.log`; the log path cannot be redirected to `/dev/null` / `NUL` — discard targets are rejected). Install/uninstall: `python -m sentinel install-hook --repo <path>` / `uninstall-hook`. When a Sentinel BLOCK fires, fix the underlying violation rather than bypassing — the rule encodes a past-incident lesson.
+- **Overmind** (`{{OVERMIND_ROOT}}\`) is the nightly portfolio verifier. Its verdict is the authoritative ship gate. Overmind reads Sentinel's per-repo `STUCK_FAILURES.jsonl` as one of its witnesses.
 - Before citing project-health claims (test count, rule count, BLOCK count), re-run `python -m sentinel scan --repo <path>` or check the Overmind nightly — do not quote memory counts. Memory records drift across sessions.
 
 ---

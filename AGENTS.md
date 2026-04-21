@@ -8,7 +8,7 @@
 Ship OA-first meta-analysis tools as E156 micro-papers + GitHub repos + HTML dashboards on GitHub Pages.
 
 ## Session Start
-- Check `C:\ProjectIndex\INDEX.md` and `C:\E156\rewrite-workbook.txt`.
+- Check `{{PROJECTINDEX_ROOT}}\INDEX.md` and `{{E156_HOME}}\rewrite-workbook.txt`.
 - Update both only when the task changes project status or submission state.
 
 ## Non-negotiables
@@ -19,7 +19,7 @@ Ship OA-first meta-analysis tools as E156 micro-papers + GitHub repos + HTML das
 5. Determinism.
 
 ## Workbook Protection
-- `YOUR REWRITE` sections in `C:\E156\rewrite-workbook.txt` are sacrosanct. Never touch them.
+- `YOUR REWRITE` sections in `{{E156_HOME}}\rewrite-workbook.txt` are sacrosanct. Never touch them.
 - `CURRENT BODY` is editable unless `SUBMITTED: [x]`.
 
 ## Session Recovery
@@ -59,13 +59,13 @@ Ship OA-first meta-analysis tools as E156 micro-papers + GitHub repos + HTML das
 - No global `taskkill`/`pkill` for browsers or drivers unless the user explicitly asks for emergency cleanup.
 
 ## Enforcement Layer
-- **Sentinel** (`C:\Sentinel\`) runs as a pre-push git hook in ≥10 repos and blocks P0 violations (hardcoded paths, placeholder HMAC, silent-failure sentinels, registry drift, committed `.claude/`/`.gemini/` configs, stale agent-config version claims, empty-DataFrame access). 20 rules total (6 YAML + 14 plugin). BLOCK → `STUCK_FAILURES.md`/`.jsonl`; WARN → `sentinel-findings.md`/`.jsonl`. Override: `SENTINEL_BYPASS=1 git push` (logged to `~/.sentinel-logs/bypass.log`; `SENTINEL_BYPASS_LOG` cannot be redirected to `/dev/null` / `NUL` — that path is rejected as a discard target). Install: `python -m sentinel install-hook --repo <path>`. When a BLOCK fires, fix the underlying violation rather than bypass — the rule encodes a past-incident lesson.
-- **Overmind** (`C:\overmind\`, v3.1.0) runs nightly verification across the portfolio; its verdict is the ship gate. No project promotes to CERTIFIED / Submission-ready / Shipped without a recent Overmind PASS. Overmind aggregates Sentinel's per-repo `STUCK_FAILURES.jsonl` + `sentinel-findings.jsonl`.
+- **Sentinel** (`{{SENTINEL_ROOT}}\`) runs as a pre-push git hook in ≥10 repos and blocks P0 violations (hardcoded paths, placeholder HMAC, silent-failure sentinels, registry drift, committed `.claude/`/`.gemini/` configs, stale agent-config version claims, empty-DataFrame access). 20 rules total (6 YAML + 14 plugin). BLOCK → `STUCK_FAILURES.md`/`.jsonl`; WARN → `sentinel-findings.md`/`.jsonl`. Override: `SENTINEL_BYPASS=1 git push` (logged to `~/.sentinel-logs/bypass.log`; `SENTINEL_BYPASS_LOG` cannot be redirected to `/dev/null` / `NUL` — that path is rejected as a discard target). Install: `python -m sentinel install-hook --repo <path>`. When a BLOCK fires, fix the underlying violation rather than bypass — the rule encodes a past-incident lesson.
+- **Overmind** (`{{OVERMIND_ROOT}}\`, v3.1.0) runs nightly verification across the portfolio; its verdict is the ship gate. No project promotes to CERTIFIED / Submission-ready / Shipped without a recent Overmind PASS. Overmind aggregates Sentinel's per-repo `STUCK_FAILURES.jsonl` + `sentinel-findings.jsonl`.
 - **Skip-file marker**: files with the literal string `sentinel:skip-file` in their first 1KB are excluded from all Sentinel rules. Use for auto-generated content (Overmind wiki entries, nightly reports) and files that document the patterns Sentinel flags (rule-doc mirrors).
 
 ## TruthCert and SHIP
 - No naked numbers: important numeric claims need evidence, transformation, and validation.
-- On `SHIP`: run tests, demo on fixtures, produce TruthCert (HMAC-signed if `TRUTHCERT_HMAC_KEY` is set), **run `python C:/ProjectIndex/reconcile_counts.py` BEFORE updating `INDEX.md` or quoting any portfolio count** (script fails closed on registry drift or missing paths), then push to GitHub, enable Pages, and update `INDEX.md`, the workbook, and `lessons.md`. The reconcile gate is the SHIP precondition — never quote portfolio counts from agent memory or stale prose.
+- On `SHIP`: run tests, demo on fixtures, produce TruthCert (HMAC-signed if `TRUTHCERT_HMAC_KEY` is set), **run `python {{PROJECTINDEX_ROOT}}/reconcile_counts.py` BEFORE updating `INDEX.md` or quoting any portfolio count** (script fails closed on registry drift or missing paths), then push to GitHub, enable Pages, and update `INDEX.md`, the workbook, and `lessons.md`. The reconcile gate is the SHIP precondition — never quote portfolio counts from agent memory or stale prose.
 
 ## Config Safety
 - Never commit `.claude/`, `.gemini/`, `.codex/`, memory files, or local secrets to public repos.
