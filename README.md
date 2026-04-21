@@ -32,7 +32,11 @@ Prerequisites: Windows 10+, PowerShell 5.1+, at least one of
 ```powershell
 git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
 cd e156-ecosystem-starter
-.\install\install.ps1
+.\install\install.ps1               # base + interactive prompts for sub-installers (v0.6.0)
+# or
+.\install\install.ps1 -Full         # everything non-interactively
+# or
+.\install\install.ps1 -NonInteractive  # base only, skip chain prompts (CI-safe)
 ```
 
 The installer will:
@@ -42,11 +46,17 @@ The installer will:
 3. Copy `rules/*.md` into each agent's config dir (`.claude/rules/`, `.gemini/rules/`, `.codex/rules/`)
 4. Drop `AGENTS.md` + `CLAUDE.md` + `GEMINI.md` + `CODEX.md` into each config dir
 5. Bootstrap an empty memory scaffold in each agent's memory dir (preserves existing memory if present)
+6. **Chain** (v0.6.0): Ask whether to also install Sentinel, Overmind+TruthCert, and ProjectIndex. `-Full` skips the prompts and runs all three with defaults; `-NonInteractive` skips the chain entirely.
 
 Flags:
 
 - `-DryRun` — only verify the SHA gate, exit 0
 - `-Force` — overwrite existing user-edited rules (default: back them up as `*.user`)
+- `-Full` — chain Sentinel (current dir) + Overmind + ProjectIndex (C:\ProjectIndex) non-interactively
+- `-NonInteractive` — skip all chain prompts (base install only)
+- `-InstallSentinel <repo-path>` — chain Sentinel into a specific repo
+- `-InstallOvermind` — chain Overmind + TruthCert HMAC-key setup
+- `-ProjectIndexRoot <dir>` — chain ProjectIndex seed at this dir
 - `-Import` — dot-source helpers only (used by Pester tests)
 
 ### Adding Sentinel to your workbook (v0.2.0)

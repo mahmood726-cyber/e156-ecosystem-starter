@@ -7,10 +7,18 @@
 #   - AGENTS.md, CLAUDE.md, GEMINI.md, CODEX.md as per-user global defaults
 #
 # Run from PowerShell (no admin needed):
-#   .\install.ps1                 # full install
+#   .\install.ps1                 # base install + interactive prompts for sub-installers
+#   .\install.ps1 -Full            # everything non-interactively
+#                                    (Sentinel in current repo, Overmind, ProjectIndex at C:\ProjectIndex)
+#   .\install.ps1 -NonInteractive  # base only, skip all chain prompts (CI-safe)
 #   .\install.ps1 -DryRun         # just verify SHA gate, exit 0
 #   .\install.ps1 -Force           # overwrite existing user files
 #   .\install.ps1 -Import          # dot-source helpers only (used by tests)
+#
+# Per-layer opt-in flags (override interactive prompts):
+#   -InstallSentinel <repo-path>   # chain Sentinel hook install into this repo
+#   -InstallOvermind               # chain Overmind + TruthCert HMAC-key setup
+#   -ProjectIndexRoot <dir>        # chain ProjectIndex seed at this dir
 #
 # Non-negotiables (from AGENTS.md):
 #   - Fails closed on missing source files
@@ -22,7 +30,12 @@
 param(
     [switch]$DryRun,
     [switch]$Force,
-    [switch]$Import
+    [switch]$Import,
+    [switch]$Full,
+    [switch]$NonInteractive,
+    [string]$InstallSentinel,
+    [switch]$InstallOvermind,
+    [string]$ProjectIndexRoot
 )
 
 $ErrorActionPreference = 'Stop'
@@ -211,16 +224,142 @@ foreach ($target in @($claudeMemoryDir, $geminiMemoryDir)) {
     }
 }
 
-# --- Step 5: banner --------------------------------------------------------
+# --- Step 5: chain sub-installers -----------------------------------------
+#
+# Three optional chains: Sentinel (pre-push hook), Overmind (verifier), and
+# ProjectIndex (portfolio seed). Under -Full, all three run with defaults.
+# Under -NonInteractive (or piped stdin), all three skip unless an explicit
+# -InstallXxx flag was passed. Otherwise we prompt.
+
+function Test-CanPrompt {
+    return -not $NonInteractive -and -not [Console]::IsInputRedirected
+}
+
+function Prompt-YesNo {
+    param([string]$Question, [bool]$DefaultYes = $true)
+    $hint = if ($DefaultYes) { '[Y/n]' } else { '[y/N]' }
+    $ans = (Read-Host "$Question $hint").Trim().ToLower()
+    if ($ans -eq '') { return $DefaultYes }
+    return $ans -in @('y', 'yes')
+}
+
+$scriptsDir = Join-Path $starterRoot 'scripts'
+
+# 5a: Sentinel
+$doSentinel = $false
+$sentinelRepo = $null
+if ($InstallSentinel) {
+    $doSentinel = $true
+    $sentinelRepo = $InstallSentinel
+} elseif ($Full) {
+    $doSentinel = $true
+    $sentinelRepo = (Get-Location).Path
+    Write-Host "    (-Full) Will install Sentinel hook in: $sentinelRepo" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "Sentinel pre-push hook (blocks 20 defect patterns before git push)"
+    if (Prompt-YesNo -Question "Install Sentinel in a repo now?") {
+        $defaultRepo = (Get-Location).Path
+        $sentinelRepo = (Read-Host "Target repo path (Enter for $defaultRepo)").Trim()
+        if ($sentinelRepo -eq '') { $sentinelRepo = $defaultRepo }
+        $doSentinel = $true
+    }
+}
+if ($doSentinel) {
+    $sentinelScript = Join-Path $scriptsDir 'install-sentinel.ps1'
+    if (Test-Path $sentinelScript) {
+        Write-Step "Chaining: install-sentinel.ps1 -Repo $sentinelRepo"
+        try {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $sentinelScript -Repo $sentinelRepo
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "install-sentinel.ps1 exited $LASTEXITCODE (not fatal; continuing)"
+            }
+        } catch {
+            Write-Warning "install-sentinel.ps1 failed: $($_.Exception.Message)"
+        }
+    }
+}
+
+# 5b: Overmind
+$doOvermind = $false
+if ($InstallOvermind) {
+    $doOvermind = $true
+} elseif ($Full) {
+    $doOvermind = $true
+    Write-Host "    (-Full) Will install Overmind + TruthCert" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "Overmind verifier + TruthCert HMAC signing (~200 MB pip deps)"
+    if (Prompt-YesNo -Question "Install Overmind + TruthCert now?") { $doOvermind = $true }
+}
+if ($doOvermind) {
+    $overmindScript = Join-Path $scriptsDir 'install-overmind.ps1'
+    if (Test-Path $overmindScript) {
+        Write-Step "Chaining: install-overmind.ps1"
+        try {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $overmindScript
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "install-overmind.ps1 exited $LASTEXITCODE (not fatal; continuing)"
+            }
+        } catch {
+            Write-Warning "install-overmind.ps1 failed: $($_.Exception.Message)"
+        }
+    }
+}
+
+# 5c: ProjectIndex
+$doProjectIndex = $false
+$piRoot = $null
+if ($ProjectIndexRoot) {
+    $doProjectIndex = $true
+    $piRoot = $ProjectIndexRoot
+} elseif ($Full) {
+    $doProjectIndex = $true
+    $piRoot = 'C:\ProjectIndex'
+    Write-Host "    (-Full) Will seed ProjectIndex at: $piRoot" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "ProjectIndex seed (portfolio INDEX.md + reconcile_counts.py)"
+    if (Prompt-YesNo -Question "Seed ProjectIndex now?") {
+        $piRoot = (Read-Host "Target dir (Enter for C:\ProjectIndex)").Trim()
+        if ($piRoot -eq '') { $piRoot = 'C:\ProjectIndex' }
+        $doProjectIndex = $true
+    }
+}
+if ($doProjectIndex) {
+    $piScript = Join-Path $scriptsDir 'install-projectindex.ps1'
+    if (Test-Path $piScript) {
+        Write-Step "Chaining: install-projectindex.ps1 -Root $piRoot"
+        try {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $piScript -Root $piRoot
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "install-projectindex.ps1 exited $LASTEXITCODE (not fatal; continuing)"
+            }
+        } catch {
+            Write-Warning "install-projectindex.ps1 failed: $($_.Exception.Message)"
+        }
+    }
+}
+
+# --- Step 6: banner --------------------------------------------------------
 
 Write-Host ""
 Write-Host "=====================================================" -ForegroundColor Green
 Write-Host "  Ecosystem installed. You can now:"
 Write-Host "    1. Run 'claude' or 'gemini' in any repo"
 Write-Host "    2. Edit ~/.claude/memory/*.md as you learn preferences"
-Write-Host "    3. (Phase 2) Install Sentinel in your workbook repo:"
-Write-Host "         python -m sentinel install-hook --repo <path>"
-Write-Host "    4. (Phase 3) Set TRUTHCERT_HMAC_KEY env var for signed bundles"
+if (-not $doSentinel) {
+    Write-Host "    3. Install Sentinel later:"
+    Write-Host "         .\scripts\install-sentinel.ps1 -Repo <your-repo>"
+}
+if (-not $doOvermind) {
+    Write-Host "    4. Install Overmind + TruthCert later:"
+    Write-Host "         .\scripts\install-overmind.ps1"
+}
+if (-not $doProjectIndex) {
+    Write-Host "    5. Seed ProjectIndex later:"
+    Write-Host "         .\scripts\install-projectindex.ps1 -Root C:\ProjectIndex"
+}
 Write-Host "=====================================================" -ForegroundColor Green
 Write-Host ""
 
