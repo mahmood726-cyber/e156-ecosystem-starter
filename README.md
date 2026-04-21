@@ -19,6 +19,7 @@ TruthCert, and Overmind-lite.
 | Overmind verifier | **v0.3.0** | `scripts/install-overmind.ps1` pip-installs [overmind](https://github.com/mahmood726-cyber/overmind) from GitHub and generates a 64-hex-char `TRUTHCERT_HMAC_KEY` saved as a User env var. Run `overmind scan --repo <path>` for on-demand verification; emits PASS / FAIL / UNVERIFIED / REJECT verdicts. |
 | TruthCert engine | **v0.3.0** | Bundled inside Overmind (`overmind/verification/truthcert_engine.py`). HMAC-signs a certification bundle for each verified project. Requires `TRUTHCERT_HMAC_KEY` env var — installer generates and stores it. |
 | ProjectIndex seed | **v0.3.0** | `scripts/install-projectindex.ps1 -Root <dir>` drops a starter `INDEX.md` (active / submission-ready / shipped / triage sections) + `reconcile_counts.py` that fails-closed when listed project paths don't exist on disk. Parameterized — not hardcoded to `C:\ProjectIndex\`. |
+| `push-portfolio.py` | **v0.4.0** | Lightweight clone of Mahmood's `push_all_repos.py`. Scans any directory tree (configurable via `--scan-dir` / `PORTFOLIO_SCAN_DIRS` env) for git repos and either pushes existing ones or creates new GitHub repos via `gh`. Guards against the "parent repo config inheritance" gotcha (bare `.git` subdirs won't falsely inherit the home dir's remote). Flags: `--dry-run`, `--report`, `--new-only`, `--no-recursive`. |
 | `student` CLI | separate repo | Narrow submission pipeline: see [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter). |
 
 ## Quick start
@@ -113,6 +114,27 @@ Example:
 python C:\ProjectIndex\reconcile_counts.py --root C:\ProjectIndex
 # -> OK: 3 project(s) in INDEX.md, all paths resolve.
 ```
+
+### Pushing your portfolio (v0.4.0)
+
+```powershell
+# One-off scan + action
+python .\scripts\push-portfolio.py --scan-dir C:\Projects --github-user your-handle
+
+# Persistent config via env vars
+$env:PORTFOLIO_SCAN_DIRS = "C:\Projects;D:\Projects"
+$env:PORTFOLIO_GITHUB_USER = "your-handle"
+python .\scripts\push-portfolio.py --report      # just print status table
+python .\scripts\push-portfolio.py --dry-run     # preview actions
+python .\scripts\push-portfolio.py --new-only    # create + push only repos without a remote
+```
+
+For each repo found:
+- If no `origin` remote → `gh repo create <user>/<name> --public --source <path> --push`
+- If `origin` set → `git push origin HEAD`
+
+Skips: `node_modules`, `venv`, `.venv`, `__pycache__`, `build`, `dist`,
+`site-packages`, `.pytest_cache`, `.mypy_cache`.
 
 ## Design principles (from `AGENTS.md`)
 
