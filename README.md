@@ -16,8 +16,9 @@ TruthCert, and Overmind-lite.
 | `AGENTS.md` + `CLAUDE.md` / `GEMINI.md` / `CODEX.md` | v0.1.0 | Canonical + per-agent context files. Each agent auto-reads its own pointer; all pointers agree that `AGENTS.md` wins. |
 | `memory/` scaffold | v0.1.0 | Starter `MEMORY.md` index + 4 type templates (`user` / `feedback` / `project` / `reference`). Dropped only when your memory dir is empty — never clobbers existing memory. |
 | Sentinel pre-push hook | **v0.2.0** | `scripts/install-sentinel.ps1 -Repo <path>` pip-installs `sentinel` from the public repo and installs a pre-push hook with 20 rules (blocks: hardcoded paths, placeholder HMAC, silent sentinels, committed `.claude/` configs, empty-DataFrame access, stale agent-config versions). Bypass via `SENTINEL_BYPASS=1 git push` (logged to `~/.sentinel-logs/bypass.log`). |
-| TruthCert CLI | v0.5.0 (Phase 3) | HMAC-signed bundle certification for submissions. |
-| Overmind-lite | v0.5.0 (Phase 3) | On-demand portfolio verifier. |
+| Overmind verifier | **v0.3.0** | `scripts/install-overmind.ps1` pip-installs [overmind](https://github.com/mahmood726-cyber/overmind) from GitHub and generates a 64-hex-char `TRUTHCERT_HMAC_KEY` saved as a User env var. Run `overmind scan --repo <path>` for on-demand verification; emits PASS / FAIL / UNVERIFIED / REJECT verdicts. |
+| TruthCert engine | **v0.3.0** | Bundled inside Overmind (`overmind/verification/truthcert_engine.py`). HMAC-signs a certification bundle for each verified project. Requires `TRUTHCERT_HMAC_KEY` env var — installer generates and stores it. |
+| ProjectIndex seed | **v0.3.0** | `scripts/install-projectindex.ps1 -Root <dir>` drops a starter `INDEX.md` (active / submission-ready / shipped / triage sections) + `reconcile_counts.py` that fails-closed when listed project paths don't exist on disk. Parameterized — not hardcoded to `C:\ProjectIndex\`. |
 | `student` CLI | separate repo | Narrow submission pipeline: see [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter). |
 
 ## Quick start
@@ -71,6 +72,47 @@ $env:SENTINEL_BYPASS = '1'; git push; $env:SENTINEL_BYPASS = $null
 ```
 Each bypass is logged to `~/.sentinel-logs/bypass.log` — the log path cannot
 be redirected to `NUL`.
+
+### Adding Overmind + TruthCert (v0.3.0)
+
+```powershell
+.\scripts\install-overmind.ps1
+```
+
+This `pip install`s [overmind](https://github.com/mahmood726-cyber/overmind)
+(which bundles the TruthCert engine), generates a 64-hex-char
+`TRUTHCERT_HMAC_KEY` if you don't already have one, saves it as a User env
+var, and runs `overmind meta-verify` as a canary. From then on you can
+verify any repo with:
+
+```powershell
+overmind scan --repo C:\Projects\my-paper
+overmind run-once --repo C:\Projects\my-paper
+```
+
+Back up the HMAC key somewhere safe — losing it invalidates all prior
+signed bundles. Pass `-HmacKey <existing-key>` to the installer to reuse a
+key across machines.
+
+### Adding a portfolio index (v0.3.0)
+
+```powershell
+.\scripts\install-projectindex.ps1 -Root C:\ProjectIndex
+```
+
+Drops two files:
+
+- `INDEX.md` — markdown template with `## Active projects` / `Submission-ready` /
+  `Shipped` / `Triage` sections. Add one line per project as you start them.
+- `reconcile_counts.py` — parameterised drift-detection script. Run
+  `python reconcile_counts.py --root <dir>` and it exits 1 if any project
+  link in `INDEX.md` points at a path that doesn't exist on disk.
+
+Example:
+```powershell
+python C:\ProjectIndex\reconcile_counts.py --root C:\ProjectIndex
+# -> OK: 3 project(s) in INDEX.md, all paths resolve.
+```
 
 ## Design principles (from `AGENTS.md`)
 
