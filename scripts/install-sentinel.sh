@@ -33,6 +33,11 @@ test_sentinel_installed() {
 }
 
 install_sentinel_package() {
+    # BANDWIDTH TRIPWIRE (set 2026-04-21): measured Sentinel + Overmind fresh
+    # install footprint = 4.5 MB. Below the threshold where a preflight UX
+    # warning helps. IF a future dependency bump pushes Sentinel alone past
+    # ~50 MB (numpy / scipy / torch additions), add an --estimate-mb preflight
+    # here using `pip install --dry-run --report` first. See review-findings.md P0-2.
     local src="${1:-git+https://github.com/mahmood726-cyber/Sentinel.git}"
     python -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'
 }

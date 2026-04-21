@@ -33,6 +33,11 @@ test_overmind_installed() {
 }
 
 install_overmind_package() {
+    # BANDWIDTH TRIPWIRE (set 2026-04-21): Overmind + Sentinel fresh-install
+    # measured at 4.5 MB total. If a future Overmind release adds heavy deps
+    # (numpy / scipy / torch / pandas) and the footprint passes ~50 MB, add a
+    # --estimate-mb preflight via `pip install --dry-run --report`. See
+    # review-findings.md P0-2.
     local src="${1:-git+https://github.com/mahmood726-cyber/overmind.git}"
     python -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'
 }

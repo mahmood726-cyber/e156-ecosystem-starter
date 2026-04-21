@@ -34,6 +34,14 @@ function Install-SentinelPackage {
     )
     # Non-interactive pip install. Students on shared machines don't need admin
     # if they're in a venv or using --user; we let pip pick.
+    #
+    # BANDWIDTH TRIPWIRE (set 2026-04-21): measured Sentinel + Overmind fresh
+    # install footprint = 4.5 MB total. That's below the threshold where any
+    # preflight UX warning helps. IF a future dependency bump pushes Sentinel
+    # alone past ~50 MB (e.g. adding numpy / scipy / torch), add an
+    # `--estimate-mb` preflight here that runs `pip install --dry-run --report`
+    # against $Source first and prompts the student to confirm before
+    # downloading. See review-findings.md P0-2 for the original measurement.
     & python -m pip install --quiet --disable-pip-version-check $Source 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
     if ($LASTEXITCODE -ne 0) {
         throw "pip install failed (exit $LASTEXITCODE). Check your Python/pip setup."

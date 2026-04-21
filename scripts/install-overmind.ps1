@@ -28,6 +28,11 @@ function Test-OvermindInstalled {
 function Install-OvermindPackage {
     [CmdletBinding()]
     param([string]$Source = 'git+https://github.com/mahmood726-cyber/overmind.git')
+    # BANDWIDTH TRIPWIRE (set 2026-04-21): Overmind + Sentinel fresh-install
+    # measured at 4.5 MB total. If a future Overmind release adds heavy deps
+    # (numpy / scipy / torch / pandas) and the footprint passes ~50 MB, add a
+    # `--estimate-mb` preflight that runs `pip install --dry-run --report`
+    # first and prompts the student to confirm. See review-findings.md P0-2.
     & python -m pip install --quiet --disable-pip-version-check $Source 2>&1 | ForEach-Object {
         Write-Host "  $_" -ForegroundColor DarkGray
     }
