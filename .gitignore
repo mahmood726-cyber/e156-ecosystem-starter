@@ -1,0 +1,16 @@
+# Local session state — never commit
+PROGRESS.md
+STUCK_FAILURES.*
+sentinel-findings.*
+*.pyc
+__pycache__/
+.pytest_cache/
+
+# User's actual memory content (not the templates) — templates yes, filled-in no
+# (Students: after running install.ps1, your real memory lives in
+#  ~/.claude/projects/<hash>/memory/ or ~/.gemini/memory/, NOT in this repo.)
+
+# Build artefacts
+*.zip
+dist/
+build/
