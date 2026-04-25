@@ -29,6 +29,21 @@
 
 set -euo pipefail
 
+# Resolve which Python interpreter to call. On modern Linux (Ubuntu 22.04+,
+# Fedora, Debian 12+, default WSL) only python3 is on PATH; bare 'python'
+# was deliberately removed. Fall through python -> python3 -> fail.
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON="python"
+else
+    echo "ERROR: neither 'python' nor 'python3' found on PATH." >&2
+    echo "  Install: sudo apt install python3 python3-pip   (Debian/Ubuntu/WSL)" >&2
+    echo "           sudo dnf install python3 python3-pip   (Fedora/RHEL)" >&2
+    echo "           brew install python                    (macOS)" >&2
+    exit 1
+fi
+
 # --------------------------- arg parsing ----------------------------------
 
 DRY_RUN=0
@@ -157,7 +172,7 @@ trap 'rollback "unexpected error (line $LINENO)"; exit 1' ERR
 # handling of {{ / }} in ERE and eliminates escaping concerns in the value.
 render_template() {
     local infile="$1" outfile="$2"; shift 2
-    python - "$infile" "$outfile" "$@" <<'PY_EOF'
+    "$PYTHON" - "$infile" "$outfile" "$@" <<'PY_EOF'
 import sys
 in_path, out_path = sys.argv[1], sys.argv[2]
 pairs = [a.split("=", 1) for a in sys.argv[3:] if "=" in a]

@@ -32,6 +32,23 @@ test_overmind_installed() {
     command -v overmind >/dev/null 2>&1
 }
 
+# Resolve python3 / python (modern Linux defaults to python3 only)
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON="python"
+else
+    PYTHON=""
+fi
+
+assert_real_python() {
+    if [[ -z "$PYTHON" ]]; then
+        echo "ERROR: neither 'python' nor 'python3' found on PATH." >&2
+        echo "  Install: sudo apt install python3 python3-pip" >&2
+        return 1
+    fi
+}
+
 install_overmind_package() {
     # BANDWIDTH TRIPWIRE (set 2026-04-21): Overmind + Sentinel fresh-install
     # measured at 4.5 MB total. If a future Overmind release adds heavy deps
@@ -39,7 +56,8 @@ install_overmind_package() {
     # --estimate-mb preflight via `pip install --dry-run --report`. See
     # review-findings.md P0-2.
     local src="${1:-git+https://github.com/mahmood726-cyber/overmind.git}"
-    python -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'
+    assert_real_python || return 1
+    "$PYTHON" -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'
 }
 
 new_truthcert_hmac_key() {

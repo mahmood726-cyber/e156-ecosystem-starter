@@ -1,0 +1,20 @@
+# All shell scripts checked out as LF regardless of host OS.
+# Bash on Linux/WSL refuses to parse files with CRLF line endings;
+# without this rule, a Windows clone produces unrunnable .sh files.
+*.sh    text eol=lf
+*.bash  text eol=lf
+
+# PowerShell tolerates either, so leave as native (Windows->CRLF, Linux->LF).
+*.ps1   text
+
+# Markdown / config: native is fine.
+*.md    text
+*.json  text
+*.yml   text
+*.yaml  text
+
+# Binary / generated.
+*.png   binary
+*.jpg   binary
+*.zip   binary
+*.lock  -text

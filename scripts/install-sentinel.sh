@@ -32,6 +32,23 @@ test_sentinel_installed() {
     command -v sentinel >/dev/null 2>&1
 }
 
+# Resolve python3 / python (modern Linux defaults to python3 only)
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON="python"
+else
+    PYTHON=""
+fi
+
+assert_real_python() {
+    if [[ -z "$PYTHON" ]]; then
+        echo "ERROR: neither 'python' nor 'python3' found on PATH." >&2
+        echo "  Install: sudo apt install python3 python3-pip" >&2
+        return 1
+    fi
+}
+
 install_sentinel_package() {
     # BANDWIDTH TRIPWIRE (set 2026-04-21): measured Sentinel + Overmind fresh
     # install footprint = 4.5 MB. Below the threshold where a preflight UX
@@ -39,7 +56,8 @@ install_sentinel_package() {
     # ~50 MB (numpy / scipy / torch additions), add an --estimate-mb preflight
     # here using `pip install --dry-run --report` first. See review-findings.md P0-2.
     local src="${1:-git+https://github.com/mahmood726-cyber/Sentinel.git}"
-    python -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'
+    assert_real_python || return 1
+    "$PYTHON" -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'
 }
 
 install_sentinel_hook_in_repo() {
