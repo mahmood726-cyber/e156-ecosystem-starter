@@ -58,19 +58,34 @@
 </header>
 
 <div class="cta-wrap">
-  <a class="cta" href="./e156-setup.bat" download="e156-setup.bat">
-    Download for Windows
+  <p style="margin:0 0 16px; font-weight:600; font-size:1.05em;">Recommended &mdash; PowerShell one-liner (works under Smart App Control):</p>
+  <pre style="text-align:left; max-width:720px; margin:0 auto;"><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex</code></pre>
+  <div class="cta-hint" style="margin-top:8px;">Open PowerShell (Win+R &rarr; <code>powershell</code> &rarr; Enter), paste, hit Enter.</div>
+  <div style="margin:28px 0 8px; color:#777; font-size:0.85em;">— or —</div>
+  <a class="cta" href="./e156-setup.bat" download="e156-setup.bat" style="font-size:1.05em; padding:14px 32px;">
+    Download .bat installer
   </a>
-  <div class="cta-hint">Downloads <code>e156-setup.bat</code> &mdash; double-click to install.</div>
+  <div class="cta-hint">Double-click to install. <strong>May be blocked by Smart App Control</strong> &mdash; see workarounds below.</div>
   <div class="cta-hint" style="margin-top:6px;">macOS / Linux: <a href="./e156-setup.sh" download="e156-setup.sh"><code>e156-setup.sh</code></a></div>
 </div>
 
 <div class="warning">
-  <strong>Note on Windows SmartScreen:</strong> The first time you run <code>e156-setup.bat</code>,
-  Windows may show a blue "Windows protected your PC" dialog. This happens for any script downloaded
-  from the internet that isn't signed with a paid code-signing certificate. Click <strong>More info</strong>
-  &rarr; <strong>Run anyway</strong>. The source is open and auditable
-  <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/bootstrap/e156-setup.bat">here</a>.
+  <strong>If Smart App Control or SmartScreen blocks the .bat:</strong> Windows 11 Smart App Control (different from SmartScreen) blocks unsigned downloaded scripts <strong>without</strong> a "Run anyway" button. Three ways through, in order of effort:
+
+  <ol style="margin:10px 0 0 0;">
+    <li><strong>Easiest &mdash; use the PowerShell one-liner above.</strong> Smart App Control allows <code>iex</code> from a trusted Microsoft origin (your shell), and the script runs in memory without writing an unsigned executable to disk first.</li>
+    <li><strong>Unblock the .bat manually.</strong> In File Explorer, right-click <code>e156-setup.bat</code> &rarr; <strong>Properties</strong> &rarr; tick <strong>Unblock</strong> at the bottom &rarr; <strong>OK</strong>. Then double-click again. Or in PowerShell:
+      <pre style="margin:6px 0;"><code>Unblock-File ~\Downloads\e156-setup.bat
+~\Downloads\e156-setup.bat</code></pre>
+    </li>
+    <li><strong>Power-user fallback &mdash; clone the repo directly</strong> (Smart App Control trusts <code>git.exe</code>):
+      <pre style="margin:6px 0;"><code>git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
+cd e156-ecosystem-starter
+.\install\install.ps1</code></pre>
+    </li>
+  </ol>
+
+  <p style="margin:10px 0 0 0;">The source is open and auditable <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/bootstrap.ps1">here</a> (PowerShell) and <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/bootstrap/e156-setup.bat">here</a> (.bat).</p>
 </div>
 
 <h2>What this installs</h2>
