@@ -93,9 +93,101 @@
 <ul>
   <li>Windows 10 or 11</li>
   <li><a href="https://www.python.org/downloads/">Python 3.11 or newer</a> &mdash; tick "Add Python to PATH" during install</li>
-  <li>At least one of: <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>, <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a>, or <a href="https://github.com/openai/codex">Codex</a></li>
+  <li>At least one AI agent CLI installed (instructions below) &mdash; Gemini CLI is the recommended starting point because Google gives you a generous <strong>free</strong> API key.</li>
   <li>Internet connection for the install itself (about 50 MB of pip deps if you opt into Sentinel + Overmind)</li>
 </ul>
+
+<h2 id="agents">Set up an AI agent CLI</h2>
+
+<p>The starter rules and memory are designed for three agents. <strong>You only need one</strong> to get going. If you're starting from zero, install Gemini CLI &mdash; the free tier is the most generous.</p>
+
+<h3>Option A: Gemini CLI (recommended &mdash; free tier)</h3>
+
+<div class="step"><strong>1.</strong> Install <a href="https://nodejs.org/en/download">Node.js 20 or newer</a> (Windows installer, default options).</div>
+<div class="step"><strong>2.</strong> Open a fresh PowerShell window and install the CLI globally:
+<pre><code>npm install -g @google/gemini-cli</code></pre>
+</div>
+<div class="step"><strong>3.</strong> Get a <strong>free</strong> Google API key (no credit card needed):
+<ol style="margin:8px 0 0 0;">
+  <li>Go to <a href="https://aistudio.google.com/app/apikey">aistudio.google.com/app/apikey</a> and sign in with any Google account.</li>
+  <li>Click <strong>Create API key</strong> &rarr; <em>Create API key in new project</em>.</li>
+  <li>Copy the long key (starts with <code>AIza...</code>). Treat it like a password &mdash; never paste it into a public repo or chat.</li>
+</ol>
+</div>
+<div class="step"><strong>4.</strong> Tell Windows the key is yours so the CLI can find it:
+<pre><code>setx GEMINI_API_KEY "paste-your-key-here"</code></pre>
+Close and reopen your terminal so the new variable loads.
+</div>
+<div class="step"><strong>5.</strong> Test it:
+<pre><code>gemini "summarise this file" &lt; README.md</code></pre>
+If you get a coherent answer, you're done.
+</div>
+
+<div class="warning">
+  <strong>Free-tier limits (Google AI Studio):</strong> currently <strong>1,500 requests/day</strong> and <strong>1M tokens/min</strong> on Gemini 2.0 Flash, with no card required. That's far more than a typical student week of meta-analysis work. If you hit a quota wall the CLI will tell you to wait until UTC midnight. Quotas change &mdash; check <a href="https://ai.google.dev/gemini-api/docs/rate-limits">ai.google.dev/gemini-api/docs/rate-limits</a>.
+</div>
+
+<h3>Option B: Claude Code</h3>
+<p>Paid (Anthropic API or Claude Pro/Max). Best at long-context work. Install:</p>
+<pre><code>npm install -g @anthropic-ai/claude-code
+claude login</code></pre>
+<p>See <a href="https://docs.anthropic.com/en/docs/claude-code">docs.anthropic.com/en/docs/claude-code</a>.</p>
+
+<h3>Option C: OpenAI Codex</h3>
+<p>Free with a ChatGPT Plus account (uses your subscription quota), or pay-per-token via API key. Install:</p>
+<pre><code>npm install -g @openai/codex
+codex</code></pre>
+<p>On first run it walks you through sign-in. See <a href="https://github.com/openai/codex">github.com/openai/codex</a>.</p>
+
+<h2 id="examples">What can I build with this? &mdash; example projects</h2>
+
+<p>Once the agent + rules are installed, you can build small but real research artifacts in a few hours. Pick one. Each is sized for a single sitting and produces something you can put on your CV.</p>
+
+<table>
+  <tr><th>Project</th><th>What you build</th><th>Skill stretched</th></tr>
+  <tr>
+    <td><strong>1. Mini meta-analysis (E156 paper)</strong></td>
+    <td>Pick 3&ndash;5 trials on a topic that interests you (e.g. <em>SGLT2 inhibitors in heart failure</em>, <em>antidepressants in mild depression</em>, <em>ivermectin in COVID</em>). Pool effect sizes with DerSimonian&ndash;Laird, write a 156-word E156 micro-paper, ship as a single-file HTML dashboard on GitHub Pages.</td>
+    <td>Asking the agent for the right pooling formula, validating against R <code>metafor</code>, learning to write tight scientific prose.</td>
+  </tr>
+  <tr>
+    <td><strong>2. Forest-plot tool from scratch</strong></td>
+    <td>Build a single-file HTML page where the user pastes a CSV of <code>study, effect, lower, upper</code> and gets a forest plot + pooled diamond + I². No backend, pure JS + SVG.</td>
+    <td>SVG, statistical formulas (Q, &tau;², HKSJ), the discipline of writing tests before code.</td>
+  </tr>
+  <tr>
+    <td><strong>3. Risk-of-bias dashboard</strong></td>
+    <td>RoB 2 traffic-light table for a real Cochrane review of your choice. Read the review, score each domain, render a coloured matrix + summary stacked bar.</td>
+    <td>Reading critically, structured data entry, accessible HTML (proper labels, ARIA).</td>
+  </tr>
+  <tr>
+    <td><strong>4. CT.gov mini-audit</strong></td>
+    <td>Pull all interventional trials in your country / specialty from the ClinicalTrials.gov v2 API, count <em>completed but no results posted at 2 years</em>. One page, three numbers, one chart.</td>
+    <td>REST APIs, pagination, dates, honest framing of negative findings.</td>
+  </tr>
+  <tr>
+    <td><strong>5. PRISMA flow diagram generator</strong></td>
+    <td>Input: numbers from each screening stage (records identified, duplicates, screened, full-text, included). Output: PRISMA-2020 SVG diagram you can paste into a paper.</td>
+    <td>SVG layout, working backwards from a published standard.</td>
+  </tr>
+  <tr>
+    <td><strong>6. Living NMA prototype</strong></td>
+    <td>Pick a 3-arm decision (e.g. ARNI vs ACEi vs ARB in HFrEF). Build a Bucher indirect-comparison engine. Add a "what if a new trial reports HR=X" slider that re-pools live.</td>
+    <td>Network meta-analysis arithmetic (consistency assumption), interactive UI design.</td>
+  </tr>
+  <tr>
+    <td><strong>7. Evidence-update bot</strong></td>
+    <td>Cron-style script that re-queries CT.gov for new trials matching a saved PICO and emails / commits a JSON diff. Useful for keeping a review "living".</td>
+    <td>Scheduled jobs, diffing structured data, knowing when to alert vs stay silent.</td>
+  </tr>
+  <tr>
+    <td><strong>8. Replication of a published figure</strong></td>
+    <td>Pick a forest plot from a recent NEJM/Lancet meta-analysis. Re-extract the trial table, re-pool, regenerate the figure. Note any discrepancies.</td>
+    <td>Reading methods sections precisely, debugging "why don't I get the same number".</td>
+  </tr>
+</table>
+
+<p>Each project should ship as <strong>one GitHub repo</strong> + <strong>one GitHub Pages dashboard</strong> + <strong>one E156 micro-paper</strong> (156 words). The starter rules teach the agent how to keep all three in sync.</p>
 
 <h2>Power users</h2>
 
