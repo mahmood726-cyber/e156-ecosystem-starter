@@ -81,6 +81,43 @@ function Get-EcoStarterRoot {
     return (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 }
 
+function Resolve-StarterPath {
+    # Path-disambiguation for student input. Treats:
+    #   - absolute path                -> use as-is
+    #   - relative path (no drive/UNC) -> resolve against $HOME\code\ (NOT cwd --
+    #                                     CWD is often C:\Windows\System32 on
+    #                                     freshly-launched PowerShell, which
+    #                                     fails Permission Denied)
+    #   - empty / null                 -> return $Default
+    #
+    # Refuses to silently land under C:\Windows or C:\Program Files.
+    [CmdletBinding()]
+    param(
+        [string]$Input,
+        [string]$Default = $null
+    )
+    if ([string]::IsNullOrWhiteSpace($Input)) {
+        return $Default
+    }
+    $trimmed = $Input.Trim()
+    # Absolute paths: drive-letter (C:\...) or UNC (\\server\share)
+    if ($trimmed -match '^[A-Za-z]:[\\/]' -or $trimmed -match '^\\\\') {
+        $resolved = $trimmed
+    } else {
+        # Relative -> $HOME\code\<input>
+        $codeRoot = Join-Path $env:USERPROFILE 'code'
+        $resolved = Join-Path $codeRoot $trimmed
+    }
+    # Refuse system-protected roots
+    $forbidden = @('C:\Windows', 'C:\Program Files', 'C:\Program Files (x86)', 'C:\ProgramData')
+    foreach ($f in $forbidden) {
+        if ($resolved -like "$f\*" -or $resolved -eq $f) {
+            throw "Refusing to install into protected system path: $resolved. Pick a path under $env:USERPROFILE."
+        }
+    }
+    return $resolved
+}
+
 function Render-Template {
     [CmdletBinding()]
     param(
@@ -372,37 +409,85 @@ function Prompt-YesNo {
 
 $scriptsDir = Join-Path $starterRoot 'scripts'
 
+# Track per-chain outcomes for the honest end-of-run summary.
+# Status values: 'ok' | 'failed' | 'skipped'
+$chainStatus = [ordered]@{
+    'rules+memory'  = 'ok'   # we got this far, so step 1-4 succeeded
+    'sentinel'      = 'skipped'
+    'overmind'      = 'skipped'
+    'projectindex'  = 'skipped'
+}
+$chainDetails = [ordered]@{}
+
+# Default install location for student-typed relative paths.
+$studentCodeRoot = Join-Path $env:USERPROFILE 'code'
+
 # 5a: Sentinel
 $doSentinel = $false
 $sentinelRepo = $null
 if ($InstallSentinel) {
     $doSentinel = $true
-    $sentinelRepo = $InstallSentinel
+    $sentinelRepo = Resolve-StarterPath -Input $InstallSentinel -Default $InstallSentinel
 } elseif ($Full) {
     $doSentinel = $true
-    $sentinelRepo = (Get-Location).Path
+    $sentinelRepo = Join-Path $studentCodeRoot 'my-first-repo'
     Write-Host "    (-Full) Will install Sentinel hook in: $sentinelRepo" -ForegroundColor DarkGray
 } elseif (Test-CanPrompt) {
     Write-Host ""
     Write-Step "Sentinel pre-push hook (blocks 20 defect patterns before git push)"
     if (Prompt-YesNo -Question "Install Sentinel in a repo now?") {
-        $defaultRepo = (Get-Location).Path
-        $sentinelRepo = (Read-Host "Target repo path (Enter for $defaultRepo)").Trim()
-        if ($sentinelRepo -eq '') { $sentinelRepo = $defaultRepo }
-        $doSentinel = $true
+        $defaultRepo = Join-Path $studentCodeRoot 'my-first-repo'
+        $userInput = (Read-Host "Target repo path (absolute, or name only -> goes under $studentCodeRoot\) [default: $defaultRepo]").Trim()
+        try {
+            $sentinelRepo = Resolve-StarterPath -Input $userInput -Default $defaultRepo
+            $doSentinel = $true
+        } catch {
+            Write-Warning $_.Exception.Message
+            $chainStatus['sentinel'] = 'failed'
+            $chainDetails['sentinel'] = "rejected target: $($_.Exception.Message)"
+        }
     }
 }
 if ($doSentinel) {
     $sentinelScript = Join-Path $scriptsDir 'install-sentinel.ps1'
     if (Test-Path $sentinelScript) {
         Write-Step "Chaining: install-sentinel.ps1 -Repo $sentinelRepo"
-        try {
-            & powershell -NoProfile -ExecutionPolicy Bypass -File $sentinelScript -Repo $sentinelRepo
-            if ($LASTEXITCODE -ne 0) {
-                Write-Warning "install-sentinel.ps1 exited $LASTEXITCODE (not fatal; continuing)"
+        # Ensure the repo directory exists (create if missing) and is initialized as a git repo.
+        if (-not (Test-Path $sentinelRepo)) {
+            try {
+                New-Item -ItemType Directory -Force -Path $sentinelRepo | Out-Null
+                Write-Host "    Created $sentinelRepo"
+            } catch {
+                Write-Warning "Could not create $sentinelRepo : $($_.Exception.Message)"
+                $chainStatus['sentinel'] = 'failed'
+                $chainDetails['sentinel'] = "could not create directory $sentinelRepo"
+                $doSentinel = $false
             }
-        } catch {
-            Write-Warning "install-sentinel.ps1 failed: $($_.Exception.Message)"
+        }
+        if ($doSentinel -and -not (Test-Path (Join-Path $sentinelRepo '.git'))) {
+            try {
+                & git -C $sentinelRepo init --quiet 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+                Write-Host "    git init at $sentinelRepo"
+            } catch {
+                Write-Warning "Could not git init in $sentinelRepo : $($_.Exception.Message)"
+            }
+        }
+        if ($doSentinel) {
+            try {
+                & powershell -NoProfile -ExecutionPolicy Bypass -File $sentinelScript -Repo $sentinelRepo
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warning "install-sentinel.ps1 exited $LASTEXITCODE"
+                    $chainStatus['sentinel'] = 'failed'
+                    $chainDetails['sentinel'] = "exited $LASTEXITCODE (often: Python on PATH is the Microsoft Store stub -- see prereqs)"
+                } else {
+                    $chainStatus['sentinel'] = 'ok'
+                    $chainDetails['sentinel'] = "installed in $sentinelRepo"
+                }
+            } catch {
+                Write-Warning "install-sentinel.ps1 failed: $($_.Exception.Message)"
+                $chainStatus['sentinel'] = 'failed'
+                $chainDetails['sentinel'] = $_.Exception.Message
+            }
         }
     }
 }
@@ -416,7 +501,7 @@ if ($InstallOvermind) {
     Write-Host "    (-Full) Will install Overmind + TruthCert" -ForegroundColor DarkGray
 } elseif (Test-CanPrompt) {
     Write-Host ""
-    Write-Step "Overmind verifier + TruthCert HMAC signing (~200 MB pip deps)"
+    Write-Step "Overmind verifier + TruthCert HMAC signing (~5 MB pip deps)"
     if (Prompt-YesNo -Question "Install Overmind + TruthCert now?") { $doOvermind = $true }
 }
 if ($doOvermind) {
@@ -426,10 +511,17 @@ if ($doOvermind) {
         try {
             & powershell -NoProfile -ExecutionPolicy Bypass -File $overmindScript
             if ($LASTEXITCODE -ne 0) {
-                Write-Warning "install-overmind.ps1 exited $LASTEXITCODE (not fatal; continuing)"
+                Write-Warning "install-overmind.ps1 exited $LASTEXITCODE"
+                $chainStatus['overmind'] = 'failed'
+                $chainDetails['overmind'] = "exited $LASTEXITCODE (often: Python stub -- see prereqs)"
+            } else {
+                $chainStatus['overmind'] = 'ok'
+                $chainDetails['overmind'] = "installed"
             }
         } catch {
             Write-Warning "install-overmind.ps1 failed: $($_.Exception.Message)"
+            $chainStatus['overmind'] = 'failed'
+            $chainDetails['overmind'] = $_.Exception.Message
         }
     }
 }
@@ -437,20 +529,27 @@ if ($doOvermind) {
 # 5c: ProjectIndex
 $doProjectIndex = $false
 $piRoot = $null
+$piDefault = Join-Path $studentCodeRoot 'ProjectIndex'
 if ($ProjectIndexRoot) {
     $doProjectIndex = $true
-    $piRoot = $ProjectIndexRoot
+    $piRoot = Resolve-StarterPath -Input $ProjectIndexRoot -Default $ProjectIndexRoot
 } elseif ($Full) {
     $doProjectIndex = $true
-    $piRoot = 'C:\ProjectIndex'
+    $piRoot = $piDefault
     Write-Host "    (-Full) Will seed ProjectIndex at: $piRoot" -ForegroundColor DarkGray
 } elseif (Test-CanPrompt) {
     Write-Host ""
     Write-Step "ProjectIndex seed (portfolio INDEX.md + reconcile_counts.py)"
     if (Prompt-YesNo -Question "Seed ProjectIndex now?") {
-        $piRoot = (Read-Host "Target dir (Enter for C:\ProjectIndex)").Trim()
-        if ($piRoot -eq '') { $piRoot = 'C:\ProjectIndex' }
-        $doProjectIndex = $true
+        $userInput = (Read-Host "Target dir (absolute, or name only -> goes under $studentCodeRoot\) [default: $piDefault]").Trim()
+        try {
+            $piRoot = Resolve-StarterPath -Input $userInput -Default $piDefault
+            $doProjectIndex = $true
+        } catch {
+            Write-Warning $_.Exception.Message
+            $chainStatus['projectindex'] = 'failed'
+            $chainDetails['projectindex'] = "rejected target: $($_.Exception.Message)"
+        }
     }
 }
 if ($doProjectIndex) {
@@ -460,36 +559,72 @@ if ($doProjectIndex) {
         try {
             & powershell -NoProfile -ExecutionPolicy Bypass -File $piScript -Root $piRoot
             if ($LASTEXITCODE -ne 0) {
-                Write-Warning "install-projectindex.ps1 exited $LASTEXITCODE (not fatal; continuing)"
+                Write-Warning "install-projectindex.ps1 exited $LASTEXITCODE"
+                $chainStatus['projectindex'] = 'failed'
+                $chainDetails['projectindex'] = "exited $LASTEXITCODE"
+            } else {
+                $chainStatus['projectindex'] = 'ok'
+                $chainDetails['projectindex'] = "seeded at $piRoot"
             }
         } catch {
             Write-Warning "install-projectindex.ps1 failed: $($_.Exception.Message)"
+            $chainStatus['projectindex'] = 'failed'
+            $chainDetails['projectindex'] = $_.Exception.Message
         }
     }
 }
 
-# --- Step 6: banner --------------------------------------------------------
+# --- Step 6: honest summary ------------------------------------------------
+
+$nFailed = ($chainStatus.Values | Where-Object { $_ -eq 'failed' }).Count
+$nOk     = ($chainStatus.Values | Where-Object { $_ -eq 'ok' }).Count
+
+$bannerColor = if ($nFailed -gt 0) { 'Yellow' } else { 'Green' }
+$bannerText  = if ($nFailed -gt 0) { "Install completed with $nFailed component(s) failing -- see below" } else { "Ecosystem installed cleanly" }
 
 Write-Host ""
-Write-Host "=====================================================" -ForegroundColor Green
-Write-Host "  Ecosystem installed. You can now:"
+Write-Host "=====================================================" -ForegroundColor $bannerColor
+Write-Host "  $bannerText" -ForegroundColor $bannerColor
+Write-Host "=====================================================" -ForegroundColor $bannerColor
+
+# Per-chain breakdown
+foreach ($chain in $chainStatus.Keys) {
+    $status = $chainStatus[$chain]
+    $detail = $chainDetails[$chain]
+    switch ($status) {
+        'ok'      { $sym = '[OK]'; $color = 'Green' }
+        'failed'  { $sym = '[X]'; $color = 'Red' }
+        default   { $sym = '-'; $color = 'DarkGray' }
+    }
+    $line = "  $sym  $($chain.PadRight(14)) $status"
+    if ($detail) { $line += "  -- $detail" }
+    Write-Host $line -ForegroundColor $color
+}
+
+Write-Host ""
+Write-Host "Next steps:"
 Write-Host "    1. Run 'claude' or 'gemini' in any repo"
 Write-Host "    2. Edit ~/.claude/memory/*.md as you learn preferences"
-if (-not $doSentinel) {
-    Write-Host "    3. Install Sentinel later:"
-    Write-Host "         .\scripts\install-sentinel.ps1 -Repo <your-repo>"
+if ($chainStatus['sentinel'] -ne 'ok') {
+    Write-Host "    3. Re-try Sentinel later:"
+    Write-Host "         .\scripts\install-sentinel.ps1 -Repo $studentCodeRoot\<your-repo>"
 }
-if (-not $doOvermind) {
-    Write-Host "    4. Install Overmind + TruthCert later:"
+if ($chainStatus['overmind'] -ne 'ok') {
+    Write-Host "    4. Re-try Overmind + TruthCert later:"
     Write-Host "         .\scripts\install-overmind.ps1"
 }
-if (-not $doProjectIndex) {
-    Write-Host "    5. Seed ProjectIndex later:"
-    Write-Host "         .\scripts\install-projectindex.ps1 -Root C:\ProjectIndex"
+if ($chainStatus['projectindex'] -ne 'ok') {
+    Write-Host "    5. Re-try ProjectIndex later:"
+    Write-Host "         .\scripts\install-projectindex.ps1 -Root $studentCodeRoot\ProjectIndex"
 }
-Write-Host "=====================================================" -ForegroundColor Green
+if ($nFailed -gt 0) {
+    Write-Host ""
+    Write-Host "If a sub-installer reported a Python error, the most common cause is that 'python' on PATH is the Microsoft Store alias rather than a real Python. Install Python 3.11+ from https://www.python.org/downloads/ (tick 'Add to PATH'), reopen PowerShell, then re-run a sub-installer." -ForegroundColor Yellow
+}
 Write-Host ""
 
+# Exit 0 even if some chains failed -- base install (rules + memory) succeeded.
+# Sub-failures are reported visibly above and the user can re-run individually.
 exit 0
 
 }  # end try

@@ -27,6 +27,41 @@ function Test-SentinelInstalled {
     return $?
 }
 
+function Assert-RealPython {
+    # Defends against the Microsoft Store python.exe stub on Windows 10/11,
+    # which is on PATH but is a 0-byte alias that exits non-zero when called.
+    # Without this check pip install fails 6 lines deep with a confusing
+    # "Python was not found" RemoteException.
+    $py = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $py) {
+        throw @"
+Python is not on PATH.
+
+Install Python 3.11+ from https://www.python.org/downloads/
+(tick 'Add python.exe to PATH' on the first installer screen),
+then close and reopen PowerShell.
+"@
+    }
+    $version = & $py.Source --version 2>&1
+    if ($LASTEXITCODE -ne 0 -or $version -notmatch '^Python \d' -or $py.Source -match 'WindowsApps') {
+        throw @"
+Python on your PATH is the Microsoft Store stub, not a real Python install.
+
+Found at: $($py.Source)
+
+Fix it:
+  1. Download Python 3.11+ from https://www.python.org/downloads/
+  2. Run the installer.
+  3. CRITICAL: tick 'Add python.exe to PATH' on the first screen.
+  4. Close and reopen PowerShell.
+  5. Re-run this script.
+
+Optional: also disable the Store alias in
+  Settings > Apps > Advanced app settings > App execution aliases
+"@
+    }
+}
+
 function Install-SentinelPackage {
     [CmdletBinding()]
     param(
@@ -101,6 +136,7 @@ if (Test-SentinelInstalled) {
         exit 1
     }
     Write-Step "Installing sentinel from GitHub (first-time setup)"
+    try { Assert-RealPython } catch { Write-Host $_.Exception.Message -ForegroundColor Red; exit 1 }
     Install-SentinelPackage
     if (-not (Test-SentinelInstalled)) {
         Write-Host "ERROR: pip install completed but sentinel is still not on PATH." -ForegroundColor Red

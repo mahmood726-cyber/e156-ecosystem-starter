@@ -20,6 +20,37 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Assert-RealPython {
+    # Defends against the Microsoft Store python.exe stub on Windows 10/11.
+    $py = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $py) {
+        throw @"
+Python is not on PATH.
+
+Install Python 3.11+ from https://www.python.org/downloads/
+(tick 'Add python.exe to PATH' on the first installer screen),
+then close and reopen PowerShell.
+"@
+    }
+    $version = & $py.Source --version 2>&1
+    if ($LASTEXITCODE -ne 0 -or $version -notmatch '^Python \d' -or $py.Source -match 'WindowsApps') {
+        throw @"
+Python on your PATH is the Microsoft Store stub, not a real Python install.
+
+Found at: $($py.Source)
+
+Fix it:
+  1. Download Python 3.11+ from https://www.python.org/downloads/
+  2. Run the installer, tick 'Add python.exe to PATH'.
+  3. Close and reopen PowerShell.
+  4. Re-run this script.
+
+Optional: Settings > Apps > Advanced app settings > App execution
+aliases > toggle off python.exe and python3.exe
+"@
+    }
+}
+
 function Test-OvermindInstalled {
     $null = Get-Command overmind -ErrorAction SilentlyContinue
     return $?
@@ -96,6 +127,7 @@ if (Test-OvermindInstalled) {
         exit 1
     }
     Write-Step "Installing overmind (first-time setup)"
+    try { Assert-RealPython } catch { Write-Host $_.Exception.Message -ForegroundColor Red; exit 1 }
     Install-OvermindPackage
     if (-not (Test-OvermindInstalled)) {
         Write-Host "ERROR: pip install completed but overmind is still not on PATH." -ForegroundColor Red

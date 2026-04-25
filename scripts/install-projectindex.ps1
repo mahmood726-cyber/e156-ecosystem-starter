@@ -194,6 +194,25 @@ if (-not $Root) {
     Write-Host "Using default -Root: $Root" -ForegroundColor DarkGray
 }
 
+# Path disambiguation: a relative input like 'student' would otherwise resolve
+# against CWD, which on a freshly-launched PowerShell is C:\WINDOWS\system32 --
+# guaranteed PermissionDenied. Resolve relative inputs against $HOME\code\.
+if ($Root -notmatch '^[A-Za-z]:[\\/]' -and $Root -notmatch '^\\\\') {
+    $resolved = Join-Path (Join-Path $env:USERPROFILE 'code') $Root
+    Write-Host "Relative path '$Root' interpreted as: $resolved" -ForegroundColor DarkGray
+    $Root = $resolved
+}
+# Refuse system-protected roots (Permission denied is the symptom; explicit
+# message is the cure).
+$forbidden = @('C:\Windows', 'C:\Program Files', 'C:\Program Files (x86)', 'C:\ProgramData')
+foreach ($f in $forbidden) {
+    if ($Root -like "$f\*" -or $Root -eq $f) {
+        Write-Host "Refusing to install into protected system path: $Root" -ForegroundColor Red
+        Write-Host "Pick a path under $env:USERPROFILE." -ForegroundColor Red
+        exit 1
+    }
+}
+
 Write-Host ""
 Write-Host "ProjectIndex installer" -ForegroundColor Cyan
 Write-Host "Target: $Root"
