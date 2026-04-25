@@ -54,10 +54,15 @@ IMPORT=0
 INSTALL_SENTINEL=""
 INSTALL_OVERMIND=0
 PROJECT_INDEX_ROOT=""
-E156_HOME_VAR="${HOME}/E156"
-PORTFOLIO_ROOT="${HOME}/ProjectIndex"
-SENTINEL_ROOT="${HOME}/Sentinel"
-OVERMIND_ROOT="${HOME}/overmind"
+# Default rule-template paths align with where the .sh installers ACTUALLY
+# land things on a fresh student box (under $HOME/code/). The earlier
+# $HOME/E156 / $HOME/ProjectIndex / $HOME/Sentinel / $HOME/overmind defaults
+# matched MA's personal layout but caused agent rules to reference paths
+# that the installer never created.
+E156_HOME_VAR="${HOME}/code/E156"
+PORTFOLIO_ROOT="${HOME}/code/ProjectIndex"
+SENTINEL_ROOT="${HOME}/code/Sentinel"
+OVERMIND_ROOT="${HOME}/code/overmind"
 GITHUB_USER=""
 
 while [[ $# -gt 0 ]]; do
@@ -331,24 +336,48 @@ SCRIPTS_DIR="$STARTER_ROOT/scripts"
 
 # 5a: Sentinel
 do_sentinel=0; sentinel_repo=""
+# Default Sentinel target. Earlier this was $(pwd), but in the bootstrap-
+# extracted flow that's a temp dir under /tmp/e156-ecosystem-starter-main/
+# which gets rm -rf'd at the end -- so the hook installed cleanly and was
+# then deleted with the temp tree. Now it lands in the student's persistent
+# workspace. (Reported in code review.)
+sentinel_default_repo="$HOME/code/my-first-repo"
 if [[ -n "$INSTALL_SENTINEL" ]]; then
     do_sentinel=1; sentinel_repo="$INSTALL_SENTINEL"
 elif [[ "$FULL" -eq 1 ]]; then
-    do_sentinel=1; sentinel_repo="$(pwd)"
+    do_sentinel=1; sentinel_repo="$sentinel_default_repo"
     log_ok "(--full) Will install Sentinel hook in: $sentinel_repo"
 elif can_prompt; then
     echo
     log_step "Sentinel pre-push hook (blocks 20 defect patterns before git push)"
     if prompt_yn "Install Sentinel in a repo now?" 1; then
-        read -r -p "Target repo path (Enter for $(pwd)): " sentinel_repo
-        sentinel_repo="${sentinel_repo:-$(pwd)}"
+        read -r -p "Target repo path (Enter for $sentinel_default_repo): " sentinel_repo
+        sentinel_repo="${sentinel_repo:-$sentinel_default_repo}"
         do_sentinel=1
     fi
 fi
+chain_sentinel="skipped"; chain_sentinel_detail=""
 if [[ "$do_sentinel" -eq 1 && -f "$SCRIPTS_DIR/install-sentinel.sh" ]]; then
+    # Make sure the target dir exists and is a git repo (Sentinel hook needs .git/).
+    if [[ ! -d "$sentinel_repo" ]]; then
+        mkdir -p "$sentinel_repo" 2>/dev/null \
+            && log_ok "Created $sentinel_repo" \
+            || log_warn "Could not create $sentinel_repo"
+    fi
+    if [[ -d "$sentinel_repo" && ! -d "$sentinel_repo/.git" ]]; then
+        ( cd "$sentinel_repo" && git init --quiet ) 2>/dev/null \
+            && log_ok "git init at $sentinel_repo"
+    fi
     log_step "Chaining: install-sentinel.sh --repo $sentinel_repo"
-    bash "$SCRIPTS_DIR/install-sentinel.sh" --repo "$sentinel_repo" || \
-        log_warn "install-sentinel.sh exited $? (not fatal; continuing)"
+    if bash "$SCRIPTS_DIR/install-sentinel.sh" --repo "$sentinel_repo"; then
+        chain_sentinel="ok"
+        chain_sentinel_detail="installed in $sentinel_repo"
+    else
+        rc=$?
+        chain_sentinel="failed"
+        chain_sentinel_detail="exited $rc"
+        log_warn "install-sentinel.sh exited $rc (continuing; reported in summary)"
+    fi
 fi
 
 # 5b: Overmind
@@ -363,46 +392,102 @@ elif can_prompt; then
     log_step "Overmind verifier + TruthCert HMAC signing (~200 MB pip deps)"
     prompt_yn "Install Overmind + TruthCert now?" 1 && do_overmind=1 || true
 fi
+chain_overmind="skipped"; chain_overmind_detail=""
 if [[ "$do_overmind" -eq 1 && -f "$SCRIPTS_DIR/install-overmind.sh" ]]; then
     log_step "Chaining: install-overmind.sh"
-    bash "$SCRIPTS_DIR/install-overmind.sh" || \
-        log_warn "install-overmind.sh exited $? (not fatal; continuing)"
+    if bash "$SCRIPTS_DIR/install-overmind.sh"; then
+        chain_overmind="ok"
+        chain_overmind_detail="installed"
+    else
+        rc=$?
+        chain_overmind="failed"
+        chain_overmind_detail="exited $rc"
+        log_warn "install-overmind.sh exited $rc (continuing; reported in summary)"
+    fi
 fi
 
 # 5c: ProjectIndex
 do_pi=0; pi_root=""
+pi_default="$HOME/code/ProjectIndex"
 if [[ -n "$PROJECT_INDEX_ROOT" ]]; then
     do_pi=1; pi_root="$PROJECT_INDEX_ROOT"
 elif [[ "$FULL" -eq 1 ]]; then
-    do_pi=1; pi_root="$HOME/ProjectIndex"
+    do_pi=1; pi_root="$pi_default"
     log_ok "(--full) Will seed ProjectIndex at: $pi_root"
 elif can_prompt; then
     echo
     log_step "ProjectIndex seed (portfolio INDEX.md + reconcile_counts.py)"
     if prompt_yn "Seed ProjectIndex now?" 1; then
-        read -r -p "Target dir (Enter for $HOME/ProjectIndex): " pi_root
-        pi_root="${pi_root:-$HOME/ProjectIndex}"
+        read -r -p "Target dir (Enter for $pi_default): " pi_root
+        pi_root="${pi_root:-$pi_default}"
         do_pi=1
     fi
 fi
+chain_pi="skipped"; chain_pi_detail=""
 if [[ "$do_pi" -eq 1 && -f "$SCRIPTS_DIR/install-projectindex.sh" ]]; then
     log_step "Chaining: install-projectindex.sh --root $pi_root"
-    bash "$SCRIPTS_DIR/install-projectindex.sh" --root "$pi_root" || \
-        log_warn "install-projectindex.sh exited $? (not fatal; continuing)"
+    if bash "$SCRIPTS_DIR/install-projectindex.sh" --root "$pi_root"; then
+        chain_pi="ok"
+        chain_pi_detail="seeded at $pi_root"
+    else
+        rc=$?
+        chain_pi="failed"
+        chain_pi_detail="exited $rc"
+        log_warn "install-projectindex.sh exited $rc (continuing; reported in summary)"
+    fi
 fi
 
-# Step 6: banner
+# Step 6: honest summary (counts failed chains, exits non-zero if any failed).
+n_failed=0
+for st in "$chain_sentinel" "$chain_overmind" "$chain_pi"; do
+    [[ "$st" == "failed" ]] && n_failed=$((n_failed + 1))
+done
+
 echo
-echo "====================================================="
-echo "  Ecosystem installed. You can now:"
+if [[ "$n_failed" -eq 0 ]]; then
+    echo "====================================================="
+    echo "  Ecosystem installed cleanly"
+    echo "====================================================="
+else
+    echo "====================================================="
+    echo "  Install completed with $n_failed component(s) failing -- see below"
+    echo "====================================================="
+fi
+
+print_chain() {
+    local name="$1" status="$2" detail="$3"
+    case "$status" in
+        ok)      sym="[OK]";  ;;
+        failed)  sym="[X]";   ;;
+        *)       sym="[-]";   ;;
+    esac
+    if [[ -n "$detail" ]]; then
+        printf "  %-5s %-14s %-8s -- %s\n" "$sym" "$name" "$status" "$detail"
+    else
+        printf "  %-5s %-14s %-8s\n" "$sym" "$name" "$status"
+    fi
+}
+print_chain "rules+memory" "ok" ""
+print_chain "sentinel"     "$chain_sentinel"     "$chain_sentinel_detail"
+print_chain "overmind"     "$chain_overmind"     "$chain_overmind_detail"
+print_chain "projectindex" "$chain_pi"           "$chain_pi_detail"
+
+echo
+echo "Next steps:"
 echo "    1. Run 'claude' or 'gemini' in any repo"
 echo "    2. Edit ~/.claude/memory/*.md as you learn preferences"
-[[ "$do_sentinel" -eq 0 ]] && echo "    3. Install Sentinel later:  ./scripts/install-sentinel.sh --repo <dir>"
-[[ "$do_overmind" -eq 0 ]] && echo "    4. Install Overmind later:   ./scripts/install-overmind.sh"
-[[ "$do_pi" -eq 0 ]]       && echo "    5. Seed ProjectIndex later:  ./scripts/install-projectindex.sh --root <dir>"
-echo "====================================================="
+[[ "$chain_sentinel" != "ok" ]] && echo "    3. Re-try Sentinel later:  ./scripts/install-sentinel.sh --repo $sentinel_default_repo"
+[[ "$chain_overmind" != "ok" ]] && echo "    4. Re-try Overmind later:  ./scripts/install-overmind.sh"
+[[ "$chain_pi"       != "ok" ]] && echo "    5. Re-try ProjectIndex later:  ./scripts/install-projectindex.sh --root $pi_default"
+if [[ "$n_failed" -gt 0 ]]; then
+    echo
+    echo "If a sub-installer reported a Python error: install python3 and pip"
+    echo "(sudo apt install python3 python3-pip on Debian/Ubuntu/WSL), reopen"
+    echo "your shell, then re-run the failed sub-installer."
+fi
 echo
 
 trap - ERR
 rm -rf "$MANIFEST_DIR"
-exit 0
+# Exit non-zero if any chain failed so callers (bootstrap, CI) can detect.
+[[ "$n_failed" -gt 0 ]] && exit 2 || exit 0

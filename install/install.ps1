@@ -40,14 +40,38 @@ param(
     # Defaults match Mahmood's working layout. Pass your own here to make the
     # rules point at YOUR paths. Leave $GitHubUser empty to keep the literal
     # {{GITHUB_USER}} placeholder (so you can see it and edit in place).
-    [string]$E156Home        = 'C:\E156',
-    [string]$PortfolioRoot   = 'C:\ProjectIndex',
-    [string]$SentinelRoot    = 'C:\Sentinel',
-    [string]$OvermindRoot    = 'C:\overmind',
+    # Default rule-template paths now align with where the installers ACTUALLY
+    # land things on a fresh student machine (under %USERPROFILE%\code\). The
+    # earlier C:\E156 / C:\ProjectIndex / C:\Sentinel / C:\overmind defaults
+    # matched MA's personal layout but caused agents to look at non-existent
+    # paths after a vanilla install -- students would get "C:\ProjectIndex not
+    # found" errors when the rules referred to it. (Reported in code review.)
+    [string]$E156Home        = (Join-Path $env:USERPROFILE 'code\E156'),
+    [string]$PortfolioRoot   = (Join-Path $env:USERPROFILE 'code\ProjectIndex'),
+    [string]$SentinelRoot    = (Join-Path $env:USERPROFILE 'code\Sentinel'),
+    [string]$OvermindRoot    = (Join-Path $env:USERPROFILE 'code\overmind'),
     [string]$GitHubUser      = ''
 )
 
 $ErrorActionPreference = 'Stop'
+
+# --- install-time transcript log ------------------------------------------
+# Write the entire install console to %LOCALAPPDATA%\e156\logs\install-<ts>.log
+# so doctor-report.ps1 has something to read when a student hits a problem.
+# Failure here is non-fatal (Start-Transcript failures shouldn't kill an
+# otherwise-fine install).
+if (-not $Import) {
+    try {
+        $logDir = Join-Path $env:LOCALAPPDATA 'e156\logs'
+        New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+        $logFile = Join-Path $logDir ("install-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
+        Start-Transcript -Path $logFile -Force | Out-Null
+        # Register a teardown so Stop-Transcript runs even on uncaught errors.
+        $script:__transcriptStarted = $true
+    } catch {
+        $script:__transcriptStarted = $false
+    }
+}
 
 # --- self-SHA verification --------------------------------------------------
 if (-not $Import) {
@@ -623,9 +647,17 @@ if ($nFailed -gt 0) {
 }
 Write-Host ""
 
-# Exit 0 even if some chains failed -- base install (rules + memory) succeeded.
-# Sub-failures are reported visibly above and the user can re-run individually.
-exit 0
+# Stop the install transcript before exit (non-fatal if it never started).
+if ($script:__transcriptStarted) {
+    try { Stop-Transcript | Out-Null } catch { }
+}
+
+# Exit non-zero if ANY chain failed, so the .bat wrapper / CI / parent
+# scripts can detect partial-failure rather than reporting a green
+# "INSTALL COMPLETE" off our exit code. Base install (rules + memory)
+# succeeded if we got here; the failure(s) are in the sub-installers,
+# enumerated above. Code 2 = "rules ok, sub-chain failed".
+if ($nFailed -gt 0) { exit 2 } else { exit 0 }
 
 }  # end try
 catch {

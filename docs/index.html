@@ -267,8 +267,19 @@ cd e156-ecosystem-starter
 <ul>
   <li>Python not found &rarr; install from <a href="https://www.python.org/downloads/">python.org</a>, <strong>tick Add Python to PATH</strong>.</li>
   <li>Download blocked &rarr; check your firewall isn't blocking <code>github.com</code>.</li>
-  <li>Install failed mid-way &rarr; the installer writes a log to <code>%LOCALAPPDATA%\e156\logs\</code>. Open an issue with that log attached.</li>
-  <li>SmartScreen blocked the .bat &rarr; click <em>More info</em> &rarr; <em>Run anyway</em> (see note above).</li>
+  <li>Install failed mid-way &rarr; the installer writes a transcript to <code>%LOCALAPPDATA%\e156\logs\install-&lt;ts&gt;.log</code>. Open an issue with that log attached, or run <code>.\scripts\doctor-report.ps1</code> to package it.</li>
+  <li>SmartScreen or Smart App Control blocked the .bat &rarr; switch to the PowerShell one-liner (<a href="#download">top of page</a>) which avoids the unsigned-binary check entirely. SmartScreen's <em>More info &rarr; Run anyway</em> works for it; Smart App Control has no override and the one-liner is the only option there.</li>
+</ul>
+
+<h2 id="security">Security model — what the SHA gate does and doesn't protect</h2>
+
+<p><strong>The SHA gate is for download integrity, not source integrity.</strong> Specifically:</p>
+
+<ul>
+  <li><strong>What it catches:</strong> tampering between the GitHub Pages CDN and your laptop (corrupted download, MitM injection on a hostile network). The installer hashes itself and refuses to run if the bytes don't match the hash file fetched from the same origin.</li>
+  <li><strong>What it does not catch:</strong> compromise of the GitHub repo itself. A bad actor with push access to <code>mahmood726-cyber/e156-ecosystem-starter</code> can update <code>install.ps1</code> AND <code>docs/HASH.txt</code> together and the gate will pass. Any <code>curl|bash</code>-style installer has this property.</li>
+  <li><strong>For high-trust installs</strong> (e.g. a department lab with sensitive data), prefer the git-clone path with a tagged release: <code>git clone --branch v0.x.y --depth 1</code>, verify the tag's GPG signature, then run <code>.\install\install.ps1</code> from the clone. The signed tag is a trust anchor independent of the Pages CDN.</li>
+  <li><strong>What runs locally:</strong> the install touches <code>~/.claude</code>, <code>~/.gemini</code>, <code>~/.codex</code>, and (if you opt in) <code>%USERPROFILE%\code\</code>. It does not require admin rights, does not modify system PATH, and rolls back on failure. The full source is auditable on GitHub.</li>
 </ul>
 
 <div class="footer">
