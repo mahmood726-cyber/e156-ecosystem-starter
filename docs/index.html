@@ -105,12 +105,61 @@ cd e156-ecosystem-starter
 <div class="step"><strong>3.</strong> Answer the Yes/No prompts (all default to Yes). Done in about 2 minutes.</div>
 
 <h2>Prerequisites</h2>
-<ul>
-  <li>Windows 10 or 11</li>
-  <li><a href="https://www.python.org/downloads/">Python 3.11 or newer</a> &mdash; tick "Add Python to PATH" during install</li>
-  <li>At least one AI agent CLI installed (instructions below) &mdash; Gemini CLI is the recommended starting point because Google gives you a generous <strong>free</strong> API key.</li>
-  <li>Internet connection for the install itself (about 50 MB of pip deps if you opt into Sentinel + Overmind)</li>
-</ul>
+
+<p>You'll need three free tools installed before running the bootstrap. <strong>Do these in order</strong> — the bootstrap will fail-closed with a clear message if any are missing.</p>
+
+<h3 id="prereq-python">1. Python 3.11 or newer</h3>
+
+<div class="warning" style="background:#fff5b1; border-left-color:#ffd33d;">
+  <strong>Critical:</strong> Windows 10/11 ships with a Microsoft Store stub at <code>python.exe</code> that <em>looks</em> like Python is installed but actually opens the Store when you try to use it. <strong>You must install real Python from python.org, not the Store.</strong> The bootstrap detects the stub and refuses to continue if it's all you have.
+</div>
+
+<div class="step"><strong>1.</strong> Download from <a href="https://www.python.org/downloads/">python.org/downloads</a> (latest 3.x &mdash; currently 3.13).</div>
+<div class="step"><strong>2.</strong> Run the installer. <strong>On the first screen, tick "Add python.exe to PATH"</strong> &mdash; this is the most-missed step.</div>
+<div class="step"><strong>3.</strong> Click <em>Install Now</em>. It takes about 1 minute.</div>
+<div class="step"><strong>4.</strong> Verify in a <em>new</em> PowerShell window:
+<pre><code>python --version</code></pre>
+You should see <code>Python 3.13.x</code> (or whichever version you installed). If you see "Python was not found" or it opens the Microsoft Store, the Store stub is shadowing your install &mdash; fix it via Windows Settings &rarr; Apps &rarr; Advanced app settings &rarr; App execution aliases &rarr; toggle off <code>python.exe</code> and <code>python3.exe</code>.
+</div>
+
+<h3 id="prereq-r">2. R 4.5 or newer</h3>
+
+<p>Used for cross-validating meta-analysis pools against the gold-standard <code>metafor</code> package. Without R, the validation step in your dashboards will be skipped.</p>
+
+<div class="step"><strong>1.</strong> Download from <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org/bin/windows/base/</a> (the big "Download R x.y.z for Windows" link near the top).</div>
+<div class="step"><strong>2.</strong> Run the installer. Default options are fine. R installs to <code>C:\Program Files\R\R-x.y.z\</code>.</div>
+<div class="step"><strong>3.</strong> Add R to PATH (the installer doesn't do this automatically). In PowerShell:
+<pre><code># find where Rscript was installed
+$rDir = (Get-ChildItem 'C:\Program Files\R' -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName + '\bin'
+[Environment]::SetEnvironmentVariable('Path', "$env:Path;$rDir", 'User')</code></pre>
+Close and reopen PowerShell so the new PATH loads.
+</div>
+<div class="step"><strong>4.</strong> Verify:
+<pre><code>Rscript --version</code></pre>
+You should see <code>Rscript (R) version 4.x.x</code>.
+</div>
+<div class="step"><strong>5.</strong> Install the <code>metafor</code> package (used for validation):
+<pre><code>Rscript -e "install.packages('metafor', repos='https://cloud.r-project.org')"</code></pre>
+Takes about 2 minutes. You only need to do this once per machine.
+</div>
+
+<h3 id="prereq-node">3. Node.js 20 or newer</h3>
+
+<p>Needed because Gemini CLI / Claude Code / Codex are all distributed via npm.</p>
+
+<div class="step"><strong>1.</strong> Download the <strong>LTS</strong> version from <a href="https://nodejs.org/en/download">nodejs.org/en/download</a>.</div>
+<div class="step"><strong>2.</strong> Run the installer with default options.</div>
+<div class="step"><strong>3.</strong> Verify in a new PowerShell window:
+<pre><code>node --version
+npm --version</code></pre>
+You should see <code>v20.x.x</code> or higher.
+</div>
+
+<h3>4. An AI agent CLI</h3>
+<p>See <a href="#agents">"Set up an AI agent CLI"</a> below. Gemini CLI is recommended for new students because Google gives you a generous <strong>free</strong> API key (no credit card needed).</p>
+
+<h3>5. Internet connection</h3>
+<p>About 50 MB of pip deps if you opt into Sentinel + Overmind during install.</p>
 
 <h2 id="agents">Set up an AI agent CLI</h2>
 

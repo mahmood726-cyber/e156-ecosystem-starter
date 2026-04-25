@@ -35,7 +35,50 @@ if (-not $python) {
     Write-Host ""
     return
 }
-Write-Host "  OK — found $($python.Source)"
+
+# Detect the Microsoft Store python.exe stub. On a fresh Windows 10/11 install,
+# 'python' on PATH points to a 0-byte alias under WindowsApps that, when run,
+# prints 'Python was not found ... install from the Microsoft Store' and exits
+# with a non-zero code. Get-Command finds it (it IS on PATH) but it's not a
+# usable Python interpreter — pip install will fail downstream.
+$pyVersion = & $python.Source --version 2>&1
+if ($LASTEXITCODE -ne 0 -or $pyVersion -match 'not found' -or $python.Source -match 'WindowsApps') {
+    # Try one more probe: a real Python prints 'Python X.Y.Z' to stdout.
+    if ($pyVersion -notmatch '^Python \d') {
+        Write-Host ""
+        Write-Host "  ERROR: 'python' on your PATH is the Microsoft Store stub, not a real" -ForegroundColor Red
+        Write-Host "  Python install. Found at:" -ForegroundColor Red
+        Write-Host "    $($python.Source)"
+        Write-Host ""
+        Write-Host "  Fix it (1 minute):"
+        Write-Host "    1. Download Python 3.11 or newer from https://www.python.org/downloads/"
+        Write-Host "    2. Run the installer."
+        Write-Host "    3. CRITICAL: tick 'Add python.exe to PATH' on the first screen."
+        Write-Host "    4. Click Install."
+        Write-Host "    5. Close and reopen PowerShell, then re-run this command."
+        Write-Host ""
+        Write-Host "  Optional: also disable the Store stub in Windows Settings ->"
+        Write-Host "  Apps -> Advanced app settings -> App execution aliases ->"
+        Write-Host "  toggle off 'python.exe' and 'python3.exe'."
+        Write-Host ""
+        return
+    }
+}
+Write-Host "  OK — $pyVersion at $($python.Source)"
+
+# Check for R (recommended but not blocking — used for meta-analysis validation)
+$rscript = Get-Command Rscript -ErrorAction SilentlyContinue
+if ($rscript) {
+    $rVersion = (& $rscript.Source --version 2>&1 | Select-String -Pattern 'R scripting' | Out-String).Trim()
+    if (-not $rVersion) { $rVersion = 'R found' }
+    Write-Host "  OK — $rVersion"
+} else {
+    Write-Host "  WARNING: R / Rscript not on PATH (optional but recommended)" -ForegroundColor Yellow
+    Write-Host "    Install R 4.5+ from https://cran.r-project.org/bin/windows/base/"
+    Write-Host "    Needed for cross-validating meta-analysis pools against the metafor"
+    Write-Host "    package. Install can continue without it; you'll just lose the R"
+    Write-Host "    validation step in your dashboards."
+}
 
 # --- 2. Download main.zip -----------------------------------------------------
 $zipUrl  = 'https://github.com/mahmood726-cyber/e156-ecosystem-starter/archive/refs/heads/main.zip'
