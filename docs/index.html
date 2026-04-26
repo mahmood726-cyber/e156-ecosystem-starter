@@ -44,32 +44,62 @@
   .step { border-left: 3px solid #0366d6; padding: 8px 0 8px 18px; margin: 16px 0; }
   .step strong { color: #0366d6; font-size: 1.1em; }
   .warning { background: #fff5b1; border-left: 3px solid #ffd33d; padding: 12px 16px; border-radius: 4px; margin: 24px 0; font-size: 0.95em; }
-  .footer { margin-top: 80px; color: #999; font-size: 0.9em; text-align: center; }
-  .footer a { color: #555; }
+  .footer { margin-top: 80px; color: #595e63; font-size: 0.9em; text-align: center; }
+  .footer a { color: #444; }
   table { border-collapse: collapse; width: 100%; font-size: 0.95em; }
   th, td { padding: 10px 12px; border-bottom: 1px solid #e1e4e8; text-align: left; vertical-align: top; }
   th { background: #f6f8fa; font-weight: 600; }
+  .skip-link { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+  .skip-link:focus { position: static; width: auto; height: auto; padding: 8px; background: #0366d6; color: white; }
+  .os-tabs { display: flex; gap: 12px; justify-content: center; margin: 24px 0 32px; flex-wrap: wrap; }
+  .os-tab { display: inline-block; padding: 14px 28px; border: 2px solid #0366d6; border-radius: 8px; text-decoration: none; color: #0366d6; font-weight: 600; min-width: 180px; }
+  .os-tab.primary { background: #0366d6; color: white; }
+  .os-tab:hover { background: #f0f6ff; }
+  .os-tab.primary:hover { background: #0255b3; }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to main content</a>
 <header>
   <h1>E156 Ecosystem Starter</h1>
   <p class="sub">Set up your research laptop the way Mahmood does. One click.</p>
 </header>
 
+<main id="main">
+<nav aria-label="Operating system" class="os-tabs">
+  <a class="os-tab primary" href="#install-windows">Windows</a>
+  <a class="os-tab" href="#install-macos-linux">macOS / Linux / WSL</a>
+</nav>
+
+<section id="install-windows" aria-labelledby="install-windows-h">
+<h2 id="install-windows-h" style="margin-top:8px;">Windows</h2>
 <div class="cta-wrap">
   <p style="margin:0 0 16px; font-weight:600; font-size:1.05em;">Recommended &mdash; PowerShell one-liner (works under Smart App Control):</p>
   <pre style="text-align:left; max-width:720px; margin:0 auto;"><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex</code></pre>
-  <div class="cta-hint" style="margin-top:8px;">Open PowerShell (Win+R &rarr; <code>powershell</code> &rarr; Enter), paste, hit Enter.</div>
-  <div style="margin:28px 0 8px; color:#777; font-size:0.85em;">— or —</div>
+  <div class="cta-hint" style="margin-top:8px;"><strong>Open PowerShell, not Command Prompt.</strong> Press Win+R, type <code>powershell</code>, press Enter. Paste the line above, hit Enter. (PowerShell has a blue background; cmd.exe has a black background and won't recognize <code>irm</code>.)</div>
+  <div style="margin:28px 0 8px; color:#595e63; font-size:0.85em;" aria-hidden="true">— or —</div>
   <a class="cta" href="./e156-setup.bat" download="e156-setup.bat" style="font-size:1.05em; padding:14px 32px;">
     Download .bat installer
   </a>
   <div class="cta-hint">Double-click to install. <strong>May be blocked by Smart App Control</strong> &mdash; see workarounds below.</div>
-  <div class="cta-hint" style="margin-top:6px;">macOS / Linux: <a href="./e156-setup.sh" download="e156-setup.sh"><code>e156-setup.sh</code></a></div>
 </div>
+</section>
 
-<div class="warning">
+<section id="install-macos-linux" aria-labelledby="install-macos-linux-h">
+<h2 id="install-macos-linux-h">macOS / Linux / WSL</h2>
+<div class="cta-wrap">
+  <p style="margin:0 0 16px; font-weight:600; font-size:1.05em;">One-liner for any Unix shell:</p>
+  <pre style="text-align:left; max-width:720px; margin:0 auto;"><code>curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash</code></pre>
+  <div class="cta-hint" style="margin-top:8px;">Works on macOS Terminal, Linux distros, and Windows Subsystem for Linux (WSL). Requires <code>python3</code>, <code>curl</code>, and <code>unzip</code> on PATH.</div>
+  <div style="margin:28px 0 8px; color:#595e63; font-size:0.85em;" aria-hidden="true">— or —</div>
+  <a class="cta" href="./e156-setup.sh" download="e156-setup.sh" style="background:#28a745; font-size:1.05em; padding:14px 32px;">
+    Download .sh installer
+  </a>
+  <div class="cta-hint">Then: <code>chmod +x e156-setup.sh &amp;&amp; ./e156-setup.sh</code></div>
+</div>
+</section>
+
+<div class="warning" role="note">
   <strong>If Smart App Control or SmartScreen blocks the .bat:</strong> Windows 11 Smart App Control (different from SmartScreen) blocks unsigned downloaded scripts <strong>without</strong> a "Run anyway" button. Three ways through, in order of effort:
 
   <ol style="margin:10px 0 0 0;">
@@ -88,9 +118,30 @@ cd e156-ecosystem-starter
   <p style="margin:10px 0 0 0;">The source is open and auditable <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/bootstrap.ps1">here</a> (PowerShell) and <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/bootstrap/e156-setup.bat">here</a> (.bat).</p>
 </div>
 
+<h2 id="verify">Verify your install worked</h2>
+
+<p>After the installer says it's done, run this to confirm the rules + memory landed correctly:</p>
+
+<pre><code># Windows PowerShell
+ls $env:USERPROFILE\.claude\rules
+ls $env:USERPROFILE\.claude\memory
+
+# macOS / Linux / WSL
+ls ~/.claude/rules
+ls ~/.claude/memory</code></pre>
+
+<p>You should see four <code>.md</code> files in <code>rules/</code> (e156, lessons, advanced-stats, rules) and <code>MEMORY.md</code> + a <code>templates/</code> folder in <code>memory/</code>.</p>
+
+<p>Then start an agent in any directory and ask it about the rules:</p>
+
+<pre><code>cd ~          # or any folder you want to work in
+gemini "Summarise the rules I have configured in my .claude/rules/ folder"</code></pre>
+
+<p>If the agent answers with E156, lessons, advanced-stats, and rules content, you're set. If it says "I don't see those rules" the agent CLI isn't reading the global config dir &mdash; check <a href="#agents">"Set up an AI agent CLI"</a> below.</p>
+
 <h2>What this installs</h2>
 <table>
-  <tr><th>Layer</th><th>Purpose</th></tr>
+  <tr><th scope="col">Layer</th><th scope="col">Purpose</th></tr>
   <tr><td>AI agent rules</td><td>Four curated rules files that load into Claude Code, Gemini CLI, and Codex automatically.</td></tr>
   <tr><td>Memory scaffold</td><td>Cross-session memory the AI grows as you work. Four types: user profile, working-style rules, project notes, external references.</td></tr>
   <tr><td>AGENTS.md / CLAUDE.md / GEMINI.md / CODEX.md</td><td>Per-agent context files so all three CLIs behave consistently.</td></tr>
@@ -110,7 +161,7 @@ cd e156-ecosystem-starter
 
 <h3 id="prereq-python">1. Python 3.11 or newer</h3>
 
-<div class="warning" style="background:#fff5b1; border-left-color:#ffd33d;">
+<div class="warning" role="note" style="background:#fff5b1; border-left-color:#ffd33d;">
   <strong>Critical:</strong> Windows 10/11 ships with a Microsoft Store stub at <code>python.exe</code> that <em>looks</em> like Python is installed but actually opens the Store when you try to use it. <strong>You must install real Python from python.org, not the Store.</strong> The bootstrap detects the stub and refuses to continue if it's all you have.
 </div>
 
@@ -187,7 +238,7 @@ Close and reopen your terminal so the new variable loads.
 If you get a coherent answer, you're done.
 </div>
 
-<div class="warning">
+<div class="warning" role="note">
   <strong>Free-tier limits (Google AI Studio):</strong> currently <strong>1,500 requests/day</strong> and <strong>1M tokens/min</strong> on Gemini 2.0 Flash, with no card required. That's far more than a typical student week of meta-analysis work. If you hit a quota wall the CLI will tell you to wait until UTC midnight. Quotas change &mdash; check <a href="https://ai.google.dev/gemini-api/docs/rate-limits">ai.google.dev/gemini-api/docs/rate-limits</a>.
 </div>
 
@@ -208,7 +259,7 @@ codex</code></pre>
 <p>Once the agent + rules are installed, you can build small but real research artifacts in a few hours. Pick one. Each is sized for a single sitting and produces something you can put on your CV.</p>
 
 <table>
-  <tr><th>Project</th><th>What you build</th><th>Skill stretched</th></tr>
+  <tr><th scope="col">Project</th><th scope="col">What you build</th><th scope="col">Skill stretched</th></tr>
   <tr>
     <td><strong>1. Mini meta-analysis (E156 paper)</strong></td>
     <td>Pick 3&ndash;5 trials on a topic that interests you (e.g. <em>SGLT2 inhibitors in heart failure</em>, <em>antidepressants in mild depression</em>, <em>ivermectin in COVID</em>). Pool effect sizes with DerSimonian&ndash;Laird, write a 156-word E156 micro-paper, ship as a single-file HTML dashboard on GitHub Pages.</td>
@@ -282,10 +333,12 @@ cd e156-ecosystem-starter
   <li><strong>What runs locally:</strong> the install touches <code>~/.claude</code>, <code>~/.gemini</code>, <code>~/.codex</code>, and (if you opt in) <code>%USERPROFILE%\code\</code>. It does not require admin rights, does not modify system PATH, and rolls back on failure. The full source is auditable on GitHub.</li>
 </ul>
 
-<div class="footer">
+</main>
+
+<footer class="footer" role="contentinfo">
   Source: <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter">github.com/mahmood726-cyber/e156-ecosystem-starter</a>
   &middot; <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/releases">Releases</a>
   &middot; <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/issues">Issues</a>
-</div>
+</footer>
 </body>
 </html>

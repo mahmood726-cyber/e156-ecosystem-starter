@@ -87,6 +87,26 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# --------------------------- transcript log -------------------------------
+# Mirror everything the installer prints to a per-run log file so a student
+# hitting a problem can attach it to an issue (or feed it to doctor-report).
+# Logs land at ~/.local/share/e156/logs/install-<ts>.log on Linux, and at
+# Library/Logs/e156/install-<ts>.log on macOS. Failure to start the log is
+# non-fatal.
+if [[ "$IMPORT" -eq 0 ]]; then
+    case "$(uname -s)" in
+        Darwin) E156_LOG_DIR="${HOME}/Library/Logs/e156" ;;
+        *)      E156_LOG_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/e156/logs" ;;
+    esac
+    if mkdir -p "$E156_LOG_DIR" 2>/dev/null; then
+        E156_LOG_FILE="${E156_LOG_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
+        # Tee stdout+stderr through the log without breaking interactive
+        # prompts: process substitution leaves the controlling tty in place.
+        exec > >(tee -a "$E156_LOG_FILE") 2>&1
+        echo "(transcript: $E156_LOG_FILE)"
+    fi
+fi
+
 # --------------------------- layout + self-SHA ----------------------------
 
 SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || greadlink -f "$0" 2>/dev/null || echo "$0")"
