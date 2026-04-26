@@ -139,6 +139,19 @@ gemini "Summarise the rules I have configured in my .claude/rules/ folder"</code
 
 <p>If the agent answers with E156, lessons, advanced-stats, and rules content, you're set. If it says "I don't see those rules" the agent CLI isn't reading the global config dir &mdash; check <a href="#agents">"Set up an AI agent CLI"</a> below.</p>
 
+<h2 id="next-step">Next step &mdash; produce work at the same quality bar</h2>
+
+<p>Installing the rules is half the job. The other half is using them with the same <strong>method</strong>: <em>brainstorm &rarr; spec-lock &rarr; plan-lock &rarr; TDD &rarr; audit</em>. That workflow is what turns the enforcement machinery (Sentinel, Overmind) into shippable papers instead of just "code that doesn't break."</p>
+
+<p>Read <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"><strong>STUDENT-WORKFLOW.md</strong></a> for:</p>
+
+<ul>
+  <li>The 5-step path to your first E156 paper (with the <code>student new</code> CLI from <a href="https://github.com/mahmood726-cyber/e156-student-starter"><code>e156-student-starter</code></a>).</li>
+  <li>The brainstorm &rarr; spec-lock &rarr; plan-lock &rarr; TDD &rarr; audit method, with the case studies that validated each step.</li>
+  <li>Worked-example repos to clone and reproduce: <a href="https://github.com/mahmood726-cyber/ma-workbench">ma-workbench (sglt2i-hfpef)</a>, <a href="https://github.com/mahmood726-cyber/repro-floor-atlas">repro-floor-atlas</a>, <a href="https://github.com/mahmood726-cyber/responder-floor-atlas">responder-floor-atlas</a>, <a href="https://github.com/mahmood726-cyber/impossible-ma">impossible-ma</a>.</li>
+  <li>How Sentinel + Overmind verdicts function as quality gates (and what <code>UNVERIFIED</code> means &mdash; it is <em>not</em> a release pass).</li>
+</ul>
+
 <h2>What this installs</h2>
 <table>
   <tr><th scope="col">Layer</th><th scope="col">Purpose</th></tr>
@@ -331,6 +344,7 @@ cd e156-ecosystem-starter
   <li><strong>What it does not catch:</strong> compromise of the GitHub repo itself. A bad actor with push access to <code>mahmood726-cyber/e156-ecosystem-starter</code> can update <code>install.ps1</code> AND <code>docs/HASH.txt</code> together and the gate will pass. Any <code>curl|bash</code>-style installer has this property.</li>
   <li><strong>For high-trust installs</strong> (e.g. a department lab with sensitive data), prefer the git-clone path with a tagged release: <code>git clone --branch v0.x.y --depth 1</code>, verify the tag's GPG signature, then run <code>.\install\install.ps1</code> from the clone. The signed tag is a trust anchor independent of the Pages CDN.</li>
   <li><strong>What runs locally:</strong> the install touches <code>~/.claude</code>, <code>~/.gemini</code>, <code>~/.codex</code>, and (if you opt in) <code>%USERPROFILE%\code\</code>. It does not require admin rights, does not modify system PATH, and rolls back on failure. The full source is auditable on GitHub.</li>
+  <li><strong>Sub-installer pinning:</strong> the optional Sentinel and Overmind chains pip-install from GitHub. Both are <strong>pinned by default</strong> (<code>SENTINEL_REF=v0.1.0</code>, <code>OVERMIND_REF=&lt;known-good-SHA&gt;</code>) so a fresh install is reproducible even if upstream <code>main</code> drifts. To opt into bleeding-edge or roll back a release: set <code>$env:SENTINEL_REF</code> / <code>$env:OVERMIND_REF</code> to any branch, tag, or commit SHA before running the chain installer.</li>
 </ul>
 
 </main>

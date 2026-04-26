@@ -49,14 +49,25 @@ assert_real_python() {
     fi
 }
 
+OVERMIND_DEFAULT_REF="4d9ef61"   # 2026-04-26 nightly snapshot. Bump to v0.1.0 once tagged.
+
+overmind_default_source() {
+    # Pinned to a known-good commit so fresh installs are reproducible. Override
+    # with OVERMIND_REF=main (or any branch/tag/SHA) for bleeding edge or
+    # rollback if a release breaks something.
+    local ref="${OVERMIND_REF:-$OVERMIND_DEFAULT_REF}"
+    printf 'git+https://github.com/mahmood726-cyber/overmind.git@%s' "$ref"
+}
+
 install_overmind_package() {
     # BANDWIDTH TRIPWIRE (set 2026-04-21): Overmind + Sentinel fresh-install
     # measured at 4.5 MB total. If a future Overmind release adds heavy deps
     # (numpy / scipy / torch / pandas) and the footprint passes ~50 MB, add a
     # --estimate-mb preflight via `pip install --dry-run --report`. See
     # review-findings.md P0-2.
-    local src="${1:-git+https://github.com/mahmood726-cyber/overmind.git}"
+    local src="${1:-$(overmind_default_source)}"
     assert_real_python || return 1
+    echo "  source: $src"
     "$PYTHON" -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'
 }
 
@@ -98,7 +109,7 @@ if test_overmind_installed; then
 else
     if [[ "$SKIP_PIP" -eq 1 ]]; then
         echo "ERROR: overmind not on PATH and --skip-pip-install passed." >&2
-        echo "  Install: pip install git+https://github.com/mahmood726-cyber/overmind.git" >&2
+        echo "  Install: pip install $(overmind_default_source)" >&2
         exit 1
     fi
     log_step "Installing overmind (first-time setup)"

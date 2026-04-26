@@ -626,19 +626,22 @@ foreach ($chain in $chainStatus.Keys) {
 }
 
 Write-Host ""
-Write-Host "Next steps:"
-Write-Host "    1. Run 'claude' or 'gemini' in any repo"
-Write-Host "    2. Edit ~/.claude/memory/*.md as you learn preferences"
+Write-Host "Next steps:" -ForegroundColor Cyan
+Write-Host "    1. Read STUDENT-WORKFLOW.md  (brainstorm -> spec-lock -> plan-lock -> TDD -> audit method,"
+Write-Host "       worked-example repos, quality gates):" -ForegroundColor DarkGray
+Write-Host "         https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"
+Write-Host "    2. Run 'claude' or 'gemini' in any repo"
+Write-Host "    3. Edit ~/.claude/memory/*.md as you learn preferences"
 if ($chainStatus['sentinel'] -ne 'ok') {
-    Write-Host "    3. Re-try Sentinel later:"
+    Write-Host "    4. Re-try Sentinel later:"
     Write-Host "         .\scripts\install-sentinel.ps1 -Repo $studentCodeRoot\<your-repo>"
 }
 if ($chainStatus['overmind'] -ne 'ok') {
-    Write-Host "    4. Re-try Overmind + TruthCert later:"
+    Write-Host "    5. Re-try Overmind + TruthCert later:"
     Write-Host "         .\scripts\install-overmind.ps1"
 }
 if ($chainStatus['projectindex'] -ne 'ok') {
-    Write-Host "    5. Re-try ProjectIndex later:"
+    Write-Host "    6. Re-try ProjectIndex later:"
     Write-Host "         .\scripts\install-projectindex.ps1 -Root $studentCodeRoot\ProjectIndex"
 }
 if ($nFailed -gt 0) {

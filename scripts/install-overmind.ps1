@@ -56,14 +56,26 @@ function Test-OvermindInstalled {
     return $?
 }
 
+$script:OvermindDefaultRef = '4d9ef61'   # 2026-04-26 nightly snapshot. Bump to v0.1.0 once tagged.
+
+function Get-OvermindDefaultSource {
+    # Pinned to a known-good commit by default so fresh installs are reproducible.
+    # Override with $env:OVERMIND_REF=main (or any branch/tag/SHA) to opt into
+    # bleeding-edge or to roll back if a release breaks something.
+    $ref = if ($env:OVERMIND_REF) { $env:OVERMIND_REF } else { $script:OvermindDefaultRef }
+    return "git+https://github.com/mahmood726-cyber/overmind.git@$ref"
+}
+
 function Install-OvermindPackage {
     [CmdletBinding()]
-    param([string]$Source = 'git+https://github.com/mahmood726-cyber/overmind.git')
+    param([string]$Source)
+    if (-not $Source) { $Source = Get-OvermindDefaultSource }
     # BANDWIDTH TRIPWIRE (set 2026-04-21): Overmind + Sentinel fresh-install
     # measured at 4.5 MB total. If a future Overmind release adds heavy deps
     # (numpy / scipy / torch / pandas) and the footprint passes ~50 MB, add a
     # `--estimate-mb` preflight that runs `pip install --dry-run --report`
     # first and prompts the student to confirm. See review-findings.md P0-2.
+    Write-Host "  source: $Source" -ForegroundColor DarkGray
     & python -m pip install --quiet --disable-pip-version-check $Source 2>&1 | ForEach-Object {
         Write-Host "  $_" -ForegroundColor DarkGray
     }
@@ -123,7 +135,7 @@ if (Test-OvermindInstalled) {
 } else {
     if ($SkipPipInstall) {
         Write-Host "ERROR: overmind not on PATH and -SkipPipInstall passed." -ForegroundColor Red
-        Write-Host "  Install: pip install git+https://github.com/mahmood726-cyber/overmind.git"
+        Write-Host "  Install: pip install $(Get-OvermindDefaultSource)"
         exit 1
     }
     Write-Step "Installing overmind (first-time setup)"

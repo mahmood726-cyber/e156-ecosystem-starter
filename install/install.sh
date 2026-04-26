@@ -494,11 +494,14 @@ print_chain "projectindex" "$chain_pi"           "$chain_pi_detail"
 
 echo
 echo "Next steps:"
-echo "    1. Run 'claude' or 'gemini' in any repo"
-echo "    2. Edit ~/.claude/memory/*.md as you learn preferences"
-[[ "$chain_sentinel" != "ok" ]] && echo "    3. Re-try Sentinel later:  ./scripts/install-sentinel.sh --repo $sentinel_default_repo"
-[[ "$chain_overmind" != "ok" ]] && echo "    4. Re-try Overmind later:  ./scripts/install-overmind.sh"
-[[ "$chain_pi"       != "ok" ]] && echo "    5. Re-try ProjectIndex later:  ./scripts/install-projectindex.sh --root $pi_default"
+echo "    1. Read STUDENT-WORKFLOW.md  (brainstorm -> spec-lock -> plan-lock -> TDD -> audit method,"
+echo "       worked-example repos, quality gates):"
+echo "         https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"
+echo "    2. Run 'claude' or 'gemini' in any repo"
+echo "    3. Edit ~/.claude/memory/*.md as you learn preferences"
+[[ "$chain_sentinel" != "ok" ]] && echo "    4. Re-try Sentinel later:  ./scripts/install-sentinel.sh --repo $sentinel_default_repo"
+[[ "$chain_overmind" != "ok" ]] && echo "    5. Re-try Overmind later:  ./scripts/install-overmind.sh"
+[[ "$chain_pi"       != "ok" ]] && echo "    6. Re-try ProjectIndex later:  ./scripts/install-projectindex.sh --root $pi_default"
 if [[ "$n_failed" -gt 0 ]]; then
     echo
     echo "If a sub-installer reported a Python error: install python3 and pip"

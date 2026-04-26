@@ -46,3 +46,18 @@ Describe "Get-SentinelBypassLogPath resolves under the user home" {
         $p | Should -BeLike "$userHome*"
     }
 }
+
+Describe "Get-SentinelDefaultSource pins the supply chain (P0)" {
+    BeforeEach { Remove-Item Env:SENTINEL_REF -ErrorAction SilentlyContinue }
+    AfterEach  { Remove-Item Env:SENTINEL_REF -ErrorAction SilentlyContinue }
+
+    It "defaults to a tagged release (not bare main)" {
+        $src = Get-SentinelDefaultSource
+        $src | Should -Match '^git\+https://github\.com/mahmood726-cyber/Sentinel\.git@v\d'
+    }
+
+    It "honours SENTINEL_REF override (rollback / bleeding-edge)" {
+        $env:SENTINEL_REF = 'main'
+        Get-SentinelDefaultSource | Should -Be 'git+https://github.com/mahmood726-cyber/Sentinel.git@main'
+    }
+}

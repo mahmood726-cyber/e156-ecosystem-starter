@@ -62,11 +62,22 @@ Optional: also disable the Store alias in
     }
 }
 
+$script:SentinelDefaultRef = 'v0.1.0'
+
+function Get-SentinelDefaultSource {
+    # Pinned to a tagged release by default so a fresh install is reproducible.
+    # Override with $env:SENTINEL_REF=main (or any branch/tag/SHA) to opt into
+    # bleeding-edge or to roll back if a future release breaks something.
+    $ref = if ($env:SENTINEL_REF) { $env:SENTINEL_REF } else { $script:SentinelDefaultRef }
+    return "git+https://github.com/mahmood726-cyber/Sentinel.git@$ref"
+}
+
 function Install-SentinelPackage {
     [CmdletBinding()]
     param(
-        [string]$Source = 'git+https://github.com/mahmood726-cyber/Sentinel.git'
+        [string]$Source
     )
+    if (-not $Source) { $Source = Get-SentinelDefaultSource }
     # Non-interactive pip install. Students on shared machines don't need admin
     # if they're in a venv or using --user; we let pip pick.
     #
@@ -77,6 +88,7 @@ function Install-SentinelPackage {
     # `--estimate-mb` preflight here that runs `pip install --dry-run --report`
     # against $Source first and prompts the student to confirm before
     # downloading. See review-findings.md P0-2 for the original measurement.
+    Write-Host "  source: $Source" -ForegroundColor DarkGray
     & python -m pip install --quiet --disable-pip-version-check $Source 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
     if ($LASTEXITCODE -ne 0) {
         throw "pip install failed (exit $LASTEXITCODE). Check your Python/pip setup."
@@ -132,7 +144,7 @@ if (Test-SentinelInstalled) {
 } else {
     if ($SkipPipInstall) {
         Write-Host "ERROR: sentinel not on PATH and -SkipPipInstall passed." -ForegroundColor Red
-        Write-Host "  Install manually: pip install git+https://github.com/mahmood726-cyber/Sentinel.git"
+        Write-Host "  Install manually: pip install $(Get-SentinelDefaultSource)"
         exit 1
     }
     Write-Step "Installing sentinel from GitHub (first-time setup)"

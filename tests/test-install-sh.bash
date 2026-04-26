@@ -129,6 +129,23 @@ start "new_truthcert_hmac_key produces a 64-hex-char string"
 hex="$(bash -c "source '$ROOT/scripts/install-overmind.sh' --import && new_truthcert_hmac_key")"
 [[ ${#hex} -eq 64 && "$hex" =~ ^[0-9a-f]{64}$ ]] && ok
 
+# Describe: supply-chain pinning (P0 — fresh installs must be reproducible)
+start "sentinel_default_source pins to a tagged release by default"
+default_src="$(bash -c "source '$ROOT/scripts/install-sentinel.sh' --import && sentinel_default_source")"
+[[ "$default_src" == git+https://github.com/mahmood726-cyber/Sentinel.git@v* ]] && ok
+
+start "sentinel_default_source honours SENTINEL_REF override"
+override_src="$(bash -c "export SENTINEL_REF=main; source '$ROOT/scripts/install-sentinel.sh' --import; sentinel_default_source")"
+assert_eq "$override_src" "git+https://github.com/mahmood726-cyber/Sentinel.git@main" && ok
+
+start "overmind_default_source pins to a SHA-or-tag by default"
+default_src="$(bash -c "source '$ROOT/scripts/install-overmind.sh' --import && overmind_default_source")"
+[[ "$default_src" =~ ^git\+https://github\.com/mahmood726-cyber/overmind\.git@[a-zA-Z0-9._-]+$ ]] && ok
+
+start "overmind_default_source honours OVERMIND_REF override"
+override_src="$(bash -c "export OVERMIND_REF=main; source '$ROOT/scripts/install-overmind.sh' --import; overmind_default_source")"
+assert_eq "$override_src" "git+https://github.com/mahmood726-cyber/overmind.git@main" && ok
+
 start "install-projectindex.sh dot-sources cleanly"
 bash -c "source '$ROOT/scripts/install-projectindex.sh' --import && declare -F write_index_markdown_template write_reconcile_script > /dev/null" && ok
 

@@ -45,6 +45,22 @@ Describe "Overmind: Set-TruthCertHmacKey" {
     }
 }
 
+Describe "Overmind: Get-OvermindDefaultSource pins the supply chain (P0)" {
+    BeforeEach { Remove-Item Env:OVERMIND_REF -ErrorAction SilentlyContinue }
+    AfterEach  { Remove-Item Env:OVERMIND_REF -ErrorAction SilentlyContinue }
+
+    It "defaults to a SHA-or-tag (not bare main)" {
+        $src = Get-OvermindDefaultSource
+        $src | Should -Match '^git\+https://github\.com/mahmood726-cyber/overmind\.git@[A-Za-z0-9._-]+$'
+        $src | Should -Not -Match '@main$'
+    }
+
+    It "honours OVERMIND_REF override (rollback / bleeding-edge)" {
+        $env:OVERMIND_REF = 'main'
+        Get-OvermindDefaultSource | Should -Be 'git+https://github.com/mahmood726-cyber/overmind.git@main'
+    }
+}
+
 Describe "ProjectIndex: Get-DefaultProjectIndexRoot" {
     It "returns a filesystem-absolute path" {
         $r = Get-DefaultProjectIndexRoot

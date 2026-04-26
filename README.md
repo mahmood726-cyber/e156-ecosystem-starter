@@ -5,8 +5,13 @@ Bootstrap Mahmood's quality-dev ecosystem on a student's laptop.
 This is not a single tool. It is the **install layer** that turns a fresh
 Windows machine into the same environment he uses to ship E156 papers and
 meta-analysis tools: agent CLIs (Claude Code / Gemini CLI / Codex) plus
-curated rules, memory scaffolding, and (coming in later phases) Sentinel,
-TruthCert, and Overmind-lite.
+curated rules, memory scaffolding, Sentinel pre-push hook, Overmind
+verifier, and ProjectIndex registry.
+
+> **New here?** After you finish the install, read [`STUDENT-WORKFLOW.md`](STUDENT-WORKFLOW.md)
+> for the brainstorm→spec-lock→plan-lock→TDD→audit method, the worked-example
+> repos to clone, and how the Sentinel + Overmind quality gates fit together.
+> The rules give you Mahmood's enforcement; the workflow doc gives you his method.
 
 ## What you get
 
@@ -67,9 +72,17 @@ Flags:
 ```
 
 This `pip install`s the [Sentinel](https://github.com/mahmood726-cyber/Sentinel)
-rule engine from its GitHub repo (if not already present on PATH) and writes a
+rule engine **pinned to a tagged release** (`v0.1.0` by default) and writes a
 pre-push hook at `<repo>\.git\hooks\pre-push`. From then on, every `git push`
 runs the 20-rule scan in ~2 seconds and blocks on P0 violations.
+
+To opt into bleeding-edge or roll back to a known-good ref:
+
+```powershell
+$env:SENTINEL_REF = 'main';   .\scripts\install-sentinel.ps1 -Repo .   # bleeding edge
+$env:SENTINEL_REF = 'v0.0.9'; .\scripts\install-sentinel.ps1 -Repo .   # rollback
+$env:SENTINEL_REF = $null   # restore default (v0.1.0)
+```
 
 Flags:
 - `-Mode warn` (default) — log findings, allow push
@@ -91,10 +104,11 @@ be redirected to `NUL`.
 ```
 
 This `pip install`s [overmind](https://github.com/mahmood726-cyber/overmind)
-(which bundles the TruthCert engine), generates a 64-hex-char
-`TRUTHCERT_HMAC_KEY` if you don't already have one, saves it as a User env
-var, and runs `overmind meta-verify` as a canary. From then on you can
-verify any repo with:
+(which bundles the TruthCert engine) **pinned to a known-good commit SHA**,
+generates a 64-hex-char `TRUTHCERT_HMAC_KEY` if you don't already have one,
+saves it as a User env var, and runs `overmind meta-verify` as a canary.
+Override the pin via `$env:OVERMIND_REF = 'main'` (or any branch/tag/SHA).
+From then on you can verify any repo with:
 
 ```powershell
 overmind scan --repo C:\Projects\my-paper
