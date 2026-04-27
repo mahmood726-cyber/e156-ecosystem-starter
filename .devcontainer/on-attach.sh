@@ -1,35 +1,58 @@
 #!/usr/bin/env bash
 # on-attach.sh -- runs every time the user opens a new terminal in the
-# Codespace. Greets them and surfaces the agent handoff prompt path.
-#
-# Idempotent and cheap: just a few echos. No filesystem writes.
+# Codespace. Greets them, surfaces what's installed, and tells them the
+# single next action: paste the handoff prompt into an agent.
 
 set -u
+
+# Detect what actually landed (the build may have failed individual components
+# even with FULL); show the student the truth, not a marketing claim.
+have() { command -v "$1" >/dev/null 2>&1 && echo "  [OK]   $1" || echo "  [--]   $1 (not on PATH)"; }
+file_present() {
+    local path="$1" label="$2"
+    if [[ -e "$path" ]]; then echo "  [OK]   $label"
+    else echo "  [--]   $label (missing: $path)"
+    fi
+}
 
 cat <<'BANNER'
 
 =====================================================
-  E156 Ecosystem Starter -- ready
+  E156 Ecosystem Starter -- ready to use
 =====================================================
 
-Rules + memory are installed in ~/.claude, ~/.gemini, ~/.codex.
+What just got installed in this codespace:
+BANNER
 
-NEXT STEP -- finish the install with an AI agent:
+file_present "$HOME/.claude/rules/rules.md"      "rules pack          (~/.claude/rules/)"
+file_present "$HOME/.claude/memory/MEMORY.md"    "memory scaffold     (~/.claude/memory/)"
+file_present "$HOME/code/my-first-repo/.git/hooks/pre-push" "Sentinel hook       (~/code/my-first-repo/)"
+file_present "$HOME/.config/e156/truthcert-hmac-key"  "TruthCert HMAC key  (~/.config/e156/)"
+file_present "$HOME/code/ProjectIndex/INDEX.md"  "ProjectIndex seed   (~/code/ProjectIndex/)"
+have overmind
+have sentinel
+have gemini
+have claude
 
-  1. Run an agent in this terminal (Claude Code is pre-installed):
-       claude
+cat <<'BANNER'
 
-  2. When it prompts you, paste the contents of:
+ONE STEP LEFT -- run an agent and paste the handoff prompt:
+
+  1. Pick an agent (gemini is free, browser-OAuth login):
+       gemini       # free, sign in with Google
+       claude       # paid, needs ANTHROPIC_API_KEY
+
+  2. The agent will ask what to do. Paste the contents of:
        ~/.config/e156/handoff.md
 
-  3. Hit Enter. The agent diagnoses prereqs, smoke-tests Sentinel/Overmind
-     if you want them, and scaffolds your first E156 paper.
+     Quick way to copy it:
+       cat ~/.config/e156/handoff.md
 
-Tip: open the file with `cat ~/.config/e156/handoff.md` and copy the text,
-or click it in the file explorer on the left.
+  3. Hit Enter. The agent diagnoses any missing prereqs, smoke-tests
+     Sentinel + Overmind, and scaffolds your first E156 paper.
 
-If anything fails: open an issue with what you tried. The repo is at
-github.com/mahmood726-cyber/e156-ecosystem-starter
+The handoff prompt is also visible in the file explorer on the left,
+under .config/e156/handoff.md.
 
 =====================================================
 

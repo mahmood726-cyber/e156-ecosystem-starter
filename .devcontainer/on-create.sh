@@ -1,42 +1,91 @@
 #!/usr/bin/env bash
 # on-create.sh -- runs once when the Codespace is built.
 #
-# Strategy: just the base install (rules + memory + AGENTS.md across .claude
-# / .gemini / .codex). No Sentinel hook, no Overmind pip-install, no
-# ProjectIndex seed. Those are opt-in via the agent handoff prompt because:
-#   - Codespaces are ephemeral; an installed sentinel hook on /workspaces is
-#     gone the next session
-#   - Pip-installing 5+ MB of dependencies on every container build is waste
-#   - A non-coder student's first session should be "rules ready, agent ready,
-#     start writing", not "wait 90 seconds for pip"
+# Goal: when the student opens the codespace, ALL of Mahmood's quality-dev
+# stack is already installed and ready. Not just rules + memory -- also
+# Sentinel pre-push hook, Overmind verifier (with TruthCert HMAC key
+# generated and persisted), ProjectIndex seed, and at least one agent CLI
+# on PATH so the handoff prompt works the moment they hit Enter.
 #
-# Failure non-fatal: the rules + memory copy is what matters. If something
-# downstream fails the container still boots.
+# Failure non-fatal where reasonable: a sub-installer that fails should NOT
+# take down the container build. Print a warning, continue. The end-of-build
+# banner (printed by install.sh itself) reports per-component status.
 
 set -u
 cd "$(dirname "$0")/.."   # repo root
 
 echo
-echo "==> E156 Ecosystem Starter -- Codespaces bootstrap"
+echo "==> E156 Ecosystem Starter -- Codespaces full bootstrap"
+echo "    Stack: rules + memory + Sentinel + Overmind + ProjectIndex + agent CLIs"
 echo
 
-# Make sure install.sh is executable (the repo may have been cloned by the
-# Codespaces clone step rather than by us, which doesn't preserve +x).
-chmod +x install/install.sh scripts/*.sh 2>/dev/null || true
+# Make every shipped script executable. The repo may have been cloned by the
+# Codespaces clone step, which doesn't always preserve +x.
+chmod +x install/install.sh scripts/*.sh .devcontainer/*.sh 2>/dev/null || true
 
-# Run the base install non-interactively. --non-interactive skips the
-# Sentinel/Overmind/ProjectIndex chain prompts; we do not want an unattended
-# 'pip install' on a fresh Codespace.
-bash install/install.sh --non-interactive --github-user "${GITHUB_USER:-{{GITHUB_USER}}}" || {
-    echo "==> WARNING: base install reported non-zero exit; rules+memory may be partial." >&2
-}
+# --- Resolve the GitHub username --------------------------------------------
+# install.sh --full needs --github-user passed non-interactively (otherwise
+# it prompts and hangs the codespace build). Try several Codespaces-provided
+# env vars; final fall-through is the gh CLI which is pre-authed via
+# $GITHUB_TOKEN. If all of those fail, leave the {{GITHUB_USER}} placeholder
+# in the rules and the student edits it later.
+gh_user=""
+for candidate in "${GITHUB_USER:-}" "${GITHUB_REPOSITORY_OWNER:-}" ; do
+    if [[ -n "$candidate" ]]; then gh_user="$candidate"; break; fi
+done
+if [[ -z "$gh_user" ]] && command -v gh >/dev/null 2>&1; then
+    gh_user="$(gh api user --jq .login 2>/dev/null || true)"
+fi
+gh_user="${gh_user:-{{GITHUB_USER}}}"
+echo "==> GitHub user resolved as: $gh_user"
 
-# Stage the agent handoff prompt so it appears every time the student
-# attaches a terminal (see on-attach.sh).
-mkdir -p ~/.config/e156
-cp scripts/gemini-handoff-prompt.md ~/.config/e156/handoff.md
+# --- Pre-install at least one free agent CLI --------------------------------
+# Gemini CLI is the right default for student users -- generous free tier,
+# Google account login, no API key to pay for. Claude Code is also installed
+# for users with an Anthropic API key. Both are best-effort: a failed npm
+# install must NOT block the rest of the bootstrap.
+echo
+echo "==> Installing agent CLIs (gemini, claude)..."
+if command -v npm >/dev/null 2>&1; then
+    npm install -g @google/gemini-cli @anthropic-ai/claude-code 2>&1 \
+        | sed 's/^/    /' \
+        || echo "    WARNING: npm install of agent CLIs failed; continue without."
+else
+    echo "    WARNING: npm not on PATH; skipping agent-CLI install."
+fi
+
+# --- Run the full install chain ---------------------------------------------
+# --full chains Sentinel (into ~/code/my-first-repo, with git init), Overmind
+# (pip-install + TRUTHCERT_HMAC_KEY generation), and ProjectIndex (seed at
+# ~/code/ProjectIndex). It exits 0 if everything succeeded or 2 if any chain
+# failed; either way we want to keep going so the student gets at least a
+# partial environment.
+echo
+echo "==> Running install.sh --full (this takes ~60-90 seconds)"
+echo
+bash install/install.sh --full --github-user "$gh_user" || \
+    echo "==> install.sh --full reported partial failure; see banner above for which components are ok."
+
+# --- Persist the TruthCert HMAC key across terminals ------------------------
+# install-overmind.sh writes the key file to ~/.config/e156/truthcert-hmac-key
+# (mode 600). For the var to be in scope when the student opens a fresh
+# terminal, append an export line to ~/.bashrc -- once, idempotent.
+key_file="${HOME}/.config/e156/truthcert-hmac-key"
+if [[ -f "$key_file" ]] && ! grep -q "TRUTHCERT_HMAC_KEY" "${HOME}/.bashrc" 2>/dev/null; then
+    {
+        echo ""
+        echo "# E156 ecosystem-starter: TruthCert HMAC key (generated by install-overmind.sh)"
+        echo "if [ -f \"$key_file\" ]; then"
+        echo "    export TRUTHCERT_HMAC_KEY=\"\$(cat \"$key_file\")\""
+        echo "fi"
+    } >> "${HOME}/.bashrc"
+    echo "==> Persisted TRUTHCERT_HMAC_KEY export to ~/.bashrc"
+fi
+
+# --- Stage the handoff prompt for the on-attach banner ----------------------
+mkdir -p "${HOME}/.config/e156"
+cp scripts/gemini-handoff-prompt.md "${HOME}/.config/e156/handoff.md"
 
 echo
-echo "==> Base install complete. The integrated terminal will show your"
-echo "    next steps when you open it."
+echo "==> Codespace ready. The terminal will print your next steps when you open it."
 echo

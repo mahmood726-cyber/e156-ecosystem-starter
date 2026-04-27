@@ -29,11 +29,20 @@ verifier, and ProjectIndex registry.
 
 ## Quick start
 
-### Easiest — open in your browser, zero install
+### Easiest — open in your browser, full install, zero terminal
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mahmood726-cyber/e156-ecosystem-starter?quickstart=1)
 
-Click that badge. A free GitHub-hosted workspace opens in your browser with rules + memory already installed and Claude Code pre-installed. No PowerShell, no terminal experience, no admin rights required. Free tier: 60 hours/month — enough for a first paper. See [`.devcontainer/`](.devcontainer/) for the exact configuration.
+Click that badge. A free GitHub-hosted workspace opens in your browser with **the full system pre-installed**:
+
+- Four rules files in `~/.claude/`, `~/.gemini/`, `~/.codex/`
+- Memory scaffold (starter `MEMORY.md` + four templates)
+- **Sentinel** pre-push hook in `~/code/my-first-repo/`
+- **Overmind** verifier on PATH with a `TRUTHCERT_HMAC_KEY` generated and persisted to `~/.bashrc`
+- **ProjectIndex** seed at `~/code/ProjectIndex/`
+- **Gemini CLI** + **Claude Code CLI** pre-installed (`gemini` is free; `claude` needs an Anthropic key)
+
+No PowerShell, no terminal experience, no admin rights, no API key required for Gemini. Build takes ~90 seconds. Free tier: 60 hours/month — enough for a first paper. See [`.devcontainer/`](.devcontainer/) for the exact orchestration: `on-create.sh` runs `install.sh --full --github-user $GH_USER`; `on-attach.sh` prints a status report every time a terminal opens so the student knows what's actually live.
 
 ### Local install — Windows / macOS / Linux / WSL
 
