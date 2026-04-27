@@ -106,7 +106,7 @@ fi
 mkdir -p "${HOME}/.config/e156"
 locale="${E156_LANG:-${LANG:-en}}"
 locale="$(printf '%s' "$locale" | cut -c1-2 | tr 'A-Z' 'a-z')"
-case "$locale" in en|fr|pt|ar) ;; *) locale=en ;; esac
+case "$locale" in en|fr|pt|ar|ur) ;; *) locale=en ;; esac
 prompt_src="scripts/gemini-handoff-prompt.${locale}.md"
 [[ -f "$prompt_src" ]] || prompt_src="scripts/gemini-handoff-prompt.en.md"
 cp "$prompt_src" "${HOME}/.config/e156/handoff.md"

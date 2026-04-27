@@ -42,6 +42,9 @@ assert_eq "LANG=pt_BR.UTF-8 -> pt" "pt" "$(e156_resolve_handoff_locale)"
 clear_locale; export LANG=ar_EG.UTF-8
 assert_eq "LANG=ar_EG.UTF-8 -> ar" "ar" "$(e156_resolve_handoff_locale)"
 
+clear_locale; export LANG=ur_PK.UTF-8
+assert_eq "LANG=ur_PK.UTF-8 -> ur" "ur" "$(e156_resolve_handoff_locale)"
+
 clear_locale; export LANG=fr_FR.UTF-8 LC_ALL=pt_BR.UTF-8
 assert_eq "LC_ALL beats LANG (POSIX canonical precedence)" "pt" "$(e156_resolve_handoff_locale)"
 
@@ -73,6 +76,12 @@ assert_eq "pt -> .pt.md path" "$expected_pt" "$(e156_resolve_handoff_prompt_path
 clear_locale; export LANG=ar_EG.UTF-8
 expected_ar="$REPO_ROOT/scripts/gemini-handoff-prompt.ar.md"
 assert_eq "ar -> .ar.md path" "$expected_ar" "$(e156_resolve_handoff_prompt_path "$REPO_ROOT")"
+
+clear_locale; export LANG=ur_PK.UTF-8
+expected_ur="$REPO_ROOT/scripts/gemini-handoff-prompt.ur.md"
+actual_ur="$(e156_resolve_handoff_prompt_path "$REPO_ROOT")"
+assert_eq "ur -> .ur.md path" "$expected_ur" "$actual_ur"
+[[ -f "$actual_ur" ]] && ok "  resolved Urdu file exists" || ko "  resolved Urdu file exists" "file" "missing"
 
 # Force a locale whose file doesn't exist; expect English fallback.
 clear_locale

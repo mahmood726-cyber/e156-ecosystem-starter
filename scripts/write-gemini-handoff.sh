@@ -28,7 +28,7 @@ e156_resolve_handoff_locale() {
     fi
     local code
     code="$(printf '%s' "$raw" | cut -c1-2 | tr 'A-Z' 'a-z')"
-    case "$code" in en|fr|pt|ar) printf '%s' "$code" ;; *) printf 'en' ;; esac
+    case "$code" in en|fr|pt|ar|ur) printf '%s' "$code" ;; *) printf 'en' ;; esac
 }
 
 # Resolves the on-disk path, falling back to English if the localised file

@@ -40,7 +40,7 @@ function Get-HandoffPromptLocale {
            elseif ($Lang)  { $Lang }
            else            { 'en' }
     $code = $raw.Substring(0, [Math]::Min(2, $raw.Length)).ToLower()
-    if ($code -in @('en','fr','pt','ar')) { return $code }
+    if ($code -in @('en','fr','pt','ar','ur')) { return $code }
     return 'en'
 }
 

@@ -34,6 +34,10 @@ Describe "Get-HandoffPromptLocale precedence" {
         $env:LANG = 'ar_EG.UTF-8'
         Get-HandoffPromptLocale | Should -Be 'ar'
     }
+    It "picks 'ur' from LANG=ur_PK.UTF-8" {
+        $env:LANG = 'ur_PK.UTF-8'
+        Get-HandoffPromptLocale | Should -Be 'ur'
+    }
     It "LC_ALL beats LANG (POSIX canonical precedence)" {
         $env:LANG = 'fr_FR.UTF-8'
         $env:LC_ALL = 'pt_BR.UTF-8'
@@ -78,6 +82,12 @@ Describe "Get-HandoffPromptPath returns the right localised file" {
         $env:LANG = 'ar_EG.UTF-8'
         $p = Get-HandoffPromptPath -StarterRoot $script:starterRoot
         $p | Should -Match 'gemini-handoff-prompt\.ar\.md$'
+    }
+    It "returns .ur.md when locale=ur and file exists" {
+        $env:LANG = 'ur_PK.UTF-8'
+        $p = Get-HandoffPromptPath -StarterRoot $script:starterRoot
+        $p | Should -Match 'gemini-handoff-prompt\.ur\.md$'
+        Test-Path $p | Should -BeTrue
     }
     It "falls back to .en.md when localised file is missing" {
         # Force a locale whose file does NOT exist by passing it directly

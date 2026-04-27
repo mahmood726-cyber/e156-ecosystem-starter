@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E156 Ecosystem Starter — فوری آغاز (اردو)</title>
+<meta name="description" content="اپنے ریسرچ لیپ ٹاپ کو محمود کے ڈیولپمنٹ ماحول کے ساتھ ترتیب دیں: AI ایجنٹ کے قواعد، یادداشت، Sentinel، Overmind۔ ایک کمانڈ۔">
+<link rel="alternate" hreflang="en" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/">
+<link rel="alternate" hreflang="fr" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/fr/">
+<link rel="alternate" hreflang="pt" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/pt/">
+<link rel="alternate" hreflang="ar" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/ar/">
+<link rel="alternate" hreflang="ur" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/ur/">
+<link rel="alternate" hreflang="x-default" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/">
+<style>
+  * { box-sizing: border-box; }
+  /* Noto Nastaliq Urdu renders Urdu in the traditional Nastaliq style; fall back to system Arabic font then sans-serif. Larger line-height because Nastaliq stacks vertically. */
+  body { font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Tahoma", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; max-width: 780px; margin: 0 auto; padding: 48px 24px 96px; color: #1a1a1a; line-height: 2.0; }
+  header { text-align: center; margin-bottom: 32px; }
+  h1 { font-size: 2.4em; margin: 0 0 0.3em; letter-spacing: 0; line-height: 1.6; }
+  p.sub { color: #555; font-size: 1.1em; margin: 0; }
+  h2 { font-size: 1.4em; margin-top: 40px; border-bottom: 1px solid #e1e4e8; padding-bottom: 6px; line-height: 1.7; }
+  /* Code stays LTR even on RTL pages -- shell commands aren't bidirectional */
+  code, pre { direction: ltr; text-align: left; unicode-bidi: embed; font-family: "SF Mono", "Consolas", monospace; }
+  code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+  pre { background: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.9em; }
+  pre code { background: none; padding: 0; }
+  @media (max-width: 480px) { pre { white-space: pre-wrap; word-break: break-all; } }
+  .lang-picker { text-align: center; margin: 16px 0 24px; font-size: 0.95em; direction: ltr; }
+  .lang-picker a { display: inline-block; padding: 12px 14px; margin: 2px; color: #0366d6; text-decoration: none; min-width: 44px; min-height: 44px; line-height: 1.3; }
+  .lang-picker a[aria-current="page"] { font-weight: 600; color: #1a1a1a; text-decoration: underline; }
+  .lang-sep { color: #999; padding: 0 4px; }
+  .skip-link { position: absolute; right: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+  .skip-link:focus { position: static; width: auto; height: auto; padding: 8px; background: #0366d6; color: white; }
+  .notice { background: #fff5b1; border-right: 3px solid #ffd33d; padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 0.95em; line-height: 1.8; }
+  .footer { margin-top: 60px; color: #595e63; font-size: 0.9em; text-align: center; }
+  .footer a { color: #444; }
+  ul { padding-right: 22px; padding-left: 0; }
+  .cloud-banner { background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; padding: 24px; border-radius: 10px; margin: 0 0 28px; text-align: center; line-height: 1.8; }
+  .cloud-banner h2 { color: white; border: none; margin: 0 0 8px; padding: 0; font-size: 1.3em; }
+  .cloud-banner p { margin: 0 0 16px; }
+  .cloud-banner a.codespace-cta { display: inline-block; background: white; color: #1a7f37; font-weight: 700; padding: 12px 28px; border-radius: 8px; text-decoration: none; }
+  pre { position: relative; }
+  .copy-btn { position: absolute; top: 6px; left: 6px; background: white; border: 1px solid #d0d7de; border-radius: 4px; padding: 4px 10px; font-size: 0.75em; color: #1a1a1a; cursor: pointer; opacity: 0.55; font-family: inherit; direction: ltr; }
+  pre:hover .copy-btn { opacity: 1; }
+  .copy-btn[data-state="copied"] { background: #2da44e; color: white; border-color: #2da44e; opacity: 1; }
+  @media (max-width: 720px) { .copy-btn { opacity: 1; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">مرکزی مواد پر جائیں</a>
+<nav class="lang-picker" aria-label="دستیاب زبانیں">
+  <a href="../" hreflang="en" lang="en"><bdi>English</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="../fr/" hreflang="fr" lang="fr"><bdi>Français</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="../pt/" hreflang="pt" lang="pt"><bdi>Português</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="../ar/" hreflang="ar" lang="ar"><bdi>العربية</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="./" hreflang="ur" lang="ur" aria-current="page"><bdi>اردو</bdi></a>
+</nav>
+
+<header>
+  <h1>E156 Ecosystem Starter</h1>
+  <p class="sub">اپنے ریسرچ لیپ ٹاپ کو محمود کے انداز میں ترتیب دیں۔ ایک کلک۔</p>
+</header>
+
+<main id="main">
+
+<section class="cloud-banner">
+  <h2>سب سے آسان طریقہ — براؤزر میں کھولیں، مکمل انسٹالیشن، کوئی ٹرمنل نہیں</h2>
+  <p>اگر آپ نے کبھی ٹرمنل استعمال نہیں کی، اس بٹن پر کلک کریں۔ ایک مفت GitHub ورک اسپیس کھلے گی جس میں <strong>پورا سسٹم پہلے سے انسٹال ہے</strong>: قواعد، یادداشت، Sentinel، Overmind، اور Gemini CLI۔ آپ کے کمپیوٹر پر کچھ بھی انسٹال نہیں ہوتا۔</p>
+  <a class="codespace-cta" href="https://codespaces.new/mahmood726-cyber/e156-ecosystem-starter?quickstart=1" rel="noopener">
+    GitHub Codespaces میں کھولیں &larr;
+  </a>
+</section>
+
+<div class="notice" role="note">
+  <strong>نوٹ:</strong> یہ اردو میں مختصر ورژن ہے۔ <a href="../">مکمل انگریزی ورژن</a> میں تمام تفصیلی ہدایات موجود ہیں (پیشگی شرائط، خرابیوں کا حل، حفاظتی ماڈل، مثالی پراجیکٹس)۔ نیچے دی گئی انسٹالیشن کمانڈز تمام زبانوں میں ایک جیسی ہیں۔
+</div>
+
+<h2>انسٹالیشن — Windows</h2>
+<p><strong>PowerShell</strong> کھولیں (Command Prompt نہیں)۔ Win+R دبائیں، <code>powershell</code> ٹائپ کریں، Enter دبائیں۔ یہ پیسٹ کریں:</p>
+<pre><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex</code></pre>
+
+<h2>انسٹالیشن — macOS / Linux / WSL</h2>
+<pre><code>curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash</code></pre>
+
+<h2>انسٹالیشن کی تصدیق</h2>
+<pre><code># Windows PowerShell
+ls $env:USERPROFILE\.claude\rules
+
+# macOS / Linux / WSL
+ls ~/.claude/rules</code></pre>
+<p>آپ کو چار <code>.md</code> فائلیں نظر آنی چاہئیں: <code>e156</code>، <code>lessons</code>، <code>advanced-stats</code>، <code>rules</code>۔</p>
+
+<h2>اگلا قدم — اسی معیار پر کام کرنا</h2>
+<p>صرف قواعد انسٹال کرنا آدھا کام ہے۔ باقی آدھا انہیں اسی <strong>طریقے</strong> سے استعمال کرنا ہے: <em>brainstorm → spec-lock → plan-lock → TDD → audit</em>۔</p>
+<p>مکمل گائیڈ کے لیے <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"><strong>STUDENT-WORKFLOW.md</strong></a> (انگریزی میں) پڑھیں: مرحلہ وار طریقہ، مثالی repos جو clone کیے جا سکتے ہیں، اور Sentinel + Overmind معیار کے گارڈز کے طور پر کیسے کام کرتے ہیں۔</p>
+
+<h2>پیشگی شرائط</h2>
+<ul>
+  <li><strong>Python 3.11+</strong> از <a href="https://www.python.org/downloads/">python.org/downloads</a> ("Add python.exe to PATH" کو ٹک کریں)۔</li>
+  <li><strong>R 4.5+</strong> از <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org</a>۔</li>
+  <li><strong>Node.js 20+</strong> از <a href="https://nodejs.org/en/download">nodejs.org</a>۔</li>
+  <li>ایک AI ایجنٹ CLI: <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a> (مفت)، <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> (ادائیگی کے ساتھ)، یا <a href="https://github.com/openai/codex">OpenAI Codex</a>۔</li>
+</ul>
+
+<h2>مسائل کی صورت میں</h2>
+<ul>
+  <li>"What if something goes wrong" سیکشن دیکھیں <a href="../#troubleshooting">انگریزی صفحہ</a> پر۔</li>
+  <li>انسٹالر <code>%LOCALAPPDATA%\e156\logs\install-&lt;ts&gt;.log</code> (Windows) یا <code>~/.local/state/e156/logs/install-&lt;ts&gt;.log</code> (Linux/WSL) میں لاگ لکھتا ہے۔ API کیز اور رازداری خود بخود چھپا دی جاتی ہیں۔</li>
+</ul>
+
+</main>
+
+<footer class="footer" role="contentinfo">
+  ماخذ: <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter">github.com/mahmood726-cyber/e156-ecosystem-starter</a>
+  · <a href="../">مکمل انگریزی ورژن</a>
+  · اردو ترجمہ نیک نیتی سے فراہم کیا گیا ہے؛ تکنیکی شک کی صورت میں انگریزی ورژن مرجع ہے۔ <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/issues/new?title=اردو+ترجمہ+کی+بہتری">تصحیح تجویز کریں</a>۔
+</footer>
+<script>
+(function(){'use strict';document.querySelectorAll('pre').forEach(function(pre){var code=pre.querySelector('code');if(!code)return;var btn=document.createElement('button');btn.type='button';btn.className='copy-btn';btn.textContent='کاپی';btn.setAttribute('aria-label','کوڈ کاپی کریں');btn.setAttribute('role','status');btn.setAttribute('aria-live','polite');btn.addEventListener('click',function(){var t=code.innerText;var ok=function(){btn.textContent='کاپی ہوگیا';btn.setAttribute('data-state','copied');setTimeout(function(){btn.textContent='کاپی';btn.removeAttribute('data-state');},1600);};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(function(){});}else{try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();}catch(e){}}});pre.appendChild(btn);});})();
+</script>
+</body>
+</html>

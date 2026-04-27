@@ -57,7 +57,7 @@ file_present() {
 # the technical terms have no good vernacular equivalent).
 locale="${E156_LANG:-${LANG:-en}}"
 locale="$(printf '%s' "$locale" | cut -c1-2 | tr 'A-Z' 'a-z')"
-case "$locale" in en|fr|pt|ar) ;; *) locale=en ;; esac
+case "$locale" in en|fr|pt|ar|ur) ;; *) locale=en ;; esac
 
 case "$locale" in
     fr) BANNER_TITLE="E156 Ecosystem Starter -- prêt à utiliser"
@@ -75,6 +75,11 @@ case "$locale" in
         BANNER_NEXT="أمر واحد للبدء -- هذا يُشغِّل وكيل الذكاء الاصطناعي مع المُلخَّص:"
         BANNER_HOW="فقط اكتب:"
         BANNER_BROWSE="لقراءة المُلخَّص أولاً: ~/.config/e156/handoff.md (مرئي في مستكشف الملفات)" ;;
+    ur) BANNER_TITLE="E156 Ecosystem Starter -- استعمال کے لیے تیار"
+        BANNER_INSTALLED="ابھی اس codespace میں جو انسٹال ہوا ہے:"
+        BANNER_NEXT="شروع کرنے کے لیے ایک کمانڈ -- یہ بریفنگ کے ساتھ آپ کا AI ایجنٹ چلاتی ہے:"
+        BANNER_HOW="بس یہ ٹائپ کریں:"
+        BANNER_BROWSE="بریفنگ پہلے پڑھنا چاہتے ہیں؟ دیکھیں ~/.config/e156/handoff.md (فائل ایکسپلورر میں نظر آتا ہے)" ;;
     *)  BANNER_TITLE="E156 Ecosystem Starter -- ready to use"
         BANNER_INSTALLED="What just got installed in this codespace:"
         BANNER_NEXT="ONE COMMAND TO START -- this runs your AI agent with the install briefing:"

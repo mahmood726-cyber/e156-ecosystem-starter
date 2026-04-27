@@ -14,6 +14,10 @@ Resources for lecturers / supervisors adopting the E156 ecosystem-starter for a 
 
 A short pptx/keynote/google-slides deck has not been recorded yet — community contributions welcome. Aim: 5 slides covering (1) what a "research-grade AI agent setup" is, (2) why method matters more than tools, (3) what Sentinel + Overmind catch, (4) the brainstorm → spec-lock → plan-lock → TDD → audit cycle, (5) the first-paper exercise. Submit via PR.
 
+## Screencast
+
+A 60-second silent screencast for the landing page is also missing. Recipe + storyboard at [`screencast-recipe.md`](screencast-recipe.md). Anyone with OBS Studio + a GitHub account can record one in ~30 minutes. PR welcome.
+
 ## Translations
 
 These materials are English-first. If you teach in French / Portuguese / Arabic / Urdu / Swahili and want to translate, open a PR with `intro-1pager.<lang>.md` etc. — the structure should mirror the English version.
