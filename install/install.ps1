@@ -142,6 +142,51 @@ function Resolve-StarterPath {
     return $resolved
 }
 
+function Invoke-LogRedaction {
+    # Scrubs API keys, tokens, and high-entropy secrets from a transcript file
+    # in-place. Runs at end-of-install so a student attaching the log to an
+    # issue, or sharing it for help, doesn't leak credentials.
+    #
+    # Patterns covered (each replaced with a labeled placeholder):
+    #   AIza...                        -> Google AI Studio API key
+    #   sk-... / sk-ant-...            -> OpenAI / Anthropic
+    #   ghp_/gho_/ghs_/ghu_...         -> GitHub PAT/OAuth/Server/User token
+    #   AKIA...                        -> AWS access key ID
+    #   64-hex-char string             -> TruthCert HMAC / generic crypto key
+    #   eyJ...token...                 -> JWT (3 base64url segments)
+    #   setx VAR_KEY/TOKEN/SECRET "x"  -> windows env-var assignment value
+    #
+    # Conservative by design: false positives (a 64-hex hash that ISN'T a key)
+    # become "[REDACTED-64hex]" in the log -- annoying for debugging but never
+    # a security regression. False negatives (a leaked key NOT matched) are
+    # the real risk; pattern set is reviewed against the 2026-04-* token
+    # families.
+    [CmdletBinding()]
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return }
+    $content = Get-Content -Raw -Path $Path
+    if ($null -eq $content) { return }
+    # Specific patterns first (preserve labels), then generic setx catch-all.
+    $content = $content -replace 'AIza[A-Za-z0-9_-]{35}', '[REDACTED-google-api-key]'
+    $content = $content -replace 'sk-ant-[A-Za-z0-9_-]{40,}', '[REDACTED-anthropic-key]'
+    $content = $content -replace 'sk-[A-Za-z0-9]{40,}', '[REDACTED-openai-key]'
+    $content = $content -replace 'gh[opsu]_[A-Za-z0-9]{36,}', '[REDACTED-github-token]'
+    $content = $content -replace 'AKIA[A-Z0-9]{16}', '[REDACTED-aws-access-key]'
+    $content = $content -replace 'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}', '[REDACTED-jwt]'
+    $content = $content -replace '\b[0-9a-fA-F]{64}\b', '[REDACTED-64hex]'
+    # setx VAR_NAME "value" where var name contains KEY/TOKEN/SECRET/PASS/HMAC.
+    # Skip lines that already contain "[REDACTED" so we don't over-redact a
+    # labeled scrub down to "[REDACTED]".
+    $lines = $content -split "`n"
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -notmatch '\[REDACTED') {
+            $lines[$i] = $lines[$i] -replace '(setx\s+[A-Za-z0-9_]*(?:KEY|TOKEN|SECRET|PASS|HMAC)[A-Za-z0-9_]*\s+")[^"]*(")', '$1[REDACTED]$2'
+        }
+    }
+    $content = $lines -join "`n"
+    Set-Content -Path $Path -Value $content -NoNewline -Encoding UTF8
+}
+
 function Render-Template {
     [CmdletBinding()]
     param(
@@ -651,8 +696,14 @@ if ($nFailed -gt 0) {
 Write-Host ""
 
 # Stop the install transcript before exit (non-fatal if it never started).
+# Then scrub the log of API keys / tokens / HMAC values that may have been
+# pasted, echoed, or otherwise captured during the run -- so attaching the
+# log to an issue or sharing it doesn't leak credentials.
 if ($script:__transcriptStarted) {
     try { Stop-Transcript | Out-Null } catch { }
+    if ($logFile -and (Test-Path $logFile)) {
+        try { Invoke-LogRedaction -Path $logFile } catch { }
+    }
 }
 
 # Exit non-zero if ANY chain failed, so the .bat wrapper / CI / parent

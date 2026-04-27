@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E156 Ecosystem Starter — Démarrage rapide (français)</title>
+<meta name="description" content="Configurez votre ordinateur portable de recherche avec l'environnement de développement de Mahmood : règles d'agent IA, mémoire, Sentinel, Overmind. Une commande.">
+<link rel="alternate" hreflang="en" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/">
+<link rel="alternate" hreflang="fr" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/fr/">
+<link rel="alternate" hreflang="pt" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/pt/">
+<link rel="alternate" hreflang="ar" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/ar/">
+<link rel="alternate" hreflang="x-default" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; max-width: 780px; margin: 0 auto; padding: 48px 24px 96px; color: #1a1a1a; line-height: 1.55; }
+  header { text-align: center; margin-bottom: 32px; }
+  h1 { font-size: 2.4em; margin: 0 0 0.3em; letter-spacing: -0.02em; }
+  p.sub { color: #555; font-size: 1.1em; margin: 0; }
+  h2 { font-size: 1.4em; margin-top: 40px; border-bottom: 1px solid #e1e4e8; padding-bottom: 6px; }
+  code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; font-family: "SF Mono", "Consolas", monospace; }
+  pre { background: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.9em; }
+  pre code { background: none; padding: 0; }
+  .lang-picker { text-align: center; margin: 16px 0 24px; font-size: 0.9em; }
+  .lang-picker a { margin: 0 8px; color: #0366d6; text-decoration: none; }
+  .lang-picker a[aria-current="page"] { font-weight: 600; color: #1a1a1a; text-decoration: underline; }
+  .notice { background: #fff5b1; border-left: 3px solid #ffd33d; padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 0.95em; }
+  .footer { margin-top: 60px; color: #595e63; font-size: 0.9em; text-align: center; }
+  .footer a { color: #444; }
+</style>
+</head>
+<body>
+<nav class="lang-picker" aria-label="Langues disponibles">
+  <a href="../" hreflang="en">English</a> ·
+  <a href="./" hreflang="fr" aria-current="page">Français</a> ·
+  <a href="../pt/" hreflang="pt">Português</a> ·
+  <a href="../ar/" hreflang="ar">العربية</a>
+</nav>
+
+<header>
+  <h1>E156 Ecosystem Starter</h1>
+  <p class="sub">Installez l'environnement de développement de Mahmood en une commande.</p>
+</header>
+
+<div class="notice" role="note">
+  <strong>Note :</strong> cette page est une version abrégée en français. La <a href="../">version anglaise complète</a> contient toutes les instructions détaillées (prérequis, dépannage, modèle de sécurité, exemples de projets). Les commandes d'installation ci-dessous sont identiques dans toutes les langues.
+</div>
+
+<h2>Installation — Windows</h2>
+<p>Ouvrez <strong>PowerShell</strong> (pas Command Prompt). Tapez Win+R, écrivez <code>powershell</code>, puis Entrée. Collez :</p>
+<pre><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex</code></pre>
+
+<h2>Installation — macOS / Linux / WSL</h2>
+<pre><code>curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash</code></pre>
+
+<h2>Vérifier l'installation</h2>
+<pre><code># Windows PowerShell
+ls $env:USERPROFILE\.claude\rules
+
+# macOS / Linux / WSL
+ls ~/.claude/rules</code></pre>
+<p>Vous devriez voir quatre fichiers <code>.md</code> : <code>e156</code>, <code>lessons</code>, <code>advanced-stats</code>, <code>rules</code>.</p>
+
+<h2>Étape suivante — produire un travail au même niveau de qualité</h2>
+<p>L'installation des règles est la moitié du travail. L'autre moitié consiste à les utiliser avec la même <strong>méthode</strong> : <em>brainstorm → spec-lock → plan-lock → TDD → audit</em>.</p>
+<p>Lisez <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"><strong>STUDENT-WORKFLOW.md</strong></a> (en anglais) pour le guide complet : la méthode pas à pas, les dépôts d'exemples à cloner, et comment Sentinel + Overmind fonctionnent comme barrières de qualité.</p>
+
+<h2>Prérequis</h2>
+<ul>
+  <li><strong>Python 3.11+</strong> depuis <a href="https://www.python.org/downloads/">python.org/downloads</a> (cocher « Add python.exe to PATH »).</li>
+  <li><strong>R 4.5+</strong> depuis <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org</a>.</li>
+  <li><strong>Node.js 20+</strong> depuis <a href="https://nodejs.org/en/download">nodejs.org</a>.</li>
+  <li>Une CLI d'agent IA : <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a> (gratuit), <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> (payant), ou <a href="https://github.com/openai/codex">OpenAI Codex</a>.</li>
+</ul>
+
+<h2>En cas de problème</h2>
+<ul>
+  <li>Voir la section « What if something goes wrong » sur la <a href="../#install">page anglaise</a>.</li>
+  <li>L'installateur écrit un journal dans <code>%LOCALAPPDATA%\e156\logs\install-&lt;ts&gt;.log</code> (Windows) ou <code>~/.local/state/e156/logs/install-&lt;ts&gt;.log</code> (Linux/WSL). Les clés API et secrets y sont automatiquement masqués avant tout partage.</li>
+</ul>
+
+<footer class="footer" role="contentinfo">
+  Source : <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter">github.com/mahmood726-cyber/e156-ecosystem-starter</a>
+  · <a href="../">Version anglaise complète</a>
+  · Traduction française fournie de bonne foi ; en cas de doute technique, la version anglaise fait foi.
+</footer>
+</body>
+</html>

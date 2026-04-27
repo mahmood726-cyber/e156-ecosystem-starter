@@ -178,6 +178,98 @@ Describe "Rollback: manifest-driven undo" {
     }
 }
 
+Describe "Invoke-LogRedaction scrubs secrets from transcripts (P1)" {
+    BeforeAll {
+        $script:redactDir = Join-Path $tmpRoot 'redact'
+        New-Item -ItemType Directory -Force -Path $script:redactDir | Out-Null
+    }
+
+    It "scrubs Google API keys (AIza...)" {
+        $f = Join-Path $script:redactDir 'google.log'
+        $key = 'AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R'
+        Set-Content -Path $f -Value "GEMINI_API_KEY=$key" -NoNewline
+        Invoke-LogRedaction -Path $f
+        $r = Get-Content -Raw $f
+        $r | Should -Match '\[REDACTED'
+        $r | Should -Not -Match $key
+    }
+
+    It "scrubs OpenAI keys (sk-...)" {
+        $f = Join-Path $script:redactDir 'openai.log'
+        $key = 'sk-1234567890abcdefABCDEFghijklmnopqrstuvwxyz0'
+        Set-Content -Path $f -Value "OPENAI_API_KEY=$key" -NoNewline
+        Invoke-LogRedaction -Path $f
+        (Get-Content -Raw $f) | Should -Not -Match $key
+    }
+
+    It "scrubs Anthropic keys (sk-ant-...)" {
+        $f = Join-Path $script:redactDir 'anthropic.log'
+        $key = 'sk-ant-api03-abcdef1234567890ABCDEFghijklmnopqrstuvwxyz'
+        Set-Content -Path $f -Value "ANTHROPIC_API_KEY=$key" -NoNewline
+        Invoke-LogRedaction -Path $f
+        (Get-Content -Raw $f) | Should -Not -Match $key
+    }
+
+    It "scrubs GitHub tokens (ghp_/gho_...)" {
+        $f = Join-Path $script:redactDir 'gh.log'
+        $key = 'ghp_1234567890abcdef1234567890abcdef1234'
+        Set-Content -Path $f -Value "GH_TOKEN=$key" -NoNewline
+        Invoke-LogRedaction -Path $f
+        (Get-Content -Raw $f) | Should -Not -Match $key
+    }
+
+    It "scrubs AWS access keys (AKIA...)" {
+        $f = Join-Path $script:redactDir 'aws.log'
+        $key = 'AKIAIOSFODNN7EXAMPLE'
+        Set-Content -Path $f -Value "AWS_ACCESS_KEY_ID=$key" -NoNewline
+        Invoke-LogRedaction -Path $f
+        (Get-Content -Raw $f) | Should -Not -Match $key
+    }
+
+    It "scrubs 64-hex HMAC keys" {
+        $f = Join-Path $script:redactDir 'hmac.log'
+        $key = '68c4bf3aecd57c8815e1a8fb74f74eb38c471155a0abf25a9b95e0f7429f97fc'
+        Set-Content -Path $f -Value "TRUTHCERT_HMAC_KEY=$key" -NoNewline
+        Invoke-LogRedaction -Path $f
+        (Get-Content -Raw $f) | Should -Not -Match $key
+    }
+
+    It "scrubs JWTs (eyJ...)" {
+        $f = Join-Path $script:redactDir 'jwt.log'
+        $token = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+        Set-Content -Path $f -Value "Bearer $token" -NoNewline
+        Invoke-LogRedaction -Path $f
+        (Get-Content -Raw $f) | Should -Not -Match $token
+    }
+
+    It "scrubs setx VAR_KEY/TOKEN/SECRET values without breaking line structure" {
+        $f = Join-Path $script:redactDir 'setx.log'
+        $secret = 'aPlainTextSecret_!that_is_not_an_obvious_key_format'
+        Set-Content -Path $f -Value "setx GEMINI_API_KEY `"$secret`"" -NoNewline
+        Invoke-LogRedaction -Path $f
+        $r = Get-Content -Raw $f
+        $r | Should -Not -Match $secret
+        $r | Should -Match 'setx\s+GEMINI_API_KEY\s+"\[REDACTED\]"'
+    }
+
+    It "leaves non-secret content untouched" {
+        $f = Join-Path $script:redactDir 'safe.log'
+        $line = 'Installing Sentinel from git+https://github.com/mahmood726-cyber/Sentinel.git@v0.1.0'
+        Set-Content -Path $f -Value $line -NoNewline
+        Invoke-LogRedaction -Path $f
+        (Get-Content -Raw $f) | Should -Be $line
+    }
+
+    It "is idempotent (running twice does not over-redact labels)" {
+        $f = Join-Path $script:redactDir 'idempotent.log'
+        Set-Content -Path $f -Value 'GEMINI_API_KEY=AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R' -NoNewline
+        Invoke-LogRedaction -Path $f
+        $first = Get-Content -Raw $f
+        Invoke-LogRedaction -Path $f
+        (Get-Content -Raw $f) | Should -Be $first
+    }
+}
+
 Describe "Self-SHA gate exits 0 under -DryRun" {
     It "writes HASH.txt with install.ps1's SHA and the DryRun shortcut succeeds" {
         # Regenerate HASH.txt for the current install.ps1 (may have been edited)

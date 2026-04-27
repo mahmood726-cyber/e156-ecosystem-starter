@@ -1,0 +1,110 @@
+# CI for e156-ecosystem-starter.
+#
+# Runs on every push and PR. Three jobs:
+#   1. pester       -- PowerShell tests on Windows (install.ps1 helpers,
+#                      redaction, supply-chain pinning, SHA gate)
+#   2. bash-tests   -- bash tests on Ubuntu (install.sh helpers, redaction,
+#                      pinning, dot-source hygiene)
+#   3. lint         -- ShellCheck on .sh files; PSScriptAnalyzer on .ps1
+#
+# Bash tests do NOT pip-install Sentinel/Overmind in CI -- those live in
+# separate repos with their own pipelines. We only verify wrapper logic.
+
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pester:
+    name: Pester (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show PowerShell + Pester versions
+        shell: pwsh
+        run: |
+          $PSVersionTable | Out-String
+          Get-Module -ListAvailable Pester | Select-Object Name, Version
+      - name: Run Pester suites
+        shell: pwsh
+        run: |
+          $files = @(
+            'install\pester.tests.ps1',
+            'bootstrap\pester.bat.tests.ps1',
+            'scripts\pester.doctor-report.tests.ps1',
+            'scripts\pester.install-sentinel.tests.ps1',
+            'scripts\pester.phase3.tests.ps1',
+            'scripts\pester.phase4.tests.ps1',
+            'scripts\pester.update.tests.ps1'
+          )
+          $config = New-PesterConfiguration
+          $config.Run.Path = $files
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          $config.TestResult.Enabled = $true
+          $config.TestResult.OutputPath = 'pester-results.xml'
+          $config.TestResult.OutputFormat = 'NUnitXml'
+          Invoke-Pester -Configuration $config
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pester-results
+          path: pester-results.xml
+
+  bash-tests:
+    name: Bash tests (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show bash version
+        run: bash --version
+      - name: Run bash test suite
+        run: bash tests/test-install-sh.bash
+
+  lint:
+    name: Static analysis (ShellCheck + PSScriptAnalyzer)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends shellcheck
+          # Lint our shipped .sh files. Don't fail the build on style-only
+          # warnings (SC2034, SC2155); fail on real bugs.
+          # Tests (tests/*.bash) are excluded -- harness uses ad-hoc patterns.
+          shellcheck --severity=error --shell=bash \
+            install/install.sh \
+            scripts/install-sentinel.sh \
+            scripts/install-overmind.sh \
+            scripts/install-projectindex.sh \
+            bootstrap/e156-setup.sh \
+            docs/e156-setup.sh
+
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          $allIssues = @()
+          foreach ($d in 'install','scripts','bootstrap','docs') {
+            if (Test-Path $d) {
+              $allIssues += Invoke-ScriptAnalyzer -Path $d `
+                -Recurse `
+                -Severity Error `
+                -ExcludeRule PSAvoidUsingWriteHost,PSUseShouldProcessForStateChangingFunctions
+            }
+          }
+          if ($allIssues.Count -gt 0) {
+            $allIssues | Format-Table -AutoSize
+            throw "PSScriptAnalyzer found $($allIssues.Count) error-level issue(s)."
+          }
+          Write-Host "PSScriptAnalyzer: clean."

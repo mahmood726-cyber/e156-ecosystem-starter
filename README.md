@@ -188,6 +188,53 @@ encode a *working* setup — you can either:
    (your edits are preserved when you re-run `install.ps1` — your version
    is backed up as `<name>.md.user`)
 
+## Other languages
+
+Abridged landing pages are available in:
+
+- 🇫🇷 [Français](https://mahmood726-cyber.github.io/e156-ecosystem-starter/fr/)
+- 🇵🇹 [Português](https://mahmood726-cyber.github.io/e156-ecosystem-starter/pt/)
+- 🇸🇦 [العربية](https://mahmood726-cyber.github.io/e156-ecosystem-starter/ar/) (RTL)
+
+These cover the install command, verify step, and prereqs — the full English
+page remains canonical for everything else (security model, troubleshooting,
+example projects, design principles). Install commands themselves are
+identical across all four languages.
+
+## Privacy: install transcripts auto-redact secrets
+
+The installer writes a transcript log of every run (so you can attach it to
+a GitHub issue if something breaks). On exit, the log is automatically
+scrubbed for API keys, tokens, and high-entropy secrets that may have been
+pasted, echoed, or otherwise captured during the run:
+
+- Google AI Studio keys (`AIza…`) → `[REDACTED-google-api-key]`
+- OpenAI / Anthropic keys (`sk-…` / `sk-ant-…`) → `[REDACTED-openai-key]` / `[REDACTED-anthropic-key]`
+- GitHub tokens (`ghp_/gho_/ghs_/ghu_…`) → `[REDACTED-github-token]`
+- AWS access keys (`AKIA…`) → `[REDACTED-aws-access-key]`
+- 64-hex strings (TruthCert HMAC, generic crypto) → `[REDACTED-64hex]`
+- JWTs (`eyJ…token…`) → `[REDACTED-jwt]`
+- `setx` / `export` of `*_KEY` / `*_TOKEN` / `*_SECRET` / `*_PASS` / `*_HMAC` env vars → value redacted
+
+Redaction runs in-place after `Stop-Transcript` (PowerShell) or via an
+`EXIT` trap (bash), so even partial / failed installs get a sanitised log.
+Tests cover all eight pattern families on both shells.
+
+## CI
+
+Every push and PR runs three jobs via GitHub Actions ([`.github/workflows/test.yml`](.github/workflows/test.yml)):
+
+- **Pester (Windows):** all PowerShell test suites, ~78 tests covering
+  install helpers, redaction, supply-chain pinning, SHA gate, doctor report,
+  Sentinel/Overmind/ProjectIndex/update wrappers.
+- **Bash (Ubuntu):** ~22 bash tests covering install.sh helpers, redaction,
+  pinning, dot-source hygiene, rollback, template rendering.
+- **Lint:** ShellCheck (severity `error`) on all `.sh` files +
+  PSScriptAnalyzer (severity `error`) on all `.ps1` files.
+
+The intent is that any regression in install path, secret-redaction, or
+supply-chain pinning fails CI before reaching a student.
+
 ## License
 
 MIT. Rules files are released as curated working-process documentation.

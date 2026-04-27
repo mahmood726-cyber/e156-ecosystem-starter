@@ -149,6 +149,45 @@ assert_eq "$override_src" "git+https://github.com/mahmood726-cyber/overmind.git@
 start "install-projectindex.sh dot-sources cleanly"
 bash -c "source '$ROOT/scripts/install-projectindex.sh' --import && declare -F write_index_markdown_template write_reconcile_script > /dev/null" && ok
 
+# Describe: log redaction (P1 — secrets must not survive in transcripts)
+redact_test() {
+    local input="$1" expected="$2" label="$3"
+    local tmpf
+    tmpf="$(mktemp)"
+    printf '%s' "$input" > "$tmpf"
+    bash -c "source '$ROOT/install/install.sh' --import; redact_secrets_in_log '$tmpf'"
+    local actual
+    actual="$(cat "$tmpf")"
+    rm -f "$tmpf"
+    if [[ "$actual" == *"$expected"* && "$actual" != *"$input"* ]]; then
+        return 0
+    else
+        bad "[$label] expected to find '$expected' and not find original; got: '$actual'"
+        return 1
+    fi
+}
+
+start "redact_secrets_in_log scrubs Google API keys (AIza...)"
+redact_test 'export GEMINI_API_KEY=AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R' '[REDACTED-google-api-key]' 'google' && ok
+
+start "redact_secrets_in_log scrubs OpenAI keys (sk-...)"
+redact_test 'OPENAI_API_KEY=sk-1234567890abcdefABCDEFghijklmnopqrstuvwxyz0' '[REDACTED-openai-key]' 'openai' && ok
+
+start "redact_secrets_in_log scrubs Anthropic keys (sk-ant-...)"
+redact_test 'ANTHROPIC_API_KEY=sk-ant-api03-abcdef1234567890ABCDEFghijklmnopqrstuvwxyz' '[REDACTED-anthropic-key]' 'anthropic' && ok
+
+start "redact_secrets_in_log scrubs GitHub tokens (ghp_/gho_...)"
+redact_test 'GH_TOKEN=ghp_1234567890abcdef1234567890abcdef1234' '[REDACTED-github-token]' 'github' && ok
+
+start "redact_secrets_in_log scrubs AWS access keys (AKIA...)"
+redact_test 'AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE' '[REDACTED-aws-access-key]' 'aws' && ok
+
+start "redact_secrets_in_log scrubs 64-hex HMAC keys"
+redact_test 'TRUTHCERT_HMAC_KEY=68c4bf3aecd57c8815e1a8fb74f74eb38c471155a0abf25a9b95e0f7429f97fc' '[REDACTED-64hex]' 'hmac' && ok
+
+start "redact_secrets_in_log scrubs JWTs"
+redact_test 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c' '[REDACTED-jwt]' 'jwt' && ok
+
 # Summary
 echo
 echo "Tests completed: $((PASS+FAIL))"

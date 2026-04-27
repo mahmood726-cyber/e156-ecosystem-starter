@@ -93,6 +93,35 @@ done
 # Logs land at ~/.local/share/e156/logs/install-<ts>.log on Linux, and at
 # Library/Logs/e156/install-<ts>.log on macOS. Failure to start the log is
 # non-fatal.
+redact_secrets_in_log() {
+    # Scrubs API keys, tokens, and high-entropy secrets from a transcript file
+    # in-place. Runs at end-of-install so a student attaching the log to an
+    # issue, or sharing it for help, doesn't leak credentials.
+    #
+    # Patterns covered (mirrors install.ps1 Invoke-LogRedaction):
+    #   AIza... (Google), sk-/sk-ant- (OpenAI/Anthropic),
+    #   ghp_/gho_/ghs_/ghu_ (GitHub), AKIA (AWS), 64-hex (HMAC/generic),
+    #   eyJ... JWT, setx/export VAR_KEY/TOKEN/SECRET "x".
+    local f="$1"
+    [[ -f "$f" ]] || return 0
+    # macOS sed lacks -i in-place; use a tmp file for portability.
+    local tmp
+    tmp="$(mktemp "${f}.redact.XXXXXX")" || return 0
+    # Specific patterns first (preserve labels), then generic export-var
+    # catch-all (skip lines that already got a labeled redaction so we don't
+    # over-redact "[REDACTED-google-api-key]" -> "[REDACTED]").
+    sed -E \
+        -e 's/AIza[A-Za-z0-9_-]{35}/[REDACTED-google-api-key]/g' \
+        -e 's/sk-ant-[A-Za-z0-9_-]{40,}/[REDACTED-anthropic-key]/g' \
+        -e 's/sk-[A-Za-z0-9]{40,}/[REDACTED-openai-key]/g' \
+        -e 's/gh[opsu]_[A-Za-z0-9]{36,}/[REDACTED-github-token]/g' \
+        -e 's/AKIA[A-Z0-9]{16}/[REDACTED-aws-access-key]/g' \
+        -e 's/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/[REDACTED-jwt]/g' \
+        -e 's/\b[0-9a-fA-F]{64}\b/[REDACTED-64hex]/g' \
+        -e '/\[REDACTED/!s/(export[[:space:]]+[A-Za-z0-9_]*(KEY|TOKEN|SECRET|PASS|HMAC)[A-Za-z0-9_]*=)["'"'"']?[^"'"'"' ]+/\1[REDACTED]/g' \
+        "$f" > "$tmp" 2>/dev/null && mv "$tmp" "$f" || rm -f "$tmp"
+}
+
 if [[ "$IMPORT" -eq 0 ]]; then
     case "$(uname -s)" in
         Darwin) E156_LOG_DIR="${HOME}/Library/Logs/e156" ;;
@@ -104,6 +133,17 @@ if [[ "$IMPORT" -eq 0 ]]; then
         # prompts: process substitution leaves the controlling tty in place.
         exec > >(tee -a "$E156_LOG_FILE") 2>&1
         echo "(transcript: $E156_LOG_FILE)"
+        # Redact secrets from the transcript on exit (success or failure).
+        # Close stdout/stderr first so the tee subshell flushes and exits;
+        # then sed-substitute in place. Failure-safe: if redaction fails the
+        # raw log is still on disk for the student to clean up manually.
+        _e156_finalize_log() {
+            [[ -n "${E156_LOG_FILE:-}" ]] || return 0
+            exec >&- 2>&- 2>/dev/null || :
+            sleep 0.2 2>/dev/null || :
+            redact_secrets_in_log "$E156_LOG_FILE" 2>/dev/null || :
+        }
+        trap _e156_finalize_log EXIT
     fi
 fi
 
