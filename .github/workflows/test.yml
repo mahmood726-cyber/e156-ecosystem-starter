@@ -87,13 +87,23 @@ jobs:
       - name: Run pytest
         run: python -m pytest tests/ -v
 
+  hash-check:
+    name: HASH files in sync with install scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify docs/HASH.txt + docs/HASH-linux.txt
+        run: bash scripts/regen-hashes.sh --check
+
   link-check:
     name: Pages link-check (lychee)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Lychee link checker
-        uses: lycheeverse/lychee-action@v2
+        # Pinned to v2 major; bump deliberately when changing anchor / fragment
+        # behaviour. (P2-4 from 2026-04-27 review.)
+        uses: lycheeverse/lychee-action@v2.4.1
         with:
           # Anchor verification (--include-fragments) is what catches the
           # ../#install vs ../#troubleshooting class of bug. We restrict

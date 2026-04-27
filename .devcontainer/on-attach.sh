@@ -1,9 +1,25 @@
 #!/usr/bin/env bash
 # on-attach.sh -- runs every time the user opens a new terminal in the
-# Codespace. Greets them, surfaces what's installed, and tells them the
+# Codespace. Greets them, surfaces what is installed, and tells them the
 # single next action: paste the handoff prompt into an agent.
+#
+# Quiet mode: after the first attach we touch a marker file. Subsequent
+# attaches within the same hour stay silent so opening a terminal to grep
+# is not a 30-line wall of status. To re-show: rm /tmp/e156-attach-shown.
 
 set -u
+
+marker="/tmp/e156-attach-shown"
+if [[ -f "$marker" ]]; then
+    # Stat the marker; if younger than 60 minutes, suppress the banner.
+    age_s=$(( $(date +%s) - $(stat -c %Y "$marker" 2>/dev/null || echo 0) ))
+    if (( age_s < 3600 )); then
+        # Quick one-line reminder so a fresh terminal still hints at the prompt.
+        echo "[E156] Ready. Handoff prompt: cat ~/.config/e156/handoff.md  (rm $marker for full banner)"
+        exit 0
+    fi
+fi
+touch "$marker" 2>/dev/null || true
 
 # Detect what actually landed (the build may have failed individual components
 # even with FULL); show the student the truth, not a marketing claim.

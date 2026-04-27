@@ -208,6 +208,27 @@ else
     log_ok "wrote $reconcile_path"
 fi
 
+# Seed a sample restart-manifest.json so find-related-repos.py has SOMETHING
+# to read against on a fresh install. Without it the recon-before-new-project
+# rule (rules.md) is followable but always returns "no matches", which trains
+# the agent to ignore the rule. The sample contains 7 worked-example repos
+# from Mahmood's portfolio and is replaced when the real generator runs.
+agent_records_dir="$ROOT/agent-records"
+sample_manifest="$agent_records_dir/restart-manifest.json"
+# Sample seed lives at the starter root: <starter>/memory/sample-restart-manifest.json
+starter_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+seed_source="$starter_root/memory/sample-restart-manifest.json"
+if [[ -f "$sample_manifest" && "$FORCE" -eq 0 ]]; then
+    log_ok "restart-manifest.json already present; skipping (use --force to overwrite)"
+elif [[ ! -f "$seed_source" ]]; then
+    log_ok "skipped restart-manifest.json seed (source not found at $seed_source)"
+else
+    log_step "Seeding sample restart-manifest.json (7 worked-example repos)"
+    mkdir -p "$agent_records_dir"
+    cp "$seed_source" "$sample_manifest"
+    log_ok "wrote $sample_manifest"
+fi
+
 echo
 echo "====================================================="
 echo "  ProjectIndex scaffolded at $ROOT"

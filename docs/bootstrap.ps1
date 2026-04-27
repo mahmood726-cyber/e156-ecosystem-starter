@@ -36,6 +36,16 @@ Write-Host "  Pinned to: $pinnedRef"
 Write-Host "====================================================="
 Write-Host ""
 
+# Warn loudly when running off a non-tag (branch name, SHA, or "main").
+# A user who pasted a one-liner with E156_REF=main may not realise they have
+# opted out of the release-review window.
+if ($pinnedRef -notmatch '^v\d') {
+    Write-Host "WARNING: '$pinnedRef' is not a release tag (expected vX.Y.Z)." -ForegroundColor Yellow
+    Write-Host "         You are running pre-release / branch code with no review window." -ForegroundColor Yellow
+    Write-Host "         Press Ctrl+C to abort, or wait 5 seconds to continue." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+}
+
 # --- 1. Python check ----------------------------------------------------------
 Write-Host "[1/4] Checking prerequisites..."
 $python = Get-Command python -ErrorAction SilentlyContinue

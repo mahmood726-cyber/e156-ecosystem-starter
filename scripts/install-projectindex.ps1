@@ -245,6 +245,24 @@ if ((Test-Path $reconcilePath) -and -not $Force) {
     Write-Ok "wrote $reconcilePath"
 }
 
+# Seed a sample restart-manifest.json so find-related-repos.py has SOMETHING
+# to read against on a fresh install. Without it the recon-before-new-project
+# rule (rules.md) is followable but always returns "no matches".
+$agentRecordsDir = Join-Path $Root 'agent-records'
+$sampleManifest  = Join-Path $agentRecordsDir 'restart-manifest.json'
+$starterRoot     = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$seedSource      = Join-Path $starterRoot 'memory\sample-restart-manifest.json'
+if ((Test-Path $sampleManifest) -and -not $Force) {
+    Write-Ok "restart-manifest.json already present; skipping (use -Force to overwrite)"
+} elseif (-not (Test-Path $seedSource)) {
+    Write-Ok "skipped restart-manifest.json seed (source not found at $seedSource)"
+} else {
+    Write-Step "Seeding sample restart-manifest.json (7 worked-example repos)"
+    New-Item -ItemType Directory -Force -Path $agentRecordsDir | Out-Null
+    Copy-Item $seedSource $sampleManifest -Force
+    Write-Ok "wrote $sampleManifest"
+}
+
 Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green
 Write-Host "  ProjectIndex scaffolded at $Root"

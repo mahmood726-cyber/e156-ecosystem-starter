@@ -418,11 +418,12 @@ if (-not $GitHubUser -and -not $NonInteractive -and [Console]::IsInputRedirected
 }
 
 $rulesVars = @{
-    'E156_HOME'         = $E156Home
-    'PROJECTINDEX_ROOT' = $PortfolioRoot
-    'SENTINEL_ROOT'     = $SentinelRoot
-    'OVERMIND_ROOT'     = $OvermindRoot
-    'GITHUB_USER'       = if ($GitHubUser) { $GitHubUser } else { '{{GITHUB_USER}}' }
+    'E156_HOME'              = $E156Home
+    'PROJECTINDEX_ROOT'      = $PortfolioRoot
+    'SENTINEL_ROOT'          = $SentinelRoot
+    'OVERMIND_ROOT'          = $OvermindRoot
+    'ECOSYSTEM_STARTER_ROOT' = $starterRoot
+    'GITHUB_USER'            = if ($GitHubUser) { $GitHubUser } else { '{{GITHUB_USER}}' }
 }
 
 # --- Step 2: copy rules to each detected agent's config dir -----------------

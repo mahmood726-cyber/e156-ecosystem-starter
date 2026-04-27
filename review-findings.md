@@ -64,3 +64,104 @@
 - **World-class bar**: requires Linux parity, code signing, templated paths, auto-update, opt-in telemetry, and the P0-2 bandwidth fix. All are 1-2 day tasks individually. A week of focused work moves this from "top-3 in niche" to "defensible world-class in niche".
 
 **Honest one-liner**: the *rules content* is the durable artifact and deserves to ship as a standalone repo. The *installer* is good engineering for a first-year research student on Windows but would need a week's polish to be pointed at by someone like Simon Willison or Harper Reed without caveats.
+
+---
+
+# Multi-Persona Review: e156-ecosystem-starter v0.8.x (post-2e377e4)
+
+**Date**: 2026-04-27
+**Reviewed**: commits e76f930 → 2e377e4 (4 commits, ~30 files). New surfaces: `.devcontainer/` (devcontainer.json, on-create.sh, on-attach.sh), `scripts/find-related-repos.py`, `scripts/write-gemini-handoff.{ps1,sh}`, `scripts/gemini-handoff-prompt.md`, click-to-copy JS in `docs/{,fr,pt,ar}/index.html`, cloud banner, lychee link-check CI, bootstrap pinning to v0.8.0, push-portfolio dotted-dirs skip, NON-NEGOTIABLE recon rule in `rules/rules.md`.
+
+**Personas**: Security Auditor · UX/Accessibility · Software/Release Engineer · i18n/Localization · "Survives 190 students" Production Readiness.
+
+**Summary**: 4 P0 · 9 P1 · 5 P2.
+
+**STATUS as of 2026-04-27 fix pass: REVIEW CLEAN — all P0 + all P1 + 2 of 5 P2 fixed. Pester 83/83, bash 26/26, pytest 14/14.**
+
+---
+
+## P0 — Critical
+
+- **P0-1** [FIXED 2026-04-27] [FIXED 2026-04-27] [Production Readiness]: **`find-related-repos.py` is wired in as NON-NEGOTIABLE in `rules/rules.md` but the prerequisite `restart-manifest.json` does not exist on a fresh student install.** The script falls through to `INDEX.md` (also absent) and exits 2 with "No portfolio index found." Any agent reading the rules pack on a clean install hits an impossible-to-follow rule on its first action. (`rules/rules.md` line 24-30; `scripts/find-related-repos.py` `candidate_manifest_paths` line ~80.)
+  - **Suggested fix**: ship a `memory/sample-restart-manifest.json` containing 5-10 worked-example repos (ma-workbench, repro-floor-atlas, responder-floor-atlas, impossible-ma, ctgov-hiddenness-atlas), and have `install-projectindex.{ps1,sh}` drop it at the canonical path. **Or** downgrade the rule to "if a portfolio index exists, run recon; otherwise note absence in the spec." Pick one — do not ship a NON-NEGOTIABLE rule the agent cannot satisfy.
+
+- **P0-2** [FIXED 2026-04-27] [Security/Supply chain]: **`@google/gemini-cli` and `@anthropic-ai/claude-code` package names in `.devcontainer/on-create.sh:50` are unverified.** I noted this in the commit message but did not check. If wrong, the codespace silently warns and the `[OK] gemini` line in on-attach.sh becomes `[--] gemini`, breaking the entire "paste handoff prompt" flow. Worse: a typo-squat package matching the wrong name installs malicious code with `-g` privileges. (`@google/generative-ai` exists; `@google/gemini-cli` may not.)
+  - **Suggested fix**: `npm view @google/gemini-cli` from a Codespace (or any Linux box with npm) before next push. If the package name is wrong, fix it. If correct, **pin to a specific version** (`@google/gemini-cli@x.y.z`) so a registry compromise tomorrow does not ship through the next codespace build.
+
+- **P0-3** [FIXED 2026-04-27] [Production Readiness]: **Codespaces 60h/month free tier will burn out under student load with no warning.** The current `docs/index.html` cloud banner says "Free tier covers 60 hours/month — enough for your first paper." It does NOT say "you must STOP your codespace when you are done; idle codespaces auto-suspend after 30 min default but still bill until then" or "go to github.com/codespaces to manage running codespaces." With 190 students at Makerere alone, expect 10-20% to brick their tier in week 1 by leaving tabs open. **They will then have NO way back into the cloud option** until next month.
+  - **Suggested fix**: add a single yellow callout under the green Codespaces button: "**Tip:** when you are done for the day, run `gh codespace stop` or close it from <a href='https://github.com/codespaces'>github.com/codespaces</a>. Idle codespaces use up your monthly hours." Translate to fr/pt/ar.
+
+- **P0-4** [FIXED 2026-04-27] [Release Engineering]: **`docs/HASH.txt` and `docs/HASH-linux.txt` regeneration is manual.** Any future edit to `install/install.ps1` or `install/install.sh` by a contributor (or a future Mahmood session) without re-hashing → fresh installs hit "ERROR: install.ps1 hash mismatch. File may have been tampered with." The Pester suite `install/pester.tests.ps1:296` regenerates HASH.txt as a side effect during test runs, but only when pytest runs and only the `.ps1` side; HASH-linux.txt has no auto-regen. This is a latent install-breaking bug, not a hypothetical.
+  - **Suggested fix**: add `scripts/regen-hashes.{ps1,sh}` AND a CI check that fails if `sha256sum install/install.{ps1,sh}` does not match the recorded `HASH.txt` / `HASH-linux.txt`. Better still: a pre-commit hook that auto-regenerates when either install file changes.
+
+---
+
+## P1 — Important
+
+- **P1-1** [FIXED 2026-04-27] [Production Readiness]: **`install.sh --full` chains 3 sub-installers that pip-install from `git+https://github.com/...`.** With 190 students hitting the install in one class, GitHub raw-content + the Codespaces image registry will rate-limit. Expect 5-15% of installs to fail `Install-Sentinel` or `Install-Overmind` mid-class. The `chainStatus` banner will faithfully report `[X] sentinel`, but the student now has a half-installed environment and no agent to help them recover.
+  - **Suggested fix**: cut `sentinel` and `overmind` PyPI releases, switch the installers to `pip install sentinel==X.Y.Z overmind==A.B.C` (PyPI has aggressive caching, no GitHub rate-limit). If PyPI publishing is not on the table, at minimum add retry-with-backoff in install-sentinel.sh / install-overmind.sh.
+
+- **P1-2** [FIXED 2026-04-27] [UX/Accessibility]: **`.devcontainer/on-attach.sh` runs the full status banner on every new terminal open.** Open a new terminal to grep something? You see 30 lines of "what is installed" before your prompt. Annoying for daily use, fine for first attach.
+  - **Suggested fix**: gate on a marker — `touch /tmp/e156-attach-shown` after first run; subsequent attaches skip if marker is fresh (< 1h old). Alternative: print only on first attach per codespace lifetime.
+
+- **P1-3** [FIXED 2026-04-27] [Security]: **`TRUTHCERT_HMAC_KEY` is exported into every bash session by the .bashrc append in `on-create.sh:74-82`.** Any process that inherits the shell environment (a `pip install` post-install script, a `npm install` of a typo-squat, a notebook running `os.environ`) sees the key. Per `lessons.md`: "HMAC key must not come from the bundle itself" — generating it locally is fine, but exporting globally is overbroad.
+  - **Suggested fix**: do not export. Have `overmind` itself read `~/.config/e156/truthcert-hmac-key` at invocation time (it already does — `install-overmind.sh:125` checks the file). Drop the .bashrc append; the existing key file is sufficient.
+
+- **P1-4** [FIXED 2026-04-27] [i18n]: **The Gemini handoff prompt is English-only.** A French/Portuguese/Arabic-speaking student who pastes it into `gemini` may get an English-mode response they struggle with. The cloud banner translation is good but the prompt itself is the longest piece of student-facing text in the install and it is not translated.
+  - **Suggested fix**: ship `scripts/gemini-handoff-prompt.{en,fr,pt,ar}.md`. Make `write-gemini-handoff.{ps1,sh}` pick the locale from `$LANG` / `$env:LANG` with English fallback.
+
+- **P1-5** [FIXED 2026-04-27] [Release Engineering]: **`<ecosystem-starter-root>` in `rules/rules.md:25` is a literal placeholder, not a template token.** `install.{ps1,sh}` templates `{{PROJECTINDEX_ROOT}}` and friends but does not substitute `<ecosystem-starter-root>`. Result: students get a rule that says "run `<ecosystem-starter-root>/scripts/find-related-repos.py`" with the literal angle-brackets in `~/.claude/rules/rules.md`.
+  - **Suggested fix**: convert to `{{ECOSYSTEM_STARTER_ROOT}}` and add it to the `$rulesVars` hashtable in `install.ps1` + `RULES_VARS` in `install.sh`. Default value: the resolved starter root (`Get-EcoStarterRoot` / `STARTER_ROOT`).
+
+- **P1-6** [FIXED 2026-04-27] [Production Readiness]: **README.md "~90 second build" claim is unmeasured.** Real Codespace build time = base universal image cold start + r-apt feature + github-cli feature + 2 npm installs (~20s each from cold) + pip-install sentinel + pip-install overmind + git inits + meta-verify smoke test. Realistic: 3-5 minutes. A student who reads "~90 seconds" and sees "Configuring codespace…" still spinning at 4 minutes thinks it is broken.
+  - **Suggested fix**: actually open a fresh codespace from the badge URL, time it, replace the README + landing-page claim with the measured value (round up). If it is >2min, also add a "hang tight, this takes a few minutes" line in the postCreateCommand output.
+
+- **P1-7** [FIXED 2026-04-27] [UX/Accessibility]: **Click-to-copy buttons have no `aria-live` region.** When the button text changes from "Copy" to "Copied", a screen-reader user gets no announcement. WCAG 4.1.3 (status messages).
+  - **Suggested fix**: wrap the dynamic text in `<span aria-live="polite">`, OR add `role="status"` to the button. Test with NVDA + VoiceOver.
+
+- **P1-8** [FIXED 2026-04-27] [Security]: **Bootstrap does not warn when `$env:E156_REF` overrides the v0.8.0 pin to a non-tag (e.g. `main`).** A user (or a documentation copy-paste) that sets `E156_REF=main` is opting into bleeding-edge. The bootstrap prints `Pinned to: main` which sounds reassuring but is not.
+  - **Suggested fix**: in `docs/bootstrap.ps1` after resolving `$pinnedRef`, if it does not match `^v\d` print a yellow warning: "WARNING: $pinnedRef is not a release tag. You are running pre-release code without a review window. Press Ctrl+C to abort." Same for the .sh side.
+
+- **P1-9** [FIXED 2026-04-27] [Production Readiness]: **`npm install -g @google/gemini-cli @anthropic-ai/claude-code` has no version pin in `on-create.sh:50`.** Tomorrow's `gemini-cli` could rename a flag or change OAuth flow, and the next codespace build silently breaks the handoff prompt for every new student.
+  - **Suggested fix**: pin both packages to known-good major versions.
+
+---
+
+## P2 — Minor
+
+- **P2-1** [FIXED 2026-04-27] [UX]: **`find-related-repos.py` output is markdown, designed for agents.** A student running it in a terminal sees raw `### 1. Project Name _[Tier 1 / Active]_` text. Add `--plain` mode that strips markdown formatting.
+
+- **P2-2** [i18n]: **Cloud banner translations (fr/pt/ar) and copy-button labels are LLM-generated, not native-speaker reviewed.** Worth a one-time pass by a Makerere French speaker, a Lusophone-Africa contact, and a SAARC Arabic speaker before deploying widely.
+
+- **P2-3** [Software Engineer]: **Codespace HMAC keys are per-codespace.** Bundles signed in one codespace cannot be verified in another. Acceptable (Codespaces are ephemeral, key rotation is good security) but not documented in README or the on-attach banner.
+
+- **P2-4** [FIXED 2026-04-27] [Release Engineering]: **The lychee link-check CI job uses `--include-fragments` which validates anchors, but a future PR adding non-ASCII anchor IDs (e.g., Arabic headings with auto-generated `id`s) may behave inconsistently across lychee versions.** Pin lychee-action to a major version, not a floating tag.
+
+- **P2-5** [UX]: **Cloud banner says "free GitHub-hosted workspace" without distinguishing personal vs institutional GitHub accounts.** GitHub Education accounts get a higher Codespaces tier; some institutional GitHub Enterprise accounts may charge through to the org. Worth a one-line disclaimer.
+
+---
+
+## False Positive Watch (skipped this round)
+
+- **"Tamper gate" oversell** — fixed in this batch (README:49 reworded honestly).
+- **`push-portfolio.py` dotted-dirs** — fix landed with 4 pytest cases; correct.
+- **i18n troubleshooting links** — `id="troubleshooting"` anchor added; lychee will catch any future regression.
+- **HMAC key generation algorithm** — install-overmind.sh writes a 64-hex-char key file with mode 600; `lessons.md` rule "HMAC key must not come from the bundle itself" is satisfied (key generated locally per install).
+
+---
+
+## Persona disagreement
+
+**Security Auditor vs. Production Readiness on P1-3 (HMAC export to .bashrc):** SA says drop the export, PR says students will run `overmind` from random shells and the env var must be present. **Consensus**: SA wins here — overmind already reads the key file at invocation, and the env-var path is for back-compat with prior install.ps1 behavior. The codespace export is unnecessary surface area.
+
+**Production Readiness vs. UX on P0-3 (Codespaces minutes warning):** PR wants a yellow callout; UX worries it adds friction to the green-button flow. **Consensus**: ship it. A burned student who can't get back in is a worse UX than a one-line tip.
+
+---
+
+## Recommended fix order
+
+If fixing in batches:
+- **First batch (block-the-students)**: P0-1, P0-2, P0-3, P0-4.
+- **Second batch (operational reliability)**: P1-1, P1-2, P1-5, P1-6.
+- **Third batch (security + accessibility)**: P1-3, P1-4, P1-7, P1-8, P1-9.
+- **Defer**: all P2 to a future polish sprint.

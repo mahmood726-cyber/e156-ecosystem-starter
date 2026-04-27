@@ -68,6 +68,10 @@
     افتح في GitHub Codespaces &larr;
   </a>
 </section>
+<aside class="notice" role="note" style="background:#fff5b1; border-right:4px solid #ffd33d; border-left:none;">
+  <strong>نصيحة — أوقف الـ codespace عند الانتهاء.</strong>
+  أي codespace خامل يستمر في استهلاك ساعاتك الشهرية حتى يتم تعليقه تلقائياً (الافتراضي: 30 دقيقة). للإيقاف فوراً: اذهب إلى <a href="https://github.com/codespaces">github.com/codespaces</a> واضغط <strong>⋯ ← Stop codespace</strong>، أو شغّل <code>gh codespace stop</code> في الطرفية. مع 60 ساعة مجانية شهرياً، ترك تبويب مفتوح طوال اليوم سيستنفد حصتك في أقل من أسبوع.
+</aside>
 
 <div class="notice" role="note">
   <strong>ملاحظة:</strong> هذه نسخة مختصرة بالعربية. <a href="../">النسخة الإنجليزية الكاملة</a> تحتوي على جميع التعليمات التفصيلية (المتطلبات الأساسية، استكشاف الأخطاء، نموذج الأمان، أمثلة المشاريع). أوامر التثبيت أدناه متطابقة في جميع اللغات.
@@ -114,7 +118,7 @@ ls ~/.claude/rules</code></pre>
   · الترجمة العربية مقدمة بحسن نية؛ في حال الشك التقني، النسخة الإنجليزية هي المرجع. <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/issues/new?title=تحسين+الترجمة+العربية">اقترح تصحيحاً</a>.
 </footer>
 <script>
-(function(){'use strict';document.querySelectorAll('pre').forEach(function(pre){var code=pre.querySelector('code');if(!code)return;var btn=document.createElement('button');btn.type='button';btn.className='copy-btn';btn.textContent='نسخ';btn.setAttribute('aria-label','نسخ الكود');btn.addEventListener('click',function(){var t=code.innerText;var ok=function(){btn.textContent='تم النسخ';btn.setAttribute('data-state','copied');setTimeout(function(){btn.textContent='نسخ';btn.removeAttribute('data-state');},1600);};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(function(){});}else{try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();}catch(e){}}});pre.appendChild(btn);});})();
+(function(){'use strict';document.querySelectorAll('pre').forEach(function(pre){var code=pre.querySelector('code');if(!code)return;var btn=document.createElement('button');btn.type='button';btn.className='copy-btn';btn.textContent='نسخ';btn.setAttribute('aria-label','نسخ الكود');btn.setAttribute('role','status');btn.setAttribute('aria-live','polite');btn.addEventListener('click',function(){var t=code.innerText;var ok=function(){btn.textContent='تم النسخ';btn.setAttribute('data-state','copied');setTimeout(function(){btn.textContent='نسخ';btn.removeAttribute('data-state');},1600);};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(function(){});}else{try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();}catch(e){}}});pre.appendChild(btn);});})();
 </script>
 </body>
 </html>

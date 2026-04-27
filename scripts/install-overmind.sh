@@ -65,10 +65,25 @@ install_overmind_package() {
     # (numpy / scipy / torch / pandas) and the footprint passes ~50 MB, add a
     # --estimate-mb preflight via `pip install --dry-run --report`. See
     # review-findings.md P0-2.
+    #
+    # RETRY (added 2026-04-27, P1-1): 3 attempts with 2/4/8s backoff for
+    # transient git+https failures under student-class burst load.
     local src="${1:-$(overmind_default_source)}"
     assert_real_python || return 1
     echo "  source: $src"
-    "$PYTHON" -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'
+    local attempt
+    for attempt in 1 2 3; do
+        if "$PYTHON" -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'; then
+            return 0
+        fi
+        if [[ "$attempt" -lt 3 ]]; then
+            local wait=$(( 2 ** attempt ))
+            echo "  pip install attempt $attempt failed; retrying in ${wait}s..." >&2
+            sleep "$wait"
+        fi
+    done
+    echo "  pip install failed after 3 attempts" >&2
+    return 1
 }
 
 new_truthcert_hmac_key() {

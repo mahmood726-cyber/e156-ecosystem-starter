@@ -23,7 +23,18 @@ param(
 if (-not $StarterRoot) {
     $StarterRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 }
-$promptFile = Join-Path $StarterRoot 'scripts\gemini-handoff-prompt.md'
+# Locale picker: $env:E156_LANG override > first 2 chars of $env:LANG / $env:LC_ALL > en.
+# Supported: en, fr, pt, ar.
+$locale = if ($env:E156_LANG) { $env:E156_LANG.ToLower() }
+          elseif ($env:LANG)    { $env:LANG.Substring(0, [Math]::Min(2, $env:LANG.Length)).ToLower() }
+          elseif ($env:LC_ALL)  { $env:LC_ALL.Substring(0, [Math]::Min(2, $env:LC_ALL.Length)).ToLower() }
+          else                  { 'en' }
+if ($locale -notin @('en','fr','pt','ar')) { $locale = 'en' }
+$promptFile = Join-Path $StarterRoot ("scripts\gemini-handoff-prompt.$locale.md")
+if (-not (Test-Path $promptFile)) {
+    # Fall back to English if the localised file is missing (e.g. partial release).
+    $promptFile = Join-Path $StarterRoot 'scripts\gemini-handoff-prompt.en.md'
+}
 if (-not (Test-Path $promptFile)) {
     if (-not $Quiet) { Write-Warning "Gemini handoff prompt not found: $promptFile" }
     return

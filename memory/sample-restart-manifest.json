@@ -1,0 +1,105 @@
+{
+  "_comment": "Sample portfolio index seeded by install-projectindex.sh on a fresh student install. Lets find-related-repos.py return SOMETHING so the recon-before-new-project rule is followable on day one. Replace with a real generated manifest as your portfolio grows. Schema matches C:/ProjectIndex/agent-records/restart-manifest.json (records[] with name/path/workbook.title/restart.resumeSummary).",
+  "generatedAt": "2026-04-27T00:00:00Z",
+  "source": "e156-ecosystem-starter sample seed",
+  "records": [
+    {
+      "name": "ma-workbench (sglt2i-hfpef-demo)",
+      "tier": "Tier 4",
+      "status": "Shipped",
+      "path": "",
+      "resolvedPath": "",
+      "workbook": {
+        "title": "SGLT2i-HFpEF benchmark — full E156 demo: data → analysis → 156-word body → reproducibility audit"
+      },
+      "restart": {
+        "resumeSummary": "Worked example of the brainstorm → spec-lock → plan-lock → TDD → audit method. Pooled HR 0.81 vs published Vaduganathan 0.80, |Δ|=0.007 > 0.005 spec-locked threshold; shipped as honest-FAIL with full transparency rather than relaxing the criterion. The reference for how to ship a meta-analysis E156 paper end-to-end."
+      },
+      "git": { "remote": "https://github.com/mahmood726-cyber/ma-workbench.git" }
+    },
+    {
+      "name": "repro-floor-atlas",
+      "tier": "Tier 1",
+      "status": "Shipped",
+      "path": "",
+      "resolvedPath": "",
+      "workbook": {
+        "title": "Reproduction-Floor Atlas: 14.3% non-reproducibility at |Δ|>0.005 across 7,545 Cochrane MAs"
+      },
+      "restart": {
+        "resumeSummary": "Pairwise70-scale (7,545 MAs / 595 reviews) reproduction-floor study. 21 pytest, Sentinel 0 BLOCK. Paired with cochrane-modern-re for the DL→REML+HKSJ+PI flip-rate companion. Primary E156-method-applied-at-portfolio-scale exemplar."
+      },
+      "git": { "remote": "https://github.com/mahmood726-cyber/repro-floor-atlas.git" }
+    },
+    {
+      "name": "responder-floor-atlas",
+      "tier": "Tier 1",
+      "status": "Shipped",
+      "path": "",
+      "resolvedPath": "",
+      "workbook": {
+        "title": "Responder Floor Atlas: empirical implied MIDs exceed canonical by 1.28- to 3.81-fold"
+      },
+      "restart": {
+        "resumeSummary": "Bootstrap-CI dashboard + cross-review overlap + log-normal sensitivity. 2013 trial-arm observations across 4 reviews. 102 tests; Sentinel 0 BLOCK. Demonstrates the spec-lock cycle: feasibility tag → amendment tag → results tag."
+      },
+      "git": { "remote": "https://github.com/mahmood726-cyber/responder-floor-atlas.git" }
+    },
+    {
+      "name": "impossible-ma",
+      "tier": "Tier 1",
+      "status": "Shipped",
+      "path": "",
+      "resolvedPath": "",
+      "workbook": {
+        "title": "ImpossibleMA: Possibility Envelope primitive (k=1, missing SE, adversarial inputs)"
+      },
+      "restart": {
+        "resumeSummary": "88 tests (66 engine + 22 UI). Demonstrates fail-closed extractor design + sentinel-string contract tests. 3 papers drafted (E156, F1000, BMJ Methods)."
+      },
+      "git": { "remote": "https://github.com/mahmood726-cyber/impossible-ma.git" }
+    },
+    {
+      "name": "ctgov-hiddenness-atlas",
+      "tier": "Tier 19",
+      "status": "Submission ready",
+      "path": "",
+      "resolvedPath": "",
+      "workbook": {
+        "title": "CT.gov Hiddenness Atlas: What Sponsors Still Do Not Show (578K-study audit)"
+      },
+      "restart": {
+        "resumeSummary": "Worked example of CT.gov v2 API querying + AACT bridge + honest framing of negative findings. Reference for trial-registry analyses."
+      },
+      "git": { "remote": "https://github.com/mahmood726-cyber/ctgov-hiddenness-atlas.git" }
+    },
+    {
+      "name": "fragility-atlas",
+      "tier": "Tier 1",
+      "status": "Shipped",
+      "path": "",
+      "resolvedPath": "",
+      "workbook": {
+        "title": "The Fragility Atlas: Multiverse Analysis of 473 Cochrane Meta-Analyses Reveals 56% Are Sensitive to Analyst Choices"
+      },
+      "restart": {
+        "resumeSummary": "Multiverse analysis pipeline. The reference example for fragility-index work, sensitivity analysis at scale, and bootstrap-on-clustered-data."
+      },
+      "git": { "remote": "https://github.com/mahmood726-cyber/fragility-atlas.git" }
+    },
+    {
+      "name": "synthesis-courses",
+      "tier": "Tier 4",
+      "status": "Shipped",
+      "path": "",
+      "resolvedPath": "",
+      "workbook": {
+        "title": "Synthesis Courses — 26 interactive evidence-synthesis courses × 12 languages"
+      },
+      "restart": {
+        "resumeSummary": "Reference for HTML-app + i18n + interactive learning content. 335 files / 63.7 MB. Useful pattern for any teaching-oriented dashboard."
+      },
+      "git": { "remote": "https://github.com/mahmood726-cyber/synthesis-courses.git" }
+    }
+  ]
+}

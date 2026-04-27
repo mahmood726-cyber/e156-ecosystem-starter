@@ -15,7 +15,14 @@ starter_root="${E156_STARTER_ROOT:-}"
 if [[ -z "$starter_root" ]]; then
     starter_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fi
-prompt_file="$starter_root/scripts/gemini-handoff-prompt.md"
+# Locale picker: $E156_LANG override > first 2 chars of $LANG / $LC_ALL > en.
+locale="${E156_LANG:-${LANG:-${LC_ALL:-en}}}"
+locale="$(printf '%s' "$locale" | cut -c1-2 | tr 'A-Z' 'a-z')"
+case "$locale" in en|fr|pt|ar) ;; *) locale=en ;; esac
+prompt_file="$starter_root/scripts/gemini-handoff-prompt.${locale}.md"
+if [[ ! -f "$prompt_file" ]]; then
+    prompt_file="$starter_root/scripts/gemini-handoff-prompt.en.md"
+fi
 if [[ ! -f "$prompt_file" ]]; then
     echo "warning: handoff prompt not found at $prompt_file" >&2
     exit 0

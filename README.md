@@ -42,7 +42,7 @@ Click that badge. A free GitHub-hosted workspace opens in your browser with **th
 - **ProjectIndex** seed at `~/code/ProjectIndex/`
 - **Gemini CLI** + **Claude Code CLI** pre-installed (`gemini` is free; `claude` needs an Anthropic key)
 
-No PowerShell, no terminal experience, no admin rights, no API key required for Gemini. Build takes ~90 seconds. Free tier: 60 hours/month — enough for a first paper. See [`.devcontainer/`](.devcontainer/) for the exact orchestration: `on-create.sh` runs `install.sh --full --github-user $GH_USER`; `on-attach.sh` prints a status report every time a terminal opens so the student knows what's actually live.
+No PowerShell, no terminal experience, no admin rights, no API key required for Gemini. **Build takes ~2-3 minutes** (universal image cold start + 2 npm installs + 3 pip installs from GitHub). Free tier: 60 hours/month for personal/Education GitHub accounts; remember to **stop your codespace** when done so it doesn't burn your hours. See [`.devcontainer/`](.devcontainer/) for the exact orchestration: `on-create.sh` runs `install.sh --full --github-user $GH_USER`; `on-attach.sh` prints a status report on first terminal open per session.
 
 ### Local install — Windows / macOS / Linux / WSL
 

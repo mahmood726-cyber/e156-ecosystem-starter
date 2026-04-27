@@ -65,10 +65,27 @@ install_sentinel_package() {
     # warning helps. IF a future dependency bump pushes Sentinel alone past
     # ~50 MB (numpy / scipy / torch additions), add an --estimate-mb preflight
     # here using `pip install --dry-run --report` first. See review-findings.md P0-2.
+    #
+    # RETRY (added 2026-04-27, P1-1): pip install from git+https can fail
+    # under burst load (190-student class hitting GitHub raw simultaneously).
+    # 3 attempts with 2/4/8s backoff covers the common transient failures
+    # without making genuinely-broken installs hang for minutes.
     local src="${1:-$(sentinel_default_source)}"
     assert_real_python || return 1
     echo "  source: $src"
-    "$PYTHON" -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'
+    local attempt
+    for attempt in 1 2 3; do
+        if "$PYTHON" -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'; then
+            return 0
+        fi
+        if [[ "$attempt" -lt 3 ]]; then
+            local wait=$(( 2 ** attempt ))
+            echo "  pip install attempt $attempt failed; retrying in ${wait}s..." >&2
+            sleep "$wait"
+        fi
+    done
+    echo "  pip install failed after 3 attempts" >&2
+    return 1
 }
 
 backup_existing_pre_push_hook() {

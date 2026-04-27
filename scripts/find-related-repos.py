@@ -253,9 +253,43 @@ def code_grep(repo: Path, tokens: list[str], max_hits: int = 3) -> list[str]:
 
 
 def render(matches: list[Project], query: str, source: Path,
-           include_readme: bool, include_code: bool, names_only: bool) -> str:
+           include_readme: bool, include_code: bool, names_only: bool,
+           plain: bool = False) -> str:
     if names_only:
         return "\n".join(f"{p.name}\t{p.path or ''}" for p in matches)
+    if plain:
+        # Terminal-friendly output: no markdown decoration, ANSI for emphasis.
+        bold = "\033[1m"; dim = "\033[2m"; rst = "\033[0m"
+        out = [f"{bold}Top {len(matches)} portfolio matches for \"{query}\"{rst}",
+               f"{dim}index source: {source}{rst}", ""]
+        tokens = tokenize(query)
+        for i, p in enumerate(matches, 1):
+            head = f"{bold}{i}. {p.name}{rst}"
+            meta = " / ".join([s for s in [p.tier, p.status] if s])
+            if meta: head += f"  [{meta}]"
+            out.append(head)
+            if p.path:    out.append(f"   path:    {p.path}")
+            if p.remote:  out.append(f"   remote:  {p.remote}")
+            if p.title and p.title != p.name:
+                out.append(f"   title:   {p.title}")
+            if p.summary: out.append(f"   summary: {p.summary[:280]}")
+            out.append(f"   score:   {p.score} ({', '.join(p.matched_fields) or 'token-only'})")
+            if include_readme:
+                ex = readme_excerpt(p.path, tokens) if p.path else None
+                if ex:
+                    out.append("   README (first 30 lines):")
+                    # Reuse the "  > line" prefix from readme_excerpt, indent further
+                    out.append("\n".join("  " + ln for ln in ex.splitlines()))
+                elif p.path:
+                    out.append("   README: not present")
+            if include_code:
+                hits = code_grep(p.path, tokens) if p.path else []
+                if hits:
+                    out.append("   code hits:")
+                    out.extend("  " + h for h in hits)
+            out.append("")
+        return "\n".join(out)
+    # Default: markdown for agents
     out = [f"## Top {len(matches)} portfolio matches for \"{query}\"",
            f"_index source: {source}_", ""]
     tokens = tokenize(query)
@@ -298,6 +332,9 @@ def main() -> int:
     ap.add_argument("--no-readme", action="store_true", help="Skip README excerpt drill-down")
     ap.add_argument("--no-code", action="store_true", help="Skip code grep drill-down")
     ap.add_argument("--names-only", action="store_true", help="Bare name+path list (no formatting)")
+    ap.add_argument("--plain", action="store_true",
+                    help="Terminal-friendly output (ANSI), no markdown decoration. "
+                         "Default output is markdown (good for agents, ugly for humans).")
     ap.add_argument("--min-score", type=int, default=1, help="Drop hits below this score")
     args = ap.parse_args()
 
@@ -327,6 +364,7 @@ def main() -> int:
         include_readme=not args.no_readme,
         include_code=not args.no_code,
         names_only=args.names_only,
+        plain=args.plain,
     ))
     return 0
 

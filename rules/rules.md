@@ -21,12 +21,15 @@
 ### Request confirmation
 - Before substantial work, restate the deliverable, non-goals, and whether the task is read-only or edit-allowed. Keep non-goals visible so work does not drift.
 
-### Portfolio recon before any new project (NON-NEGOTIABLE)
-- Before scaffolding a new project (new repo, new tool, new analysis pipeline), **first run `find-related-repos.py "<topic>"`** against the user's portfolio index. The script lives at `<ecosystem-starter-root>/scripts/find-related-repos.py` and reads `restart-manifest.json` (or falls back to `INDEX.md`) under `{{PROJECTINDEX_ROOT}}\agent-records\`.
+### Portfolio recon before any new project
+- Before scaffolding a new project (new repo, new tool, new analysis pipeline), run `find-related-repos.py "<topic>"` against the user's portfolio index. The script lives at `{{ECOSYSTEM_STARTER_ROOT}}/scripts/find-related-repos.py` and reads `restart-manifest.json` (or falls back to `INDEX.md`) under `{{PROJECTINDEX_ROOT}}/agent-records/`. The starter installer seeds a sample manifest with 7 worked-example repos so this rule is followable on day one; replace it with a real generated manifest as the portfolio grows.
 - For each top-N hit it returns: project name, status, on-disk path, workbook title, README excerpt, and code-grep hits. Read the top 3-5 hits before writing the new project's spec.
-- In the new project's spec doc (`docs/<criterion>.md` or equivalent), explicitly cite **what is reused** vs **what is net-new**, naming the prior repos by name. This blocks the "I'll just rewrite this from scratch" pattern that has produced ≥3 near-duplicate atlases in the existing portfolio.
-- If `find-related-repos.py` returns no matches, that is itself a finding worth noting in the spec — it means either the topic is genuinely net-new or the index is stale (last regenerate timestamp is in `restart-manifest.json`'s `generatedAt`).
-- Override only with explicit user permission. Skipping recon to "move faster" is the most expensive shortcut in this codebase.
+- In the new project's spec doc (`docs/<criterion>.md` or equivalent), cite **what is reused** vs **what is net-new**, naming the prior repos by name. This blocks the "I will just rewrite this from scratch" pattern that has produced ≥3 near-duplicate atlases in the existing portfolio.
+- **Required outputs in the spec, regardless of recon result:**
+  - If matches found → name the top hits and state reused vs net-new.
+  - If zero matches → state "no portfolio matches for `<topic>`" and note manifest `generatedAt` so a stale index doesn't masquerade as a green light.
+  - If no manifest exists at all (`exit 2`) → state "no portfolio index available" and proceed without recon. Do NOT skip the spec line.
+- Override the recon step only with explicit user permission. The spec line documenting recon outcome is required either way.
 
 ### Ingredient proof and claim discipline
 - Verify required source data exists on disk before implementation or documentation claims.

@@ -64,6 +64,10 @@
     Abrir no GitHub Codespaces &rarr;
   </a>
 </section>
+<aside class="notice" role="note" style="background:#fff5b1; border-left:4px solid #ffd33d;">
+  <strong>Dica — pare o seu codespace quando terminar.</strong>
+  Codespaces inativos continuam consumindo as suas horas mensais até serem suspensos automaticamente (padrão: 30 min). Para parar imediatamente: vá a <a href="https://github.com/codespaces">github.com/codespaces</a> e clique em <strong>⋯ → Stop codespace</strong>, ou execute <code>gh codespace stop</code> num terminal. Com 60 horas grátis por mês, deixar uma aba aberta o dia todo esgotará a sua cota em menos de uma semana.
+</aside>
 
 <div class="notice" role="note">
   <strong>Nota:</strong> esta é uma versão resumida em português. A <a href="../">versão completa em inglês</a> contém todas as instruções detalhadas (pré-requisitos, resolução de problemas, modelo de segurança, projetos de exemplo). Os comandos de instalação abaixo são idênticos em todos os idiomas.
@@ -110,7 +114,7 @@ ls ~/.claude/rules</code></pre>
   · Tradução portuguesa fornecida de boa fé; em caso de dúvida técnica, a versão em inglês prevalece. <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/issues/new?title=Melhorar+a+tradução+portuguesa">Sugerir uma correção</a>.
 </footer>
 <script>
-(function(){'use strict';document.querySelectorAll('pre').forEach(function(pre){var code=pre.querySelector('code');if(!code)return;var btn=document.createElement('button');btn.type='button';btn.className='copy-btn';btn.textContent='Copiar';btn.setAttribute('aria-label','Copiar código');btn.addEventListener('click',function(){var t=code.innerText;var ok=function(){btn.textContent='Copiado';btn.setAttribute('data-state','copied');setTimeout(function(){btn.textContent='Copiar';btn.removeAttribute('data-state');},1600);};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(function(){});}else{try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();}catch(e){}}});pre.appendChild(btn);});})();
+(function(){'use strict';document.querySelectorAll('pre').forEach(function(pre){var code=pre.querySelector('code');if(!code)return;var btn=document.createElement('button');btn.type='button';btn.className='copy-btn';btn.textContent='Copiar';btn.setAttribute('aria-label','Copiar código');btn.setAttribute('role','status');btn.setAttribute('aria-live','polite');btn.addEventListener('click',function(){var t=code.innerText;var ok=function(){btn.textContent='Copiado';btn.setAttribute('data-state','copied');setTimeout(function(){btn.textContent='Copiar';btn.removeAttribute('data-state');},1600);};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(function(){});}else{try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();}catch(e){}}});pre.appendChild(btn);});})();
 </script>
 </body>
 </html>
