@@ -165,3 +165,80 @@ If fixing in batches:
 - **Second batch (operational reliability)**: P1-1, P1-2, P1-5, P1-6.
 - **Third batch (security + accessibility)**: P1-3, P1-4, P1-7, P1-8, P1-9.
 - **Defer**: all P2 to a future polish sprint.
+
+---
+
+# Second-Pass Review: e156-ecosystem-starter v0.8.x (post-80f9a51)
+
+**Date**: 2026-04-27 (same day as first-pass)
+**Scope**: validating the fix bundle from commit 80f9a51 against itself. Did the fixes land correctly? Did they introduce new issues? What did the first-pass review miss?
+**Personas**: Security · Software Engineer · Release Engineer · Production Readiness · UX/Accessibility · i18n.
+
+**Summary**: 0 P0 · 4 P1 · 6 P2. Headline: **fix bundle landed clean, no new P0s introduced**, but a few subtle issues surfaced in the new code paths.
+
+---
+
+## P0 — Critical
+
+_None._ The fix bundle is sound at the P0 level.
+
+---
+
+## P1 — Important
+
+- **P1-A** [Production Readiness]: **`on-attach.sh` marker file `/tmp/e156-attach-shown` may persist across Codespace restarts.** `/tmp` retention varies: a Codespace that stops + resumes preserves /tmp; a Codespace that gets rebuilt (config change, container update) wipes it. Net effect: a long-lived codespace user sees the full banner once on day 1, then **never again** even if they intend the per-session reminder. The 60-min freshness window I wrote helps with same-day re-attaches but not 2-week-old codespaces. (`.devcontainer/on-attach.sh:12-22`.)
+  - **Suggested fix**: instead of an age-based marker, use a **per-codespace-session** marker stored under `$CODESPACES_PROJECT_FOLDER` or compare against `/proc/1` start-time (PID 1's mtime resets on container restart). Alternative: drop the marker entirely; print only the one-liner reminder, gated on `[[ -t 0 ]]` so non-interactive shells stay silent.
+
+- **P1-B** [Supply chain]: **`@anthropic-ai/claude-code@^2.1.0` accepts minor bumps (`2.2.x`, `2.3.x`, …) per npm semver caret rules for ≥1.0 versions.** Claude Code is rapidly evolving — a `2.2.0` next week could change CLI flag names that the handoff prompt depends on. `@google/gemini-cli@^0.39.0` is correctly restrictive (caret on 0.x = patch-only, equivalent to `~0.39.0`), but the claude-code pin is looser than intended. (`.devcontainer/on-create.sh:54`.)
+  - **Suggested fix**: tighten to `~2.1.0` (patch-only) or pin to a tested specific version (`2.1.119`) and document the bump cadence.
+
+- **P1-C** [Software Engineer]: **`install-projectindex.{sh,ps1}` `--force` controls all three artifacts (INDEX.md, reconcile_counts.py, restart-manifest.json) with one flag.** A user who has a real generated `restart-manifest.json` (e.g., from Mahmood's nightly pipeline) and just wants to refresh `INDEX.md` will run `--force` and silently wipe their real manifest with the 7-record sample. (`scripts/install-projectindex.sh:194,203,221`.)
+  - **Suggested fix**: separate `--force` (INDEX.md + reconcile.py) from `--seed-sample-manifest` (only seeds if the file does not exist; never overwrites a real one). Or: detect "this looks like a real manifest" by checking `len(records) > 10` and refuse to overwrite without `--force-manifest`.
+
+- **P1-D** [Release Engineering]: **No CI step verifies the locale picker in `write-gemini-handoff.{ps1,sh}`.** All four handoff translations exist on disk, but the path-resolution logic is untested — `$LANG=fr_FR.UTF-8` should pick `gemini-handoff-prompt.fr.md`, but a typo in the substring extraction would silently fall back to English without anyone noticing. (`scripts/write-gemini-handoff.ps1:30-40`, `.sh:18-26`.)
+  - **Suggested fix**: add a Pester case + a bash test case that sets `$LANG=fr_FR.UTF-8` and asserts the resolved prompt path ends with `.fr.md`. Same for pt, ar.
+
+---
+
+## P2 — Minor
+
+- **P2-A** [UX]: **`find-related-repos.py --plain` emits raw ANSI escape codes** (`\033[1m`, `\033[0m`, etc.). On Windows `cmd.exe` (NOT PowerShell), these print literally as `←[1m...`. PowerShell 5.1+ and modern terminals handle them. Detect TTY support: only emit ANSI when `sys.stdout.isatty() and os.environ.get("TERM") != "dumb"`. (`scripts/find-related-repos.py:render` plain branch.)
+
+- **P2-B** [Documentation]: **`memory/sample-restart-manifest.json` records have empty `path` strings**, which means README excerpt + code grep are skipped for every sample hit (find-related-repos.py treats empty path as "no path"). This is correct behavior but undocumented — a student running the recon tool against the sample manifest sees only score + name + summary, no code drill-down. Worth a one-line note in the manifest's `_comment` field: "Sample records have no on-disk path; the README excerpt + code-grep features only fire against repos cloned locally."
+
+- **P2-C** [Documentation]: **README.md mentions "GitHub Education accounts get 60 hours/month free"** but doesn't link to the application. New African students may not know `https://education.github.com/discount_requests/application` exists. One-line link.
+
+- **P2-D** [Software Engineer]: **`docs/bootstrap.ps1` bleeding-edge warning uses `Start-Sleep -Seconds 5`** — that's a hard 5-second pause every install if `E156_REF` is set. Acceptable for `main`, but if a contributor runs `E156_REF=v0.8.0-rc1` for testing they pay 5s every iteration. Skip the sleep when stdin is non-interactive (CI, automated scripts).
+
+- **P2-E** [i18n]: **The Codespaces "Stop your codespace" yellow callout in Arabic** mixes RTL paragraph flow with the literal English string `Stop codespace` (matching the actual GitHub UI button label). Renders correctly per CSS `direction: rtl` but reads slightly jarring. Consider transliterating or just using the English label without translation since that's what the GitHub button actually says. (`docs/ar/index.html` aside.)
+
+- **P2-F** [Security]: **`scripts/regen-hashes.sh` reads HASH files with `tr -d '[:space:]'`** to normalize whitespace, but this would also accept a HASH file with embedded spaces or tabs in the middle of the hex string (effectively, `7495 9bdc...` becomes `74959bdc...`). Real hex hashes have no internal whitespace, but an attacker who could write to HASH.txt could exploit this to bypass drift detection in a malicious commit. Tighten with `head -c 64` or a regex check. Very low severity; mitigation is "the attacker already has push access at that point."
+
+---
+
+## What this pass confirmed is correct (false-positive-watch)
+
+- **`^0.39.0` semver pin** for `@google/gemini-cli` IS restrictive — caret on `0.x` is equivalent to tilde, allowing only patch updates per npm spec. Not a bug.
+- **`printf '%s'` in regen-hashes.sh writes without trailing newline** — correct, matches what install.{ps1,sh} expects to read after `Trim()` / `tr -d`.
+- **Sample manifest `path: ""` empty strings** — script handles them correctly via `Path(p_str) if p_str else None`. Drill-down is skipped, not crashed.
+- **caret vs tilde for 0.x semver**: correct in this codebase. Documented at npmjs.com/package/semver.
+- **Pester test rewriting HASH.txt as a side effect**: by design (per pester.tests.ps1:296). The regen-hashes.sh + CI hash-check job are the safety net for non-test code paths.
+
+---
+
+## What the FIRST-pass review missed (mea culpa)
+
+- **First pass did not catch P1-A** (marker file persistence across Codespace rebuilds). The fix I shipped solved the "same-day terminal re-open" annoyance but not the deeper "long-lived codespace" case.
+- **First pass did not catch P1-B** (caret semver looseness on 2.x). I treated `^2.1.0` as equivalent to `~2.1.0` mentally; it isn't.
+- **First pass did not catch P1-C** (--force overwrites a real manifest). I added the seed step without thinking about the existing-real-manifest case.
+- **First pass did not catch P1-D** (locale picker is untested). Only the prompt content was reviewed; the path-resolution logic that picks WHICH file to load wasn't validated.
+
+These four miss-patterns share a theme: **fixes that look correct in isolation can interact badly with prior code paths** (existing /tmp persistence semantics, existing --force semantics, existing test coverage gaps). Worth a "did this fix interact safely with existing flags / state?" checklist for the next round.
+
+---
+
+## Recommendation
+
+The first-pass fixes are net-positive — install survival improved meaningfully. P1-A and P1-C are real but bounded (affect specific scenarios, not first-time users). P1-B is a real supply-chain hardening miss. P1-D is a CI gap, not a runtime bug.
+
+**If fixing this pass**: do P1-B + P1-C first (cheap, supply-chain + data-loss). P1-A is more design work (pick a real per-session signal). P1-D is a 30-min Pester test add. P2s defer.
