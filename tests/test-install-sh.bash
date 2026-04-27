@@ -188,6 +188,59 @@ redact_test 'TRUTHCERT_HMAC_KEY=68c4bf3aecd57c8815e1a8fb74f74eb38c471155a0abf25a
 start "redact_secrets_in_log scrubs JWTs"
 redact_test 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c' '[REDACTED-jwt]' 'jwt' && ok
 
+# Describe: backup_existing_pre_push_hook (P0 — researcher's existing hook)
+mk_repo() {
+    local d
+    d="$(mktemp -d)"
+    mkdir -p "$d/.git/hooks"
+    printf '%s' "$d"
+}
+
+start "backup_existing_pre_push_hook returns nothing when no hook exists"
+repo="$(mk_repo)"
+result="$(bash -c "source '$ROOT/scripts/install-sentinel.sh' --import; backup_existing_pre_push_hook '$repo'")"
+[[ -z "$result" ]] && ok
+rm -rf "$repo"
+
+start "backup_existing_pre_push_hook backs up user-authored hook"
+repo="$(mk_repo)"
+printf '#!/bin/sh\nmy custom lint\n' > "$repo/.git/hooks/pre-push"
+result="$(bash -c "source '$ROOT/scripts/install-sentinel.sh' --import; backup_existing_pre_push_hook '$repo'")"
+if [[ "$result" =~ pre-push\.user-[0-9]{8}-[0-9]{6}$ ]] && [[ -f "$result" ]] && grep -q 'my custom lint' "$result"; then
+    ok
+else
+    bad "expected timestamped backup with original content, got: $result"
+fi
+rm -rf "$repo"
+
+start "copy_rules_to_agent timestamp-suffixes second-rerun backups (P2)"
+target="$(mktemp -d)"
+src="$ROOT/rules"
+# First re-install: lessons.md.user gets created
+echo "edit-1" > "$target/lessons.md"
+copy_rules_to_agent "$src" "$target" >/dev/null
+# Now lessons.md.user contains "edit-1"
+# Re-edit lessons.md and re-install
+echo "edit-2" > "$target/lessons.md"
+copy_rules_to_agent "$src" "$target" >/dev/null
+# Original .user must still hold "edit-1"; the .user-<ts> must hold "edit-2"
+ts_backup_count="$(ls "$target"/lessons.md.user-* 2>/dev/null | wc -l)"
+[[ "$(cat "$target/lessons.md.user")" == "edit-1" ]] && \
+    [[ "$ts_backup_count" -eq 1 ]] && \
+    [[ "$(cat "$target"/lessons.md.user-*)" == "edit-2" ]] && ok
+rm -rf "$target"
+
+start "backup_existing_pre_push_hook skips Sentinel-installed hooks"
+repo="$(mk_repo)"
+printf '#!/bin/sh\nsentinel run-pre-push --repo .\n' > "$repo/.git/hooks/pre-push"
+result="$(bash -c "source '$ROOT/scripts/install-sentinel.sh' --import; backup_existing_pre_push_hook '$repo'")"
+if [[ -z "$result" ]] && ! ls "$repo"/.git/hooks/pre-push.user-* >/dev/null 2>&1; then
+    ok
+else
+    bad "expected no backup for Sentinel-installed hook"
+fi
+rm -rf "$repo"
+
 # Summary
 echo
 echo "Tests completed: $((PASS+FAIL))"

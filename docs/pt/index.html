@@ -20,26 +20,33 @@
   code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; font-family: "SF Mono", "Consolas", monospace; }
   pre { background: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.9em; }
   pre code { background: none; padding: 0; }
-  .lang-picker { text-align: center; margin: 16px 0 24px; font-size: 0.9em; }
-  .lang-picker a { margin: 0 8px; color: #0366d6; text-decoration: none; }
+  @media (max-width: 480px) { pre { white-space: pre-wrap; word-break: break-all; } }
+  .lang-picker { text-align: center; margin: 16px 0 24px; font-size: 0.95em; }
+  .lang-picker a { display: inline-block; padding: 12px 14px; margin: 2px; color: #0366d6; text-decoration: none; min-width: 44px; min-height: 44px; line-height: 1.3; }
   .lang-picker a[aria-current="page"] { font-weight: 600; color: #1a1a1a; text-decoration: underline; }
+  .lang-sep { color: #999; padding: 0 4px; }
+  .skip-link { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+  .skip-link:focus { position: static; width: auto; height: auto; padding: 8px; background: #0366d6; color: white; }
   .notice { background: #fff5b1; border-left: 3px solid #ffd33d; padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 0.95em; }
   .footer { margin-top: 60px; color: #595e63; font-size: 0.9em; text-align: center; }
   .footer a { color: #444; }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Ir para o conteúdo principal</a>
 <nav class="lang-picker" aria-label="Idiomas disponíveis">
-  <a href="../" hreflang="en">English</a> ·
-  <a href="../fr/" hreflang="fr">Français</a> ·
-  <a href="./" hreflang="pt" aria-current="page">Português</a> ·
-  <a href="../ar/" hreflang="ar">العربية</a>
+  <a href="../" hreflang="en" lang="en">English</a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="../fr/" hreflang="fr" lang="fr">Français</a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="./" hreflang="pt" lang="pt" aria-current="page">Português</a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="../ar/" hreflang="ar" lang="ar">العربية</a>
 </nav>
 
 <header>
   <h1>E156 Ecosystem Starter</h1>
   <p class="sub">Configure o ambiente de desenvolvimento do Mahmood com um único comando.</p>
 </header>
+
+<main id="main">
 
 <div class="notice" role="note">
   <strong>Nota:</strong> esta é uma versão resumida em português. A <a href="../">versão completa em inglês</a> contém todas as instruções detalhadas (pré-requisitos, resolução de problemas, modelo de segurança, projetos de exemplo). Os comandos de instalação abaixo são idênticos em todos os idiomas.
@@ -61,8 +68,8 @@ ls ~/.claude/rules</code></pre>
 <p>Você deve ver quatro arquivos <code>.md</code>: <code>e156</code>, <code>lessons</code>, <code>advanced-stats</code>, <code>rules</code>.</p>
 
 <h2>Próximo passo — produzir trabalho com a mesma qualidade</h2>
-<p>Instalar as regras é metade do trabalho. A outra metade é usá-las com o mesmo <strong>método</strong>: <em>brainstorm → spec-lock → plan-lock → TDD → audit</em>.</p>
-<p>Leia o <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"><strong>STUDENT-WORKFLOW.md</strong></a> (em inglês) para o guia completo: o método passo a passo, os repositórios de exemplo para clonar, e como Sentinel + Overmind funcionam como portões de qualidade.</p>
+<p>Instalar as regras é apenas metade do trabalho. A outra metade é usá-las com o mesmo <strong>método</strong>: <em>brainstorm → spec-lock → plan-lock → TDD → audit</em>.</p>
+<p>Leia o <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"><strong>STUDENT-WORKFLOW.md</strong></a> (em inglês) para o guia completo: o método passo a passo, os repositórios de exemplo para clonar, e como o Sentinel e o Overmind funcionam como controles de qualidade.</p>
 
 <h2>Pré-requisitos</h2>
 <ul>
@@ -78,10 +85,12 @@ ls ~/.claude/rules</code></pre>
   <li>O instalador grava um log em <code>%LOCALAPPDATA%\e156\logs\install-&lt;ts&gt;.log</code> (Windows) ou <code>~/.local/state/e156/logs/install-&lt;ts&gt;.log</code> (Linux/WSL). Chaves de API e segredos são automaticamente mascarados antes de qualquer compartilhamento.</li>
 </ul>
 
+</main>
+
 <footer class="footer" role="contentinfo">
   Fonte: <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter">github.com/mahmood726-cyber/e156-ecosystem-starter</a>
   · <a href="../">Versão completa em inglês</a>
-  · Tradução portuguesa fornecida de boa fé; em caso de dúvida técnica, a versão em inglês prevalece.
+  · Tradução portuguesa fornecida de boa fé; em caso de dúvida técnica, a versão em inglês prevalece. <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/issues/new?title=Melhorar+a+tradução+portuguesa">Sugerir uma correção</a>.
 </footer>
 </body>
 </html>

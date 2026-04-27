@@ -71,11 +71,36 @@ install_sentinel_package() {
     "$PYTHON" -m pip install --quiet --disable-pip-version-check "$src" 2>&1 | sed 's/^/  /'
 }
 
+backup_existing_pre_push_hook() {
+    # If the target repo already has a non-Sentinel pre-push hook, back it
+    # up to pre-push.user-<timestamp> before letting upstream sentinel
+    # install-hook overwrite it. Returns the backup path on stdout, or
+    # nothing if no backup was needed.
+    local abs="$1"
+    local hook="$abs/.git/hooks/pre-push"
+    [[ -f "$hook" ]] || return 0
+    if grep -qE 'sentinel[[:space:]]+(scan|run-pre-push)' "$hook" 2>/dev/null; then
+        return 0  # already a Sentinel hook
+    fi
+    local ts
+    ts="$(date +%Y%m%d-%H%M%S)"
+    local backup="${hook}.user-${ts}"
+    cp "$hook" "$backup"
+    printf '%s' "$backup"
+}
+
 install_sentinel_hook_in_repo() {
     local repo_path="$1" hook_mode="$2"
     local abs
     abs="$(cd "$repo_path" 2>/dev/null && pwd)" || { echo "ERROR: not a dir: $repo_path" >&2; return 1; }
     [[ -d "$abs/.git" ]] || { echo "ERROR: not a git repo (no .git/): $abs" >&2; return 1; }
+    local backup
+    backup="$(backup_existing_pre_push_hook "$abs")"
+    if [[ -n "$backup" ]]; then
+        echo "  Backed up existing pre-push hook to: $backup"
+        echo "  If you want to chain it with Sentinel, see:"
+        echo "    https://github.com/mahmood726-cyber/Sentinel#chaining-with-existing-hooks"
+    fi
     sentinel install-hook --repo "$abs" --mode "$hook_mode" 2>&1 | sed 's/^/  /'
 }
 

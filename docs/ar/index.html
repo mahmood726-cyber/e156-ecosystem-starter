@@ -22,9 +22,13 @@
   code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; font-family: "SF Mono", "Consolas", monospace; }
   pre { background: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.9em; }
   pre code { background: none; padding: 0; }
-  .lang-picker { text-align: center; margin: 16px 0 24px; font-size: 0.9em; }
-  .lang-picker a { margin: 0 8px; color: #0366d6; text-decoration: none; }
+  @media (max-width: 480px) { pre { white-space: pre-wrap; word-break: break-all; } }
+  .lang-picker { text-align: center; margin: 16px 0 24px; font-size: 0.95em; direction: ltr; }
+  .lang-picker a { display: inline-block; padding: 12px 14px; margin: 2px; color: #0366d6; text-decoration: none; min-width: 44px; min-height: 44px; line-height: 1.3; }
   .lang-picker a[aria-current="page"] { font-weight: 600; color: #1a1a1a; text-decoration: underline; }
+  .lang-sep { color: #999; padding: 0 4px; }
+  .skip-link { position: absolute; right: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+  .skip-link:focus { position: static; width: auto; height: auto; padding: 8px; background: #0366d6; color: white; }
   .notice { background: #fff5b1; border-right: 3px solid #ffd33d; padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 0.95em; }
   .footer { margin-top: 60px; color: #595e63; font-size: 0.9em; text-align: center; }
   .footer a { color: #444; }
@@ -32,17 +36,20 @@
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main">الانتقال إلى المحتوى الرئيسي</a>
 <nav class="lang-picker" aria-label="اللغات المتوفرة">
-  <a href="../" hreflang="en">English</a> ·
-  <a href="../fr/" hreflang="fr">Français</a> ·
-  <a href="../pt/" hreflang="pt">Português</a> ·
-  <a href="./" hreflang="ar" aria-current="page">العربية</a>
+  <a href="../" hreflang="en" lang="en"><bdi>English</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="../fr/" hreflang="fr" lang="fr"><bdi>Français</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="../pt/" hreflang="pt" lang="pt"><bdi>Português</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="./" hreflang="ar" lang="ar" aria-current="page"><bdi>العربية</bdi></a>
 </nav>
 
 <header>
   <h1>E156 Ecosystem Starter</h1>
-  <p class="sub">قم بإعداد بيئة التطوير الخاصة بمحمود بأمر واحد.</p>
+  <p class="sub">قم بإعداد حاسوب البحث الخاص بك ببيئة التطوير الخاصة بمحمود بأمر واحد.</p>
 </header>
+
+<main id="main">
 
 <div class="notice" role="note">
   <strong>ملاحظة:</strong> هذه نسخة مختصرة بالعربية. <a href="../">النسخة الإنجليزية الكاملة</a> تحتوي على جميع التعليمات التفصيلية (المتطلبات الأساسية، استكشاف الأخطاء، نموذج الأمان، أمثلة المشاريع). أوامر التثبيت أدناه متطابقة في جميع اللغات.
@@ -81,10 +88,12 @@ ls ~/.claude/rules</code></pre>
   <li>يكتب المثبِّت سجلاً في <code>%LOCALAPPDATA%\e156\logs\install-&lt;ts&gt;.log</code> (Windows) أو <code>~/.local/state/e156/logs/install-&lt;ts&gt;.log</code> (Linux/WSL). يتم إخفاء مفاتيح API والأسرار تلقائياً قبل أي مشاركة.</li>
 </ul>
 
+</main>
+
 <footer class="footer" role="contentinfo">
   المصدر: <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter">github.com/mahmood726-cyber/e156-ecosystem-starter</a>
   · <a href="../">النسخة الإنجليزية الكاملة</a>
-  · الترجمة العربية مقدمة بحسن نية؛ في حال الشك التقني، النسخة الإنجليزية هي المرجع.
+  · الترجمة العربية مقدمة بحسن نية؛ في حال الشك التقني، النسخة الإنجليزية هي المرجع. <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/issues/new?title=تحسين+الترجمة+العربية">اقترح تصحيحاً</a>.
 </footer>
 </body>
 </html>

@@ -224,11 +224,12 @@ Tests cover all eight pattern families on both shells.
 
 Every push and PR runs three jobs via GitHub Actions ([`.github/workflows/test.yml`](.github/workflows/test.yml)):
 
-- **Pester (Windows):** all PowerShell test suites, ~78 tests covering
+- **Pester (Windows):** all PowerShell test suites, ~83 tests covering
   install helpers, redaction, supply-chain pinning, SHA gate, doctor report,
-  Sentinel/Overmind/ProjectIndex/update wrappers.
-- **Bash (Ubuntu):** ~22 bash tests covering install.sh helpers, redaction,
-  pinning, dot-source hygiene, rollback, template rendering.
+  hook-backup, second-rerun rules-backup, Sentinel/Overmind/ProjectIndex/update wrappers.
+- **Bash (Ubuntu):** ~26 bash tests covering install.sh helpers, redaction,
+  pinning, dot-source hygiene, rollback, template rendering, hook-backup,
+  second-rerun rules-backup.
 - **Lint:** ShellCheck (severity `error`) on all `.sh` files +
   PSScriptAnalyzer (severity `error`) on all `.ps1` files.
 

@@ -226,12 +226,18 @@ function Copy-RulesToAgent {
         $backupPath = "$dest.user"
         $newBackup = $false
         if ($preExisted -and -not $Force) {
-            if (-not (Test-Path $backupPath)) {
-                Copy-Item $dest $backupPath
-                $newBackup = $true
-                $backed += $_.Name
-                if ($Manifest) { $Manifest.BackedUp.Add($backupPath) }
+            # First re-install: back up to <name>.md.user
+            # Subsequent re-installs: back up to <name>.md.user-<timestamp> so
+            # we never silently overwrite a re-edited file (the original .user
+            # backup is preserved as the "first-known-edit" copy).
+            $actualBackup = $backupPath
+            if (Test-Path $backupPath) {
+                $actualBackup = "$dest.user-" + (Get-Date -Format 'yyyyMMdd-HHmmss')
             }
+            Copy-Item $dest $actualBackup
+            $newBackup = $true
+            $backed += $_.Name
+            if ($Manifest) { $Manifest.BackedUp.Add($actualBackup) }
         }
         # Render template if $Vars given; else straight copy.
         if ($Vars) {

@@ -46,6 +46,8 @@
   code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; font-family: "SF Mono", "Consolas", monospace; }
   pre { background: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.9em; }
   pre code { background: none; padding: 0; }
+  /* On narrow viewports (~phones), wrap long shell one-liners instead of forcing horizontal scroll */
+  @media (max-width: 480px) { pre { white-space: pre-wrap; word-break: break-all; } }
   .step { border-left: 3px solid #0366d6; padding: 8px 0 8px 18px; margin: 16px 0; }
   .step strong { color: #0366d6; font-size: 1.1em; }
   .warning { background: #fff5b1; border-left: 3px solid #ffd33d; padding: 12px 16px; border-radius: 4px; margin: 24px 0; font-size: 0.95em; }
@@ -61,18 +63,20 @@
   .os-tab.primary { background: #0366d6; color: white; }
   .os-tab:hover { background: #f0f6ff; }
   .os-tab.primary:hover { background: #0255b3; }
-  .lang-picker { text-align: center; margin: 0 0 16px; font-size: 0.9em; }
-  .lang-picker a { margin: 0 8px; color: #0366d6; text-decoration: none; }
+  .lang-picker { text-align: center; margin: 0 0 16px; font-size: 0.95em; }
+  /* WCAG 2.5.5: tap targets >=44x44 px. inline-block + padding lifts each link well above floor */
+  .lang-picker a { display: inline-block; padding: 12px 14px; margin: 2px; color: #0366d6; text-decoration: none; min-width: 44px; min-height: 44px; line-height: 1.3; }
   .lang-picker a[aria-current="page"] { font-weight: 600; color: #1a1a1a; text-decoration: underline; }
+  .lang-sep { color: #999; padding: 0 4px; }
 </style>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to main content</a>
 <nav class="lang-picker" aria-label="Available languages">
-  <a href="./" hreflang="en" aria-current="page">English</a> ·
-  <a href="./fr/" hreflang="fr">Français</a> ·
-  <a href="./pt/" hreflang="pt">Português</a> ·
-  <a href="./ar/" hreflang="ar">العربية</a>
+  <a href="./" hreflang="en" lang="en" aria-current="page">English</a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="./fr/" hreflang="fr" lang="fr">Français</a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="./pt/" hreflang="pt" lang="pt">Português</a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="./ar/" hreflang="ar" lang="ar">العربية</a>
 </nav>
 <header>
   <h1>E156 Ecosystem Starter</h1>
@@ -354,7 +358,8 @@ cd e156-ecosystem-starter
 <p><strong>The SHA gate is for download integrity, not source integrity.</strong> Specifically:</p>
 
 <ul>
-  <li><strong>What it catches:</strong> tampering between the GitHub Pages CDN and your laptop (corrupted download, MitM injection on a hostile network). The installer hashes itself and refuses to run if the bytes don't match the hash file fetched from the same origin.</li>
+  <li><strong>What it catches:</strong> tampering of <code>install.ps1</code> / <code>install.sh</code> between the GitHub Pages CDN and your laptop (corrupted download, MitM injection on a hostile network). The installer hashes itself against <code>docs/HASH.txt</code> / <code>docs/HASH-linux.txt</code> fetched from the same origin and refuses to run on mismatch.</li>
+  <li><strong>The bootstrap entrypoints (<code>bootstrap.ps1</code>, <code>e156-setup.bat</code>, <code>e156-setup.sh</code>) are <em>not</em> SHA-gated.</strong> They run before the gate fires; they then fetch the rest of the repo and the SHA-gated <code>install.ps1</code> validates itself. So a tampered bootstrap script could short-circuit the gate entirely. The bootstrap layer is small and auditable — read the source via the links below before running it on a security-sensitive machine.</li>
   <li><strong>What it does not catch:</strong> compromise of the GitHub repo itself. A bad actor with push access to <code>mahmood726-cyber/e156-ecosystem-starter</code> can update <code>install.ps1</code> AND <code>docs/HASH.txt</code> together and the gate will pass. Any <code>curl|bash</code>-style installer has this property.</li>
   <li><strong>For high-trust installs</strong> (e.g. a department lab with sensitive data), prefer the git-clone path with a tagged release: <code>git clone --branch v0.x.y --depth 1</code>, verify the tag's GPG signature, then run <code>.\install\install.ps1</code> from the clone. The signed tag is a trust anchor independent of the Pages CDN.</li>
   <li><strong>What runs locally:</strong> the install touches <code>~/.claude</code>, <code>~/.gemini</code>, <code>~/.codex</code>, and (if you opt in) <code>%USERPROFILE%\code\</code>. It does not require admin rights, does not modify system PATH, and rolls back on failure. The full source is auditable on GitHub.</li>

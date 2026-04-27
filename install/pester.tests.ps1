@@ -178,6 +178,29 @@ Describe "Rollback: manifest-driven undo" {
     }
 }
 
+Describe "Copy-RulesToAgent timestamp-suffixes second-rerun backups (P2)" {
+    It "preserves the original .user backup and writes .user-<ts> on the second re-install" {
+        $src = Join-Path $starterRoot 'rules'
+        $target = Join-Path $tmpRoot "rules-rerun-$(Get-Random)"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+
+        # Seed with a hand-edited file
+        Set-Content -Path (Join-Path $target 'lessons.md') -Value 'edit-1'
+        Copy-RulesToAgent -SourceRulesDir $src -TargetRulesDir $target | Out-Null
+        # First .user backup should hold edit-1
+        (Get-Content (Join-Path $target 'lessons.md.user') -Raw).Trim() | Should -Be 'edit-1'
+
+        # Re-edit and re-install: original .user must NOT be overwritten;
+        # a new .user-<ts> backup must capture edit-2.
+        Set-Content -Path (Join-Path $target 'lessons.md') -Value 'edit-2'
+        Copy-RulesToAgent -SourceRulesDir $src -TargetRulesDir $target | Out-Null
+        (Get-Content (Join-Path $target 'lessons.md.user') -Raw).Trim() | Should -Be 'edit-1'
+        $tsBackups = Get-ChildItem -Path $target -Filter 'lessons.md.user-*'
+        $tsBackups.Count | Should -Be 1
+        (Get-Content $tsBackups[0].FullName -Raw).Trim() | Should -Be 'edit-2'
+    }
+}
+
 Describe "Invoke-LogRedaction scrubs secrets from transcripts (P1)" {
     BeforeAll {
         $script:redactDir = Join-Path $tmpRoot 'redact'

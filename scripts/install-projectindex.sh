@@ -28,7 +28,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 get_default_projectindex_root() {
-    printf '%s' "${HOME}/ProjectIndex"
+    # Aligned with install.sh's $PORTFOLIO_ROOT default ($HOME/code/ProjectIndex)
+    # so standalone and chained-from-install.sh invocations land at the same path.
+    printf '%s' "${HOME}/code/ProjectIndex"
 }
 
 write_index_markdown_template() {

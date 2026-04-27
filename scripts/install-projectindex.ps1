@@ -22,8 +22,13 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Get-DefaultProjectIndexRoot {
-    # Default: C:\ProjectIndex (same as Mahmood's). Student can override with -Root.
-    return 'C:\ProjectIndex'
+    # Default: <user-home>\code\ProjectIndex.
+    # Aligned with install.ps1's $PortfolioRoot default so a student running
+    # install.ps1 -Full and a student running install-projectindex.ps1
+    # standalone land at the same path. Override with -Root.
+    $userHome = $env:USERPROFILE
+    if (-not $userHome) { $userHome = $HOME }
+    return Join-Path $userHome 'code\ProjectIndex'
 }
 
 function Write-IndexMarkdownTemplate {

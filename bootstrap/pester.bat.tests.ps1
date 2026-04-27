@@ -82,3 +82,14 @@ Describe "e156-setup.bat: Python-missing path exits 1 with python.org hint" {
         $script:BatText | Should -Match '(?s)where python.*errorlevel 1.*exit /b 1'
     }
 }
+
+Describe "e156-setup.bat: detects Microsoft Store python.exe stub (P2)" {
+    It "runs python --version and bails with Store-stub diagnostic on non-zero exit" {
+        # Structural assertion: the .bat MUST run `python --version` and check
+        # errorlevel after the `where python` succeeded. This catches the case
+        # where Windows ships a 0-byte WindowsApps alias on PATH that exits
+        # non-zero when invoked.
+        $script:BatText | Should -Match 'python --version >nul 2>&1'
+        $script:BatText | Should -Match '(?s)python --version.*errorlevel 1.*Microsoft Store stub.*exit /b 1'
+    }
+}

@@ -95,6 +95,26 @@ function Install-SentinelPackage {
     }
 }
 
+function Backup-ExistingPrePushHook {
+    # If the target repo already has a pre-push hook (eg the researcher has
+    # their own lint hook), back it up to pre-push.user-<timestamp> before
+    # we let upstream `sentinel install-hook` overwrite it. The upstream
+    # CLI may or may not preserve user content; this wrapper guarantees a
+    # rollback path either way.
+    [CmdletBinding()]
+    param([string]$RepoPath)
+    $hookPath = Join-Path $RepoPath '.git\hooks\pre-push'
+    if (-not (Test-Path $hookPath)) { return $null }
+    # Detect Sentinel-installed hooks (which carry a known marker) so we
+    # don't churn backups on every re-install.
+    $existing = Get-Content -Raw -Path $hookPath -ErrorAction SilentlyContinue
+    if ($existing -and $existing -match 'sentinel\s+(scan|run-pre-push)') { return $null }
+    $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $backup = "$hookPath.user-$ts"
+    Copy-Item -Path $hookPath -Destination $backup -Force
+    return $backup
+}
+
 function Install-SentinelHookInRepo {
     [CmdletBinding()]
     param(
@@ -104,6 +124,12 @@ function Install-SentinelHookInRepo {
     $abs = (Resolve-Path $RepoPath -ErrorAction Stop).Path
     if (-not (Test-Path (Join-Path $abs '.git'))) {
         throw "Not a git repo (no .git/): $abs"
+    }
+    $backup = Backup-ExistingPrePushHook -RepoPath $abs
+    if ($backup) {
+        Write-Host "  Backed up existing pre-push hook to: $backup" -ForegroundColor Yellow
+        Write-Host "  If you want to chain it with Sentinel, see:" -ForegroundColor DarkGray
+        Write-Host "    https://github.com/mahmood726-cyber/Sentinel#chaining-with-existing-hooks" -ForegroundColor DarkGray
     }
     $out = & sentinel install-hook --repo $abs --mode $HookMode 2>&1
     $out | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }

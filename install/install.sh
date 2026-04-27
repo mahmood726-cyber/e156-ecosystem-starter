@@ -259,13 +259,22 @@ copy_rules_to_agent() {
     fi
     local copied=0 backed=0
     for f in "$src"/*.md; do
-        local name dest backup
+        local name dest backup actual_backup
         name="$(basename "$f")"
         dest="$target/$name"
         backup="${dest}.user"
-        if [[ -f "$dest" && "$FORCE" -eq 0 && ! -f "$backup" ]]; then
-            cp "$dest" "$backup"
-            echo "$backup" >> "$MANIFEST_BACKUPS"
+        if [[ -f "$dest" && "$FORCE" -eq 0 ]]; then
+            # First re-install: back up to <name>.md.user
+            # Subsequent re-installs: back up to <name>.md.user-<timestamp> so
+            # we never silently overwrite a re-edited file (the original .user
+            # backup is preserved as the "first-known-edit" copy).
+            if [[ -f "$backup" ]]; then
+                actual_backup="${dest}.user-$(date +%Y%m%d-%H%M%S)"
+            else
+                actual_backup="$backup"
+            fi
+            cp "$dest" "$actual_backup"
+            echo "$actual_backup" >> "$MANIFEST_BACKUPS"
             backed=$((backed+1))
         fi
         local pre_existed=0

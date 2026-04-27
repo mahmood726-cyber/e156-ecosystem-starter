@@ -46,6 +46,26 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
+REM Detect Microsoft Store python.exe stub. The stub is on PATH but emits
+REM "Python was not found; run without arguments to install from the Microsoft
+REM Store..." and exits non-zero. Real Python prints "Python X.Y.Z" and exits 0.
+python --version >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo   ERROR: Python on your PATH is the Microsoft Store stub, not a real Python install.
+    echo.
+    echo   Fix it:
+    echo     1. Download Python 3.11+ from https://www.python.org/downloads/
+    echo     2. Run the installer.
+    echo     3. CRITICAL: tick "Add python.exe to PATH" on the first screen.
+    echo     4. Close this window and re-run this file.
+    echo.
+    echo   Optional: also disable the Store alias in
+    echo     Settings ^> Apps ^> Advanced app settings ^> App execution aliases
+    echo.
+    pause
+    exit /b 1
+)
 echo   OK - Python found:
 python --version
 
