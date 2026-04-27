@@ -21,6 +21,13 @@
 ### Request confirmation
 - Before substantial work, restate the deliverable, non-goals, and whether the task is read-only or edit-allowed. Keep non-goals visible so work does not drift.
 
+### Portfolio recon before any new project (NON-NEGOTIABLE)
+- Before scaffolding a new project (new repo, new tool, new analysis pipeline), **first run `find-related-repos.py "<topic>"`** against the user's portfolio index. The script lives at `<ecosystem-starter-root>/scripts/find-related-repos.py` and reads `restart-manifest.json` (or falls back to `INDEX.md`) under `{{PROJECTINDEX_ROOT}}\agent-records\`.
+- For each top-N hit it returns: project name, status, on-disk path, workbook title, README excerpt, and code-grep hits. Read the top 3-5 hits before writing the new project's spec.
+- In the new project's spec doc (`docs/<criterion>.md` or equivalent), explicitly cite **what is reused** vs **what is net-new**, naming the prior repos by name. This blocks the "I'll just rewrite this from scratch" pattern that has produced ≥3 near-duplicate atlases in the existing portfolio.
+- If `find-related-repos.py` returns no matches, that is itself a finding worth noting in the spec — it means either the topic is genuinely net-new or the index is stale (last regenerate timestamp is in `restart-manifest.json`'s `generatedAt`).
+- Override only with explicit user permission. Skipping recon to "move faster" is the most expensive shortcut in this codebase.
+
 ### Ingredient proof and claim discipline
 - Verify required source data exists on disk before implementation or documentation claims.
 - For nontrivial plans, recovery docs, or audits, include a static-vs-dynamic hardcode-disclosure table.

@@ -27,9 +27,18 @@ outside my home directory or modify system PATH.
 
 5. **Pick a first project.** Ask me which of the 8 example projects from
    `docs/index.html` ("Forest-plot tool from scratch", "PRISMA flow generator",
-   etc.) I want to start with. When I answer, run
+   etc.) I want to start with. When I answer, **before scaffolding anything**,
+   run portfolio recon:
+   ```
+   python /workspaces/e156-ecosystem-starter/scripts/find-related-repos.py "<my topic>" --top 5
+   ```
+   (For local installs, replace the path with wherever you cloned
+   `e156-ecosystem-starter/`.) Read the top 5 hits — name, README excerpt,
+   code-grep results. Tell me in 3 lines what's reusable from existing repos
+   vs what is genuinely net-new. Then run
    `pip install git+https://github.com/mahmood726-cyber/e156-student-starter.git@main`
-   then `student new <slug>` to scaffold it under `~/code/<slug>/`.
+   and `student new <slug>` to scaffold under `~/code/<slug>/`. In the new
+   repo's `docs/<criterion>.md`, cite the prior repos by name.
 
 6. **Read STUDENT-WORKFLOW.md** at
    https://raw.githubusercontent.com/mahmood726-cyber/e156-ecosystem-starter/main/STUDENT-WORKFLOW.md
