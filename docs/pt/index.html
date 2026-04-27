@@ -30,6 +30,15 @@
   .notice { background: #fff5b1; border-left: 3px solid #ffd33d; padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 0.95em; }
   .footer { margin-top: 60px; color: #595e63; font-size: 0.9em; text-align: center; }
   .footer a { color: #444; }
+  .cloud-banner { background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; padding: 24px; border-radius: 10px; margin: 0 0 28px; text-align: center; }
+  .cloud-banner h2 { color: white; border: none; margin: 0 0 8px; padding: 0; font-size: 1.3em; }
+  .cloud-banner p { margin: 0 0 16px; }
+  .cloud-banner a.codespace-cta { display: inline-block; background: white; color: #1a7f37; font-weight: 700; padding: 12px 28px; border-radius: 8px; text-decoration: none; }
+  pre { position: relative; }
+  .copy-btn { position: absolute; top: 6px; right: 6px; background: white; border: 1px solid #d0d7de; border-radius: 4px; padding: 4px 10px; font-size: 0.75em; color: #1a1a1a; cursor: pointer; opacity: 0.55; font-family: inherit; }
+  pre:hover .copy-btn { opacity: 1; }
+  .copy-btn[data-state="copied"] { background: #2da44e; color: white; border-color: #2da44e; opacity: 1; }
+  @media (max-width: 720px) { .copy-btn { opacity: 1; } }
 </style>
 </head>
 <body>
@@ -47,6 +56,14 @@
 </header>
 
 <main id="main">
+
+<section class="cloud-banner">
+  <h2>O mais fácil — abra no navegador, sem instalação</h2>
+  <p>Se você nunca usou um terminal, clique neste botão. Ele abre um espaço de trabalho gratuito do GitHub com tudo pré-configurado. Nada é instalado no seu laptop.</p>
+  <a class="codespace-cta" href="https://codespaces.new/mahmood726-cyber/e156-ecosystem-starter?quickstart=1" rel="noopener">
+    Abrir no GitHub Codespaces &rarr;
+  </a>
+</section>
 
 <div class="notice" role="note">
   <strong>Nota:</strong> esta é uma versão resumida em português. A <a href="../">versão completa em inglês</a> contém todas as instruções detalhadas (pré-requisitos, resolução de problemas, modelo de segurança, projetos de exemplo). Os comandos de instalação abaixo são idênticos em todos os idiomas.
@@ -92,5 +109,8 @@ ls ~/.claude/rules</code></pre>
   · <a href="../">Versão completa em inglês</a>
   · Tradução portuguesa fornecida de boa fé; em caso de dúvida técnica, a versão em inglês prevalece. <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/issues/new?title=Melhorar+a+tradução+portuguesa">Sugerir uma correção</a>.
 </footer>
+<script>
+(function(){'use strict';document.querySelectorAll('pre').forEach(function(pre){var code=pre.querySelector('code');if(!code)return;var btn=document.createElement('button');btn.type='button';btn.className='copy-btn';btn.textContent='Copiar';btn.setAttribute('aria-label','Copiar código');btn.addEventListener('click',function(){var t=code.innerText;var ok=function(){btn.textContent='Copiado';btn.setAttribute('data-state','copied');setTimeout(function(){btn.textContent='Copiar';btn.removeAttribute('data-state');},1600);};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(function(){});}else{try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();}catch(e){}}});pre.appendChild(btn);});})();
+</script>
 </body>
 </html>

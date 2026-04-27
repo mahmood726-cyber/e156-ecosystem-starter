@@ -68,6 +68,23 @@
   .lang-picker a { display: inline-block; padding: 12px 14px; margin: 2px; color: #0366d6; text-decoration: none; min-width: 44px; min-height: 44px; line-height: 1.3; }
   .lang-picker a[aria-current="page"] { font-weight: 600; color: #1a1a1a; text-decoration: underline; }
   .lang-sep { color: #999; padding: 0 4px; }
+  /* Recommended-path cloud install banner (zero local install) */
+  .cloud-banner { background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; padding: 28px 24px; border-radius: 10px; margin: 0 0 32px; text-align: center; box-shadow: 0 4px 12px rgba(45, 164, 78, 0.2); }
+  .cloud-banner h2 { color: white; border: none; margin: 0 0 8px; padding: 0; font-size: 1.4em; }
+  .cloud-banner p { margin: 0 0 18px; font-size: 1em; opacity: 0.95; }
+  .cloud-banner a.codespace-cta { display: inline-block; background: white; color: #1a7f37; font-weight: 700; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 1.05em; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+  .cloud-banner a.codespace-cta:hover { background: #f6fff8; transform: translateY(-1px); }
+  .cloud-banner .micro { display: block; margin-top: 14px; font-size: 0.85em; opacity: 0.85; }
+  .cloud-banner .micro a { color: white; text-decoration: underline; }
+  /* Click-to-copy buttons on every <pre><code> block. Positioned in the top-right corner. */
+  pre { position: relative; }
+  .copy-btn { position: absolute; top: 6px; right: 6px; background: white; border: 1px solid #d0d7de; border-radius: 4px; padding: 4px 10px; font-size: 0.75em; color: #1a1a1a; cursor: pointer; opacity: 0.55; transition: opacity 0.15s, background 0.15s; font-family: inherit; }
+  pre:hover .copy-btn { opacity: 1; }
+  .copy-btn:hover { background: #f6f8fa; }
+  .copy-btn:focus { outline: 2px solid #0366d6; opacity: 1; }
+  .copy-btn[data-state="copied"] { background: #2da44e; color: white; border-color: #2da44e; opacity: 1; }
+  /* Always show the button on small screens (no hover) */
+  @media (max-width: 720px) { .copy-btn { opacity: 1; } }
 </style>
 </head>
 <body>
@@ -84,10 +101,22 @@
 </header>
 
 <main id="main">
+
+<!-- Recommended path for non-coders: zero local install, runs in the browser. -->
+<section class="cloud-banner" id="install-cloud" aria-labelledby="install-cloud-h">
+  <h2 id="install-cloud-h">Easiest — open in your browser, zero install</h2>
+  <p>If you have never used a terminal, click this button. It opens a free GitHub-hosted workspace with everything pre-configured. Nothing installs on your laptop.</p>
+  <a class="codespace-cta" href="https://codespaces.new/mahmood726-cyber/e156-ecosystem-starter?quickstart=1" rel="noopener">
+    Open in GitHub Codespaces &rarr;
+  </a>
+  <span class="micro">Requires a free <a href="https://github.com/signup">GitHub account</a>. Free tier covers 60 hours/month — enough for your first paper. <a href="https://docs.github.com/en/codespaces/overview">What is a Codespace?</a></span>
+</section>
+
 <nav aria-label="Operating system" class="os-tabs">
   <a class="os-tab primary" href="#install-windows">Windows</a>
   <a class="os-tab" href="#install-macos-linux">macOS / Linux / WSL</a>
 </nav>
+<p style="text-align:center; color:#777; font-size:0.9em; margin: -8px 0 24px;">…or install locally on your own machine:</p>
 
 <section id="install-windows" aria-labelledby="install-windows-h">
 <h2 id="install-windows-h" style="margin-top:8px;">Windows</h2>
@@ -373,5 +402,68 @@ cd e156-ecosystem-starter
   &middot; <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/releases">Releases</a>
   &middot; <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/issues">Issues</a>
 </footer>
+
+<!--
+  Click-to-copy on every <pre><code> block. Falls back to execCommand for
+  pre-2018 browsers and to a select-all selection for browsers without
+  clipboard API and without execCommand. Vanilla JS, no library.
+-->
+<script>
+(function () {
+  'use strict';
+  var blocks = document.querySelectorAll('pre');
+  var copyLabel = 'Copy';
+  var copiedLabel = 'Copied';
+  var failedLabel = 'Press Ctrl+C';
+  blocks.forEach(function (pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = copyLabel;
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.addEventListener('click', function () {
+      var text = code.innerText;
+      var done = function () {
+        btn.textContent = copiedLabel;
+        btn.setAttribute('data-state', 'copied');
+        setTimeout(function () {
+          btn.textContent = copyLabel;
+          btn.removeAttribute('data-state');
+        }, 1600);
+      };
+      var fail = function () {
+        // Last resort: select the text so user can Ctrl+C themselves.
+        var range = document.createRange();
+        range.selectNode(code);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        btn.textContent = failedLabel;
+        setTimeout(function () { btn.textContent = copyLabel; }, 2400);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(fail);
+      } else {
+        // execCommand fallback for older browsers.
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'absolute';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          var ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          if (ok) { done(); } else { fail(); }
+        } catch (e) { fail(); }
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
 </body>
 </html>

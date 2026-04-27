@@ -1,0 +1,53 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "E156 Ecosystem Starter",
+
+  // Universal image: Python 3.11+, Node 20+, R, gh CLI, build-essential
+  // already on PATH. Saves us from layering a Dockerfile on top.
+  "image": "mcr.microsoft.com/devcontainers/universal:2-linux",
+
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/rocker-org/devcontainer-features/r-apt:0": {
+      "installRMarkdown": false,
+      "installRecommendedPackages": false
+    }
+  },
+
+  // Run base install (rules + memory scaffold) at container build time.
+  // Sub-installers (Sentinel, Overmind, ProjectIndex) are NOT chained here:
+  // a Codespace is ephemeral and a student's first paper does not need them.
+  // The handoff prompt steers them toward `student new` and the agent flow.
+  "onCreateCommand": "bash .devcontainer/on-create.sh",
+
+  // Greet the student each time the codespace starts, so they always see
+  // the next-step instructions even if they close and reopen the workspace.
+  "postAttachCommand": "bash .devcontainer/on-attach.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "ms-python.python",
+        "REditorSupport.r",
+        "esbenp.prettier-vscode",
+        "DavidAnson.vscode-markdownlint"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.eol": "\n"
+      }
+    }
+  },
+
+  // Forward common dev-server ports for HTML dashboard work.
+  "forwardPorts": [3000, 5173, 8000, 8080],
+  "portsAttributes": {
+    "3000": { "label": "Dev server (Node default)", "onAutoForward": "silent" },
+    "5173": { "label": "Vite dev server", "onAutoForward": "silent" },
+    "8000": { "label": "Python http.server", "onAutoForward": "silent" },
+    "8080": { "label": "Generic dev server", "onAutoForward": "silent" }
+  },
+
+  "remoteUser": "codespace"
+}

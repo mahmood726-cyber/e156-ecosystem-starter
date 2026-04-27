@@ -29,6 +29,14 @@ verifier, and ProjectIndex registry.
 
 ## Quick start
 
+### Easiest — open in your browser, zero install
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mahmood726-cyber/e156-ecosystem-starter?quickstart=1)
+
+Click that badge. A free GitHub-hosted workspace opens in your browser with rules + memory already installed and Claude Code pre-installed. No PowerShell, no terminal experience, no admin rights required. Free tier: 60 hours/month — enough for a first paper. See [`.devcontainer/`](.devcontainer/) for the exact configuration.
+
+### Local install — Windows / macOS / Linux / WSL
+
 Prerequisites: Windows 10+, PowerShell 5.1+, at least one of
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Gemini CLI](https://github.com/google-gemini/gemini-cli), or
