@@ -210,16 +210,20 @@ fi
 
 # Seed a sample restart-manifest.json so find-related-repos.py has SOMETHING
 # to read against on a fresh install. Without it the recon-before-new-project
-# rule (rules.md) is followable but always returns "no matches", which trains
-# the agent to ignore the rule. The sample contains 7 worked-example repos
-# from Mahmood's portfolio and is replaced when the real generator runs.
+# rule (rules.md) is followable but always returns "no matches".
+#
+# IMPORTANT: NEVER overwrite an existing restart-manifest.json, even when
+# --force is passed. The user may have a real generated manifest (e.g. from
+# Mahmood's nightly pipeline producing a 468-record file); --force is meant
+# to refresh INDEX.md / reconcile_counts.py templates, not to wipe their
+# real portfolio data with the 7-record sample. (Per second-pass review
+# 2026-04-27, P1-C.) Only seed when the file is genuinely missing.
 agent_records_dir="$ROOT/agent-records"
 sample_manifest="$agent_records_dir/restart-manifest.json"
-# Sample seed lives at the starter root: <starter>/memory/sample-restart-manifest.json
 starter_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 seed_source="$starter_root/memory/sample-restart-manifest.json"
-if [[ -f "$sample_manifest" && "$FORCE" -eq 0 ]]; then
-    log_ok "restart-manifest.json already present; skipping (use --force to overwrite)"
+if [[ -f "$sample_manifest" ]]; then
+    log_ok "restart-manifest.json already present; preserving (sample-seed never overwrites real data)"
 elif [[ ! -f "$seed_source" ]]; then
     log_ok "skipped restart-manifest.json seed (source not found at $seed_source)"
 else

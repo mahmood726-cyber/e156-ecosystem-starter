@@ -174,7 +174,7 @@ If fixing in batches:
 **Scope**: validating the fix bundle from commit 80f9a51 against itself. Did the fixes land correctly? Did they introduce new issues? What did the first-pass review miss?
 **Personas**: Security · Software Engineer · Release Engineer · Production Readiness · UX/Accessibility · i18n.
 
-**Summary**: 0 P0 · 4 P1 · 6 P2. Headline: **fix bundle landed clean, no new P0s introduced**, but a few subtle issues surfaced in the new code paths.
+**Summary**: 0 P0 · 4 P1 · 6 P2. **STATUS: all 4 P1 fixed 2026-04-27 in commit-pending. P2s deferred.** Headline: **fix bundle landed clean, no new P0s introduced**, but a few subtle issues surfaced in the new code paths.
 
 ---
 
@@ -186,16 +186,16 @@ _None._ The fix bundle is sound at the P0 level.
 
 ## P1 — Important
 
-- **P1-A** [Production Readiness]: **`on-attach.sh` marker file `/tmp/e156-attach-shown` may persist across Codespace restarts.** `/tmp` retention varies: a Codespace that stops + resumes preserves /tmp; a Codespace that gets rebuilt (config change, container update) wipes it. Net effect: a long-lived codespace user sees the full banner once on day 1, then **never again** even if they intend the per-session reminder. The 60-min freshness window I wrote helps with same-day re-attaches but not 2-week-old codespaces. (`.devcontainer/on-attach.sh:12-22`.)
+- **P1-A** [FIXED 2026-04-27] [Production Readiness]: **`on-attach.sh` marker file `/tmp/e156-attach-shown` may persist across Codespace restarts.** `/tmp` retention varies: a Codespace that stops + resumes preserves /tmp; a Codespace that gets rebuilt (config change, container update) wipes it. Net effect: a long-lived codespace user sees the full banner once on day 1, then **never again** even if they intend the per-session reminder. The 60-min freshness window I wrote helps with same-day re-attaches but not 2-week-old codespaces. (`.devcontainer/on-attach.sh:12-22`.)
   - **Suggested fix**: instead of an age-based marker, use a **per-codespace-session** marker stored under `$CODESPACES_PROJECT_FOLDER` or compare against `/proc/1` start-time (PID 1's mtime resets on container restart). Alternative: drop the marker entirely; print only the one-liner reminder, gated on `[[ -t 0 ]]` so non-interactive shells stay silent.
 
-- **P1-B** [Supply chain]: **`@anthropic-ai/claude-code@^2.1.0` accepts minor bumps (`2.2.x`, `2.3.x`, …) per npm semver caret rules for ≥1.0 versions.** Claude Code is rapidly evolving — a `2.2.0` next week could change CLI flag names that the handoff prompt depends on. `@google/gemini-cli@^0.39.0` is correctly restrictive (caret on 0.x = patch-only, equivalent to `~0.39.0`), but the claude-code pin is looser than intended. (`.devcontainer/on-create.sh:54`.)
+- **P1-B** [FIXED 2026-04-27] [Supply chain]: **`@anthropic-ai/claude-code@^2.1.0` accepts minor bumps (`2.2.x`, `2.3.x`, …) per npm semver caret rules for ≥1.0 versions.** Claude Code is rapidly evolving — a `2.2.0` next week could change CLI flag names that the handoff prompt depends on. `@google/gemini-cli@^0.39.0` is correctly restrictive (caret on 0.x = patch-only, equivalent to `~0.39.0`), but the claude-code pin is looser than intended. (`.devcontainer/on-create.sh:54`.)
   - **Suggested fix**: tighten to `~2.1.0` (patch-only) or pin to a tested specific version (`2.1.119`) and document the bump cadence.
 
-- **P1-C** [Software Engineer]: **`install-projectindex.{sh,ps1}` `--force` controls all three artifacts (INDEX.md, reconcile_counts.py, restart-manifest.json) with one flag.** A user who has a real generated `restart-manifest.json` (e.g., from Mahmood's nightly pipeline) and just wants to refresh `INDEX.md` will run `--force` and silently wipe their real manifest with the 7-record sample. (`scripts/install-projectindex.sh:194,203,221`.)
+- **P1-C** [FIXED 2026-04-27] [Software Engineer]: **`install-projectindex.{sh,ps1}` `--force` controls all three artifacts (INDEX.md, reconcile_counts.py, restart-manifest.json) with one flag.** A user who has a real generated `restart-manifest.json` (e.g., from Mahmood's nightly pipeline) and just wants to refresh `INDEX.md` will run `--force` and silently wipe their real manifest with the 7-record sample. (`scripts/install-projectindex.sh:194,203,221`.)
   - **Suggested fix**: separate `--force` (INDEX.md + reconcile.py) from `--seed-sample-manifest` (only seeds if the file does not exist; never overwrites a real one). Or: detect "this looks like a real manifest" by checking `len(records) > 10` and refuse to overwrite without `--force-manifest`.
 
-- **P1-D** [Release Engineering]: **No CI step verifies the locale picker in `write-gemini-handoff.{ps1,sh}`.** All four handoff translations exist on disk, but the path-resolution logic is untested — `$LANG=fr_FR.UTF-8` should pick `gemini-handoff-prompt.fr.md`, but a typo in the substring extraction would silently fall back to English without anyone noticing. (`scripts/write-gemini-handoff.ps1:30-40`, `.sh:18-26`.)
+- **P1-D** [FIXED 2026-04-27] [Release Engineering]: **No CI step verifies the locale picker in `write-gemini-handoff.{ps1,sh}`.** All four handoff translations exist on disk, but the path-resolution logic is untested — `$LANG=fr_FR.UTF-8` should pick `gemini-handoff-prompt.fr.md`, but a typo in the substring extraction would silently fall back to English without anyone noticing. (`scripts/write-gemini-handoff.ps1:30-40`, `.sh:18-26`.)
   - **Suggested fix**: add a Pester case + a bash test case that sets `$LANG=fr_FR.UTF-8` and asserts the resolved prompt path ends with `.fr.md`. Same for pt, ar.
 
 ---

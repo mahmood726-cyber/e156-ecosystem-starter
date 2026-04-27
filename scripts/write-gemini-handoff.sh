@@ -15,14 +15,43 @@ starter_root="${E156_STARTER_ROOT:-}"
 if [[ -z "$starter_root" ]]; then
     starter_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fi
-# Locale picker: $E156_LANG override > first 2 chars of $LANG / $LC_ALL > en.
-locale="${E156_LANG:-${LANG:-${LC_ALL:-en}}}"
-locale="$(printf '%s' "$locale" | cut -c1-2 | tr 'A-Z' 'a-z')"
-case "$locale" in en|fr|pt|ar) ;; *) locale=en ;; esac
-prompt_file="$starter_root/scripts/gemini-handoff-prompt.${locale}.md"
-if [[ ! -f "$prompt_file" ]]; then
-    prompt_file="$starter_root/scripts/gemini-handoff-prompt.en.md"
-fi
+
+# Pure locale resolver -- testable, no side effects.
+# Precedence: explicit E156_LANG > LC_ALL (POSIX-canonical) > LANG > en.
+# Returns one of: en, fr, pt, ar.
+e156_resolve_handoff_locale() {
+    local raw
+    if [[ -n "${E156_LANG:-}" ]]; then raw="$E156_LANG"
+    elif [[ -n "${LC_ALL:-}" ]]; then raw="$LC_ALL"
+    elif [[ -n "${LANG:-}"   ]]; then raw="$LANG"
+    else raw="en"
+    fi
+    local code
+    code="$(printf '%s' "$raw" | cut -c1-2 | tr 'A-Z' 'a-z')"
+    case "$code" in en|fr|pt|ar) printf '%s' "$code" ;; *) printf 'en' ;; esac
+}
+
+# Resolves the on-disk path, falling back to English if the localised file
+# is missing (partial release / file corruption).
+e156_resolve_handoff_prompt_path() {
+    local starter="$1" locale="${2:-$(e156_resolve_handoff_locale)}"
+    local localised="$starter/scripts/gemini-handoff-prompt.${locale}.md"
+    if [[ -f "$localised" ]]; then
+        printf '%s' "$localised"
+    else
+        printf '%s' "$starter/scripts/gemini-handoff-prompt.en.md"
+    fi
+}
+
+# Test hook: --import dot-sources helpers only; --resolve-only prints the
+# resolved path and exits so bash tests can assert on it without firing
+# the clipboard side effect.
+case "${1:-}" in
+    --import)       return 0 2>/dev/null || exit 0 ;;
+    --resolve-only) e156_resolve_handoff_prompt_path "$starter_root"; exit 0 ;;
+esac
+
+prompt_file="$(e156_resolve_handoff_prompt_path "$starter_root")"
 if [[ ! -f "$prompt_file" ]]; then
     echo "warning: handoff prompt not found at $prompt_file" >&2
     exit 0

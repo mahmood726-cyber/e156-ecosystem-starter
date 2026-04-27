@@ -48,7 +48,8 @@ jobs:
             'scripts\pester.install-sentinel.tests.ps1',
             'scripts\pester.phase3.tests.ps1',
             'scripts\pester.phase4.tests.ps1',
-            'scripts\pester.update.tests.ps1'
+            'scripts\pester.update.tests.ps1',
+            'scripts\pester.handoff-locale.tests.ps1'
           )
           $config = New-PesterConfiguration
           $config.Run.Path = $files
@@ -73,6 +74,8 @@ jobs:
         run: bash --version
       - name: Run bash test suite
         run: bash tests/test-install-sh.bash
+      - name: Run handoff-locale bash tests
+        run: bash tests/test-handoff-locale.bash
 
   python-tests:
     name: Python tests (Ubuntu)

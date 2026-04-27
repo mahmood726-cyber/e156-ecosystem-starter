@@ -46,13 +46,21 @@ echo "==> GitHub user resolved as: $gh_user"
 # install must NOT block the rest of the bootstrap.
 echo
 echo "==> Installing agent CLIs (gemini, claude)..."
-# Pin to known-good majors so a registry breaking-change tomorrow doesn't
+# Pin to known-good versions so a registry breaking-change tomorrow doesn't
 # silently break the next codespace build. Bump these deliberately.
 # Verified against npm registry on 2026-04-27:
-#   @google/gemini-cli      0.39.x  (latest 0.39.1)
+#   @google/gemini-cli         0.39.x  (latest 0.39.1)
 #   @anthropic-ai/claude-code  2.1.x   (latest 2.1.119)
+#
+# Pin semantics:
+#   ^0.39.0 on 0.x is restrictive per npm semver: equivalent to ~0.39.0,
+#   accepts patch updates only. Correct for gemini-cli.
+#   ~2.1.0  on 2.x is restrictive: accepts patch updates only. We use
+#   tilde explicitly here because ^2.1.0 would accept minor bumps
+#   (2.2.x), and Claude Code is moving fast enough that a 2.2.0 next
+#   week could change CLI flags the handoff prompt depends on.
 GEMINI_CLI_VERSION="${GEMINI_CLI_VERSION:-^0.39.0}"
-CLAUDE_CODE_VERSION="${CLAUDE_CODE_VERSION:-^2.1.0}"
+CLAUDE_CODE_VERSION="${CLAUDE_CODE_VERSION:-~2.1.0}"
 if command -v npm >/dev/null 2>&1; then
     npm install -g \
         "@google/gemini-cli@${GEMINI_CLI_VERSION}" \

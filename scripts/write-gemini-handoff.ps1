@@ -17,24 +17,55 @@
 [CmdletBinding()]
 param(
     [string]$StarterRoot,
-    [switch]$Quiet
+    [switch]$Quiet,
+    [switch]$Import,            # dot-source helpers only (used by Pester)
+    [switch]$ResolveOnly        # print the resolved prompt path and exit (test hook)
 )
 
 if (-not $StarterRoot) {
     $StarterRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 }
-# Locale picker: $env:E156_LANG override > first 2 chars of $env:LANG / $env:LC_ALL > en.
-# Supported: en, fr, pt, ar.
-$locale = if ($env:E156_LANG) { $env:E156_LANG.ToLower() }
-          elseif ($env:LANG)    { $env:LANG.Substring(0, [Math]::Min(2, $env:LANG.Length)).ToLower() }
-          elseif ($env:LC_ALL)  { $env:LC_ALL.Substring(0, [Math]::Min(2, $env:LC_ALL.Length)).ToLower() }
-          else                  { 'en' }
-if ($locale -notin @('en','fr','pt','ar')) { $locale = 'en' }
-$promptFile = Join-Path $StarterRoot ("scripts\gemini-handoff-prompt.$locale.md")
-if (-not (Test-Path $promptFile)) {
-    # Fall back to English if the localised file is missing (e.g. partial release).
-    $promptFile = Join-Path $StarterRoot 'scripts\gemini-handoff-prompt.en.md'
+
+function Get-HandoffPromptLocale {
+    # Pure resolver: takes locale env vars, returns one of {en, fr, pt, ar}.
+    # Precedence: explicit E156_LANG > LC_ALL (POSIX-canonical) > LANG > en.
+    [CmdletBinding()]
+    param(
+        [string]$E156Lang = $env:E156_LANG,
+        [string]$LcAll    = $env:LC_ALL,
+        [string]$Lang     = $env:LANG
+    )
+    $raw = if ($E156Lang) { $E156Lang }
+           elseif ($LcAll) { $LcAll }
+           elseif ($Lang)  { $Lang }
+           else            { 'en' }
+    $code = $raw.Substring(0, [Math]::Min(2, $raw.Length)).ToLower()
+    if ($code -in @('en','fr','pt','ar')) { return $code }
+    return 'en'
 }
+
+function Get-HandoffPromptPath {
+    # Resolves the on-disk prompt file path, falling back to English if the
+    # localised file is missing (partial release / file corruption).
+    [CmdletBinding()]
+    param([string]$StarterRoot, [string]$Locale)
+    if (-not $Locale) { $Locale = Get-HandoffPromptLocale }
+    $localised = Join-Path $StarterRoot ("scripts\gemini-handoff-prompt.$Locale.md")
+    if (Test-Path $localised) { return $localised }
+    return (Join-Path $StarterRoot 'scripts\gemini-handoff-prompt.en.md')
+}
+
+if ($Import) { return }   # dot-sourced by Pester; no execution
+
+$promptFile = Get-HandoffPromptPath -StarterRoot $StarterRoot
+
+if ($ResolveOnly) {
+    # Test hook: print path and exit so a Pester case can assert on it
+    # without performing the clipboard/desktop side effects.
+    Write-Output $promptFile
+    return
+}
+
 if (-not (Test-Path $promptFile)) {
     if (-not $Quiet) { Write-Warning "Gemini handoff prompt not found: $promptFile" }
     return

@@ -1,25 +1,36 @@
 #!/usr/bin/env bash
 # on-attach.sh -- runs every time the user opens a new terminal in the
-# Codespace. Greets them, surfaces what is installed, and tells them the
-# single next action: paste the handoff prompt into an agent.
+# Codespace. Greets them ONCE per container session, surfaces what is
+# installed, and tells them the single next action: paste the handoff
+# prompt into an agent.
 #
-# Quiet mode: after the first attach we touch a marker file. Subsequent
-# attaches within the same hour stay silent so opening a terminal to grep
-# is not a 30-line wall of status. To re-show: rm /tmp/e156-attach-shown.
+# Per-session detection: we record PID 1's mtime in the marker file.
+# PID 1 (the container init process) is created when the container
+# starts and persists for the container's lifetime. When the container
+# restarts (rebuild, stop+resume), PID 1's mtime changes. So:
+#   - Same session as marker -> suppress banner, show one-line reminder.
+#   - New session (PID 1 mtime changed) -> show full banner, update marker.
+#   - No marker yet -> show full banner.
+# This survives /tmp persistence and /tmp wiping equally well, because
+# the freshness signal is the container's PID 1, not the marker's age.
+# (Per second-pass review 2026-04-27, P1-A.)
 
 set -u
 
 marker="/tmp/e156-attach-shown"
+container_init_mtime="$(stat -c %Y /proc/1 2>/dev/null || echo 0)"
+
 if [[ -f "$marker" ]]; then
-    # Stat the marker; if younger than 60 minutes, suppress the banner.
-    age_s=$(( $(date +%s) - $(stat -c %Y "$marker" 2>/dev/null || echo 0) ))
-    if (( age_s < 3600 )); then
-        # Quick one-line reminder so a fresh terminal still hints at the prompt.
+    recorded_mtime="$(cat "$marker" 2>/dev/null || echo 0)"
+    if [[ "$recorded_mtime" == "$container_init_mtime" && "$container_init_mtime" != "0" ]]; then
+        # Same container session -> quiet one-liner.
         echo "[E156] Ready. Handoff prompt: cat ~/.config/e156/handoff.md  (rm $marker for full banner)"
         exit 0
     fi
 fi
-touch "$marker" 2>/dev/null || true
+# New session (or first ever): record current PID 1 mtime so subsequent
+# terminal opens in this session take the quiet path.
+printf '%s' "$container_init_mtime" > "$marker" 2>/dev/null || true
 
 # Detect what actually landed (the build may have failed individual components
 # even with FULL); show the student the truth, not a marketing claim.

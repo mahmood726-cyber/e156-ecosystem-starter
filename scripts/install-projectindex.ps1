@@ -246,14 +246,16 @@ if ((Test-Path $reconcilePath) -and -not $Force) {
 }
 
 # Seed a sample restart-manifest.json so find-related-repos.py has SOMETHING
-# to read against on a fresh install. Without it the recon-before-new-project
-# rule (rules.md) is followable but always returns "no matches".
+# to read against on a fresh install. NEVER overwrite an existing manifest,
+# even when -Force is passed: -Force refreshes INDEX.md / reconcile.py
+# templates, not the user's real portfolio data (e.g. a 468-record
+# generated manifest from MA's nightly pipeline). Per P1-C, 2026-04-27.
 $agentRecordsDir = Join-Path $Root 'agent-records'
 $sampleManifest  = Join-Path $agentRecordsDir 'restart-manifest.json'
 $starterRoot     = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $seedSource      = Join-Path $starterRoot 'memory\sample-restart-manifest.json'
-if ((Test-Path $sampleManifest) -and -not $Force) {
-    Write-Ok "restart-manifest.json already present; skipping (use -Force to overwrite)"
+if (Test-Path $sampleManifest) {
+    Write-Ok "restart-manifest.json already present; preserving (sample-seed never overwrites real data)"
 } elseif (-not (Test-Path $seedSource)) {
     Write-Ok "skipped restart-manifest.json seed (source not found at $seedSource)"
 } else {
