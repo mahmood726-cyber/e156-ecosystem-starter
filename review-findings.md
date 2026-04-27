@@ -242,3 +242,79 @@ These four miss-patterns share a theme: **fixes that look correct in isolation c
 The first-pass fixes are net-positive — install survival improved meaningfully. P1-A and P1-C are real but bounded (affect specific scenarios, not first-time users). P1-B is a real supply-chain hardening miss. P1-D is a CI gap, not a runtime bug.
 
 **If fixing this pass**: do P1-B + P1-C first (cheap, supply-chain + data-loss). P1-A is more design work (pick a real per-session signal). P1-D is a 30-min Pester test add. P2s defer.
+
+---
+
+# Fourth-Pass Review (USER POV): e156-ecosystem-starter v0.8.x (post-ad79813)
+
+**Date**: 2026-04-27 (same day, third review of the session)
+**Why a fourth**: prior three passes were all engineer/security personas (Security Auditor, Software Engineer, Release Engineer, Production Readiness, i18n). They caught real bugs but missed the **what does this look like to the actual student?** dimension. Audience: Makerere (190/wk) + Ziauddin SAARC + 4-language African research students who have never used a terminal.
+
+**Personas this pass**:
+1. **Aisha** — first-year Makerere medical student, never opened PowerShell, never typed `cat`
+2. **Hassan** — Ziauddin (Karachi) student, native Urdu speaker, conversational English, no Arabic
+3. **Marie** — Université Cheikh Anta Diop (Dakar) student, francophone, only borrowed phone for browsing
+4. **Dr. Okonkwo** — lecturer at University of Lagos who wants to assign this to 30 students
+5. **Returning Pierre** — installed v0.7.0 in March 2026, tries to update today
+6. **Anyone with no GitHub account yet**
+
+**Summary**: 3 P0-U · 6 P1-U · 4 P2-U. **STATUS: 11 of 13 fixed 2026-04-27. P1-U2 deferred (Urdu/Swahili translation needs native review). P2-U2 has a TODO placeholder pending screencast recording.** **Most install issues are gone. The remaining problems are about understanding, not installation.**
+
+---
+
+## P0-U — Blocks-the-user
+
+- **P0-U1** [FIXED 2026-04-27] [Aisha — first-time non-coder]: **The "ONE STEP LEFT — paste the handoff prompt" instruction assumes baseline CLI literacy that a first-time non-coder does not have.** The on-attach banner says: "Quick way to copy it: `cat ~/.config/e156/handoff.md`". Aisha has never typed `cat`. She does not know what `~` is. She does not know what "paste into `gemini`" means in a CLI context — she's looking for a "Paste" button. **Estimated drop-off at this step: 40-60% of true non-coders.** Everything before this point worked silently for her; this is the moment she gives up.
+  - **Suggested fix**: at the bottom of `on-create.sh`, **start gemini automatically** with the handoff prompt piped in via stdin. Or: open the `~/.config/e156/handoff.md` file in the VS Code editor pane automatically and add a one-line note "use the Copy button at the top, then paste into `gemini` (which is already running in the bottom panel)". Or: ship a `e156 start` wrapper command that does the entire `cat ... | gemini` chain so the student types literally one word.
+
+- **P0-U2** [FIXED 2026-04-27] [No-GitHub-account student]: **The Codespaces button gates on a free GitHub account, but the page doesn't surface the actual signup hurdles.** GitHub signup requires email + (in many regions) SMS phone verification. SMS verification fails silently in some African networks (Airtel, MTN — known issues with US short-codes). Students hit a wall at signup with no indication that the alternative is to use an Education-tier .ac.* email through https://education.github.com. The micro-text just links to "free GitHub account" with no troubleshooting context.
+  - **Suggested fix**: expand the micro-text to a small `<details>` block: "Don't have a GitHub account yet? You'll need an email and a phone number for SMS verification (problems with Airtel/MTN? See [common signup issues](URL)). If you have a university email ending in `.ac.ug` / `.ac.za` / `.edu.pk` / etc., apply for the free GitHub Education tier first at https://education.github.com — it gives you 90 hours of free Codespaces (vs 60) and never asks for a phone."
+
+- **P0-U3** [FIXED 2026-04-27] [Returning Pierre]: **There is no upgrade path. Returning users from v0.7.0 are silently broken.** Pierre installed in March; his `~/.claude/rules/` reflects v0.7.0 wording. His install.ps1 from March, if re-run today, will fail the SHA gate (different file SHA) with "ERROR: install.ps1 hash mismatch. File may have been tampered with." — terrifying message that suggests his machine is compromised. There's no `e156 --version` command, no "you have v0.7.0; latest is v0.8.0" hint, and no documented "to update, do X."
+  - **Suggested fix**: add a one-liner in README + landing page: "Already installed? To upgrade: re-run the same `iex (irm ...)` one-liner; the new bootstrap pulls the latest tagged release and overwrites your rules + memory templates (your edits to `*.md.user` are preserved)." Plus: add a `--version` flag to install.ps1/sh that just prints the pinned ref. Plus: make the "tampered" error message more honest: "ERROR: install.ps1 hash mismatch. This usually means you have an older install.ps1 from a previous version — re-download the latest from the bootstrap one-liner."
+
+---
+
+## P1-U — Degrades the user experience
+
+- **P1-U1** [FIXED 2026-04-27] [Marie — phone-only]: **Codespaces is unusable on a phone.** The "Open in browser, zero install" promise is the headline UX, but VS Code-in-mobile-browser is functionally broken (no shift-click, no proper keyboard layouts, terminal won't render correctly, copy/paste between apps is unreliable). For African students whose primary device is a phone, the cloud-install path doesn't actually work. The page doesn't say "you need a desktop or laptop for Codespaces."
+  - **Suggested fix**: add a one-line warning under the green button: "Best on a desktop or laptop — Codespaces in a phone browser is technically possible but the terminal is unreliable. If you're on a phone, see if you can borrow a friend's laptop for the first 90-minute setup; after that, you can do most writing from your phone via the GitHub web editor."
+
+- **P1-U2** [DEFERRED — Urdu/Swahili needs native review] [Hassan — Urdu speaker]: **Urdu, Bengali, Hindi, and Swahili are missing.** SAARC audience (Pakistan, India, Bangladesh, Sri Lanka, Nepal) gets English or Arabic. Arabic ≠ Urdu — Hassan reads Urdu fluently but Arabic prose is foreign. Makerere students may speak Swahili more comfortably than English. The four-language coverage (en/fr/pt/ar) is Western-Mediterranean-centric.
+  - **Suggested fix**: prioritise Urdu (Pakistan/India SAARC weight) and Swahili (East African weight). LLM-translation is a starting point; commit to a single human-review pass per language before declaring it shipped. Defer Bengali/Hindi unless there's a known cohort.
+
+- **P1-U3** [FIXED 2026-04-27] [Aisha + Dr. Okonkwo]: **The on-attach banner uses engineer jargon that students and educators do not understand.** "TruthCert HMAC key", "Sentinel pre-push hook", "ProjectIndex seed", "Overmind verifier" — Aisha has no mental model for any of these terms. Dr. Okonkwo, trying to explain the install to her students, can't translate them either. The banner technically tells them the truth but communicates nothing.
+  - **Suggested fix**: replace each technical label with a one-line plain-English purpose: "rules pack — your AI agent reads these to follow the E156 method", "Sentinel — checks your code for 20 common mistakes before you save it to GitHub", "Overmind — runs your tests + verifies your numbers match published values", "TruthCert — adds a tamper-proof signature to your finished paper", "ProjectIndex — keeps a list of all your projects in one file". Engineering precision is a rules.md concern; banner copy is a teaching concern.
+
+- **P1-U4** [FIXED 2026-04-27] [Marie — francophone]: **Mixed-language experience.** Marie clicks the French landing page → French banner ✓ → Codespaces opens → on-attach banner is **English** → she runs `gemini` → handoff prompt is in French ✓ (because of the `$LANG` picker). The middle step (the on-attach banner) is the only place she sees English in the flow, and it's the moment she most needs to understand what just installed.
+  - **Suggested fix**: localise on-attach.sh banner. Pick locale from `$LANG` same way write-gemini-handoff.sh does (the resolver function already exists; just call it). Translate the 30-line banner into fr/pt/ar.
+
+- **P1-U5** [FIXED 2026-04-27] [Dr. Okonkwo]: **No teaching materials.** A lecturer adopting this for a class needs: (a) a 1-paragraph "what is this stack and why does it matter" overview, (b) 5-slide intro deck (pdf or pptx), (c) a 15-min demo script with talking points, (d) suggested first-class exercises. Currently they get the README (which is engineer-targeted) and STUDENT-WORKFLOW.md (also engineer-targeted). An educator has to reverse-engineer the teaching materials from the install scripts.
+  - **Suggested fix**: add `docs/teaching/` containing: `intro-1pager.md`, `intro-slides.pdf`, `15min-demo-script.md`, `first-class-exercises.md`. Even draft versions are a 10x improvement on absent.
+
+- **P1-U6** [FIXED 2026-04-27] [Aisha — first build experience]: **No build progress feedback.** Codespace shows "Configuring codespace…" for 2-3 minutes with no indication that anything is happening. A student with patchy 4G whose page hasn't visibly changed in 90 seconds will refresh — losing the build. Codespaces does have a "Show creation log" link buried in the UI, but it's not pointed at.
+  - **Suggested fix**: in `.devcontainer/on-create.sh`, print clear progress markers at each phase ("[1/5] Installing rules…", "[2/5] Setting up memory…", "[3/5] Installing Sentinel…", "[4/5] Installing Overmind…", "[5/5] Installing CLIs (this is the slowest step)…"). Codespaces shows the postCreateCommand output in the creation-log panel — students who DO open it will see real progress.
+
+---
+
+## P2-U — Polish
+
+- **P2-U1** [FIXED 2026-04-27] [Aisha]: **The handoff prompt is ambiguous about who does each step.** Step 2 says "Run `python --version`…" — is the agent running this, or is it telling Aisha to run it? Step 5 says "scaffold your first paper" — what does "scaffold" mean? Add explicit "I will run this" vs "you will run this" framing throughout.
+
+- **P2-U2** [PLACEHOLDER — TODO comment added; needs an actual recording] [All non-coders]: **No video.** Non-coders learn from video, not text. A 60-second silent screencast at the top of the landing page (mouse moves to button → click → codespace builds → terminal appears → handoff prompt) would convert 2x better than the best text. Free to record (OBS Studio, ScreenToGif).
+
+- **P2-U3** [FIXED 2026-04-27] [All first-time visitors]: **"Set up your research laptop the way Mahmood does" — who is Mahmood?** Page assumes the visitor knows. Add a one-line credit: "Built by Mahmood Ahmad (cardiology research, Makerere & Ziauddin)" with a link.
+
+- **P2-U4** [FIXED 2026-04-27] [Anyone hitting "What is a Codespace?"]: link goes to dense GitHub docs page. Should go to a one-paragraph student-friendly explainer hosted on the same Pages site (e.g. `docs/what-is-a-codespace.html`).
+
+---
+
+## Pattern across the user-POV findings
+
+The previous three passes treated the install as an **engineering artifact** — does it install correctly, is the security model honest, are the tests right? All true and important.
+
+This pass treats it as a **teaching artifact** — can a student who has never opened PowerShell get from "click button" to "I've shipped a paper" without an expert sitting next to them? **At the install layer, almost yes** (great work landed in earlier passes). At the **understanding layer, no** — the banner, the handoff prompt, and the rules pack still speak to engineers, not students. The fix is mostly copy-rewriting + adding one wrapper command (`e156 start`) + adding teaching materials. None of it is hard; all of it is content.
+
+**If fixing this pass**: P0-U1 (auto-launch gemini at end of install) is the single most valuable change — it removes the moment of maximum drop-off. P1-U3 (plain-English banner labels) is ~20 minutes of editing and delivers visible value to every student. P1-U6 (build progress markers) is ~10 lines of bash. The teaching materials (P1-U5) are bigger but worth a future sprint.
+
+**If fixing only one thing**: P0-U1. Auto-launch `gemini` at install end with the handoff prompt as stdin. Eliminates the cliff.

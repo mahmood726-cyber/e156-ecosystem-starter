@@ -17,7 +17,12 @@ cd "$(dirname "$0")/.."   # repo root
 echo
 echo "==> E156 Ecosystem Starter -- Codespaces full bootstrap"
 echo "    Stack: rules + memory + Sentinel + Overmind + ProjectIndex + agent CLIs"
+echo "    This takes ~2-3 minutes. Progress markers below."
 echo
+
+# Phase counter for at-a-glance progress; expand if/when phases change.
+PHASES_TOTAL=5
+phase() { echo; echo "==> [${1}/${PHASES_TOTAL}] ${2}"; }
 
 # Make every shipped script executable. The repo may have been cloned by the
 # Codespaces clone step, which doesn't always preserve +x.
@@ -44,8 +49,9 @@ echo "==> GitHub user resolved as: $gh_user"
 # Google account login, no API key to pay for. Claude Code is also installed
 # for users with an Anthropic API key. Both are best-effort: a failed npm
 # install must NOT block the rest of the bootstrap.
+phase 1 "Resolving GitHub user (already done above)"
+phase 2 "Installing agent CLIs — gemini + claude (slowest step, ~30-60s)"
 echo
-echo "==> Installing agent CLIs (gemini, claude)..."
 # Pin to known-good versions so a registry breaking-change tomorrow doesn't
 # silently break the next codespace build. Bump these deliberately.
 # Verified against npm registry on 2026-04-27:
@@ -77,11 +83,12 @@ fi
 # ~/code/ProjectIndex). It exits 0 if everything succeeded or 2 if any chain
 # failed; either way we want to keep going so the student gets at least a
 # partial environment.
-echo
-echo "==> Running install.sh --full (this takes ~60-90 seconds)"
+phase 3 "Running install.sh --full (rules + memory + Sentinel + Overmind + ProjectIndex)"
 echo
 bash install/install.sh --full --github-user "$gh_user" || \
     echo "==> install.sh --full reported partial failure; see banner above for which components are ok."
+
+phase 4 "Wiring TruthCert key + e156 wrapper + handoff prompt"
 
 # --- TruthCert HMAC key: file-only, no global export ------------------------
 # install-overmind.sh writes the key to ~/.config/e156/truthcert-hmac-key
@@ -104,6 +111,29 @@ prompt_src="scripts/gemini-handoff-prompt.${locale}.md"
 [[ -f "$prompt_src" ]] || prompt_src="scripts/gemini-handoff-prompt.en.md"
 cp "$prompt_src" "${HOME}/.config/e156/handoff.md"
 
+# --- Install the `e156` wrapper command on PATH -----------------------------
+# Single-command UX: `e156 start` launches Gemini with the handoff briefing
+# already loaded. Removes the prior cliff where students had to remember
+# `cat ~/.config/e156/handoff.md | gemini`. P0-U1 from user-POV review.
+mkdir -p "${HOME}/.local/bin"
+cp scripts/e156 "${HOME}/.local/bin/e156"
+chmod +x "${HOME}/.local/bin/e156"
+# Ensure ~/.local/bin is on PATH for new shells. Idempotent.
+if ! grep -q '\.local/bin' "${HOME}/.bashrc" 2>/dev/null; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "${HOME}/.bashrc"
+fi
+# Also export for the current build shell so on-attach can find it.
+export PATH="$HOME/.local/bin:$PATH"
+
+# --- Record installed version for `e156 version` ----------------------------
+# Pulls the git tag/SHA at the starter root so a returning user can compare
+# their installed version against the latest release. P0-U3.
+if command -v git >/dev/null 2>&1 && [[ -d ".git" ]]; then
+    git describe --tags --always 2>/dev/null > "${HOME}/.config/e156/installed-ref" || true
+fi
+
+phase 5 "Done — codespace ready"
 echo
-echo "==> Codespace ready. The terminal will print your next steps when you open it."
+echo "==> When you open a terminal it will tell you what to do next."
+echo "    TL;DR: type 'e156 start' and press Enter."
 echo

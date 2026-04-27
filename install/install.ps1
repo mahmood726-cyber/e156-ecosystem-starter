@@ -85,7 +85,17 @@ if (-not $Import) {
     $selfSha = (Get-FileHash -Algorithm SHA256 $PSCommandPath).Hash.ToLower()
 
     if ($expected -ne $selfSha) {
-        Write-Host "ERROR: install.ps1 hash mismatch. File may have been tampered with." -ForegroundColor Red
+        Write-Host "ERROR: install.ps1 SHA does not match the recorded HASH.txt." -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Most common cause: you have an older install.ps1 from a prior version" -ForegroundColor Yellow
+        Write-Host "of the starter, but the HASH.txt shipping in this download is from a" -ForegroundColor Yellow
+        Write-Host "newer release. Re-run the bootstrap one-liner from" -ForegroundColor Yellow
+        Write-Host "  https://mahmood726-cyber.github.io/e156-ecosystem-starter/" -ForegroundColor Yellow
+        Write-Host "to get a matching pair." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Less common: the download was tampered with in transit (MitM, corrupt" -ForegroundColor DarkGray
+        Write-Host "CDN). If the bootstrap re-run also fails, that's the case to investigate." -ForegroundColor DarkGray
+        Write-Host ""
         Write-Host "Expected: $expected"
         Write-Host "Got:      $selfSha"
         exit 1

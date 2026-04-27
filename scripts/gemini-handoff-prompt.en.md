@@ -7,18 +7,27 @@ Sentinel/Overmind/ProjectIndex into my home dir. Your job now is the
 Please do these in order. Stop and ask me if any step would touch something
 outside my home directory or modify system PATH.
 
-1. **Sanity-check the install.** Read `~/.claude/rules/rules.md` and confirm
-   the four rules files are present (`rules.md`, `e156.md`, `advanced-stats.md`,
-   `lessons.md`). If any are missing, tell me which ones and stop.
+**For each step, the convention is:**
+- "I will run X" = YOU (the agent) execute the command in your shell tool.
+- "Tell me to run X" = print the command for ME (the user) to run myself in my own terminal.
+- "Ask me Y" = pause and wait for my answer before continuing.
 
-2. **Diagnose missing prereqs and tell me what to install.** Run `python --version`,
-   `Rscript --version`, `node --version`, `gh --version`, `git --version`. For
-   each one that's missing or too old (Python <3.11, R <4.5, Node <20), print
-   the exact install URL and a one-line reason it matters for E156 work. Don't
-   try to install them yourself — let me see the list and decide.
+This is important because I am a beginner and may not know which commands are
+safe to type myself.
 
-3. **If `gh` is installed but not authenticated**, tell me to run `gh auth login`
-   and wait. Don't proceed until I confirm.
+1. **YOU run** `cat ~/.claude/rules/rules.md | head -5` to confirm the rules
+   pack is installed. If the file is missing or empty, tell me which file
+   and stop. Do not try to fix it.
+
+2. **YOU run** these prereq checks: `python --version`, `Rscript --version`,
+   `node --version`, `gh --version`, `git --version`. For each one that's
+   missing or too old (Python <3.11, R <4.5, Node <20), print the exact
+   install URL and a one-line reason it matters for E156 work. Do NOT try
+   to install missing ones yourself — surface the list and let me decide.
+
+3. **If `gh` is installed but not authenticated** (you'll see this from
+   `gh auth status`), **TELL ME to run** `gh auth login` and wait for me
+   to confirm before proceeding.
 
 4. **Smoke-test Sentinel and Overmind (only if installed).** If `sentinel` is
    on PATH, run `sentinel --version`. If `overmind` is on PATH, run

@@ -97,7 +97,7 @@
 </nav>
 <header>
   <h1>E156 Ecosystem Starter</h1>
-  <p class="sub">Set up your research laptop the way Mahmood does. One click.</p>
+  <p class="sub">Set up your research laptop the way <a href="https://github.com/mahmood726-cyber" style="color:#555;">Mahmood Ahmad</a> does (cardiology research lead, Makerere &amp; Ziauddin). One click.</p>
 </header>
 
 <main id="main">
@@ -109,12 +109,41 @@
   <a class="codespace-cta" href="https://codespaces.new/mahmood726-cyber/e156-ecosystem-starter?quickstart=1" rel="noopener">
     Open in GitHub Codespaces &rarr;
   </a>
-  <span class="micro">~2-3 minute build. Requires a free <a href="https://github.com/signup">GitHub account</a>. Personal accounts and GitHub Education accounts get 60 hours/month free — enough for your first paper. (GitHub Enterprise / institutional accounts may bill through to your org.) <a href="https://docs.github.com/en/codespaces/overview">What is a Codespace?</a></span>
+  <span class="micro">~2-3 minute build. Best on a <strong>desktop or laptop</strong> — Codespaces in a phone browser technically works but the terminal is unreliable. Requires a free <a href="https://github.com/signup">GitHub account</a> (see below if you don't have one yet). <a href="#what-is-codespace">What is a Codespace?</a></span>
 </section>
-<aside class="warning" role="note" style="margin: -16px 0 28px; background: #fff5b1; border-left: 4px solid #ffd33d; padding: 12px 16px; border-radius: 4px; font-size: 0.95em;">
-  <strong>Tip — when you're done, stop your codespace.</strong>
-  Idle codespaces keep using your monthly hours until they auto-suspend (default: 30 min). To stop one immediately: visit <a href="https://github.com/codespaces">github.com/codespaces</a> and click the <strong>⋯ → Stop codespace</strong> menu, or run <code>gh codespace stop</code> in any terminal. With 60 free hours/month, leaving a tab open all day will eat through your tier in less than a week.
+
+<details style="margin: 0 0 16px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">No GitHub account yet? Read this first.</summary>
+  <ul style="margin:12px 0 0; padding-left:22px;">
+    <li><strong>If you have a university email</strong> ending in <code>.ac.ug</code>, <code>.ac.za</code>, <code>.edu.pk</code>, <code>.edu</code>, etc. — apply for <a href="https://education.github.com">GitHub Education</a> first. You get 90 free Codespaces hours/month (vs 60), no phone-verification step, and access to other paid tools (Copilot, JetBrains, etc.).</li>
+    <li><strong>If you only have personal email</strong> (Gmail/Yahoo) — sign up at <a href="https://github.com/signup">github.com/signup</a>. GitHub will ask for SMS phone verification; this can fail silently on some African mobile networks (Airtel, MTN). If your code never arrives, retry from a different network or use the GitHub Education path above.</li>
+    <li><strong>If your phone is your only device</strong> — borrow a friend's laptop for the first 90 minutes of setup; after that you can do most writing from your phone via the GitHub web editor.</li>
+  </ul>
+</details>
+
+<details style="margin: 0 0 28px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;" id="what-is-codespace">
+  <summary style="cursor:pointer; font-weight:600;">What is a GitHub Codespace? (1-paragraph version)</summary>
+  <p style="margin:10px 0 0;">A Codespace is a Linux computer that runs in GitHub's cloud, with VS Code (a code editor) opened in your web browser. Nothing installs on your laptop — everything happens on the cloud machine. You write code in the browser, save it to GitHub, and it's still there when you close the tab. Free for 60 hours/month on personal accounts (90 on Education accounts), then pauses until next month. Like Google Docs, but for a programming environment.</p>
+</details>
+
+<aside class="warning" role="note" style="margin: 0 0 28px; background: #fff5b1; border-left: 4px solid #ffd33d; padding: 12px 16px; border-radius: 4px; font-size: 0.95em;">
+  <strong>Important — when you're done, stop your codespace.</strong>
+  Idle codespaces keep using your monthly hours until they auto-suspend (default: 30 min). To stop one immediately: visit <a href="https://github.com/codespaces">github.com/codespaces</a> and click <strong>⋯ → Stop codespace</strong>. Leaving a tab open all day will eat through your free tier in under a week.
 </aside>
+
+<details style="margin: 0 0 28px; padding: 12px 16px; background:#f0f6ff; border-left:3px solid #0366d6; border-radius:4px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">Already installed an older version? (upgrading)</summary>
+  <p style="margin:10px 0 0;">If you ran the installer before (e.g. v0.7.0 in March), just <strong>re-run the same one-liner</strong> at the top of this page. The new bootstrap pulls the latest tagged release and overwrites your rules + memory templates. Files you've edited yourself (<code>*.md.user</code>) are preserved. To check what version you have installed, in any Codespace terminal run <code>e156 version</code>.</p>
+  <p style="margin:8px 0 0;">If a re-install fails with <em>"install.ps1 hash mismatch"</em>, that just means your locally-cached install.ps1 is older than the recorded hash for the new version — re-running the bootstrap one-liner will pull a fresh copy and resolve it.</p>
+</details>
+
+<!--
+  TODO: 60-second silent screencast at this position would convert non-coders
+  ~2x better than text instructions. Free tools: OBS Studio, ScreenToGif.
+  Should show: green button click -> codespace builds (sped up) -> terminal
+  appears -> type 'e156 start' -> agent responds. Submit via PR.
+  (P2-U2 from 2026-04-27 user-POV review.)
+-->
 
 <nav aria-label="Operating system" class="os-tabs">
   <a class="os-tab primary" href="#install-windows">Windows</a>

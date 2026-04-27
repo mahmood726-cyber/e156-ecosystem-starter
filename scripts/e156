@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# e156 -- single-command wrapper for the ecosystem-starter UX.
+#
+# Subcommands:
+#   e156 start               Launch Gemini CLI with the handoff prompt loaded
+#   e156 start --claude      Same, but with Claude Code instead
+#   e156 version             Print the installed ecosystem-starter version
+#   e156 help                Show this help
+#
+# Why this exists: the prior UX asked non-coder students to type
+#   cat ~/.config/e156/handoff.md
+# then paste into `gemini`. That's three concepts (cat, ~, paste-into-cli)
+# a first-year medical student has never seen. This wrapper collapses it
+# to one word: `e156 start`. P0-U1 from the 2026-04-27 user-POV review.
+
+set -u
+
+prompt_file="${HOME}/.config/e156/handoff.md"
+
+cmd_help() {
+    cat <<'HELP'
+e156 -- one-command wrapper for the E156 ecosystem starter
+
+Usage:
+  e156 start            Launch Gemini CLI (free) with the handoff briefing
+  e156 start --claude   Launch Claude Code instead (needs ANTHROPIC_API_KEY)
+  e156 version          Print installed version
+  e156 help             Show this help
+
+The handoff briefing is at ~/.config/e156/handoff.md
+HELP
+}
+
+cmd_version() {
+    # Try to read the pinned ref the bootstrap recorded; fall back to git tag.
+    local pinned="${HOME}/.config/e156/installed-ref"
+    if [[ -f "$pinned" ]]; then
+        cat "$pinned"
+    elif command -v git >/dev/null 2>&1 && [[ -d "${HOME}/code/e156-ecosystem-starter/.git" ]]; then
+        ( cd "${HOME}/code/e156-ecosystem-starter" && git describe --tags --always 2>/dev/null )
+    else
+        echo "unknown (no installed-ref file at $pinned)"
+    fi
+}
+
+cmd_start() {
+    local agent="gemini"
+    if [[ "${1:-}" == "--claude" ]]; then agent="claude"; fi
+
+    if [[ ! -f "$prompt_file" ]]; then
+        echo "ERROR: handoff prompt not found at $prompt_file" >&2
+        echo "       Re-run the ecosystem installer to regenerate it." >&2
+        return 1
+    fi
+
+    if ! command -v "$agent" >/dev/null 2>&1; then
+        echo "ERROR: '$agent' CLI not found on PATH." >&2
+        if [[ "$agent" == "gemini" ]]; then
+            echo "       Install: npm install -g @google/gemini-cli" >&2
+        else
+            echo "       Install: npm install -g @anthropic-ai/claude-code" >&2
+            echo "       Then export ANTHROPIC_API_KEY=sk-ant-..." >&2
+        fi
+        return 1
+    fi
+
+    echo "==> Launching $agent with the E156 handoff briefing..."
+    echo "    (sign in via the browser popup if prompted)"
+    echo
+
+    # Pipe the handoff briefing as the agent's first user message. Both
+    # gemini-cli and claude-code accept stdin as the initial prompt; if
+    # that ever changes we fall back to opening the agent and reminding
+    # the student to copy/paste manually.
+    if "$agent" < "$prompt_file"; then
+        return 0
+    else
+        local rc=$?
+        echo
+        echo "WARNING: $agent exited $rc. If it didn't accept stdin, try:" >&2
+        echo "  cat $prompt_file | $agent" >&2
+        return $rc
+    fi
+}
+
+case "${1:-help}" in
+    start)         shift; cmd_start "$@" ;;
+    version|-v|--version)  cmd_version ;;
+    help|-h|--help|"")     cmd_help ;;
+    *)
+        echo "Unknown command: $1" >&2
+        cmd_help >&2
+        exit 2
+        ;;
+esac

@@ -167,7 +167,17 @@ verify_self_sha() {
         actual="$(shasum -a 256 "$SCRIPT_PATH" | awk '{print $1}')"
     fi
     if [[ "$expected" != "$actual" ]]; then
-        echo "ERROR: install.sh hash mismatch. File may have been tampered with." >&2
+        echo "ERROR: install.sh SHA does not match the recorded HASH-linux.txt." >&2
+        echo "" >&2
+        echo "Most common cause: you have an older install.sh from a prior version" >&2
+        echo "of the starter, but the HASH-linux.txt shipping in this download is" >&2
+        echo "from a newer release. Re-run the bootstrap one-liner from" >&2
+        echo "  https://mahmood726-cyber.github.io/e156-ecosystem-starter/" >&2
+        echo "to get a matching pair." >&2
+        echo "" >&2
+        echo "Less common: the download was tampered with in transit (MitM, corrupt" >&2
+        echo "CDN). If the bootstrap re-run also fails, that is the case to investigate." >&2
+        echo "" >&2
         echo "  Expected: $expected" >&2
         echo "  Got:      $actual"   >&2
         exit 1
