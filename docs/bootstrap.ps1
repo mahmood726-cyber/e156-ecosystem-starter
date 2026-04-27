@@ -10,17 +10,29 @@
 #
 # What it does (same as e156-setup.bat):
 #   1. Checks Python is installed
-#   2. Downloads the latest main.zip
-#   3. Extracts to %TEMP%\e156-ecosystem-starter-main
-#   4. Runs install\install.ps1 (which copies rules + memory + chains
-#      Sentinel/Overmind/ProjectIndex per your prompts)
+#   2. Downloads the PINNED release tarball (default v0.8.0; override with
+#      $env:E156_REF = 'main' or any tag/branch before piping to iex)
+#   3. Extracts to %TEMP%\e156-ecosystem-starter-<ref>
+#   4. install\install.ps1 hashes itself against docs/HASH.txt (download-
+#      integrity check) and then chains rules+memory+optional sub-installers
+#
+# Security note: download-integrity != tamper-proof. A bad actor with push
+# access to the upstream repo can ship a malicious tag along with a matching
+# HASH.txt; the gate only catches MitM / corrupt-download. For high-trust
+# installs, prefer `git clone --branch v0.x.y --depth 1` from a clean shell
+# and verify the tag's GPG signature before running install.ps1.
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference    = 'SilentlyContinue'
 
+# Pinned release tag. Bumping this is a deliberate, reviewable commit. Override
+# only for testing pre-release branches: $env:E156_REF = 'main'; iex (irm ...)
+$pinnedRef = if ($env:E156_REF) { $env:E156_REF } else { 'v0.8.0' }
+
 Write-Host ""
 Write-Host "====================================================="
 Write-Host "  E156 Ecosystem Starter — PowerShell bootstrap"
+Write-Host "  Pinned to: $pinnedRef"
 Write-Host "====================================================="
 Write-Host ""
 
@@ -80,16 +92,24 @@ if ($rscript) {
     Write-Host "    validation step in your dashboards."
 }
 
-# --- 2. Download main.zip -----------------------------------------------------
-$zipUrl  = 'https://github.com/mahmood726-cyber/e156-ecosystem-starter/archive/refs/heads/main.zip'
-$zipPath = Join-Path $env:TEMP 'e156-ecosystem-starter.zip'
-$extract = Join-Path $env:TEMP 'e156-ecosystem-starter-main'
+# --- 2. Download pinned release tarball ---------------------------------------
+# Tagged release URL: GitHub names the extract dir "<repo>-<tag-without-v>"
+# for tags starting with v, and "<repo>-<branch>" for branches.
+if ($pinnedRef -match '^v[0-9]') {
+    $zipUrl = "https://github.com/mahmood726-cyber/e156-ecosystem-starter/archive/refs/tags/$pinnedRef.zip"
+    $extractSuffix = $pinnedRef -replace '^v',''
+} else {
+    $zipUrl = "https://github.com/mahmood726-cyber/e156-ecosystem-starter/archive/refs/heads/$pinnedRef.zip"
+    $extractSuffix = $pinnedRef
+}
+$zipPath = Join-Path $env:TEMP "e156-ecosystem-starter-$pinnedRef.zip"
+$extract = Join-Path $env:TEMP "e156-ecosystem-starter-$extractSuffix"
 
 if (Test-Path $extract) { Remove-Item -Recurse -Force $extract }
 if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
 
 Write-Host ""
-Write-Host "[2/4] Downloading main.zip..."
+Write-Host "[2/4] Downloading $pinnedRef.zip..."
 try {
     Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
     Write-Host "  OK — $((Get-Item $zipPath).Length / 1KB -as [int]) KB to $zipPath"

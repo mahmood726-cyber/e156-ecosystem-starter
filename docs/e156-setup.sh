@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-REF="${REF:-main}"
+REF="${REF:-v0.8.0}"
 FULL_FLAG=""
 while [[ $# -gt 0 ]]; do
     case "$1" in

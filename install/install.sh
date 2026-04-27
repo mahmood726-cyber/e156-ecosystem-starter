@@ -559,6 +559,13 @@ if [[ "$n_failed" -gt 0 ]]; then
 fi
 echo
 
+# --- Gemini-CLI handoff (one-paste install completion) ---------------------
+# Hand the rest off to an agent. Non-fatal if it fails.
+handoff_script="$STARTER_ROOT/scripts/write-gemini-handoff.sh"
+if [[ -f "$handoff_script" ]]; then
+    bash "$handoff_script" || true
+fi
+
 trap - ERR
 rm -rf "$MANIFEST_DIR"
 # Exit non-zero if any chain failed so callers (bootstrap, CI) can detect.

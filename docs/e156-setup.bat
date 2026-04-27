@@ -70,11 +70,15 @@ echo   OK - Python found:
 python --version
 
 echo.
-echo [2/4] Downloading ecosystem-starter...
-set "DOWNLOAD_URL=https://github.com/mahmood726-cyber/e156-ecosystem-starter/archive/refs/heads/main.zip"
-set "ZIP_PATH=%TEMP%\e156-ecosystem-starter.zip"
+echo [2/4] Downloading ecosystem-starter (pinned: v0.8.0)...
+REM Pinned release tag. Bump deliberately when shipping a new version. The
+REM extracted folder for a tag "vX.Y.Z" is named "<repo>-X.Y.Z" (no v).
+set "PINNED_REF=v0.8.0"
+set "PINNED_DIR=0.8.0"
+set "DOWNLOAD_URL=https://github.com/mahmood726-cyber/e156-ecosystem-starter/archive/refs/tags/%PINNED_REF%.zip"
+set "ZIP_PATH=%TEMP%\e156-ecosystem-starter-%PINNED_REF%.zip"
 set "EXTRACT_PARENT=%TEMP%"
-set "EXTRACT_PATH=%TEMP%\e156-ecosystem-starter-main"
+set "EXTRACT_PATH=%TEMP%\e156-ecosystem-starter-%PINNED_DIR%"
 
 REM Remove any stale extract from a previous attempt
 if exist "%EXTRACT_PATH%" rmdir /S /Q "%EXTRACT_PATH%"

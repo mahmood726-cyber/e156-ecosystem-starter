@@ -1,11 +1,16 @@
 # CI for e156-ecosystem-starter.
 #
-# Runs on every push and PR. Three jobs:
+# Runs on every push and PR. Five jobs:
 #   1. pester       -- PowerShell tests on Windows (install.ps1 helpers,
 #                      redaction, supply-chain pinning, SHA gate)
 #   2. bash-tests   -- bash tests on Ubuntu (install.sh helpers, redaction,
 #                      pinning, dot-source hygiene)
-#   3. lint         -- ShellCheck on .sh files; PSScriptAnalyzer on .ps1
+#   3. python-tests -- pytest for portable Python helpers (push-portfolio
+#                      dotted-dir skip rule, etc.)
+#   4. lint         -- ShellCheck on .sh files; PSScriptAnalyzer on .ps1
+#   5. link-check   -- lychee against docs/**/*.html so a broken cross-page
+#                      anchor or dead external link fails CI before it
+#                      reaches the Pages surface
 #
 # Bash tests do NOT pip-install Sentinel/Overmind in CI -- those live in
 # separate repos with their own pipelines. We only verify wrapper logic.
@@ -68,6 +73,40 @@ jobs:
         run: bash --version
       - name: Run bash test suite
         run: bash tests/test-install-sh.bash
+
+  python-tests:
+    name: Python tests (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pytest
+        run: python -m pip install --upgrade pip pytest
+      - name: Run pytest
+        run: python -m pytest tests/ -v
+
+  link-check:
+    name: Pages link-check (lychee)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lychee link checker
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # Anchor verification (--include-fragments) is what catches the
+          # ../#install vs ../#troubleshooting class of bug. We restrict
+          # to the docs/ tree so PR-time README markdown churn does not
+          # noise the build.
+          args: >-
+            --no-progress
+            --include-fragments
+            --accept 200,206,403,429
+            'docs/**/*.html'
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   lint:
     name: Static analysis (ShellCheck + PSScriptAnalyzer)

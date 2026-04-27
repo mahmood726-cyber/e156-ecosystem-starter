@@ -701,6 +701,21 @@ if ($nFailed -gt 0) {
 }
 Write-Host ""
 
+# --- Step 7: Gemini-CLI handoff (one-paste install completion) -------------
+# Even after `install.ps1 -Full`, students still need to run agent CLIs and
+# pick a first project. Rather than walk them through that interactively in
+# PowerShell, we write a self-contained handoff prompt to their clipboard and
+# Desktop. They paste it into `gemini` / `claude` / `codex` and the agent
+# finishes the bootstrap. Non-fatal if it fails.
+$handoffScript = Join-Path $scriptsDir 'write-gemini-handoff.ps1'
+if (Test-Path $handoffScript) {
+    try {
+        & $handoffScript -StarterRoot $starterRoot
+    } catch {
+        Write-Warning "handoff prompt staging failed: $($_.Exception.Message)"
+    }
+}
+
 # Stop the install transcript before exit (non-fatal if it never started).
 # Then scrub the log of API keys / tokens / HMAC values that may have been
 # pasted, echoed, or otherwise captured during the run -- so attaching the

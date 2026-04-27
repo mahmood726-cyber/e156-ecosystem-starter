@@ -47,12 +47,17 @@ class RepoStatus:
 def find_git_repos(scan_dirs: list[Path], recursive: bool = True) -> list[Path]:
     """Return every `*/.git/` parent under the scan dirs.
 
-    Skips: .git, node_modules, venv, .venv, __pycache__, build, dist,
-    site-packages, anything starting with a dot.
+    Skips:
+      - well-known build/cache dirs (node_modules, venv, dist, ...)
+      - any directory whose name starts with `.` (covers `.claude`, `.codex`,
+        `.gemini`, `.config`, `.local`, etc.). Hidden config repos are private
+        by convention and a student running --report on a broad root should
+        not have those leak into the portfolio scan, even if they happen to
+        be initialised as git repos. Same rule as the agent-config sentinel.
     """
     skip_names = {
-        ".git", "node_modules", "venv", ".venv", "__pycache__",
-        "build", "dist", "site-packages", ".pytest_cache", ".mypy_cache",
+        "node_modules", "venv", "__pycache__",
+        "build", "dist", "site-packages",
     }
     repos: list[Path] = []
     for root in scan_dirs:
@@ -61,8 +66,18 @@ def find_git_repos(scan_dirs: list[Path], recursive: bool = True) -> list[Path]:
         for git_dir in root.rglob(".git") if recursive else [p / ".git" for p in root.iterdir() if p.is_dir()]:
             if not git_dir.is_dir():
                 continue
-            # Skip .git dirs inside an already-discovered repo (submodules etc.)
-            if any(part in skip_names for part in git_dir.relative_to(root).parts[:-1]):
+            # Path parts BETWEEN root and the .git dir itself. We never want
+            # to skip on the literal '.git' segment (that's the marker we're
+            # looking for); we DO want to skip on any other dotted ancestor.
+            ancestors = git_dir.relative_to(root).parts[:-1]
+            if any(part in skip_names for part in ancestors):
+                continue
+            if any(part.startswith(".") for part in ancestors):
+                continue
+            # Also reject repos whose own directory name is dotted (e.g. a
+            # student scans $HOME and we hit ~/.claude itself as a git repo).
+            repo_name = git_dir.parent.name
+            if repo_name.startswith("."):
                 continue
             repos.append(git_dir.parent)
     return sorted(set(repos))
