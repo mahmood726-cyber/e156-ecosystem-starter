@@ -138,8 +138,9 @@ else
     echo "unknown" > "${HOME}/.config/e156/installed-ref"
 fi
 
-phase 5 "Done — codespace ready"
-echo
-echo "==> When you open a terminal it will tell you what to do next."
+phase 5 "Wrapping up"
+echo "    When you open a terminal it will tell you what to do next."
 echo "    TL;DR: type 'e156 start' and press Enter."
+echo
+echo "==> Codespace ready."
 echo

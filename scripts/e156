@@ -46,9 +46,16 @@ cmd_version() {
         cat "$pinned"
         return 0
     fi
-    # Try the codespace working directory first (it's the most-likely path
-    # in a Codespaces install) before the local-install candidate.
-    for candidate in "/workspaces/e156-ecosystem-starter" "${HOME}/code/e156-ecosystem-starter"; do
+    # Try the codespace working directory first. Use the runtime-provided
+    # env vars (set by Codespaces to the actual project folder, regardless
+    # of fork name) before falling through to hardcoded canonical paths.
+    # P1-W2 fix: forks land at /workspaces/<fork-name>, not the canonical
+    # path; the env vars are the only reliable way to find them.
+    local env_path="${CODESPACE_VSCODE_FOLDER:-${CODESPACES_PROJECT_FOLDER:-}}"
+    local candidates=()
+    [[ -n "$env_path" ]] && candidates+=("$env_path")
+    candidates+=("/workspaces/e156-ecosystem-starter" "${HOME}/code/e156-ecosystem-starter")
+    for candidate in "${candidates[@]}"; do
         if [[ -d "$candidate/.git" ]] && command -v git >/dev/null 2>&1; then
             local v
             v="$(cd "$candidate" && { git describe --tags --always 2>/dev/null || git rev-parse --short HEAD 2>/dev/null; })"
@@ -86,7 +93,7 @@ cmd_start() {
     if ! command -v "$agent" >/dev/null 2>&1; then
         echo "The '$agent' command is not available on this machine."
         echo
-        if [[ -f /.dockerenv ]] || [[ -n "${CODESPACES:-}" ]]; then
+        if [[ "${CODESPACES:-}" == "true" ]]; then
             # Codespace context: the install should have done this. Offer recovery.
             echo "This codespace's install did not complete the agent-CLI step."
             echo "Easiest fix: rebuild the codespace (Codespaces menu -> Rebuild Container)."
@@ -115,35 +122,65 @@ cmd_start() {
         fi
     fi
 
-    # Copy-prompt-to-clipboard + open-agent-interactive pattern.
-    # P0-V2 from review: piping the prompt as stdin to gemini/claude is
-    # NOT a documented contract for "first user message in interactive
-    # session" — for both CLIs, stdin tends to mean non-interactive
-    # one-shot mode. Robust pattern: copy to clipboard, open the agent
-    # in its normal interactive mode, tell the student to paste.
+    # Surface-the-prompt + open-agent-interactive pattern.
+    # P0-V2 review fix: don't pipe stdin to the agent (unreliable contract).
+    # P0-W2 review fix: clipboard tools are NOT available in stock Codespaces
+    # (no pbcopy/wl-copy on Linux, no DISPLAY for xclip/xsel). Branching:
+    #   - Codespace ($CODESPACES=true): print the prompt to stdout AND open
+    #     the file in VS Code via the `code` command. Student scrolls up in
+    #     the terminal to copy, OR uses VS Code's editor pane.
+    #   - Local with clipboard tool: copy to clipboard, tell user to paste.
+    #   - Local without clipboard tool: print prompt path; manual copy.
+    local copied=0
     local clipboard_tool=""
-    for tool in pbcopy wl-copy "xclip -selection clipboard" xsel; do
-        local cmd="${tool%% *}"
-        if command -v "$cmd" >/dev/null 2>&1; then clipboard_tool="$tool"; break; fi
-    done
 
-    if [[ -n "$clipboard_tool" ]]; then
-        # shellcheck disable=SC2086  # intentional word-split for tool args
-        eval "$clipboard_tool" < "$prompt_file" 2>/dev/null && copied=1 || copied=0
+    if [[ "${CODESPACES:-}" == "true" ]]; then
+        # Codespaces path: open the prompt in the editor pane via `code`,
+        # which is on PATH inside any GitHub Codespace.
+        if command -v code >/dev/null 2>&1; then
+            code "$prompt_file" >/dev/null 2>&1 || true
+        fi
+        echo "==> Launching $agent with the E156 handoff briefing..."
+        echo "    The briefing is now open in the VS Code editor pane on the right."
+        echo "    Steps:"
+        echo "      1. Click in the editor, press Ctrl+A to select all, then Ctrl+C."
+        echo "      2. Click in this terminal."
+        echo "      3. When $agent prompts you, paste (Ctrl+Shift+V) and Enter."
+        echo
+        echo "    (Or scroll up in this terminal — the briefing was just printed"
+        echo "     above. Right-click → Copy works in the integrated terminal.)"
+        echo
+        echo "----- BEGIN BRIEFING (scroll up to copy) -----"
+        cat "$prompt_file"
+        echo "----- END BRIEFING -----"
+        echo
     else
-        copied=0
+        # Local path: try clipboard tools first.
+        # xsel needs --clipboard --input to write to the right selection
+        # (P2-W3 fix); plain xsel writes to PRIMARY (middle-click), not
+        # CLIPBOARD (Ctrl+V).
+        for tool in "pbcopy" "wl-copy" "xclip -selection clipboard" "xsel --clipboard --input"; do
+            local cmd="${tool%% *}"
+            if command -v "$cmd" >/dev/null 2>&1; then clipboard_tool="$tool"; break; fi
+        done
+
+        if [[ -n "$clipboard_tool" ]]; then
+            # shellcheck disable=SC2086  # intentional word-split for tool args
+            if eval "$clipboard_tool" < "$prompt_file" 2>/dev/null; then copied=1; fi
+        fi
+
+        echo "==> Launching $agent with the E156 handoff briefing..."
+        if [[ "$copied" == "1" ]]; then
+            echo "    Briefing copied to your clipboard."
+            echo "    When $agent prompts you, paste (Ctrl+Shift+V on Linux/Win,"
+            echo "    Cmd+V on Mac) and press Enter."
+        else
+            echo "    No clipboard tool found. Either:"
+            echo "      - cat $prompt_file   (then select-and-copy from terminal)"
+            echo "      - or open the file in your editor"
+        fi
     fi
 
-    echo "==> Launching $agent with the E156 handoff briefing..."
-    if [[ "$copied" == "1" ]]; then
-        echo "    Briefing is copied to your clipboard."
-        echo "    When $agent's prompt appears, paste it (Ctrl+Shift+V on Linux/Win,"
-        echo "    Cmd+V on Mac) and press Enter."
-    else
-        echo "    Clipboard tool not available. Open the briefing in another tab:"
-        echo "      $prompt_file"
-        echo "    Then copy/paste it into $agent when it asks."
-    fi
     if [[ "$agent" == "gemini" ]]; then
         echo "    First time? $agent will open a browser tab for Google sign-in."
     elif [[ "$agent" == "claude" ]]; then

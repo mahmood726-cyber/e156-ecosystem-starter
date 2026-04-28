@@ -106,6 +106,24 @@ jobs:
       - name: Verify <details> count parity across en/fr/pt/ar/ur
         run: bash scripts/check-i18n-parity.sh
 
+  sentinel-rule-list-drift:
+    name: Teaching 1-pager Sentinel list matches Sentinel repo
+    runs-on: ubuntu-latest
+    # Skip in CI when SENTINEL_REPO is unavailable (which it always is on
+    # GitHub-hosted runners — we don't clone the Sentinel repo here).
+    # The check is meaningful when run locally; the CI step exists only
+    # to make the dependency visible. Maintainers should run the check
+    # before opening a PR that touches docs/teaching/intro-1pager.md.
+    if: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify auto-generated Sentinel list matches source
+        env:
+          SENTINEL_REPO: ${{ github.workspace }}/Sentinel
+        run: |
+          git clone --depth 1 https://github.com/mahmood726-cyber/Sentinel.git "$SENTINEL_REPO"
+          bash scripts/regen-sentinel-rule-list.sh --check
+
   link-check:
     name: Pages link-check (lychee)
     runs-on: ubuntu-latest

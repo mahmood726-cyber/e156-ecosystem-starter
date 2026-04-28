@@ -394,3 +394,73 @@ The user-POV fixes shipped 11 of 13 yesterday — but **the i18n consistency lay
 **Lesson for next round**: when a fix lands on the English landing page, the same diff has to go to all 5 (now) i18n pages in the same commit, or the fix is incomplete. Add a `docs/index.html` → `docs/{fr,pt,ar,ur}/index.html` parity check to CI: count `<details>` blocks in each, fail if they don't match.
 
 **If fixing only one thing**: P0-V2. Validate that `e156 start` with stdin actually works against live `gemini-cli`. If it doesn't, the entire user-POV pass headline ("type one word") is undelivered. Everything else is paint compared to a broken plumbing pipe.
+
+---
+
+# Sixth-Pass Review: e156-ecosystem-starter v0.8.x (post-9e3369d)
+
+**Date**: 2026-04-28 (same day as fifth-pass + fix bundle)
+**Scope**: did the fix bundle from 9e3369d itself land cleanly, especially the freshly-rewritten e156 wrapper and the newly-enumerated Sentinel rule list?
+**Personas**: Software Engineer · Technical writer (correctness audit) · Production Readiness · Codespace operations.
+
+**Summary**: 2 P0-W · 2 P1-W · 3 P2-W. **STATUS: 6 of 7 fixed 2026-04-28. P2-W1 deferred (broader content-drift detection).** **One of the P0s is an academic-integrity issue: I fabricated several Sentinel rule IDs in the teaching 1-pager.**
+
+---
+
+## P0-W — Critical
+
+- **P0-W1** [FIXED 2026-04-28] [Technical writer / academic integrity]: **The "20 Sentinel patterns" enumeration in `docs/teaching/intro-1pager.md` contains fabricated rule IDs.** Verified against the actual `C:\Sentinel\sentinel\rules\` directory: real rules are 6 YAML files + 17 Python plugins = **23 actual rules** (not 20), and many of my listed rule IDs do not exist. Examples of fabrications I shipped to a teaching artifact:
+  - `P0-silent-failure-sentinel` → it is actually `P1-silent-failure-sentinel` (severity wrong)
+  - `P1-committed-claude-config` → it is actually `P0-claude-config-committed` (severity AND name wrong)
+  - `P0-xss-sink`, `P0-localStorage-collision`, `P1-stale-agent-config-version`, `P0-py-stdout-reassignment-in-test`, `P1-cp1252-mojibake-in-utf8-source`, `P1-citation-swap-on-references`, `P0-derived-fields-without-source`, `P1-csv-formula-injection`, `P1-redos-pattern`, `P1-uppercase-pkg-name-in-import`, `P2-bom-in-source`, `P2-skip-marker-in-shipped-file`, `P2-windows-line-endings-in-shell-script` → **none of these exist as Sentinel rule IDs.**
+  - Real rules I missed: `P1-unpopulated-placeholder` (YAML), and the plugin-based rules `agent_config_version_drift`, `autogen_tracked`, `baseline_drift`, `blueprint_implementation_match`, `dashboard_stat_orphan`, `html_a11y_basics`, `js_parse_check`, `leaked_secret`, `livingmeta_drift`, `memory_paths_resolve`, `path_not_exist`, `progress_md_not_gitignored`, `py_parse_check`, `registry_drift`, `workbook_rewrite_touched`.
+  - This is **academic malpractice** when shipped in a teaching artifact: educators citing this list would be teaching students false information.
+  - **Suggested fix**: replace the entire enumerated list with a generated table sourced from `C:\Sentinel\sentinel\rules\yaml\*.yaml` filenames + `C:\Sentinel\sentinel\rules\plugins\*.py` filenames. Add a one-line generation script `scripts/regen-sentinel-rule-list.sh` that auto-updates the table when Sentinel ships new rules. Invariant: do not write authoritative-looking technical content from memory; generate it from the source of truth.
+
+- **P0-W2** [FIXED 2026-04-28] [Codespace operations]: **The `e156 start` "clipboard" path is broken in stock Codespaces.** The new wrapper detects `pbcopy / wl-copy / xclip / xsel` — but a stock Codespace (the universal devcontainer image) has **none** of these on PATH. `pbcopy` is macOS-only. `wl-copy` requires Wayland (no graphical session in a Codespace). `xclip` and `xsel` both require an X server with `$DISPLAY` set — Codespaces do not have one. So in the most common deployment context, the wrapper falls into the "clipboard tool not available" branch and tells the student "Open the briefing in another tab: $prompt_file" — which is exactly the kind of CLI-fluency-required instruction the wrapper was rewritten to eliminate. **The P0-V2 fix from one commit ago re-introduces a different cliff for the exact audience that was hit by the original.** (`scripts/e156:cmd_start` clipboard branch.)
+  - **Suggested fix**: in Codespaces specifically (detect via `$CODESPACES`), use a different pattern — `cat $prompt_file` to stdout BEFORE launching the agent (the student scrolls up in the integrated terminal and uses VS Code's right-click Copy), AND `code ~/.config/e156/handoff.md` so the file opens in the editor pane (the `code` command IS on PATH in Codespaces). Both signals are reliable; clipboard tools are not.
+
+---
+
+## P1-W — Important
+
+- **P1-W1** [FIXED 2026-04-28] [Production Readiness]: **`on-create.sh` phase 5 marker prints before the actual final messages.** Phase 5 says `==> [5/5] Done — codespace ready` then the script keeps printing two more lines. Internally consistent (phase 5 IS the done phase) but the "Done" claim with trailing output looks confusing. Same family as P0-V3 ("phase 1 already done above"). (`.devcontainer/on-create.sh:135`.)
+  - **Suggested fix**: rename phase 5 to `phase 5 "Wrapping up"` or move the trailing TL;DR lines BEFORE the phase 5 marker.
+
+- **P1-W2** [FIXED 2026-04-28] [Software Engineer]: **`e156 version` codespace path detection is hardcoded to `/workspaces/e156-ecosystem-starter`.** A user who forks the repo and opens a Codespace from their fork gets a working dir at `/workspaces/<fork-name>` — possibly different. The hardcoded path then misses, falls through, returns "unknown". The cleanest signal in a Codespace is `$CODESPACE_VSCODE_FOLDER` or `$CODESPACES_PROJECT_FOLDER`, both set by the runtime to the actual working directory.
+  - **Suggested fix**: prepend `${CODESPACE_VSCODE_FOLDER:-${CODESPACES_PROJECT_FOLDER:-}}` to the candidate-path list so forks are auto-detected.
+
+---
+
+## P2-W — Minor
+
+- **P2-W1** [DEFERRED — covers actual regression that just happened; broader rule list is future polish] [i18n parity test brittleness]: `check-i18n-parity.sh` counts only `<details>` blocks. A future contributor could add a `<section class="warning">` block to English without updating i18n, and the check would still pass. Robust version would also count `<section>`, `<aside>`, and the cloud-banner element. Acceptable for now; covers the actual regression that just happened.
+
+- **P2-W2** [FIXED 2026-04-28] [Software Engineer]: `e156 start` Codespace detection uses `[[ -f /.dockerenv ]] || [[ -n "${CODESPACES:-}" ]]`. The `/.dockerenv` check matches **any** Docker container, not specifically Codespaces. Use `$CODESPACES` env var alone (set to `true` only by GitHub Codespaces).
+
+- **P2-W3** [FIXED 2026-04-28] [Software Engineer]: The `xsel` entry in the clipboard-tool list lacks the `--clipboard --input` flags. As written, `xsel < file` writes to PRIMARY selection (middle-click paste), not CLIPBOARD selection (Ctrl+V paste). Should be `"xsel --clipboard --input"`. Low impact because xsel is the LAST candidate. Bundle with the P0-W2 Codespace-clipboard rewrite.
+
+---
+
+## What this pass confirmed IS correct
+
+- **i18n parity check itself works**: `bash scripts/check-i18n-parity.sh` correctly reports 3/3 across all 5 languages.
+- **on-create.sh GitHub-user resolution**: phase 1 marker now correctly wraps the resolution code.
+- **The new `<details>` blocks on i18n pages**: counted, present, region-specific carrier names per audience.
+- **e156 version fallback chain**: in a non-shallow clone or where installed-ref file exists, it does return real version info. The hardcoded codespace path is the only remaining hole (P1-W2).
+
+---
+
+## Pattern across this pass
+
+Two pieces of code rewritten in the prior pass had correctness issues that this pass caught **only because I verified against ground truth** (tested clipboard tool availability vs Codespace defaults; cross-referenced rule list against the actual Sentinel directory).
+
+The second-pass review's lesson reapplied: **fixes that look correct in isolation interact badly with reality.** Cure: when shipping content that asserts external truth (like a rule list), generate it from the source of truth in code, never from memory. When shipping behavioral fixes (like clipboard handling), validate against the actual deployment environment.
+
+---
+
+## Recommended fix order
+
+P0-W1 first (academic-integrity, blocks educator use of teaching materials) → P0-W2 (cliff re-introduction) → P1-W1 + P1-W2 → P2s.
+
+**If fixing only one thing**: P0-W1. The fabricated rule list is the worst single piece of content in this codebase right now and it sits in a teaching artifact.
