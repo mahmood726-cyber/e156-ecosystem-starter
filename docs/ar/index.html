@@ -58,7 +58,7 @@
 
 <header>
   <h1>E156 Ecosystem Starter</h1>
-  <p class="sub">قم بإعداد حاسوب البحث الخاص بك ببيئة التطوير الخاصة بمحمود بأمر واحد.</p>
+  <p class="sub">قم بإعداد حاسوب البحث الخاص بك مثل <a href="https://github.com/mahmood726-cyber" style="color:#555;">محمود أحمد</a> (قائد أبحاث أمراض القلب، مكيريري وضياء الدين). أمر واحد.</p>
 </header>
 
 <main id="main">
@@ -69,7 +69,28 @@
   <a class="codespace-cta" href="https://codespaces.new/mahmood726-cyber/e156-ecosystem-starter?quickstart=1" rel="noopener">
     افتح في GitHub Codespaces &larr;
   </a>
+  <p style="margin-top:14px; font-size:0.85em; opacity:0.9;">البناء ~2-3 دقائق. <strong>الأفضل على حاسوب مكتبي أو محمول</strong> — Codespaces في متصفح الهاتف يعمل تقنياً لكن الطرفية غير مستقرة.</p>
 </section>
+
+<details style="margin: 0 0 16px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">ليس لديك حساب GitHub بعد؟ اقرأ هذا أولاً.</summary>
+  <ul style="margin:12px 0 0; padding-right:22px; padding-left:0;">
+    <li><strong>إذا كان لديك بريد جامعي</strong> ينتهي بـ <code>.edu.eg</code>، <code>.edu.sa</code>، <code>.edu.jo</code>، إلخ — قدّم على <a href="https://education.github.com">GitHub Education</a> أولاً. تحصل على 90 ساعة Codespaces مجانية شهرياً (بدلاً من 60)، بدون خطوة التحقق بالهاتف، ووصول لأدوات مدفوعة أخرى.</li>
+    <li><strong>إذا كان لديك بريد شخصي فقط</strong> (Gmail/Yahoo) — سجِّل على <a href="https://github.com/signup">github.com/signup</a>. سيطلب GitHub التحقق بـ SMS؛ قد يفشل بصمت على بعض شبكات الجوال (STC، Etisalat، Zain). إذا لم يصلك الكود، جرّب من شبكة أخرى أو استخدم GitHub Education أعلاه.</li>
+    <li><strong>إذا كان هاتفك جهازك الوحيد</strong> — استعِر حاسوباً محمولاً للتسعين دقيقة الأولى من الإعداد؛ بعدها يمكنك الكتابة من هاتفك عبر محرر GitHub على الويب.</li>
+  </ul>
+</details>
+
+<details style="margin: 0 0 28px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;" id="what-is-codespace">
+  <summary style="cursor:pointer; font-weight:600;">ما هو GitHub Codespace؟ (نسخة الفقرة الواحدة)</summary>
+  <p style="margin:10px 0 0;">الـ Codespace هو حاسوب Linux يعمل على سحابة GitHub، مع VS Code (محرّر برمجي) مفتوح في متصفح الويب الخاص بك. لا يُثبَّت شيء على حاسوبك — كل شيء يحدث على الجهاز السحابي. تكتب الكود في المتصفح، تحفظه على GitHub، ويبقى موجوداً عند إغلاق التبويب. مجاني لـ 60 ساعة/شهر للحسابات الشخصية (90 لحسابات Education)، ثم يتوقف حتى الشهر التالي. مثل Google Docs، لكن لبيئة برمجية.</p>
+</details>
+
+<details style="margin: 0 0 28px; padding: 12px 16px; background:#f0f6ff; border-right:3px solid #0366d6; border-left:none; border-radius:4px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">سبق وثبّتت نسخة قديمة؟ (التحديث)</summary>
+  <p style="margin:10px 0 0;">إذا شغّلت المثبِّت سابقاً (مثلاً v0.7.0 في مارس)، <strong>أعِد تشغيل نفس السطر الواحد</strong> أعلى هذه الصفحة. الـ bootstrap الجديد سيسحب آخر إصدار موسوم ويستبدل قواعدك وقوالب الذاكرة. ملفاتك المحرَّرة (<code>*.md.user</code>) محفوظة. للتحقق من النسخة المثبَّتة، في أي طرفية Codespace شغّل <code>e156 version</code>.</p>
+  <p style="margin:8px 0 0;"><strong>نصيحة i18n:</strong> للحصول على كل شيء بالعربية داخل الـ Codespace، أضف <code>E156_LANG=ar</code> إلى أسرار المستخدم في <a href="https://github.com/settings/codespaces">github.com/settings/codespaces</a>. ينطبق على كل codespace تفتحه.</p>
+</details>
 <aside class="notice" role="note" style="background:#fff5b1; border-right:4px solid #ffd33d; border-left:none;">
   <strong>نصيحة — أوقف الـ codespace عند الانتهاء.</strong>
   أي codespace خامل يستمر في استهلاك ساعاتك الشهرية حتى يتم تعليقه تلقائياً (الافتراضي: 30 دقيقة). للإيقاف فوراً: اذهب إلى <a href="https://github.com/codespaces">github.com/codespaces</a> واضغط <strong>⋯ ← Stop codespace</strong>، أو شغّل <code>gh codespace stop</code> في الطرفية. مع 60 ساعة مجانية شهرياً، ترك تبويب مفتوح طوال اليوم سيستنفد حصتك في أقل من أسبوع.

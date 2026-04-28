@@ -54,7 +54,7 @@
 
 <header>
   <h1>E156 Ecosystem Starter</h1>
-  <p class="sub">Installez l'environnement de développement de Mahmood avec une seule commande.</p>
+  <p class="sub">Configurez votre ordinateur de recherche comme <a href="https://github.com/mahmood726-cyber" style="color:#555;">Mahmood Ahmad</a> (chercheur en cardiologie, Makerere &amp; Ziauddin). Une commande.</p>
 </header>
 
 <main id="main">
@@ -65,7 +65,28 @@
   <a class="codespace-cta" href="https://codespaces.new/mahmood726-cyber/e156-ecosystem-starter?quickstart=1" rel="noopener">
     Ouvrir dans GitHub Codespaces &rarr;
   </a>
+  <p style="margin-top:14px; font-size:0.85em; opacity:0.9;">Construction ~2-3 min. <strong>Mieux sur ordinateur</strong> — Codespaces dans un navigateur de téléphone fonctionne mais le terminal est instable.</p>
 </section>
+
+<details style="margin: 0 0 16px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">Pas encore de compte GitHub ? Lisez ceci d'abord.</summary>
+  <ul style="margin:12px 0 0; padding-left:22px;">
+    <li><strong>Si vous avez un email universitaire</strong> en <code>.ac.cd</code>, <code>.edu.sn</code>, <code>.ac.ma</code>, etc. — demandez d'abord <a href="https://education.github.com">GitHub Education</a>. Vous obtenez 90 heures gratuites de Codespaces/mois (au lieu de 60), pas d'étape de vérification téléphonique, et accès à d'autres outils payants.</li>
+    <li><strong>Si vous n'avez qu'un email personnel</strong> (Gmail/Yahoo) — inscrivez-vous sur <a href="https://github.com/signup">github.com/signup</a>. GitHub demande la vérification SMS ; cela peut échouer silencieusement sur certains réseaux mobiles africains (MTN, Orange). Si votre code n'arrive pas, réessayez depuis un autre réseau ou utilisez la voie GitHub Education ci-dessus.</li>
+    <li><strong>Si votre téléphone est votre seul appareil</strong> — empruntez un ordinateur portable pour les 90 premières minutes ; ensuite vous pouvez écrire depuis votre téléphone via l'éditeur web GitHub.</li>
+  </ul>
+</details>
+
+<details style="margin: 0 0 28px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;" id="what-is-codespace">
+  <summary style="cursor:pointer; font-weight:600;">Qu'est-ce qu'un GitHub Codespace ? (1 paragraphe)</summary>
+  <p style="margin:10px 0 0;">Un Codespace est un ordinateur Linux qui fonctionne dans le cloud de GitHub, avec VS Code (un éditeur de code) ouvert dans votre navigateur web. Rien ne s'installe sur votre ordinateur — tout se passe sur la machine cloud. Vous écrivez du code dans le navigateur, vous le sauvegardez sur GitHub, et il est toujours là quand vous fermez l'onglet. Gratuit pendant 60 heures/mois sur les comptes personnels (90 sur les comptes Education), puis pause jusqu'au mois suivant. Comme Google Docs, mais pour un environnement de programmation.</p>
+</details>
+
+<details style="margin: 0 0 28px; padding: 12px 16px; background:#f0f6ff; border-left:3px solid #0366d6; border-radius:4px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">Déjà installé une version précédente ? (mise à jour)</summary>
+  <p style="margin:10px 0 0;">Si vous avez exécuté l'installateur auparavant (par ex. v0.7.0 en mars), <strong>relancez simplement la même ligne de commande</strong> en haut de cette page. Le nouveau bootstrap récupère la dernière version taguée et écrase vos règles + modèles de mémoire. Vos fichiers édités (<code>*.md.user</code>) sont préservés. Pour vérifier la version installée, dans n'importe quel terminal Codespace exécutez <code>e156 version</code>.</p>
+  <p style="margin:8px 0 0;"><strong>Conseil i18n :</strong> pour avoir tout en français à l'intérieur du Codespace, ajoutez <code>E156_LANG=fr</code> à vos secrets utilisateur Codespaces sur <a href="https://github.com/settings/codespaces">github.com/settings/codespaces</a>. Cela s'applique à chaque codespace que vous ouvrez.</p>
+</details>
 <aside class="notice" role="note" style="background:#fff5b1; border-left:4px solid #ffd33d;">
   <strong>Conseil — arrêtez votre codespace quand vous avez terminé.</strong>
   Les codespaces inactifs consomment vos heures mensuelles jusqu'à leur suspension automatique (par défaut : 30 min). Pour arrêter immédiatement : allez sur <a href="https://github.com/codespaces">github.com/codespaces</a> et cliquez sur <strong>⋯ → Stop codespace</strong>, ou exécutez <code>gh codespace stop</code> dans un terminal. Avec 60 heures gratuites/mois, laisser un onglet ouvert toute la journée épuisera votre quota en moins d'une semaine.

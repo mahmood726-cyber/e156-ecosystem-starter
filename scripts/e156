@@ -32,20 +32,46 @@ HELP
 }
 
 cmd_version() {
-    # Try to read the pinned ref the bootstrap recorded; fall back to git tag.
+    # Resolve installed version, in order of confidence:
+    #   1. The recorded ref file (written by on-create.sh / installer)
+    #   2. git describe in the actual codespace working dir
+    #   3. git describe in a local-install candidate dir
+    #   4. The installed-ref file's content even if empty (so user sees
+    #      what's there)
+    # P1-V3 from review: prior implementation almost always returned
+    # "unknown" because shallow Codespace clones break `git describe`
+    # in the codespace path that wasn't being checked.
     local pinned="${HOME}/.config/e156/installed-ref"
-    if [[ -f "$pinned" ]]; then
+    if [[ -f "$pinned" ]] && [[ -s "$pinned" ]]; then
         cat "$pinned"
-    elif command -v git >/dev/null 2>&1 && [[ -d "${HOME}/code/e156-ecosystem-starter/.git" ]]; then
-        ( cd "${HOME}/code/e156-ecosystem-starter" && git describe --tags --always 2>/dev/null )
-    else
-        echo "unknown (no installed-ref file at $pinned)"
+        return 0
     fi
+    # Try the codespace working directory first (it's the most-likely path
+    # in a Codespaces install) before the local-install candidate.
+    for candidate in "/workspaces/e156-ecosystem-starter" "${HOME}/code/e156-ecosystem-starter"; do
+        if [[ -d "$candidate/.git" ]] && command -v git >/dev/null 2>&1; then
+            local v
+            v="$(cd "$candidate" && { git describe --tags --always 2>/dev/null || git rev-parse --short HEAD 2>/dev/null; })"
+            if [[ -n "$v" ]]; then printf '%s\n' "$v"; return 0; fi
+        fi
+    done
+    echo "unknown (no recorded ref and no readable git working dir)"
+    return 1
 }
 
 cmd_start() {
+    # Args parsing — getopts-style. P2-V2 from review.
     local agent="gemini"
-    if [[ "${1:-}" == "--claude" ]]; then agent="claude"; fi
+    local opt
+    while [[ "${1:-}" == --* ]]; do
+        opt="$1"; shift
+        case "$opt" in
+            --claude)  agent="claude" ;;
+            --gemini)  agent="gemini" ;;
+            -h|--help) cmd_help; return 0 ;;
+            *) echo "Unknown flag: $opt" >&2; cmd_help >&2; return 2 ;;
+        esac
+    done
 
     if [[ ! -f "$prompt_file" ]]; then
         echo "ERROR: handoff prompt not found at $prompt_file" >&2
@@ -53,34 +79,82 @@ cmd_start() {
         return 1
     fi
 
+    # Agent-CLI-missing handling. P1-V2 from review: the prior "Install:
+    # npm install -g ..." message was a CLI command — exactly the cliff
+    # the wrapper was designed to remove. Now: offer to run the install
+    # ourselves with one prompt, OR redirect to the bootstrap re-run.
     if ! command -v "$agent" >/dev/null 2>&1; then
-        echo "ERROR: '$agent' CLI not found on PATH." >&2
-        if [[ "$agent" == "gemini" ]]; then
-            echo "       Install: npm install -g @google/gemini-cli" >&2
+        echo "The '$agent' command is not available on this machine."
+        echo
+        if [[ -f /.dockerenv ]] || [[ -n "${CODESPACES:-}" ]]; then
+            # Codespace context: the install should have done this. Offer recovery.
+            echo "This codespace's install did not complete the agent-CLI step."
+            echo "Easiest fix: rebuild the codespace (Codespaces menu -> Rebuild Container)."
+            echo "Or, to install just '$agent' now, type Y and press Enter:"
+            read -r -p "  Install $agent now? [Y/n] " ans
+            case "${ans:-Y}" in
+                [Yy]*|"") ;;
+                *) echo "Skipped. Run 'e156 start' again after you install $agent."; return 1 ;;
+            esac
+            local pkg
+            if [[ "$agent" == "gemini" ]]; then pkg="@google/gemini-cli@^0.39.0"
+            else                                pkg="@anthropic-ai/claude-code@~2.1.0"; fi
+            if command -v npm >/dev/null 2>&1; then
+                npm install -g "$pkg" || { echo "npm install failed." >&2; return 1; }
+            else
+                echo "ERROR: npm not on PATH; cannot install $agent." >&2
+                return 1
+            fi
         else
-            echo "       Install: npm install -g @anthropic-ai/claude-code" >&2
-            echo "       Then export ANTHROPIC_API_KEY=sk-ant-..." >&2
+            # Local install: don't offer to install (we don't know their
+            # package manager); point them back to the bootstrap.
+            echo "On a local install, the easiest recovery is to re-run the bootstrap"
+            echo "one-liner from https://mahmood726-cyber.github.io/e156-ecosystem-starter/"
+            echo "which will install '$agent' as part of the chain."
+            return 1
         fi
-        return 1
+    fi
+
+    # Copy-prompt-to-clipboard + open-agent-interactive pattern.
+    # P0-V2 from review: piping the prompt as stdin to gemini/claude is
+    # NOT a documented contract for "first user message in interactive
+    # session" — for both CLIs, stdin tends to mean non-interactive
+    # one-shot mode. Robust pattern: copy to clipboard, open the agent
+    # in its normal interactive mode, tell the student to paste.
+    local clipboard_tool=""
+    for tool in pbcopy wl-copy "xclip -selection clipboard" xsel; do
+        local cmd="${tool%% *}"
+        if command -v "$cmd" >/dev/null 2>&1; then clipboard_tool="$tool"; break; fi
+    done
+
+    if [[ -n "$clipboard_tool" ]]; then
+        # shellcheck disable=SC2086  # intentional word-split for tool args
+        eval "$clipboard_tool" < "$prompt_file" 2>/dev/null && copied=1 || copied=0
+    else
+        copied=0
     fi
 
     echo "==> Launching $agent with the E156 handoff briefing..."
-    echo "    (sign in via the browser popup if prompted)"
+    if [[ "$copied" == "1" ]]; then
+        echo "    Briefing is copied to your clipboard."
+        echo "    When $agent's prompt appears, paste it (Ctrl+Shift+V on Linux/Win,"
+        echo "    Cmd+V on Mac) and press Enter."
+    else
+        echo "    Clipboard tool not available. Open the briefing in another tab:"
+        echo "      $prompt_file"
+        echo "    Then copy/paste it into $agent when it asks."
+    fi
+    if [[ "$agent" == "gemini" ]]; then
+        echo "    First time? $agent will open a browser tab for Google sign-in."
+    elif [[ "$agent" == "claude" ]]; then
+        echo "    Make sure ANTHROPIC_API_KEY is set in your environment."
+    fi
     echo
 
-    # Pipe the handoff briefing as the agent's first user message. Both
-    # gemini-cli and claude-code accept stdin as the initial prompt; if
-    # that ever changes we fall back to opening the agent and reminding
-    # the student to copy/paste manually.
-    if "$agent" < "$prompt_file"; then
-        return 0
-    else
-        local rc=$?
-        echo
-        echo "WARNING: $agent exited $rc. If it didn't accept stdin, try:" >&2
-        echo "  cat $prompt_file | $agent" >&2
-        return $rc
-    fi
+    # Run interactively; do NOT pipe stdin (that would force one-shot mode
+    # in many AI-CLI implementations). Inherit current TTY.
+    "$agent"
+    return $?
 }
 
 case "${1:-help}" in

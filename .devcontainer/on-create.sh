@@ -28,7 +28,7 @@ phase() { echo; echo "==> [${1}/${PHASES_TOTAL}] ${2}"; }
 # Codespaces clone step, which doesn't always preserve +x.
 chmod +x install/install.sh scripts/*.sh .devcontainer/*.sh 2>/dev/null || true
 
-# --- Resolve the GitHub username --------------------------------------------
+phase 1 "Detecting GitHub user"
 # install.sh --full needs --github-user passed non-interactively (otherwise
 # it prompts and hangs the codespace build). Try several Codespaces-provided
 # env vars; final fall-through is the gh CLI which is pre-authed via
@@ -42,14 +42,13 @@ if [[ -z "$gh_user" ]] && command -v gh >/dev/null 2>&1; then
     gh_user="$(gh api user --jq .login 2>/dev/null || true)"
 fi
 gh_user="${gh_user:-{{GITHUB_USER}}}"
-echo "==> GitHub user resolved as: $gh_user"
+echo "    GitHub user resolved as: $gh_user"
 
 # --- Pre-install at least one free agent CLI --------------------------------
 # Gemini CLI is the right default for student users -- generous free tier,
 # Google account login, no API key to pay for. Claude Code is also installed
 # for users with an Anthropic API key. Both are best-effort: a failed npm
 # install must NOT block the rest of the bootstrap.
-phase 1 "Resolving GitHub user (already done above)"
 phase 2 "Installing agent CLIs — gemini + claude (slowest step, ~30-60s)"
 echo
 # Pin to known-good versions so a registry breaking-change tomorrow doesn't
@@ -126,10 +125,17 @@ fi
 export PATH="$HOME/.local/bin:$PATH"
 
 # --- Record installed version for `e156 version` ----------------------------
-# Pulls the git tag/SHA at the starter root so a returning user can compare
-# their installed version against the latest release. P0-U3.
+# P0-U3 + P1-V3: a shallow Codespace clone breaks `git describe --tags`
+# (no tag is reachable without history). Fall back through tag -> SHA ->
+# unknown so the file is always non-empty for `e156 version` to read.
 if command -v git >/dev/null 2>&1 && [[ -d ".git" ]]; then
-    git describe --tags --always 2>/dev/null > "${HOME}/.config/e156/installed-ref" || true
+    {
+        git describe --tags --always 2>/dev/null \
+            || git rev-parse --short HEAD 2>/dev/null \
+            || echo "unknown"
+    } > "${HOME}/.config/e156/installed-ref"
+else
+    echo "unknown" > "${HOME}/.config/e156/installed-ref"
 fi
 
 phase 5 "Done — codespace ready"

@@ -98,6 +98,14 @@ jobs:
       - name: Verify docs/HASH.txt + docs/HASH-linux.txt
         run: bash scripts/regen-hashes.sh --check
 
+  i18n-parity:
+    name: i18n landing pages match English structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify <details> count parity across en/fr/pt/ar/ur
+        run: bash scripts/check-i18n-parity.sh
+
   link-check:
     name: Pages link-check (lychee)
     runs-on: ubuntu-latest
