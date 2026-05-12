@@ -23,7 +23,7 @@ Use this as a talking-points outline for a live demo to students. Tested-friendl
 - When the terminal pops up, read the banner aloud line-by-line:
   - "rules pack — your AI agent reads these to follow the E156 method"
   - "Memory scaffold — what your AI agent remembers between sessions"
-  - "Sentinel guard — checks code for 20 common mistakes before saving to GitHub"
+  - "Sentinel guard — checks code for 28 common mistakes before saving to GitHub"
   - "TruthCert key — signs your finished paper so it can't be tampered with"
   - "ProjectIndex — keeps a list of all your projects in one file"
 - Point out the `[OK]` marks on each line. "If any of these said `[--]`, that means it failed to install — and you'd know to ask for help."

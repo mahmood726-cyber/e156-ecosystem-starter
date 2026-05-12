@@ -93,7 +93,7 @@ reviewer can see them, not in code comments.
 
 ### Pre-push: Sentinel
 
-Every `git push` triggers the Sentinel scan. 20 rules covering:
+Every `git push` triggers the Sentinel scan. 28 rules covering:
 
 - Hardcoded local paths in shipped code (`C:\Users\...`, `/home/...`)
 - Placeholder HMAC keys (`SIG_RSA_SHA256_...`)

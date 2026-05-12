@@ -20,7 +20,7 @@ verifier, and ProjectIndex registry.
 | `rules/*.md` | v0.1.0 | Four curated rules files copied to `~/.claude/rules/`, `~/.gemini/rules/`, `~/.codex/rules/`: workflow + testing + HTML-app patterns (`rules.md`), E156 format (`e156.md`), statistics gotchas (`advanced-stats.md`), bug-prevention lessons (`lessons.md`). |
 | `AGENTS.md` + `CLAUDE.md` / `GEMINI.md` / `CODEX.md` | v0.1.0 | Canonical + per-agent context files. Each agent auto-reads its own pointer; all pointers agree that `AGENTS.md` wins. |
 | `memory/` scaffold | v0.1.0 | Starter `MEMORY.md` index + 4 type templates (`user` / `feedback` / `project` / `reference`). Dropped only when your memory dir is empty — never clobbers existing memory. |
-| Sentinel pre-push hook | **v0.2.0** | `scripts/install-sentinel.ps1 -Repo <path>` pip-installs `sentinel` from the public repo and installs a pre-push hook with 20 rules (blocks: hardcoded paths, placeholder HMAC, silent sentinels, committed `.claude/` configs, empty-DataFrame access, stale agent-config versions). Bypass via `SENTINEL_BYPASS=1 git push` (logged to `~/.sentinel-logs/bypass.log`). |
+| Sentinel pre-push hook | **v0.2.0** | `scripts/install-sentinel.ps1 -Repo <path>` pip-installs `sentinel` from the public repo and installs a pre-push hook with 28 rules + skip-file marker (blocks: hardcoded paths, placeholder HMAC, silent sentinels, committed `.claude/` configs, empty-DataFrame access, stale agent-config versions, leaked secrets, MCP/JS lockfile + script integrity, baseline drift, dashboard-stat orphan, blueprint-implementation match). Bypass via `SENTINEL_BYPASS=1 git push` (logged to `~/.sentinel-logs/bypass.log`). |
 | Overmind verifier | **v0.3.0** | `scripts/install-overmind.ps1` pip-installs [overmind](https://github.com/mahmood726-cyber/overmind) from GitHub and generates a 64-hex-char `TRUTHCERT_HMAC_KEY` saved as a User env var. Run `overmind scan --repo <path>` for on-demand verification; emits PASS / FAIL / UNVERIFIED / REJECT verdicts. |
 | TruthCert engine | **v0.3.0** | Bundled inside Overmind (`overmind/verification/truthcert_engine.py`). HMAC-signs a certification bundle for each verified project. Requires `TRUTHCERT_HMAC_KEY` env var — installer generates and stores it. |
 | ProjectIndex seed | **v0.3.0** | `scripts/install-projectindex.ps1 -Root <dir>` drops a starter `INDEX.md` (active / submission-ready / shipped / triage sections) + `reconcile_counts.py` that fails-closed when listed project paths don't exist on disk. Parameterized — not hardcoded to `C:\ProjectIndex\`. |
@@ -91,7 +91,7 @@ Flags:
 This `pip install`s the [Sentinel](https://github.com/mahmood726-cyber/Sentinel)
 rule engine **pinned to a tagged release** (`v0.1.0` by default) and writes a
 pre-push hook at `<repo>\.git\hooks\pre-push`. From then on, every `git push`
-runs the 20-rule scan in ~2 seconds and blocks on P0 violations.
+runs the 28-rule scan in ~2 seconds and blocks on P0 violations.
 
 To opt into bleeding-edge or roll back to a known-good ref:
 
