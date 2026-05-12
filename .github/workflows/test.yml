@@ -49,7 +49,8 @@ jobs:
             'scripts\pester.phase3.tests.ps1',
             'scripts\pester.phase4.tests.ps1',
             'scripts\pester.update.tests.ps1',
-            'scripts\pester.handoff-locale.tests.ps1'
+            'scripts\pester.handoff-locale.tests.ps1',
+            'scripts\pester.install-long-term-plan.tests.ps1'
           )
           $config = New-PesterConfiguration
           $config.Run.Path = $files
@@ -165,6 +166,7 @@ jobs:
             scripts/install-sentinel.sh \
             scripts/install-overmind.sh \
             scripts/install-projectindex.sh \
+            scripts/install-long-term-plan.sh \
             bootstrap/e156-setup.sh \
             docs/e156-setup.sh
 

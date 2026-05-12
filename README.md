@@ -25,6 +25,7 @@ verifier, and ProjectIndex registry.
 | TruthCert engine | **v0.3.0** | Bundled inside Overmind (`overmind/verification/truthcert_engine.py`). HMAC-signs a certification bundle for each verified project. Requires `TRUTHCERT_HMAC_KEY` env var — installer generates and stores it. |
 | ProjectIndex seed | **v0.3.0** | `scripts/install-projectindex.ps1 -Root <dir>` drops a starter `INDEX.md` (active / submission-ready / shipped / triage sections) + `reconcile_counts.py` that fails-closed when listed project paths don't exist on disk. Parameterized — not hardcoded to `C:\ProjectIndex\`. |
 | `push-portfolio.py` | **v0.4.0** | Lightweight clone of Mahmood's `push_all_repos.py`. Scans any directory tree (configurable via `--scan-dir` / `PORTFOLIO_SCAN_DIRS` env) for git repos and either pushes existing ones or creates new GitHub repos via `gh`. Guards against the "parent repo config inheritance" gotcha (bare `.git` subdirs won't falsely inherit the home dir's remote). Flags: `--dry-run`, `--report`, `--new-only`, `--no-recursive`. |
+| `long-term-plan` (optional) | separate repo | `scripts/install-long-term-plan.ps1` clones [`mahmood726-cyber/long-term-plan`](https://github.com/mahmood726-cyber/long-term-plan) (pinned to `v0.7.0`) into `~/code/long-term-plan/` and installs the only runtime dep (`pyyaml`). A weekly-refreshed, deterministic, locally-rendered project backlog with no LLM in the loop. Ships Mahmood's real backlog (43 ideas + 5 OKRs anchored to north stars) as a reference — students are expected to fork or replace `ideas.yaml` with their own. |
 | `student` CLI | separate repo | Narrow submission pipeline: see [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter). |
 
 ## Quick start
@@ -176,6 +177,39 @@ For each repo found:
 
 Skips: `node_modules`, `venv`, `.venv`, `__pycache__`, `build`, `dist`,
 `site-packages`, `.pytest_cache`, `.mypy_cache`.
+
+### Adding a long-term-plan (optional)
+
+```powershell
+.\scripts\install-long-term-plan.ps1
+.\scripts\install-long-term-plan.ps1 -Root C:\code\long-term-plan -Ref v0.7.0
+```
+
+Clones [`mahmood726-cyber/long-term-plan`](https://github.com/mahmood726-cyber/long-term-plan)
+**pinned to a tagged release** (`v0.7.0` by default) into `~/code/long-term-plan/`
+and installs the only runtime dep (`pyyaml`).
+
+The published clone ships Mahmood's real backlog (43 ideas + 5 OKR-style
+quarterly objectives anchored to north stars) as a reference. The expectation
+is that you **fork or replace** the content with your own — edit
+`ideas.yaml` / `objectives.yaml` / `north_star_tags.yaml` to point at your
+work, then run the weekly reranker:
+
+```powershell
+cd ~\code\long-term-plan
+python scripts\weekly_plan_update.py             # rerank + render
+python scripts\weekly_plan_update.py --pick <id> # flip an idea to in-progress
+python scripts\weekly_plan_update.py --add "..."  # append a new idea
+```
+
+Override the pin via `$env:LONG_TERM_PLAN_REF = 'main'` (or any branch/tag/SHA)
+to opt into bleeding-edge.
+
+Flags:
+- `-Root <dir>` — target dir (default: `~\code\long-term-plan`)
+- `-Ref <tag>` — git ref to check out (default: `v0.7.0`)
+- `-Force` — re-run on an existing clone (otherwise idempotent)
+- `-Import` — dot-source helpers only (used by Pester tests)
 
 ## Design principles (from `AGENTS.md`)
 

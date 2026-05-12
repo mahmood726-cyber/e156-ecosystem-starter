@@ -243,6 +243,7 @@ gemini "Summarise the rules I have configured in my .claude/rules/ folder"</code
   <tr><td>Sentinel (optional)</td><td>Pre-push hook with 28 rules that block the common AI-agent defects (hardcoded paths, placeholder HMAC, silent sentinels, XSS sinks, empty-DataFrame access, leaked secrets, lockfile integrity, baseline drift) in about 2 seconds per push.</td></tr>
   <tr><td>Overmind + TruthCert (optional)</td><td>On-demand verifier that runs tests + smoke + numerical baselines and emits HMAC-signed certification bundles for submissions.</td></tr>
   <tr><td>ProjectIndex (optional)</td><td>Portfolio tracker + fail-closed reconcile script that catches registry drift.</td></tr>
+  <tr><td>long-term-plan (optional)</td><td>Weekly-refreshed deterministic backlog reranker. No LLM in the loop. Clones <a href="https://github.com/mahmood726-cyber/long-term-plan">mahmood726-cyber/long-term-plan</a> as a reference; you replace its ideas with your own.</td></tr>
 </table>
 
 <h2>Install in 3 steps</h2>

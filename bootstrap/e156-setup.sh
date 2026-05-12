@@ -34,6 +34,7 @@ echo "  - Memory scaffold (cross-session learning)"
 echo "  - Sentinel pre-push hook (optional, 28 quality rules)"
 echo "  - Overmind + TruthCert (optional, verifier + signed bundles)"
 echo "  - ProjectIndex portfolio tracker (optional)"
+echo "  - long-term-plan weekly backlog reranker (optional)"
 echo
 echo "Takes about 2 minutes. No sudo needed."
 echo
