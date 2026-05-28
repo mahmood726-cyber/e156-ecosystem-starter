@@ -128,6 +128,37 @@ Emits one of: `PASS`, `CERTIFIED`, `FAIL`, `UNVERIFIED`, `REJECT`.
 A passing Overmind verdict is the only authoritative ship signal. Don't
 promote project status from "memory" or stale prose.
 
+## Token economy — drive deterministic tools with a config, don't compute in chat
+
+The fastest way to exhaust a free Gemini quota is to make the **agent itself the
+compute engine** — asking it to calculate a pooled estimate, hand-write
+forest-plot code, or re-derive a τ² every turn. That work is deterministic: it
+does not need a language model, and paying per-token for it is the trap students
+hit first.
+
+Flip it. Let the agent **decide what to analyze and review the output**, and let
+a pre-built, offline tool do the math. The canonical example is
+[trialforge](https://github.com/mahmood726-cyber/trialforge) — an advanced
+meta-analysis engine where:
+
+- the agent emits only a ~20-line JSON config (a few hundred tokens);
+- `python run.py configs/<file>.json` then produces the entire report —
+  random-effects pooling, 20+ diagnostics, SVG forest/funnel plots, GRADE, and
+  an in-browser WebR (`metafor`) cross-check — **with zero further model calls**;
+- and the report is **self-verifying**: its "Verify in R (WebR)" panel re-pools
+  the same data with R's `metafor` in the reader's browser, so a reviewer
+  confirms the numbers without trusting (or paying) the agent.
+
+> Why: a ~15 KB report with a dozen diagnostics costs ~250 tokens of config
+> generation instead of thousands of tokens of step-by-step computation that can
+> still get the arithmetic wrong. Reserve the model for judgement — inclusion
+> criteria, interpretation, the 156-word body — not for being a calculator.
+
+The same principle covers every deterministic step: scaffold with the `student`
+CLI, gate with Sentinel/Overmind, render with a script. If the agent is doing
+something a `python` script could do identically every time, move it into a
+script.
+
 ## Worked examples — clone these and reproduce
 
 These are live in Mahmood's portfolio. Read the README, run the test suite,
@@ -136,6 +167,7 @@ read the body, then adapt the structure to your question.
 | Repo | What it shows | Method |
 |---|---|---|
 | [ma-workbench](https://github.com/mahmood726-cyber/ma-workbench) — `sglt2i-hfpef-demo` | Full E156 demo: data → analysis → 156-word body → reproducibility audit | The HR-0.81 vs Vaduganathan-0.80 honest-FAIL ship is the worked example of step 5+6 of the method (`|Δ|=0.007 > 0.005`, shipped anyway with full transparency). |
+| [trialforge](https://github.com/mahmood726-cyber/trialforge) | Config-driven advanced meta-analysis (pooling, NMA, DTA, RMST, GRADE, 20+ diagnostics) with an in-browser WebR/`metafor` self-check | The token-economy pattern in practice: agent writes a ~20-line config, `run.py` builds the whole report offline with zero model calls. |
 | [repro-floor-atlas](https://github.com/mahmood726-cyber/repro-floor-atlas) | Pairwise70-scale (7,545 MAs) reproduction floor study | E156 method applied at portfolio scale; Sentinel + Overmind verdicts in CI. |
 | [responder-floor-atlas](https://github.com/mahmood726-cyber/responder-floor-atlas) | Empirical-MID-vs-canonical study with bootstrap CIs | Demonstrates the spec-lock cycle: feasibility tag → amendment tag → results tag. |
 | [impossible-ma](https://github.com/mahmood726-cyber/impossible-ma) | "Possibility Envelope" primitive (k=1, missing SE, adversarial) | Shows fail-closed extractor design + 88-test coverage on a single primitive. |
