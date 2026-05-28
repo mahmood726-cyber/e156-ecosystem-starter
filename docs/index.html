@@ -240,7 +240,7 @@ gemini "Summarise the rules I have configured in my .claude/rules/ folder"</code
   <tr><td>AI agent rules</td><td>Four curated rules files that load into Claude Code, Gemini CLI, and Codex automatically.</td></tr>
   <tr><td>Memory scaffold</td><td>Cross-session memory the AI grows as you work. Four types: user profile, working-style rules, project notes, external references.</td></tr>
   <tr><td>AGENTS.md / CLAUDE.md / GEMINI.md / CODEX.md</td><td>Per-agent context files so all three CLIs behave consistently.</td></tr>
-  <tr><td>Sentinel (optional)</td><td>Pre-push hook with 28 rules that block the common AI-agent defects (hardcoded paths, placeholder HMAC, silent sentinels, XSS sinks, empty-DataFrame access, leaked secrets, lockfile integrity, baseline drift) in about 2 seconds per push.</td></tr>
+  <tr><td>Sentinel (optional)</td><td>Pre-push hook with 53 rules (21 blocking) that catch the common AI-agent defects (hardcoded paths, placeholder HMAC, silent sentinels, XSS sinks, empty-DataFrame access, leaked secrets, lockfile integrity, baseline drift) in about 2 seconds per push.</td></tr>
   <tr><td>Overmind + TruthCert (optional)</td><td>On-demand verifier that runs tests + smoke + numerical baselines and emits HMAC-signed certification bundles for submissions.</td></tr>
   <tr><td>ProjectIndex (optional)</td><td>Portfolio tracker + fail-closed reconcile script that catches registry drift.</td></tr>
   <tr><td>long-term-plan (optional)</td><td>Weekly-refreshed deterministic backlog reranker. No LLM in the loop. Clones <a href="https://github.com/mahmood726-cyber/long-term-plan">mahmood726-cyber/long-term-plan</a> as a reference; you replace its ideas with your own.</td></tr>

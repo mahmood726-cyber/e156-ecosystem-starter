@@ -62,10 +62,13 @@ Optional: also disable the Store alias in
     }
 }
 
-$script:SentinelDefaultRef = 'v0.1.0'
+# Known-good Sentinel commit (the 53-rule build: 21 BLOCK / 28 WARN / 4 INFO).
+# v0.1.0 is stale (only ~12 rules); pin to this SHA until a newer semver tag
+# ships. Same "pin to a known-good commit" approach used for Overmind.
+$script:SentinelDefaultRef = 'ebf065ccec049072d1b92b6ed20122581440e959'
 
 function Get-SentinelDefaultSource {
-    # Pinned to a tagged release by default so a fresh install is reproducible.
+    # Pinned to a known-good commit by default so a fresh install is reproducible.
     # Override with $env:SENTINEL_REF=main (or any branch/tag/SHA) to opt into
     # bleeding-edge or to roll back if a future release breaks something.
     $ref = if ($env:SENTINEL_REF) { $env:SENTINEL_REF } else { $script:SentinelDefaultRef }

@@ -65,7 +65,7 @@ curated files. Wins on signal-to-noise per rule.
 | Feature | pre-commit | lefthook | husky | gitleaks | **e156-eco (Sentinel)** |
 |---|---|---|---|---|---|
 | Hook framework | yes | yes | yes (JS) | hook adapter | bundles Sentinel |
-| Built-in rule library | 1000+ via repos | minimal | none | secret-detection only | 28 rules |
+| Built-in rule library | 1000+ via repos | minimal | none | secret-detection only | 53 rules |
 | AI-agent-defect focus | no | no | no | no | **yes (XSS, hardcoded paths, placeholder HMAC, empty-DF, etc.)** |
 | Cross-language | yes | yes | JS-leaning | secret-only | Python + JS + HTML |
 | Bypass logging | no | no | no | no | **yes (audit trail)** |
@@ -140,7 +140,7 @@ A more honest summary:
    "best practices" without provenance.
 3. **No-Docker, no-admin, Windows-first install on 4 GB RAM laptops.** None
    of devcontainers / Gitpod / Nix can do this.
-4. **Sentinel's 28-rule AI-agent-defect catalog.** pre-commit has more total
+4. **Sentinel's 53-rule AI-agent-defect catalog.** pre-commit has more total
    rules but nothing focused on "Claude/Cursor will write XSS sinks /
    hardcoded paths / placeholder HMAC".
 5. **TruthCert HMAC-signed verification bundles.** No comparable tool ships

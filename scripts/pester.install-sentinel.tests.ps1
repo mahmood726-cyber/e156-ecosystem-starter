@@ -90,9 +90,13 @@ Describe "Get-SentinelDefaultSource pins the supply chain (P0)" {
     BeforeEach { Remove-Item Env:SENTINEL_REF -ErrorAction SilentlyContinue }
     AfterEach  { Remove-Item Env:SENTINEL_REF -ErrorAction SilentlyContinue }
 
-    It "defaults to a tagged release (not bare main)" {
+    It "defaults to an immutable ref (a version tag or commit SHA, not bare main)" {
+        # Sentinel is pinned to a commit SHA (the 53-rule build) until a newer
+        # semver tag ships - same supply-chain approach as the Overmind installer.
+        # The guard rejects a mutable default like 'main'; both a version tag
+        # (v1.2.3) and a 7-40 char hex SHA are accepted.
         $src = Get-SentinelDefaultSource
-        $src | Should -Match '^git\+https://github\.com/mahmood726-cyber/Sentinel\.git@v\d'
+        $src | Should -Match '^git\+https://github\.com/mahmood726-cyber/Sentinel\.git@(v\d|[0-9a-f]{7,40})$'
     }
 
     It "honours SENTINEL_REF override (rollback / bleeding-edge)" {

@@ -19,7 +19,7 @@ echo.
 echo This will install:
 echo   - AI agent rules (Claude Code / Gemini CLI / Codex)
 echo   - Memory scaffold (cross-session learning)
-echo   - Sentinel pre-push hook (optional, 28 quality rules)
+echo   - Sentinel pre-push hook (optional, 53 quality rules)
 echo   - Overmind + TruthCert (optional, verifier + signed bundles)
 echo   - ProjectIndex portfolio tracker (optional)
 echo   - long-term-plan weekly backlog reranker (optional)

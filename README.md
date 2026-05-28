@@ -90,16 +90,16 @@ Flags:
 ```
 
 This `pip install`s the [Sentinel](https://github.com/mahmood726-cyber/Sentinel)
-rule engine **pinned to a tagged release** (`v0.1.0` by default) and writes a
+rule engine **pinned to a known-good commit** (the 53-rule build) and writes a
 pre-push hook at `<repo>\.git\hooks\pre-push`. From then on, every `git push`
-runs the 28-rule scan in ~2 seconds and blocks on P0 violations.
+runs the 53-rule scan in ~2 seconds and blocks on P0 violations.
 
 To opt into bleeding-edge or roll back to a known-good ref:
 
 ```powershell
 $env:SENTINEL_REF = 'main';   .\scripts\install-sentinel.ps1 -Repo .   # bleeding edge
 $env:SENTINEL_REF = 'v0.0.9'; .\scripts\install-sentinel.ps1 -Repo .   # rollback
-$env:SENTINEL_REF = $null   # restore default (v0.1.0)
+$env:SENTINEL_REF = $null   # restore default (pinned 53-rule commit)
 ```
 
 Flags:

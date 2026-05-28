@@ -49,10 +49,13 @@ assert_real_python() {
     fi
 }
 
-SENTINEL_DEFAULT_REF="v0.1.0"
+# Known-good Sentinel commit (the 53-rule build: 21 BLOCK / 28 WARN / 4 INFO).
+# v0.1.0 is stale (only ~12 rules); pin to this SHA until a newer semver tag
+# ships. Same "pin to a known-good commit" approach used for Overmind.
+SENTINEL_DEFAULT_REF="ebf065ccec049072d1b92b6ed20122581440e959"
 
 sentinel_default_source() {
-    # Pinned to a tagged release so fresh installs are reproducible. Override
+    # Pinned to a known-good commit so fresh installs are reproducible. Override
     # with SENTINEL_REF=main (or any branch/tag/SHA) for bleeding edge or to
     # roll back if a future release breaks something.
     local ref="${SENTINEL_REF:-$SENTINEL_DEFAULT_REF}"

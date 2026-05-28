@@ -73,11 +73,16 @@ gen_section() {
     done
     printf '\n'
 
-    # Closing note.
-    local yaml_count plugin_count
+    # Closing note. The authoritative count comes from the rule registry
+    # (`sentinel list-rules`): a single source file can register more than one
+    # rule, so summing file names under-counts. Fall back to the file sum if
+    # the Sentinel package can't be imported in this environment.
+    local yaml_count plugin_count registry_count total
     yaml_count="$(find "$sentinel/sentinel/rules/yaml" -maxdepth 1 -name '*.yaml' 2>/dev/null | wc -l | tr -d ' ')"
     plugin_count="$(find "$sentinel/sentinel/rules/plugins" -maxdepth 1 -name '*.py' -not -name '__init__.py' -not -name 'test_*' 2>/dev/null | wc -l | tr -d ' ')"
-    printf '_Total: %s YAML + %s plugins = %s rules. Each rule has a one-line *why* comment in its source file linking it to the past incident it prevents. Students who think a rule is wrong should fork Sentinel and edit — incident-backed rules are not gospel for every project._\n' "$yaml_count" "$plugin_count" "$((yaml_count + plugin_count))"
+    registry_count="$( (cd "$sentinel" && python -m sentinel list-rules 2>/dev/null) | grep -cE '\[(BLOCK|WARN|INFO)\]' )"
+    if [[ "${registry_count:-0}" -gt 0 ]]; then total="$registry_count"; else total="$((yaml_count + plugin_count))"; fi
+    printf '_Total: %s rules as registered by `sentinel list-rules` (source files: %s YAML pattern matchers + %s plugin checks). Each rule has a one-line *why* comment in its source file linking it to the past incident it prevents. Students who think a rule is wrong should fork Sentinel and edit — incident-backed rules are not gospel for every project._\n' "$total" "$yaml_count" "$plugin_count"
 }
 
 if [[ "$MODE" == "stdout" ]]; then
