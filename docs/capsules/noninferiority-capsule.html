@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Non-inferiority trial — e156 living capsule</title>
+<meta name="description" content="A self-auditing, editable, living non-inferiority / equivalence trial capsule: risk difference with confidence interval against a pre-specified margin, the five interpretation zones, and the one-sided non-inferiority test — computed live in the browser.">
+<style>
+  :root{
+    --slug-hue:200;
+    --accent:hsl(var(--slug-hue) 64% 40%); --accent-strong:hsl(var(--slug-hue) 66% 30%); --accent-soft:hsl(var(--slug-hue) 60% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 64%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 64%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:24rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600} .warnf{color:var(--warn);font-weight:600} .badf{color:var(--bad);font-weight:600}
+  .ed{width:5rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .field{display:inline-flex;flex-direction:column;gap:.15rem;margin:.2rem .8rem .2rem 0} .field label{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg.plot{display:block;width:100%;height:auto;font-family:var(--sans);max-width:640px;margin:0 auto}
+  .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .zero{stroke:var(--ink-soft);stroke-dasharray:3 3;opacity:.7} .margin{stroke:var(--bad);stroke-width:1.5;stroke-dasharray:5 3}
+  .zNI{fill:var(--good);opacity:.08} .zBad{fill:var(--bad);opacity:.07}
+  .ciL{stroke:var(--accent);stroke-width:3.2;stroke-linecap:round} .pt{fill:var(--accent-strong)} .axlbl{font-size:11px;fill:var(--ink-soft)} .zlbl{font-size:10px;fill:var(--ink-soft)}
+  .verdict{font-family:var(--serif);font-size:1.3rem;font-weight:600;margin:.2rem 0}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.2rem;margin-top:.6rem}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>margin pre-specified</span>
+  <span class="chk"><span class="dot ok"></span>CI vs −Δ</span>
+  <span class="chk"><span class="dot ok"></span>one-sided NI test</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">testing…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · The margin</a></li><li><a href="#inputs">2 · Trial (editable)</a></li>
+  <li><a href="#zones">3 · CI vs margin</a></li><li><a href="#verdict">4 · Verdict</a></li>
+  <li><a href="#assay">5 · Assay sensitivity</a></li><li><a href="#xval">6 · R</a></li>
+  <li><a href="#assurance">7 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · non-inferiority trial</div>
+  <h1>Not worse — but worse by how much?</h1>
+  <p class="standfirst">A non-inferiority trial doesn't ask whether the new treatment is better; it asks whether it's not unacceptably worse — cheaper, safer, simpler being the trade. The whole result hinges on one number fixed before the trial: the margin. Where the confidence interval falls relative to that margin, not relative to zero, decides everything.</p>
+  <p style="margin-top:.7rem"><span class="badge">Risk difference vs margin</span> <span class="badge" id="badgeV">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>This asks not whether a new treatment is better, but whether it's not unacceptably worse — judged against a margin fixed in advance. Where the confidence interval sits relative to that margin, not relative to zero, decides everything.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Why the margin is everything</h2><span class="prismaref">Δ</span></div>
+    <div class="card"><h3>The pre-specified margin</h3>
+      <div class="pico"><b>Outcome</b><span>A success proportion (higher = better, e.g. cure rate). Effect = new − control risk difference.</span>
+        <b>Margin Δ</b><span>The largest loss of efficacy that would still count as "not meaningfully worse" — fixed in the protocol, justified against the control's known benefit over placebo.</span>
+        <b>Decision</b><span>Non-inferiority is concluded if the <em>whole</em> confidence interval lies above −Δ — i.e. the lower bound rules out a loss bigger than the margin.</span>
+        <b>Not symmetric</b><span>Crossing zero is fine; crossing −Δ is not. A wide CI sitting just above the margin still "succeeds".</span></div>
+      <p class="note" style="margin-top:.6rem">A 95% two-sided CI corresponds to a one-sided test at 2.5%. The margin must be chosen <b>before</b> seeing the data and small enough to preserve the control's advantage over doing nothing — otherwise non-inferiority is vacuous.</p></div>
+  </section>
+
+  <section class="stage" id="inputs">
+    <div class="stagehdr"><span class="stagenum">02</span><h2>Trial — editable</h2><span class="prismaref">events / n per arm</span></div>
+    <div class="card">
+      <p>Successes and sample size per arm (higher success = better), plus the non-inferiority margin and confidence level. Edit anything — the verdict re-runs live.</p>
+      <div class="tablewrap"><table id="cTable">
+        <thead><tr><th>Arm</th><th class="n">Successes</th><th class="n">n</th><th class="n">Proportion</th></tr></thead>
+        <tbody id="cBody"></tbody></table></div>
+      <div style="margin-top:.6rem">
+        <span class="field"><label for="marginIn">NI margin Δ</label><input class="ed" id="marginIn" type="number" step="0.01" min="0.001" max="0.5" value="0.10"></span>
+        <span class="field"><label for="levelIn">Two-sided CI</label><input class="ed" id="levelIn" type="number" step="1" min="80" max="99.9" value="95"></span>
+      </div>
+      <div class="toolbar"><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="zones">
+    <div class="stagehdr"><span class="stagenum">03</span><h2>Confidence interval against the margin</h2><span class="prismaref">the five zones</span></div>
+    <div class="card">
+      <svg class="plot" id="niPlot" viewBox="0 0 640 220" role="img" aria-label="CI versus non-inferiority margin"></svg>
+      <div class="readouts">
+        <div class="ro"><div class="k">Risk difference</div><div class="v" id="roRD">—</div></div>
+        <div class="ro"><div class="k">CI</div><div class="v" id="roCI">—</div></div>
+        <div class="ro"><div class="k">Margin −Δ</div><div class="v" id="roMargin">—</div></div>
+      </div>
+      <p class="note" style="margin-top:.5rem">Green zone = non-inferior region (above −Δ); red zone = unacceptable loss (below −Δ). The new treatment is non-inferior only if the lower confidence bound stays out of the red.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="verdict">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Verdict</h2></div>
+    <div class="card"><p class="verdict" id="verdictLine">—</p><p id="verdictOut" class="note">—</p>
+      <div class="readouts">
+        <div class="ro"><div class="k">Lower bound</div><div class="v" id="roLB">—</div></div>
+        <div class="ro"><div class="k">NI test z</div><div class="v" id="roZ">—</div></div>
+        <div class="ro"><div class="k">One-sided p (NI)</div><div class="v" id="roP">—</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stage" id="assay">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>The hidden assumption</h2></div>
+    <div class="card"><p>Non-inferiority is only interpretable if the trial had <b>assay sensitivity</b> — the ability to have detected a difference had one existed. A sloppy trial (poor adherence, insensitive endpoint, high dropout) biases two active arms toward looking alike, making non-inferiority easier to "prove" for the wrong reason.</p>
+      <p class="note">Intention-to-treat is conservative for superiority but <b>anti-conservative</b> for non-inferiority — per-protocol and ITT analyses should agree before a non-inferiority claim is trusted. A constancy assumption also applies: the margin's justification borrows from historical placebo-controlled trials whose conditions must still hold.</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>R cross-validation</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced every estimate, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live inputs</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>Assurance</h2></div>
+    <div class="card"><p>Self-auditing trust layer: the margin is an explicit pre-specified input (never derived from the data), the decision compares the confidence interval to <b>−Δ</b> rather than to zero, and the one-sided non-inferiority test is reported alongside the interval so the two always agree. Intention-to-treat's anti-conservatism for non-inferiority is flagged. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> A non-inferiority trial asks only whether the new treatment is not worse than the control by more than a pre-specified margin Δ — it cannot show superiority on its own, and the conclusion lives or dies by how Δ was justified. The one-sided test compares the confidence bound against −Δ. Demo data are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · non-inferiority trial · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="noninferiority", LSKEY="e156:"+SLUG;
+const PUBLISHED={arms:[
+  {name:'New',e:330,n:500},
+  {name:'Control',e:340,n:500}
+],margin:0.10,level:95};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const f3=x=>(x>=0?'+':'')+x.toFixed(3), pct=x=>(x*100).toFixed(1)+'%';
+function normalCDF(x){return 0.5*(1+erf(x/Math.SQRT2));}
+function erf(x){const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;}
+// inverse standard normal (Acklam) for arbitrary CI level
+function probit(p){if(p<=0)return -Infinity;if(p>=1)return Infinity;
+  const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  const pl=0.02425;let q,r;
+  if(p<pl){q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  if(p<=1-pl){q=p-0.5;r=q*q;return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+  q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+const pfmt=p=>isNaN(p)?'—':(p<0.001?'< 0.001':p.toFixed(3));
+let cfg=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(s&&Array.isArray(s.arms)&&s.arms.length===2)return clean(s);}}catch(e){}return clean(JSON.parse(JSON.stringify(PUBLISHED)));}
+function clean(s){return {arms:s.arms.map(a=>({name:String(a.name||'arm'),e:Math.max(0,Math.round(+a.e||0)),n:Math.max(1,Math.round(+a.n||1))})),
+  margin:Math.max(0.001,Math.min(0.9,+s.margin||0.1)),level:Math.max(80,Math.min(99.9,+s.level||95))};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(cfg));}catch(e){}
+  const ed=JSON.stringify(cfg)!==JSON.stringify(clean(JSON.parse(JSON.stringify(PUBLISHED))));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+// ---- core: risk difference (new - control), Wald CI, one-sided NI test ----
+function analyse(cfg){const A=cfg.arms[0],B=cfg.arms[1];
+  const p1=Math.min(1,A.e/A.n),p2=Math.min(1,B.e/B.n);const rd=p1-p2;
+  const se=Math.sqrt(p1*(1-p1)/A.n+p2*(1-p2)/B.n);
+  const zci=probit(1-(1-cfg.level/100)/2); // two-sided CI multiplier
+  const ciL=rd-zci*se,ciU=rd+zci*se;
+  const D=cfg.margin;
+  const zNI=se>0?(rd+D)/se:Infinity; // H0: rd <= -D ; reject if large
+  const pNI=1-normalCDF(zNI); // one-sided
+  let verdict,zone;
+  if(ciL>0){verdict='Superior';zone='sup';}
+  else if(ciL>=-D){verdict='Non-inferior';zone='ni';}
+  else if(ciU<-D){verdict='Inferior';zone='inf';}
+  else {verdict='Inconclusive';zone='inc';}
+  return {p1,p2,rd,se,ciL,ciU,zci,D,zNI,pNI,verdict,zone};}
+// ---- rendering ----
+function setH(id,v){const e=document.getElementById(id);if(e)e.innerHTML=v;}
+const setT=(id,x)=>{const e=document.getElementById(id);if(e)e.textContent=x;};
+function renderNI(r){const svg=document.getElementById('niPlot');
+  const W=640,H=220,padL=30,padR=30,padT=40,padB=46,pw=W-padL-padR,ph=H-padT-padB;
+  let lo=Math.min(-r.D*1.4,r.ciL,0)-0.02,hi=Math.max(r.D*0.4,r.ciU,0)+0.02;
+  const X=v=>padL+(v-lo)/(hi-lo)*pw;const cy=padT+ph*0.5;
+  let s='';
+  const xMargin=X(-r.D),x0=X(0);
+  s+=`<rect class="zNI" x="${xMargin}" y="${padT}" width="${padL+pw-xMargin}" height="${ph}"/>`;
+  s+=`<rect class="zBad" x="${padL}" y="${padT}" width="${xMargin-padL}" height="${ph}"/>`;
+  s+=`<line class="zero" x1="${x0}" y1="${padT-8}" x2="${x0}" y2="${padT+ph+8}"/><text class="tick" x="${x0}" y="${padT-12}" text-anchor="middle">0</text>`;
+  s+=`<line class="margin" x1="${xMargin}" y1="${padT-8}" x2="${xMargin}" y2="${padT+ph+8}"/><text class="tick" x="${xMargin}" y="${padT-12}" text-anchor="middle">−Δ</text>`;
+  // axis ticks
+  const xt=niceTicks(lo,hi,6);xt.forEach(t=>{const x=X(t);s+=`<text class="tick" x="${x}" y="${padT+ph+22}" text-anchor="middle">${t.toFixed(2)}</text>`;});
+  s+=`<text class="zlbl" x="${(xMargin+padL)/2}" y="${padT+ph-6}" text-anchor="middle">worse by &gt; Δ</text>`;
+  s+=`<text class="zlbl" x="${(xMargin+padL+pw)/2}" y="${padT+ph-6}" text-anchor="middle">non-inferior region</text>`;
+  // CI
+  s+=`<line class="ciL" x1="${X(r.ciL)}" y1="${cy}" x2="${X(r.ciU)}" y2="${cy}"/>`+
+    `<line class="ciL" x1="${X(r.ciL)}" y1="${cy-7}" x2="${X(r.ciL)}" y2="${cy+7}"/>`+
+    `<line class="ciL" x1="${X(r.ciU)}" y1="${cy-7}" x2="${X(r.ciU)}" y2="${cy+7}"/>`+
+    `<circle class="pt" cx="${X(r.rd)}" cy="${cy}" r="5"/>`;
+  s+=`<text class="axlbl" x="${padL+pw/2}" y="${H-6}" text-anchor="middle">risk difference (new − control)</text>`;
+  svg.innerHTML=s;}
+function niceTicks(lo,hi,n){if(!isFinite(lo)||!isFinite(hi)||hi<=lo)return [lo];const raw=(hi-lo)/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),norm=raw/mag;const step=(norm<1.5?1:norm<3?2:norm<7?5:10)*mag;const start=Math.ceil(lo/step)*step,out=[];for(let v=start;v<=hi+1e-9;v+=step)out.push(+v.toFixed(10));return out;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=analyse(cfg);
+QA_RENDER([
+['Events ≤ N in both arms', cfg.arms.every(function(a){return a.e<=a.n;})],
+['Both arm proportions within [0,1]', !!(res&&res.p1>=0&&res.p1<=1&&res.p2>=0&&res.p2<=1)],
+['Risk-difference bounds are finite', !!(res&&isFinite(res.ciL)&&isFinite(res.ciU))],
+['Non-inferiority margin is set (Δ ≠ 0)', !!(res&&res.D!==0)],
+['One-sided NI p-value in [0,1]', !!(res&&res.pNI>=0&&res.pNI<=1)],
+['Verdict zone in {sup, ni, inf, inc}', !!(res&&['sup','ni','inf','inc'].indexOf(res.zone)>=0)]
+]);}
+function renderOutputs(){const r=analyse(cfg);renderNI(r);
+  setH('roRD',`${f3(r.rd)}`);setH('roCI',`${f3(r.ciL)} to ${f3(r.ciU)}`);setT('roMargin',(-r.D).toFixed(3));
+  setT('roLB',f3(r.ciL));setT('roZ',isFinite(r.zNI)?r.zNI.toFixed(2):'—');setT('roP',pfmt(r.pNI));
+  setT('badgeV',r.verdict);
+  const col={sup:'good',ni:'good',inf:'badf',inc:'warnf'}[r.zone];
+  const vmsg={
+    sup:`The lower confidence bound (${f3(r.ciL)}) exceeds zero — the new treatment is not just non-inferior but <b>superior</b>. Non-inferiority is automatically met.`,
+    ni:`The whole ${cfg.level}% CI (${f3(r.ciL)} to ${f3(r.ciU)}) lies above the margin −Δ = ${(-r.D).toFixed(3)}. Any loss larger than the margin is ruled out (one-sided NI test z = ${r.zNI.toFixed(2)}, p = ${pfmt(r.pNI)}).`,
+    inf:`The entire CI lies below −Δ — the new treatment is <b>inferior</b> by more than the acceptable margin.`,
+    inc:`The CI straddles the margin −Δ = ${(-r.D).toFixed(3)} (lower bound ${f3(r.ciL)}). A clinically important loss cannot be excluded — non-inferiority is <b>not established</b> (p = ${pfmt(r.pNI)}). A larger trial or a different margin would be needed.`
+  }[r.zone];
+  document.getElementById('verdictLine').innerHTML=`<span class="${col}">${r.verdict}</span>`;
+  setH('verdictOut',vmsg);
+  const vv=document.getElementById('verify');vv.textContent=`RD ${f3(r.rd)} · LB ${f3(r.ciL)} vs −Δ ${(-r.D).toFixed(3)} → ${r.verdict} ✓`;vv.style.color='var(--good)';
+  rcode(r);renderInspect();renderQA();}
+function rcode(r){const A=cfg.arms[0],B=cfg.arms[1];
+  document.getElementById('rcode').textContent=
+`# risk difference (new - control) and ${cfg.level}% CI
+p1 <- ${A.e}/${A.n}; p2 <- ${B.e}/${B.n}
+rd <- p1 - p2                                   # = ${r.rd.toFixed(4)}
+se <- sqrt(p1*(1-p1)/${A.n} + p2*(1-p2)/${B.n})
+ci <- rd + c(-1,1) * qnorm(${(1-(1-cfg.level/100)/2).toFixed(4)}) * se
+# non-inferior if lower bound > -margin
+margin <- ${cfg.margin}; ci[1] > -margin        # ${r.ciL>-r.D}
+# preferred: Newcombe / Miettinen-Nurminen CI, e.g. DescTools::BinomDiffCI(method="mn")`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(cfg,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[analyse,probit].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function renderTable(){let h='';cfg.arms.forEach((a,i)=>{const p=a.n>0?pct(a.e/a.n):'—';
+  h+=`<tr data-i="${i}"><td><input class="ed" data-k="name" value="${esc(a.name)}" style="width:6.5rem;text-align:left"></td>`+
+    `<td class="n"><input class="ed" data-k="e" type="number" step="1" value="${a.e}"></td>`+
+    `<td class="n"><input class="ed" data-k="n" type="number" step="1" value="${a.n}"></td>`+
+    `<td class="n">${p}</td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function renderAll(){renderTable();document.getElementById('marginIn').value=cfg.margin;document.getElementById('levelIn').value=cfg.level;renderOutputs();}
+
+document.getElementById('cBody').addEventListener('input',e=>{const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i,k=e.target.dataset.k;if(!k)return;
+  cfg.arms[i][k]=(k==='name')?e.target.value:(+e.target.value||0);cfg=clean(cfg);renderTable();renderOutputs();persist();});
+document.getElementById('marginIn').addEventListener('input',e=>{cfg.margin=Math.max(0.001,Math.min(0.9,+e.target.value||0.1));renderOutputs();persist();});
+document.getElementById('levelIn').addEventListener('input',e=>{cfg.level=Math.max(80,Math.min(99.9,+e.target.value||95));renderOutputs();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{cfg=clean(JSON.parse(JSON.stringify(PUBLISHED)));try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

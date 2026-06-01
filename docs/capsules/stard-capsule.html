@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnostic accuracy (STARD) — e156 living capsule (primary)</title>
+<meta name="description" content="A self-auditing, editable, living single-study diagnostic accuracy capsule: 2x2 to sensitivity/specificity/PPV/NPV/likelihood ratios with Wilson CIs, and PPV/NPV vs prevalence.">
+<style>
+  :root{
+    --slug-hue:340;
+    --accent:hsl(var(--slug-hue) 50% 52%); --accent-strong:hsl(var(--slug-hue) 54% 42%); --accent-soft:hsl(var(--slug-hue) 46% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 58% 70%); --accent-strong:hsl(var(--slug-hue) 62% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 58% 70%); --accent-strong:hsl(var(--slug-hue) 62% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))}
+  table{border-collapse:collapse;font-size:.9rem}
+  th,td{padding:.4rem .6rem;border:1px solid var(--line);text-align:center}
+  th{font-size:.66rem;letter-spacing:.04em;color:var(--ink-soft);font-weight:600} td.lbl{font-weight:600;text-align:left;background:color-mix(in srgb,var(--ink) 3%,transparent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .ed{width:4.5rem;font-family:var(--mono);font-size:.9rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.2rem .35rem;background:var(--paper);color:var(--ink)} .ed:focus{outline:2px solid var(--accent)}
+  input[type=range]{width:100%}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .axis{stroke:var(--line)} .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .axlab{font-size:12px;fill:var(--ink-soft)}
+  .ppvline{stroke:var(--accent-strong);stroke-width:2.5;fill:none} .npvline{stroke:var(--ctrl);stroke-width:2.5;fill:none} .prevline{stroke:var(--warn);stroke-width:1.3;stroke-dasharray:4 3}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.72rem;color:var(--ink-soft);font-weight:400}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(7.5rem,1fr));gap:.4rem;margin-top:.6rem}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>Wilson CIs</span>
+  <span class="chk"><span class="dot ok"></span>PPV/NPV vs prevalence</span>
+  <span class="chk"><span class="dot ok"></span>likelihood ratios</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">testing…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Sample</a></li>
+  <li><a href="#screening">3 · Reference standard</a></li><li><a href="#extraction">4 · 2×2 (editable)</a></li>
+  <li><a href="#acc">5 · Accuracy</a></li><li><a href="#prev">6 · PPV/NPV vs prevalence</a></li>
+  <li><a href="#xval">7 · R (epiR)</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · primary study · diagnostic accuracy</div>
+  <h1>What a positive result actually means</h1>
+  <p class="standfirst">Sensitivity and specificity are properties of a test; predictive values are not — they swing with how common the disease is. A great test can still yield mostly false positives in a low-prevalence setting.</p>
+  <p style="margin-top:.7rem"><span class="badge">Primary · STARD</span> <span class="badge" id="badgeN">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>From a single test's 2×2 results this computes its sensitivity, specificity and predictive values — and shows how the predictive values swing depending on how common the disease is.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Question</h3>
+      <div class="pico"><b>Design</b><span>Single index test compared against a reference standard in a defined sample.</span>
+        <b>2×2</b><span>True/false positives and negatives vs the reference standard.</span>
+        <b>Estimands</b><span>Sensitivity, specificity, PPV, NPV, likelihood ratios — with Wilson 95% CIs.</span>
+        <b>Reporting</b><span>STARD — report the spectrum, the reference standard, and predictive values at the relevant prevalence.</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Sample</h2></div>
+    <div class="card"><p>Cell counts are <span class="illus">illustrative</span> and editable in stage 4; every metric and the prevalence curve re-run as you type.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Reference standard</h2></div>
+    <div class="card"><p>Rows are the index test result, columns the reference (true) status. Sensitivity/specificity are estimated in the study sample; predictive values depend on the prevalence where the test will be used (stage 6).</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>2×2 table — editable</h2><span class="prismaref">index test × reference standard</span></div>
+    <div class="card">
+      <table>
+        <thead><tr><th></th><th>Disease +</th><th>Disease −</th></tr></thead>
+        <tbody>
+          <tr><td class="lbl">Test +</td><td><input class="ed" id="tp" type="number" min="0"></td><td><input class="ed" id="fp" type="number" min="0"></td></tr>
+          <tr><td class="lbl">Test −</td><td><input class="ed" id="fn" type="number" min="0"></td><td><input class="ed" id="tn" type="number" min="0"></td></tr>
+        </tbody>
+      </table>
+      <div class="toolbar"><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="acc">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Accuracy</h2><span class="prismaref">Wilson 95% CIs</span></div>
+    <div class="card"><div class="readouts">
+      <div class="ro"><div class="k">Sensitivity</div><div class="v" id="roSe">—</div></div>
+      <div class="ro"><div class="k">Specificity</div><div class="v" id="roSp">—</div></div>
+      <div class="ro"><div class="k">PPV (study)</div><div class="v" id="roPPV">—</div></div>
+      <div class="ro"><div class="k">NPV (study)</div><div class="v" id="roNPV">—</div></div>
+      <div class="ro"><div class="k">LR+</div><div class="v" id="roLRp">—</div></div>
+      <div class="ro"><div class="k">LR−</div><div class="v" id="roLRn">—</div></div>
+      <div class="ro"><div class="k">Accuracy</div><div class="v" id="roAcc">—</div></div>
+      <div class="ro"><div class="k">Study prevalence</div><div class="v" id="roPrev">—</div></div>
+    </div>
+    <p class="note" id="accNote" style="margin-top:.5rem">—</p></div>
+  </section>
+
+  <section class="stage" id="prev">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>PPV / NPV vs prevalence</h2><span class="prismaref">Fagan: pre → post-test</span></div>
+    <div class="grid2">
+      <div class="card"><svg id="prevsvg" viewBox="0 0 460 280" role="group" aria-label="PPV and NPV vs prevalence"></svg></div>
+      <div class="card"><h3>At a chosen prevalence</h3>
+        <label class="note">Pre-test probability (prevalence): <b id="prevLab" class="num">—</b></label>
+        <input type="range" id="prevSlider" min="1" max="90" step="1">
+        <div class="readouts">
+          <div class="ro"><div class="k">PPV at this prevalence</div><div class="v" id="roPPV2">—</div></div>
+          <div class="ro"><div class="k">NPV at this prevalence</div><div class="v" id="roNPV2">—</div></div>
+          <div class="ro"><div class="k">Post-test if test +</div><div class="v" id="roPost">—</div></div>
+        </div>
+        <p class="note" id="prevNote" style="margin-top:.5rem">—</p></div>
+    </div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation (epiR)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced the metrics, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: proportions carry <b>Wilson</b> confidence intervals (well-behaved at extreme values, unlike the Wald interval), and PPV/NPV are shown as functions of prevalence — never as fixed test properties — with a Fagan pre/post-test readout. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> Sensitivity and specificity are properties of the test; predictive values (PPV/NPV) depend on disease prevalence in the tested population, so they do not transport to a setting with different prevalence. Needs a proper reference standard applied to all. Demo counts are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · primary · diagnostic accuracy (STARD) · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="diagnostic-stard-demo", LSKEY="e156:"+SLUG, Z=1.959963984540054;
+const DEFAULT={tp:88,fp:12,fn:15,tn:185};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let model=load();let prevPct=null;
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(s&&typeof s==='object')return clean(s);}}catch(e){}return clean(DEFAULT);}
+function clean(o){return {tp:Math.max(0,Math.round(+o.tp||0)),fp:Math.max(0,Math.round(+o.fp||0)),fn:Math.max(0,Math.round(+o.fn||0)),tn:Math.max(0,Math.round(+o.tn||0))};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(clean(DEFAULT));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+// Wilson score interval for x/n
+function wilson(x,n){if(n<=0)return {p:NaN,lo:NaN,hi:NaN};const p=x/n,z2=Z*Z;
+  const c=(p+z2/(2*n))/(1+z2/n),h=Z*Math.sqrt(p*(1-p)/n+z2/(4*n*n))/(1+z2/n);return {p,lo:Math.max(0,c-h),hi:Math.min(1,c+h)};}
+function dta(m){
+  const {tp,fp,fn,tn}=m,n=tp+fp+fn+tn;if(n<1||(tp+fn)<1||(tn+fp)<1)return null;
+  const se=wilson(tp,tp+fn),sp=wilson(tn,tn+fp);
+  const ppv=wilson(tp,tp+fp),npv=wilson(tn,tn+fn);
+  const lrp=sp.p<1?se.p/(1-sp.p):Infinity,lrn=sp.p>0?(1-se.p)/sp.p:Infinity;
+  const acc=(tp+tn)/n,prev=(tp+fn)/n,youden=se.p+sp.p-1;
+  return {n,se,sp,ppv,npv,lrp,lrn,acc,prev,youden};
+}
+// predictive values at an arbitrary prevalence via Bayes
+function pvAt(se,sp,prev){const ppv=(se*prev)/(se*prev+(1-sp)*(1-prev)),npv=(sp*(1-prev))/((1-se)*prev+sp*(1-prev));return {ppv,npv};}
+function renderPrev(res){
+  const svg=document.getElementById('prevsvg');if(!res){svg.innerHTML='<text x="14" y="24" class="tick">enter a valid 2×2</text>';return;}
+  const W=460,H=280,padL=44,padR=14,padT=14,padB=40,plotW=W-padL-padR,plotH=H-padT-padB;
+  const X=p=>padL+p*plotW,Y=v=>padT+plotH-v*plotH;
+  let s=`<rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="none" class="axis"/>`;
+  [0,0.25,0.5,0.75,1].forEach(v=>s+=`<text class="tick" x="${X(v)}" y="${H-padB+16}" text-anchor="middle">${v}</text><text class="tick" x="${padL-6}" y="${Y(v)+3}" text-anchor="end">${v}</text>`);
+  let pp='',np='';for(let i=0;i<=100;i++){const pr=i/100;const pv=pvAt(res.se.p,res.sp.p,Math.min(0.9999,Math.max(0.0001,pr)));
+    pp+=(i===0?'M':'L')+X(pr).toFixed(1)+' '+Y(pv.ppv).toFixed(1)+' ';np+=(i===0?'M':'L')+X(pr).toFixed(1)+' '+Y(pv.npv).toFixed(1)+' ';}
+  s+=`<path class="ppvline" d="${pp}"/><path class="npvline" d="${np}"/>`;
+  s+=`<line class="prevline" x1="${X(res.prev)}" y1="${padT}" x2="${X(res.prev)}" y2="${padT+plotH}"/><text class="tick" x="${X(res.prev)}" y="${padT+10}" text-anchor="middle" fill="var(--warn)">study ${(res.prev*100).toFixed(0)}%</text>`;
+  s+=`<text class="tick" x="${X(0.7)}" y="${Y(pvAt(res.se.p,res.sp.p,0.7).ppv)-6}" fill="var(--accent-strong)">PPV</text>`;
+  s+=`<text class="tick" x="${X(0.3)}" y="${Y(pvAt(res.se.p,res.sp.p,0.3).npv)+14}" fill="var(--ink-soft)">NPV</text>`;
+  s+=`<text class="axlab" x="${padL+plotW/2}" y="${H-3}" text-anchor="middle">prevalence (pre-test probability)</text>`;
+  svg.innerHTML=s;
+}
+const pct=o=>isNaN(o.p)?'—':(o.p*100).toFixed(1)+'%';
+const pctci=o=>isNaN(o.p)?'—':`${(o.lo*100).toFixed(0)}–${(o.hi*100).toFixed(0)}`;
+function renderReadouts(res){const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};const setH=(id,v)=>{const e=document.getElementById(id);if(e)e.innerHTML=v;};
+  if(!res){['roSe','roSp','roPPV','roNPV','roLRp','roLRn','roAcc','roPrev','roPPV2','roNPV2','roPost'].forEach(id=>set(id,'—'));document.getElementById('accNote').textContent='enter a valid 2×2';document.getElementById('prevNote').textContent='—';return;}
+  setH('roSe',`${pct(res.se)} <small>(${pctci(res.se)})</small>`);setH('roSp',`${pct(res.sp)} <small>(${pctci(res.sp)})</small>`);
+  setH('roPPV',`${pct(res.ppv)} <small>(${pctci(res.ppv)})</small>`);setH('roNPV',`${pct(res.npv)} <small>(${pctci(res.npv)})</small>`);
+  set('roLRp',isFinite(res.lrp)?res.lrp.toFixed(1):'∞');set('roLRn',isFinite(res.lrn)?res.lrn.toFixed(2):'—');set('roAcc',(res.acc*100).toFixed(1)+'%');set('roPrev',(res.prev*100).toFixed(1)+'%');
+  document.getElementById('accNote').innerHTML=`Sensitivity ${pct(res.se)}, specificity ${pct(res.sp)}; LR+ ${isFinite(res.lrp)?res.lrp.toFixed(1):'∞'}, LR− ${res.lrn.toFixed(2)}. In this sample (prevalence ${(res.prev*100).toFixed(0)}%), PPV ${pct(res.ppv)} and NPV ${pct(res.npv)}.`;
+  if(prevPct==null)prevPct=Math.round(res.prev*100);
+  const pr=Math.min(0.9999,Math.max(0.0001,prevPct/100)),pv=pvAt(res.se.p,res.sp.p,pr);
+  document.getElementById('prevLab').textContent=prevPct+'%';document.getElementById('prevSlider').value=prevPct;
+  set('roPPV2',(pv.ppv*100).toFixed(1)+'%');set('roNPV2',(pv.npv*100).toFixed(1)+'%');set('roPost',(pv.ppv*100).toFixed(1)+'%');
+  document.getElementById('prevNote').innerHTML=`At a pre-test probability of ${prevPct}%, a positive test gives a post-test probability of <b class="num">${(pv.ppv*100).toFixed(1)}%</b>; a negative test leaves <b class="num">${((1-pv.npv)*100).toFixed(1)}%</b> residual risk. ${prevPct<10&&res.ppv.p>0.5?'<span style="color:var(--warn)">At low prevalence, even this test\'s positives are often false.</span>':''}`;
+}
+function rcode(){
+  document.getElementById('rcode').textContent=
+`library(epiR)
+# rows = test (+ then −), cols = disease (+ then −)
+dat <- matrix(c(${model.tp}, ${model.fp}, ${model.fn}, ${model.tn}), nrow = 2, byrow = TRUE)
+epi.tests(dat)   # Se, Sp, PPV, NPV, LR+, LR−, accuracy with CIs
+# PPV at prevalence p:  (Se*p) / (Se*p + (1-Sp)*(1-p))`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[dta,wilson,pvAt].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function syncInputs(){['tp','fp','fn','tn'].forEach(k=>{const el=document.getElementById(k);if(el)el.value=model[k];});}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=dta(model);
+QA_RENDER([
+['2×2 counts are non-negative integers', [model.tp,model.fp,model.fn,model.tn].every(function(x){return x>=0&&x===Math.round(x);})],
+['At least one diseased and one non-diseased case', !!((model.tp+model.fn)>0&&(model.fp+model.tn)>0)],
+['Sensitivity & specificity within [0,1]', !!(res&&res.se.p>=0&&res.se.p<=1&&res.sp.p>=0&&res.sp.p<=1)],
+['PPV & NPV within [0,1]', !!(res&&res.ppv.p>=0&&res.ppv.p<=1&&res.npv.p>=0&&res.npv.p<=1)],
+["Youden's J = Se+Sp−1 within [−1,1]", !!(res&&res.youden>=-1&&res.youden<=1)]
+]);}
+function renderOutputs(){const res=dta(model);renderPrev(res);renderReadouts(res);rcode();renderInspect();renderQA();
+  document.getElementById('badgeN').textContent=res?`n = ${res.n}`:'—';
+  const v=document.getElementById('verify');if(res){v.textContent=`Se ${pct(res.se)} · Sp ${pct(res.sp)} · LR+ ${isFinite(res.lrp)?res.lrp.toFixed(1):'∞'} · PPV ${pct(res.ppv)} ✓`;v.style.color='var(--good)';}else{v.textContent='enter a valid 2×2';v.style.color='var(--warn)';}}
+function renderAll(){syncInputs();renderOutputs();}
+
+document.getElementById('extraction').addEventListener('input',e=>{const id=e.target.id;if(!['tp','fp','fn','tn'].includes(id))return;model[id]=Math.max(0,Math.round(+e.target.value||0));prevPct=null;renderOutputs();persist();});
+document.getElementById('prevSlider').addEventListener('input',e=>{prevPct=+e.target.value;renderReadouts(dta(model));});
+document.getElementById('resetData').addEventListener('click',()=>{model=clean(DEFAULT);prevPct=null;try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

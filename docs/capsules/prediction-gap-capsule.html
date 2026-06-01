@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediction-interval gap — e156 living capsule (meta-research)</title>
+<meta name="description" content="A self-auditing, editable, living capsule for the prediction-interval gap: when a meta-analysis CI excludes the null but its 95% prediction interval does not.">
+<style>
+  :root{
+    --slug-hue:170;
+    --accent:hsl(var(--slug-hue) 52% 44%); --accent-strong:hsl(var(--slug-hue) 56% 34%); --accent-soft:hsl(var(--slug-hue) 48% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 66%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 66%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:22rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .ed{width:4rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed.t{width:6.5rem;text-align:left} .ed:focus{outline:2px solid var(--accent);outline-offset:1px} .ed.bad{border-color:var(--bad)}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.x{border:none;background:transparent;color:var(--ink-soft);padding:.2rem .4rem;font-size:1rem} .btn.x:hover{color:var(--bad)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .axis{stroke:var(--line)} .nullline{stroke:var(--ink-soft);stroke-width:1.25}
+  .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .axlab{font-size:12px;fill:var(--ink-soft)}
+  .trow .lbl{font-size:13px;fill:var(--ink)} .trow .val{font-size:12px;fill:var(--ink-soft);font-family:var(--mono)}
+  .whisk{stroke:var(--ink-soft);stroke-width:1.25;stroke-linecap:round} .box{fill:var(--accent)}
+  .ciDiam{fill:var(--accent-strong)} .piBar{fill:none;stroke:var(--bad);stroke-width:2.5} .piCap{stroke:var(--bad);stroke-width:2.5}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.4rem;margin-top:.6rem}
+  .verdict{font-family:var(--serif);font-size:1.05rem;padding:.5rem .8rem;border-radius:8px;border-left:4px solid var(--accent)}
+  .verdict.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,var(--card))} .verdict.good{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--card))} .verdict.warn{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--card))}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>PI uses t<sub>k−1</sub></span>
+  <span class="chk"><span class="dot ok"></span>τ² reported</span>
+  <span class="chk"><span class="dot" id="dotGap"></span>CI/PI concordance</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">predicting…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Search</a></li>
+  <li><a href="#screening">3 · Screening</a></li><li><a href="#extraction">4 · Studies (editable)</a></li>
+  <li><a href="#gap">5 · CI vs PI</a></li><li><a href="#interp">6 · Interpretation</a></li>
+  <li><a href="#xval">7 · R (metafor)</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · meta-research · prediction-interval gap</div>
+  <h1>Significant on average, unreliable in the next setting</h1>
+  <p class="standfirst">A confidence interval describes the average effect; a prediction interval describes the effect a new study would see. When the CI clears the null but the PI does not, "significant" hides a literature that could go either way next time.</p>
+  <p style="margin-top:.7rem"><span class="badge">Meta-research · PI gap</span> <span class="badge" id="badgeK">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>An average effect can be statistically significant yet unreliable for the next setting. This flags when the pooled interval excludes 'no effect' but the prediction interval — where a new study would land — does not.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Question</h3>
+      <div class="pico"><b>Input</b><span>A random-effects meta-analysis of an odds ratio (studies editable).</span>
+        <b>CI</b><span>95% confidence interval for the average effect.</span>
+        <b>PI</b><span>95% prediction interval (t<sub>k−1</sub>) for a future study's true effect.</span>
+        <b>Estimand</b><span>The gap: does the CI exclude the null while the PI includes it?</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Search</h2></div>
+    <div class="card"><p>Effects are <span class="illus">illustrative</span> and editable in stage 4; the CI, PI and the gap diagnostic re-run as you type.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Screening</h2></div>
+    <div class="card"><p>One OR with 95% CI per study; pooling is on the log scale (DerSimonian–Laird τ²), back-transformed.</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Studies — editable</h2><span class="prismaref">OR + 95% CI</span></div>
+    <div class="card">
+      <div class="tablewrap"><table id="cTable">
+        <thead><tr><th>Inc.</th><th>Study</th><th class="n">OR</th><th class="n">LCI</th><th class="n">UCI</th><th></th></tr></thead>
+        <tbody id="cBody"></tbody></table></div>
+      <div class="toolbar"><button class="btn" id="addRow">+ add study</button><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="gap">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Confidence vs prediction</h2><span class="prismaref">diamond = CI · red bar = PI</span></div>
+    <div class="grid2">
+      <div class="card"><svg id="forest" viewBox="0 0 720 320" role="group" aria-label="Forest with CI and PI"></svg></div>
+      <div class="card"><h3>The gap</h3>
+        <div class="readouts">
+          <div class="ro"><div class="k">Pooled OR</div><div class="v" id="roOR">—</div></div>
+          <div class="ro"><div class="k">95% CI</div><div class="v" id="roCI">—</div></div>
+          <div class="ro"><div class="k">95% prediction</div><div class="v" id="roPI">—</div></div>
+          <div class="ro"><div class="k">I²</div><div class="v" id="roI2">—</div></div>
+        </div>
+        <p class="note" id="gapNote" style="margin-top:.5rem">—</p></div>
+    </div>
+  </section>
+
+  <section class="stage" id="interp">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>Interpretation</h2></div>
+    <div class="card"><div class="verdict" id="verdict">—</div>
+      <p class="note" style="margin-top:.6rem">The prediction interval should be reported alongside the CI whenever heterogeneity is non-trivial; a CI that excludes the null with a PI that includes it means the pooled "effect" may not hold in a new population. The PI here uses the t-distribution with k−1 degrees of freedom (Cochrane Handbook v6.5) and is undefined for k &lt; 2.</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation (metafor)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced the CI and PI, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: the prediction interval is computed with the t<sub>k−1</sub> multiplier (not z), τ² is shown so the gap is traceable to heterogeneity, and the CI/PI concordance dot turns amber precisely when a significant CI hides a null-spanning PI. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> The prediction interval shows where a future study's true effect is likely to fall; when it spans both benefit and harm while the confidence interval does not, the average hides real heterogeneity. Needs k≥2 and uses t_{k−1}. Demo data are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · meta-research · prediction-interval gap · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="prediction-interval-gap-demo", LSKEY="e156:"+SLUG, Z=1.959963984540054;
+const T975={1:12.706,2:4.303,3:3.182,4:2.776,5:2.571,6:2.447,7:2.365,8:2.306,9:2.262,10:2.228,12:2.179,15:2.131,20:2.086,30:2.042};
+const tcrit=df=>{if(df<=0)return Z;if(T975[df])return T975[df];const ks=Object.keys(T975).map(Number).sort((a,b)=>a-b);for(const k of ks)if(df<=k)return T975[k];return 1.962;};
+const PUBLISHED=[
+  {study:'STUDY-1',or:0.60,lci:0.45,uci:0.80,inc:true},
+  {study:'STUDY-2',or:0.72,lci:0.55,uci:0.94,inc:true},
+  {study:'STUDY-3',or:0.95,lci:0.78,uci:1.16,inc:true},
+  {study:'STUDY-4',or:0.68,lci:0.50,uci:0.92,inc:true},
+  {study:'STUDY-5',or:1.02,lci:0.80,uci:1.30,inc:true},
+  {study:'STUDY-6',or:0.63,lci:0.46,uci:0.86,inc:true},
+  {study:'STUDY-7',or:0.85,lci:0.70,uci:1.03,inc:true},
+  {study:'STUDY-8',or:0.58,lci:0.40,uci:0.84,inc:true}
+];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(Array.isArray(s)&&s.length)return s.map(clean);}}catch(e){}return PUBLISHED.map(o=>({...o}));}
+function clean(o){return {study:String(o.study||'study'),or:+o.or||0,lci:+o.lci||0,uci:+o.uci||0,inc:o.inc!==false};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(PUBLISHED.map(o=>({...o})));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+const valid=r=>r.or>0&&r.lci>0&&r.uci>0&&r.uci>r.lci;
+const toYS=r=>{const y=Math.log(r.or),se=(Math.log(r.uci)-Math.log(r.lci))/(2*Z);return {y,se};};
+// random-effects DL pooling + CI + prediction interval (t_{k-1})
+function gap(rows){
+  const use=rows.filter(r=>r.inc&&valid(r));const k=use.length;if(k<1)return null;
+  const ys=use.map(toYS),y=ys.map(o=>o.y),v=ys.map(o=>o.se*o.se);
+  const w0=v.map(x=>1/x),sw0=w0.reduce((a,b)=>a+b,0),m0=y.reduce((a,e,i)=>a+w0[i]*e,0)/sw0;
+  const Q=y.reduce((a,e,i)=>a+w0[i]*(e-m0)**2,0),df=k-1,C=sw0-w0.reduce((a,e)=>a+e*e,0)/sw0,tau2=(df>0&&C>0)?Math.max(0,(Q-df)/C):0;
+  const wr=v.map(x=>1/(x+tau2)),swr=wr.reduce((a,b)=>a+b,0),m=y.reduce((a,e,i)=>a+wr[i]*e,0)/swr,se=Math.sqrt(1/swr);
+  const I2=(k>1&&Q>df)?Math.max(0,(Q-df)/Q)*100:0;
+  const ciL=m-Z*se,ciU=m+Z*se;
+  const piH=k>=2?tcrit(df)*Math.sqrt(tau2+se*se):null;
+  const piL=piH!=null?m-piH:null,piU=piH!=null?m+piH:null;
+  const ciSig=ciU<0||ciL>0;                 // CI excludes null (log 0 = OR 1)
+  const piSpans=piH!=null?(piL<0&&piU>0):null;
+  const gapFlag=ciSig&&piSpans===true;
+  return {use,ys,k,m,se,tau2,I2,ciL,ciU,piL,piU,ciSig,piSpans,gapFlag,wr,
+    OR:Math.exp(m),ciLor:Math.exp(ciL),ciUor:Math.exp(ciU),piLor:piL!=null?Math.exp(piL):null,piUor:piU!=null?Math.exp(piU):null};
+}
+const eOR=x=>Math.exp(x);
+function renderForest(res){
+  const svg=document.getElementById('forest');if(!res){svg.innerHTML='<text x="14" y="24" class="tick">need ≥1 study</text>';return;}
+  const n=res.use.length,rowH=30,top=22,W=720,padL=150,padR=130,plotW=W-padL-padR;
+  const all=res.use.flatMap(r=>{const ys=toYS(r);return [ys.y-Z*ys.se,ys.y+Z*ys.se];}).concat([res.piL,res.piU,res.ciL,res.ciU].filter(x=>x!=null));
+  let lo=Math.min(0,...all),hi=Math.max(0,...all);const pad=(hi-lo)*0.08||0.3;lo-=pad;hi+=pad;
+  const xOf=x=>padL+(x-lo)/(hi-lo)*plotW;const axisY=top+n*rowH+8,ciY=top+n*rowH+26,piY=ciY+22;
+  let s=`<line class="nullline" x1="${xOf(0)}" y1="${top-8}" x2="${xOf(0)}" y2="${piY+8}"/>`;
+  [0.25,0.5,1,2].filter(t=>Math.log(t)>=lo&&Math.log(t)<=hi).forEach(t=>s+=`<text class="tick" x="${xOf(Math.log(t))}" y="${axisY+15}" text-anchor="middle">${t}</text>`);
+  const maxW=Math.max(...res.wr,1e-9);
+  res.use.forEach((r,i)=>{const ys=toYS(r),y=top+i*rowH+rowH/2,half=2+Math.sqrt(res.wr[i]/maxW)*7;
+    s+=`<g class="trow"><text class="lbl" x="14" y="${y+4}">${esc(r.study)}</text>`+
+      `<line class="whisk" x1="${xOf(ys.y-Z*ys.se)}" y1="${y}" x2="${xOf(ys.y+Z*ys.se)}" y2="${y}"/>`+
+      `<rect class="box" x="${xOf(ys.y)-half}" y="${y-half}" width="${2*half}" height="${2*half}"/>`+
+      `<text class="val" x="${W-12}" y="${y+4}" text-anchor="end">${eOR(ys.y).toFixed(2)}</text></g>`;});
+  const dcx=xOf(res.m),dxl=xOf(res.ciL),dxu=xOf(res.ciU),h=7;
+  s+=`<polygon class="ciDiam" points="${dxl},${ciY} ${dcx},${ciY-h} ${dxu},${ciY} ${dcx},${ciY+h}"/>`;
+  s+=`<text class="lbl" x="14" y="${ciY+4}">Pooled (95% CI)</text><text class="val" x="${W-12}" y="${ciY+4}" text-anchor="end">${res.OR.toFixed(2)} (${res.ciLor.toFixed(2)}–${res.ciUor.toFixed(2)})</text>`;
+  if(res.piL!=null){s+=`<line class="piBar" x1="${xOf(res.piL)}" y1="${piY}" x2="${xOf(res.piU)}" y2="${piY}"/>`+
+    `<line class="piCap" x1="${xOf(res.piL)}" y1="${piY-5}" x2="${xOf(res.piL)}" y2="${piY+5}"/><line class="piCap" x1="${xOf(res.piU)}" y1="${piY-5}" x2="${xOf(res.piU)}" y2="${piY+5}"/>`+
+    `<text class="lbl" x="14" y="${piY+4}" fill="var(--bad)">95% prediction</text><text class="val" x="${W-12}" y="${piY+4}" text-anchor="end" fill="var(--bad)">${res.piLor.toFixed(2)}–${res.piUor.toFixed(2)}</text>`;}
+  s+=`<text class="axlab" x="${padL+plotW/2}" y="${piY+30}" text-anchor="middle">odds ratio (log scale) · null = 1</text>`;
+  svg.setAttribute('viewBox',`0 0 ${W} ${piY+40}`);svg.innerHTML=s;
+}
+function renderReadouts(res){const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};const setH=(id,v)=>{const e=document.getElementById(id);if(e)e.innerHTML=v;};
+  if(!res){['roOR','roCI','roPI','roI2'].forEach(id=>set(id,'—'));document.getElementById('gapNote').textContent='—';document.getElementById('verdict').textContent='—';return;}
+  set('roOR',res.OR.toFixed(2));setH('roCI',`${res.ciLor.toFixed(2)} <small>to</small> ${res.ciUor.toFixed(2)}`);
+  setH('roPI',res.piLor!=null?`${res.piLor.toFixed(2)} <small>to</small> ${res.piUor.toFixed(2)}`:'k&lt;2');set('roI2',res.I2.toFixed(0)+'%');
+  document.getElementById('dotGap').className='dot '+(res.gapFlag?'warn':'ok');
+  document.getElementById('gapNote').innerHTML=`CI ${res.ciSig?'<b>excludes</b>':'includes'} OR=1; prediction interval ${res.piSpans?'<b>includes</b>':'excludes'} OR=1. I²=${res.I2.toFixed(0)}%.`;
+  const vd=document.getElementById('verdict');
+  if(res.gapFlag){vd.className='verdict bad';vd.innerHTML=`<b>Prediction-interval gap.</b> The pooled OR is "significant" (CI ${res.ciLor.toFixed(2)}–${res.ciUor.toFixed(2)} excludes 1), yet the 95% prediction interval (${res.piLor.toFixed(2)}–${res.piUor.toFixed(2)}) spans 1 — a new study could plausibly show no effect or harm. Report the PI, not just the CI.`;}
+  else if(res.ciSig&&res.piSpans===false){vd.className='verdict good';vd.innerHTML=`<b>Robust.</b> Both the CI and the prediction interval exclude the null — the effect is expected to hold in a new setting.`;}
+  else if(!res.ciSig){vd.className='verdict warn';vd.innerHTML=`<b>Not significant.</b> The CI already includes the null; the prediction interval is necessarily wider.`;}
+  else{vd.className='verdict warn';vd.innerHTML=`<b>Prediction interval undefined</b> (k &lt; 2). Add studies to assess between-study reliability.`;}
+}
+function rcode(){const use=model.filter(r=>r.inc&&valid(r));
+  document.getElementById('rcode').textContent=
+`library(metafor)
+yi  <- log(c(${use.map(r=>r.or).join(', ')}))
+sei <- (log(c(${use.map(r=>r.uci).join(', ')})) - log(c(${use.map(r=>r.lci).join(', ')}))) / (2*1.96)
+res <- rma(yi, sei = sei, method = "DL")
+predict(res, transf = exp)   # pooled CI *and* prediction interval (t_{k-1})
+# the gap: CI excludes 1 but pi.lb < 1 < pi.ub`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=gap.toString();cd.dataset.done='1';}}
+function renderTable(){let h='';model.forEach((r,i)=>{const bad=valid(r)?'':' bad';
+  h+=`<tr data-i="${i}"><td><input type="checkbox" class="inc" ${r.inc?'checked':''}></td>`+
+    `<td><input class="ed t" data-k="study" value="${esc(r.study)}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="or" type="number" step="0.01" value="${r.or}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="lci" type="number" step="0.01" value="${r.lci}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="uci" type="number" step="0.01" value="${r.uci}"></td>`+
+    `<td><button class="btn x" data-rm="${i}" title="remove">✕</button></td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=gap(model);
+QA_RENDER([
+['Every included study OR>0 with LCI<UCI', model.filter(function(r){return r.inc;}).every(function(r){return r.or>0&&r.lci<r.uci;})],
+['τ² ≥ 0', !!(res&&res.tau2>=0)],
+['I² within [0,100]', (res&&res.I2!=null)?(res.I2>=0&&res.I2<=100):'warn'],
+['Prediction interval contains the confidence interval', (res&&res.piL!=null&&res.piU!=null)?(res.piL<=res.ciL+1e-9&&res.piU>=res.ciU-1e-9):'warn'],
+['≥ 2 studies (prediction interval defined)', (res&&res.k>=2)?true:'warn']
+]);}
+function renderOutputs(){const res=gap(model);renderForest(res);renderReadouts(res);rcode();renderInspect();renderQA();
+  document.getElementById('badgeK').textContent=res?`${res.k} studies`:'—';
+  const v=document.getElementById('verify');if(res){v.textContent=res.gapFlag?`CI excludes 1 but PI spans it — prediction gap ⚠`:`CI/PI concordant ✓`;v.style.color=res.gapFlag?'var(--warn)':'var(--good)';}else{v.textContent='need ≥1 study';v.style.color='var(--warn)';}}
+function renderAll(){renderTable();renderOutputs();}
+
+document.getElementById('cBody').addEventListener('input',e=>{const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i;
+  if(e.target.classList.contains('inc')){model[i].inc=e.target.checked;renderTable();renderOutputs();persist();return;}
+  const k=e.target.dataset.k;if(!k)return;model[i][k]=(k==='study')?e.target.value:(+e.target.value||0);
+  const bad=!valid(model[i]);tr.querySelectorAll('[data-k=or],[data-k=lci],[data-k=uci]').forEach(el=>el.classList.toggle('bad',bad));renderOutputs();persist();});
+document.getElementById('cBody').addEventListener('click',e=>{const rm=e.target.closest('[data-rm]');if(rm){model.splice(+rm.dataset.rm,1);renderAll();persist();}});
+document.getElementById('addRow').addEventListener('click',()=>{model.push(clean({study:'NEW',or:0.8,lci:0.6,uci:1.05,inc:true}));renderAll();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=PUBLISHED.map(o=>({...o}));try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

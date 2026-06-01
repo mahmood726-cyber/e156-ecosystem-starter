@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trial sequential analysis — e156 living capsule (Type 11)</title>
+<meta name="description" content="A self-auditing, editable, living trial sequential analysis capsule: cumulative meta-analysis, heterogeneity-adjusted required information size, O'Brien-Fleming monitoring boundaries.">
+<style>
+  :root{
+    --slug-hue:96;
+    --accent:hsl(var(--slug-hue) 52% 50%); --accent-strong:hsl(var(--slug-hue) 56% 40%); --accent-soft:hsl(var(--slug-hue) 48% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:24rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .ed{width:4rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed.t{width:6rem;text-align:left} .ed:focus{outline:2px solid var(--accent);outline-offset:1px} .ed.bad{border-color:var(--bad)}
+  select.ed{width:auto;text-align:left}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.x{border:none;background:transparent;color:var(--ink-soft);padding:.2rem .4rem;font-size:1rem} .btn.x:hover{color:var(--bad)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  .opts{display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center;font-size:.86rem;margin-bottom:.4rem} .opts label{color:var(--ink-soft)}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .axis{stroke:var(--line)} .grid{stroke:var(--line);opacity:.5} .zero{stroke:var(--ink-soft);stroke-width:1}
+  .conv{stroke:var(--ctrl);stroke-width:1.2;stroke-dasharray:5 4} .obf{stroke:var(--accent-strong);stroke-width:2;fill:none}
+  .ris{stroke:var(--warn);stroke-width:1.5;stroke-dasharray:2 3} .zcurve{stroke:var(--accent);stroke-width:2.5;fill:none} .zpt{fill:var(--accent)} .cross{fill:none;stroke:var(--bad);stroke-width:2.5}
+  .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .axlab{font-size:12px;fill:var(--ink-soft)}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.2rem;margin-top:.6rem}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  .verdict{font-family:var(--serif);font-size:1.05rem;padding:.5rem .8rem;border-radius:8px;border-left:4px solid var(--accent)}
+  .verdict.firm{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--card))} .verdict.insuf{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--card))}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>RIS heterogeneity-adjusted</span>
+  <span class="chk"><span class="dot ok"></span>O'Brien–Fleming boundary</span>
+  <span class="chk"><span class="dot ok"></span>futility non-binding</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">accumulating…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Search</a></li>
+  <li><a href="#screening">3 · Screening</a></li><li><a href="#extraction">4 · Trials (editable)</a></li>
+  <li><a href="#tsa">5 · TSA graph</a></li><li><a href="#ris">6 · RIS &amp; verdict</a></li>
+  <li><a href="#xval">7 · R (RTSA)</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · trial sequential analysis</div>
+  <h1>Is the meta-analysis large enough to trust?</h1>
+  <p class="standfirst">Repeatedly testing a growing meta-analysis inflates the false-positive rate. TSA borrows a clinical trial's defence: a required information size and monitoring boundaries that the cumulative evidence must cross before "significant" means conclusive.</p>
+  <p style="margin-top:.7rem"><span class="badge">Type 11 · TSA</span> <span class="badge" id="badgeK">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>Just as peeking at a trial repeatedly inflates false alarms, so does updating a meta-analysis with each new study. This draws a monitoring boundary the cumulative evidence must cross, and shows how much information is still needed.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Review question — PICO</h3>
+      <div class="pico"><b>Population</b><span>Randomised trials with a binary outcome (illustrative).</span>
+        <b>Intervention</b><span>Active treatment vs control; effect summarised as a risk ratio.</span>
+        <b>Sequential design</b><span>Two-sided α, power, and an anticipated relative risk reduction define the required information size.</span>
+        <b>Primary question</b><span>Has the cumulative Z-curve crossed the O'Brien–Fleming boundary, or is information still insufficient?</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Search</h2></div>
+    <div class="card"><p>Counts are <span class="illus">illustrative</span> and editable in stage 4; trials accrue in year order and the TSA re-computes as you type.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Screening</h2></div>
+    <div class="card"><p>Two-reviewer screening to RCTs reporting events and totals in both arms.</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Trials — editable</h2><span class="prismaref">2×2 counts, ordered by year</span></div>
+    <div class="card">
+      <p>Each trial contributes events/total in both arms; per-trial log risk ratios are pooled (DerSimonian–Laird), and trials accrue chronologically. A 0.5 correction is applied only when a cell is zero. Edit, add or remove trials.</p>
+      <div class="tablewrap"><table id="cTable">
+        <thead><tr><th>Inc.</th><th>Trial</th><th class="n">Year</th><th class="n">Events T</th><th class="n">N T</th><th class="n">Events C</th><th class="n">N C</th><th></th></tr></thead>
+        <tbody id="cBody"></tbody></table></div>
+      <div class="toolbar"><button class="btn" id="addRow">+ add trial</button><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="tsa">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>TSA graph</h2><span class="prismaref">cumulative Z vs information</span></div>
+    <div class="card">
+      <div class="opts">
+        <label>Two-sided α <select class="ed" id="optAlpha"><option value="0.05" selected>0.05</option><option value="0.01">0.01</option><option value="0.10">0.10</option></select></label>
+        <label>Power <select class="ed" id="optPower"><option value="0.80" selected>80%</option><option value="0.90">90%</option><option value="0.95">95%</option></select></label>
+        <label>Anticipated RRR <input class="ed" id="optRRR" type="number" min="1" max="90" step="1"> %</label>
+      </div>
+      <svg id="tsasvg" viewBox="0 0 760 420" role="group" aria-label="Trial sequential analysis graph"></svg>
+      <p class="note">Green curve = cumulative Z (oriented so benefit is upward). The flaring purple curves are the O'Brien–Fleming boundaries (z = z<sub>α/2</sub>/√t); grey dashes are the naïve ±z<sub>α/2</sub>. The amber vertical is the heterogeneity-adjusted RIS. Crossing the boundary <em>before</em> the RIS = conclusive; touching naïve significance without crossing = not yet.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="ris">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>RIS &amp; verdict</h2></div>
+    <div class="grid2">
+      <div class="card"><h3>Information</h3>
+        <div class="readouts">
+          <div class="ro"><div class="k">Pooled RR</div><div class="v" id="roRR">—</div></div>
+          <div class="ro"><div class="k">Final cumulative Z</div><div class="v" id="roZ">—</div></div>
+          <div class="ro"><div class="k">Accrued N</div><div class="v" id="roN">—</div></div>
+          <div class="ro"><div class="k">RIS (adjusted)</div><div class="v" id="roRIS">—</div></div>
+          <div class="ro"><div class="k">Information fraction</div><div class="v" id="roIF">—</div></div>
+          <div class="ro"><div class="k">Design effect D</div><div class="v" id="roD">—</div></div>
+        </div>
+        <p class="note" id="risNote" style="margin-top:.5rem">—</p></div>
+      <div class="card"><h3>Verdict</h3>
+        <div class="verdict" id="verdict">—</div>
+        <p class="note" style="margin-top:.6rem">Futility (the inner wedge) is <b>not</b> assessed here; per protocol any futility boundary must be <b>non-binding</b>, so its absence never forces a stop. The conclusive call rests on the efficacy boundary alone.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation (RTSA / metcumetaviz)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced the boundaries and RIS, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: the required information size is inflated for heterogeneity by the design effect D = 1 + τ²·(Σv⁻²/(Σv⁻¹)²·k − 1), the monitoring boundary uses the O'Brien–Fleming spending z = z<sub>α/2</sub>/√t, and any futility boundary is non-binding by construction. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> The monitoring boundary controls the false positives that come from repeatedly updating a meta-analysis; the heterogeneity-adjusted required information size grows with τ². Futility must be treated as non-binding. Demo data is illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · type 11 (trial sequential analysis) · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="tsa-demo", LSKEY="e156:"+SLUG;
+let alpha=0.05, power=0.80, RRR=0.25;
+const PUBLISHED=[
+  {trial:'TRIAL-1',year:2014,eT:38,nT:200,eC:44,nC:200,inc:true},
+  {trial:'TRIAL-2',year:2016,eT:36,nT:300,eC:60,nC:300,inc:true},
+  {trial:'TRIAL-3',year:2017,eT:72,nT:420,eC:78,nC:415,inc:true},
+  {trial:'TRIAL-4',year:2019,eT:60,nT:520,eC:95,nC:510,inc:true},
+  {trial:'TRIAL-5',year:2021,eT:92,nT:640,eC:112,nC:635,inc:true}
+];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const erf=x=>{const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;};
+const Phi=z=>0.5*(1+erf(z/Math.SQRT2));
+function qnorm(p){if(p<=0)return -Infinity;if(p>=1)return Infinity;
+  const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];const pl=0.02425;let q,r;
+  if(p<pl){q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  if(p<=1-pl){q=p-0.5;r=q*q;return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+  q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(Array.isArray(s)&&s.length)return s.map(clean);}}catch(e){}return PUBLISHED.map(o=>({...o}));}
+function clean(o){return {trial:String(o.trial||'trial'),year:+o.year||0,eT:Math.max(0,+o.eT||0),nT:Math.max(0,+o.nT||0),eC:Math.max(0,+o.eC||0),nC:Math.max(0,+o.nC||0),inc:o.inc!==false};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(PUBLISHED.map(o=>({...o})));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+const valid=r=>r.nT>0&&r.nC>0&&r.eT>=0&&r.eC>=0&&r.eT<=r.nT&&r.eC<=r.nC;
+// per-trial log risk ratio + variance (0.5 correction only when a cell is zero)
+function logRR(r){let a=r.eT,n1=r.nT,c=r.eC,n2=r.nC;
+  if(a===0||c===0||a===n1||c===n2){a+=0.5;c+=0.5;n1+=1;n2+=1;}
+  const p1=a/n1,p2=c/n2,y=Math.log(p1/p2),v=1/a-1/n1+1/c-1/n2;return {y,v};}
+function poolDL(y,v){const k=y.length;if(!k)return null;const w=v.map(x=>1/x),sw=w.reduce((a,b)=>a+b,0),m=y.reduce((a,e,i)=>a+w[i]*e,0)/sw;
+  const Q=y.reduce((a,e,i)=>a+w[i]*(e-m)**2,0),df=k-1,C=sw-w.reduce((a,e)=>a+e*e,0)/sw,tau2=(df>0&&C>0)?Math.max(0,(Q-df)/C):0;
+  const wr=v.map(x=>1/(x+tau2)),swr=wr.reduce((a,b)=>a+b,0),mr=y.reduce((a,e,i)=>a+wr[i]*e,0)/swr,se=Math.sqrt(1/swr);
+  const I2=(k>1&&Q>df)?Math.max(0,(Q-df)/Q)*100:0;return {m:mr,se,tau2,I2,Q,df,k};}
+function tsa(rows,alpha,power,RRR){
+  const use=rows.filter(r=>r.inc&&valid(r)).slice().sort((a,b)=>a.year-b.year);const k=use.length;if(k<1)return null;
+  const eff=use.map(logRR),y=eff.map(o=>o.y),v=eff.map(o=>o.v);
+  const pooled=poolDL(y,v);
+  // cumulative meta-analysis, benefit oriented upward (Z = -logRR/se)
+  let Ncum=0;const cum=use.map((r,i)=>{Ncum+=r.nT+r.nC;const p=poolDL(y.slice(0,i+1),v.slice(0,i+1));return {N:Ncum,Z:-p.m/p.se,k:i+1};});
+  const totalN=Ncum;
+  // required information size (binary), heterogeneity-adjusted by design effect D
+  const Pc=use.reduce((a,r)=>a+r.eC,0)/use.reduce((a,r)=>a+r.nC,0);
+  const za2=qnorm(1-alpha/2), zb=qnorm(power);
+  const Pe=Math.max(1e-9,Math.min(0.999999999,Pc*(1-RRR)));
+  const denom=(Pc-Pe)*(Pc-Pe);
+  const RISnaive=denom>0?2*((za2+zb)**2*(Pc*(1-Pc)+Pe*(1-Pe))/denom):Infinity;
+  const s1=v.reduce((a,x)=>a+1/x,0),s2=v.reduce((a,x)=>a+1/(x*x),0);
+  const D=1+pooled.tau2*((s2/(s1*s1))*k-1);
+  const RISadj=RISnaive*D;
+  // O'Brien-Fleming boundary as a function of accrued N
+  const zob=N=>{const t=RISadj>0&&isFinite(RISadj)?N/RISadj:1;return t>=1?za2:za2/Math.sqrt(Math.max(t,1e-6));};
+  // first crossing of the efficacy boundary
+  let cross=null;for(const c of cum){if(Math.abs(c.Z)>=zob(c.N)){cross=c;break;}}
+  const finalZ=cum[cum.length-1].Z, infFrac=isFinite(RISadj)&&RISadj>0?totalN/RISadj:Infinity;
+  const reachedRIS=infFrac>=1;
+  let verdict;
+  if(cross)verdict={kind:'firm',dir:cross.Z>0?'benefit':'harm',N:cross.N,kAt:cross.k};
+  else if(reachedRIS)verdict={kind:'reached'};
+  else verdict={kind:'insufficient'};
+  return {use,k,pooled,RR:Math.exp(pooled.m),cum,totalN,Pc,Pe,za2,zb,RISnaive,RISadj,D,zob,cross,finalZ,infFrac,reachedRIS,verdict,alpha,power,RRR};
+}
+function renderTSA(res){
+  const svg=document.getElementById('tsasvg');if(!res){svg.innerHTML='<text x="14" y="24" class="tick">need ≥1 valid trial</text>';return;}
+  const W=760,padL=52,padR=18,padT=16,padB=44,plotW=W-padL-padR;
+  const Xmax=Math.max(res.totalN,isFinite(res.RISadj)?res.RISadj:0)*1.08||1;
+  let zmax=Math.max(4.5,...res.cum.map(c=>Math.abs(c.Z)),res.za2+0.6);zmax=Math.min(8,Math.ceil(zmax*2)/2);
+  const plotH=300,H=padT+plotH+padB,midY=padT+plotH/2;
+  const X=N=>padL+N/Xmax*plotW,Y=z=>midY-Math.max(-zmax,Math.min(zmax,z))/zmax*(plotH/2);
+  let s=`<rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="none" class="axis"/>`;
+  for(let z=-zmax;z<=zmax+1e-9;z+=zmax>=6?2:1){s+=`<line class="grid" x1="${padL}" y1="${Y(z)}" x2="${padL+plotW}" y2="${Y(z)}"/><text class="tick" x="${padL-7}" y="${Y(z)+3}" text-anchor="end">${z}</text>`;}
+  s+=`<line class="zero" x1="${padL}" y1="${Y(0)}" x2="${padL+plotW}" y2="${Y(0)}"/>`;
+  // conventional naive bounds
+  s+=`<line class="conv" x1="${padL}" y1="${Y(res.za2)}" x2="${padL+plotW}" y2="${Y(res.za2)}"/><line class="conv" x1="${padL}" y1="${Y(-res.za2)}" x2="${padL+plotW}" y2="${Y(-res.za2)}"/>`;
+  // O'Brien-Fleming boundaries (sampled)
+  let up='',dn='';for(let i=0;i<=120;i++){const N=Xmax*i/120;if(N<=0)continue;const zb=res.zob(N);up+=(up?'L':'M')+X(N).toFixed(1)+' '+Y(zb).toFixed(1)+' ';dn+=(dn?'L':'M')+X(N).toFixed(1)+' '+Y(-zb).toFixed(1)+' ';}
+  s+=`<path class="obf" d="${up}"/><path class="obf" d="${dn}"/>`;
+  // RIS vertical
+  if(isFinite(res.RISadj)&&res.RISadj<=Xmax){s+=`<line class="ris" x1="${X(res.RISadj)}" y1="${padT}" x2="${X(res.RISadj)}" y2="${padT+plotH}"/><text class="tick" x="${X(res.RISadj)}" y="${padT+12}" text-anchor="middle" fill="var(--warn)">RIS ${Math.round(res.RISadj).toLocaleString()}</text>`;}
+  // cumulative Z curve
+  let line='';res.cum.forEach((c,i)=>{line+=(i===0?'M':'L')+X(c.N).toFixed(1)+' '+Y(c.Z).toFixed(1)+' ';});
+  s+=`<path class="zcurve" d="${line}"/>`;
+  res.cum.forEach(c=>{s+=`<circle class="zpt" cx="${X(c.N)}" cy="${Y(c.Z)}" r="3.5"><title>after ${c.k} trial(s): N=${c.N.toLocaleString()}, Z=${c.Z.toFixed(2)}</title></circle>`;});
+  if(res.cross)s+=`<circle class="cross" cx="${X(res.cross.N)}" cy="${Y(res.cross.Z)}" r="8"/>`;
+  // x ticks
+  for(let t=0;t<=4;t++){const N=Xmax*t/4;s+=`<text class="tick" x="${X(N)}" y="${padT+plotH+18}" text-anchor="middle">${Math.round(N).toLocaleString()}</text>`;}
+  s+=`<text class="axlab" x="${padL+plotW/2}" y="${H-6}" text-anchor="middle">cumulative information (participants)</text>`;
+  s+=`<text class="axlab" x="14" y="${midY}" text-anchor="middle" transform="rotate(-90 14 ${midY})">cumulative Z (benefit ↑)</text>`;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.innerHTML=s;
+}
+function renderReadouts(res){const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};const setH=(id,v)=>{const e=document.getElementById(id);if(e)e.innerHTML=v;};
+  if(!res){['roRR','roZ','roN','roRIS','roIF','roD'].forEach(id=>set(id,'—'));document.getElementById('risNote').textContent='—';document.getElementById('verdict').textContent='—';return;}
+  set('roRR',res.RR.toFixed(3));set('roZ',res.finalZ.toFixed(2));set('roN',res.totalN.toLocaleString());
+  set('roRIS',isFinite(res.RISadj)?Math.round(res.RISadj).toLocaleString():'∞');
+  set('roIF',isFinite(res.infFrac)?(res.infFrac*100).toFixed(0)+'%':'—');set('roD',res.D.toFixed(3));
+  document.getElementById('risNote').innerHTML=`Control event rate ${(res.Pc*100).toFixed(1)}%, anticipated RRR ${(res.RRR*100).toFixed(0)}% → naïve RIS ${isFinite(res.RISnaive)?Math.round(res.RISnaive).toLocaleString():'∞'}; ×D=${res.D.toFixed(2)} (heterogeneity I²=${res.pooled.I2.toFixed(0)}%) → adjusted RIS <b class="num">${isFinite(res.RISadj)?Math.round(res.RISadj).toLocaleString():'∞'}</b>.`;
+  const vd=document.getElementById('verdict');const v=res.verdict;
+  if(v.kind==='firm'){vd.className='verdict firm';vd.innerHTML=`<b>Conclusive evidence of ${v.dir}.</b> The cumulative Z-curve crossed the O'Brien–Fleming boundary after ${v.kAt} trial(s) (N≈${v.N.toLocaleString()}), <b>before</b> the required information size — further trials are unlikely to overturn it.`;}
+  else if(v.kind==='reached'){vd.className='verdict';vd.innerHTML=`<b>Information size reached without crossing the boundary.</b> Interpret by the conventional confidence interval; the effect, if any, is smaller than anticipated.`;}
+  else{vd.className='verdict insuf';vd.innerHTML=`<b>Insufficient information.</b> The Z-curve has not crossed the monitoring boundary and only ${(res.infFrac*100).toFixed(0)}% of the required information size has accrued — a conventionally "significant" result here would be premature.`;}
+}
+function rcode(){const use=model.filter(r=>r.inc&&valid(r)).slice().sort((a,b)=>a.year-b.year);
+  document.getElementById('rcode').textContent=
+`library(RTSA)   # Trial Sequential Analysis in R
+# events/totals per arm, ordered by year
+eT <- c(${use.map(r=>r.eT).join(', ')}); nT <- c(${use.map(r=>r.nT).join(', ')})
+eC <- c(${use.map(r=>r.eC).join(', ')}); nC <- c(${use.map(r=>r.nC).join(', ')})
+RTSA(outcome = "RR", side = 2, alpha = ${alpha}, beta = ${(1-power).toFixed(2)},
+     es_alpha = "esOF",                 # O'Brien-Fleming alpha-spending
+     futility = "non-binding",          # never forces a stop
+     pC = ${use.length?(use.reduce((a,r)=>a+r.eC,0)/use.reduce((a,r)=>a+r.nC,0)).toFixed(3):0.2}, RRR = ${RRR},
+     data = data.frame(eI=eT, nI=nT, eC=eC, nC=nC))   # RIS adjusted for heterogeneity (D^2)`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify({alpha,power,RRR,model},null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[tsa,poolDL,logRR].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function renderTable(){let h='';model.forEach((r,i)=>{const bad=valid(r)?'':' bad';
+  h+=`<tr data-i="${i}"><td><input type="checkbox" class="inc" ${r.inc?'checked':''}></td>`+
+    `<td><input class="ed t" data-k="trial" value="${esc(r.trial)}"></td>`+
+    `<td class="n"><input class="ed" data-k="year" type="number" value="${r.year}" style="width:3.4rem"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="eT" type="number" value="${r.eT}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="nT" type="number" value="${r.nT}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="eC" type="number" value="${r.eC}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="nC" type="number" value="${r.nC}"></td>`+
+    `<td><button class="btn x" data-rm="${i}" title="remove">✕</button></td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=tsa(model,alpha,power,RRR),inc=model.filter(function(r){return r.inc&&valid(r);});
+QA_RENDER([
+['Events ≤ N in both arms', model.some(function(r){return r.inc;})?model.filter(function(r){return r.inc;}).every(function(r){return r.eT<=r.nT&&r.eC<=r.nC;}):'warn'],
+['All arm sizes > 0', model.some(function(r){return r.inc;})?model.filter(function(r){return r.inc;}).every(function(r){return r.nT>0&&r.nC>0;}):'warn'],
+['≥ 1 study (cumulative Z estimable)', (res&&res.k>=1)?true:'warn'],
+['Design effect D ≥ 1', !!(res&&res.D>=1)],
+['Adjusted RIS ≥ naïve RIS', (res&&res.RISadj!=null&&res.RISnaive!=null)?(res.RISadj>=res.RISnaive-1e-6):'warn'],
+['Required information size positive', !!(res&&res.RISadj>0)]
+]);}
+function renderOutputs(){const res=tsa(model,alpha,power,RRR);renderTSA(res);renderReadouts(res);rcode();renderInspect();renderQA();
+  document.getElementById('badgeK').textContent=res?`${res.k} trials`:'—';
+  const v=document.getElementById('verify');
+  if(res){const vk=res.verdict.kind;v.textContent=vk==='firm'?`conclusive ${res.verdict.dir}: Z-curve crossed O'BF boundary ✓`:(vk==='reached'?`RIS reached, boundary not crossed`:`insufficient information (${(res.infFrac*100).toFixed(0)}% of RIS)`);v.style.color=vk==='firm'?'var(--good)':'var(--warn)';}
+  else{v.textContent='need ≥1 valid trial';v.style.color='var(--warn)';}}
+function renderAll(){renderTable();renderOutputs();}
+
+document.getElementById('cBody').addEventListener('input',e=>{const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i;
+  if(e.target.classList.contains('inc')){model[i].inc=e.target.checked;renderTable();renderOutputs();persist();return;}
+  const k=e.target.dataset.k;if(!k)return;model[i][k]=(k==='trial')?e.target.value:(+e.target.value||0);
+  const bad=!valid(model[i]);tr.querySelectorAll('[data-k=eT],[data-k=nT],[data-k=eC],[data-k=nC]').forEach(el=>el.classList.toggle('bad',bad));
+  renderOutputs();persist();});
+document.getElementById('cBody').addEventListener('click',e=>{const rm=e.target.closest('[data-rm]');if(rm){model.splice(+rm.dataset.rm,1);renderAll();persist();}});
+document.getElementById('addRow').addEventListener('click',()=>{model.push(clean({trial:'NEW',year:new Date().getFullYear(),eT:40,nT:400,eC:55,nC:400,inc:true}));renderAll();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=PUBLISHED.map(o=>({...o}));try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+document.getElementById('optAlpha').addEventListener('change',e=>{alpha=+e.target.value||0.05;renderOutputs();});
+document.getElementById('optPower').addEventListener('change',e=>{power=+e.target.value||0.80;renderOutputs();});
+document.getElementById('optRRR').addEventListener('input',e=>{RRR=Math.max(0.01,Math.min(0.9,(+e.target.value||25)/100));renderOutputs();});
+(function(){const e=document.getElementById('optRRR');if(e)e.value=Math.round(RRR*100);})();
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Difference-in-differences — e156 living capsule (causal)</title>
+<meta name="description" content="A self-auditing, editable, living difference-in-differences capsule: the 2x2 group-by-period causal estimate with the parallel-trends counterfactual drawn explicitly.">
+<style>
+  :root{
+    --slug-hue:300;
+    --accent:hsl(var(--slug-hue) 46% 48%); --accent-strong:hsl(var(--slug-hue) 50% 38%); --accent-soft:hsl(var(--slug-hue) 42% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 54% 68%); --accent-strong:hsl(var(--slug-hue) 58% 76%); --accent-soft:hsl(var(--slug-hue) 26% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 54% 68%); --accent-strong:hsl(var(--slug-hue) 58% 76%); --accent-soft:hsl(var(--slug-hue) 26% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.9rem}
+  th,td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .ed{width:4.5rem;font-family:var(--mono);font-size:.9rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.2rem .35rem;background:var(--paper);color:var(--ink)}
+  .ed:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .axis{stroke:var(--line)} .grid{stroke:var(--line);opacity:.5}
+  .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .axlab{font-size:12px;fill:var(--ink-soft)}
+  .tline{stroke:var(--accent-strong);stroke-width:2.5;fill:none} .cline{stroke:var(--ctrl);stroke-width:2;fill:none} .cfline{stroke:var(--accent);stroke-width:1.6;stroke-dasharray:6 4;fill:none}
+  .tpt{fill:var(--accent-strong)} .cpt{fill:var(--ctrl)} .didarrow{stroke:var(--bad);stroke-width:2.5} .whisk{stroke:var(--ink-soft);stroke-width:1.1}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.3rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.4rem;margin-top:.6rem}
+  .verdict{font-family:var(--serif);font-size:1.05rem;padding:.5rem .8rem;border-radius:8px;border-left:4px solid var(--accent)}
+  .verdict.good{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--card))} .verdict.warn{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--card))}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>2×2 DiD</span>
+  <span class="chk"><span class="dot ok"></span>counterfactual drawn</span>
+  <span class="chk"><span class="dot ok"></span>parallel-trends caveat</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">differencing…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Design</a></li>
+  <li><a href="#screening">3 · Assumption</a></li><li><a href="#extraction">4 · Cell means (editable)</a></li>
+  <li><a href="#did">5 · DiD estimate</a></li><li><a href="#interp">6 · Interpretation</a></li>
+  <li><a href="#xval">7 · R</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · causal · difference-in-differences</div>
+  <h1>What the trend would have been</h1>
+  <p class="standfirst">A policy hits one group and not another. Difference-in-differences subtracts the control group's before-after change from the treated group's — using the control as the counterfactual trend the treated group would have followed anyway.</p>
+  <p style="margin-top:.7rem"><span class="badge">Causal · DiD</span> <span class="badge" id="badgeDiD">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>This estimates a policy's effect by comparing the change in a treated group with the change in an untreated one, assuming both would otherwise have moved in parallel. The dashed line is that assumed 'what would have happened'.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Question</h3>
+      <div class="pico"><b>Design</b><span>Two groups (treated, control) observed before and after an intervention.</span>
+        <b>Estimator</b><span>DiD = (treated<sub>post</sub> − treated<sub>pre</sub>) − (control<sub>post</sub> − control<sub>pre</sub>).</span>
+        <b>Estimand</b><span>Average treatment effect on the treated, under parallel trends.</span>
+        <b>Key assumption</b><span>Absent the intervention, the two groups would have moved in parallel.</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Design</h2></div>
+    <div class="card"><p>Cell means are <span class="illus">illustrative</span> and editable in stage 4; the estimate, counterfactual and plot re-run as you type. Enter each group×period mean and its standard error.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Assumption</h2></div>
+    <div class="card"><p>The parallel-trends assumption is untestable with two periods alone. With ≥2 pre-periods, an event study checks whether the groups tracked together before the intervention; this capsule uses the canonical 2×2 and flags the assumption explicitly.</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Cell means — editable</h2><span class="prismaref">mean ± SE per group × period</span></div>
+    <div class="card">
+      <div class="tablewrap"><table>
+        <thead><tr><th></th><th class="n">Pre (mean)</th><th class="n">Pre SE</th><th class="n">Post (mean)</th><th class="n">Post SE</th><th class="n">Change</th></tr></thead>
+        <tbody>
+          <tr><td><b>Treated</b></td><td class="n"><input class="ed" id="tpre" type="number" step="0.1"></td><td class="n"><input class="ed" id="tpreSE" type="number" step="0.1"></td><td class="n"><input class="ed" id="tpost" type="number" step="0.1"></td><td class="n"><input class="ed" id="tpostSE" type="number" step="0.1"></td><td class="n" id="tChange">—</td></tr>
+          <tr><td><b>Control</b></td><td class="n"><input class="ed" id="cpre" type="number" step="0.1"></td><td class="n"><input class="ed" id="cpreSE" type="number" step="0.1"></td><td class="n"><input class="ed" id="cpost" type="number" step="0.1"></td><td class="n"><input class="ed" id="cpostSE" type="number" step="0.1"></td><td class="n" id="cChange">—</td></tr>
+        </tbody></table></div>
+      <div class="toolbar"><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="did">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>DiD estimate</h2><span class="prismaref">dashed = counterfactual · red = effect</span></div>
+    <div class="grid2">
+      <div class="card"><svg id="plot" viewBox="0 0 460 300" role="group" aria-label="DiD plot"></svg></div>
+      <div class="card"><h3>Effect</h3>
+        <div class="readouts">
+          <div class="ro"><div class="k">DiD estimate</div><div class="v" id="roDiD">—</div></div>
+          <div class="ro"><div class="k">95% CI</div><div class="v" id="roCI">—</div></div>
+          <div class="ro"><div class="k">p-value</div><div class="v" id="roP">—</div></div>
+          <div class="ro"><div class="k">Treated Δ</div><div class="v" id="roTd">—</div></div>
+          <div class="ro"><div class="k">Control Δ</div><div class="v" id="roCd">—</div></div>
+          <div class="ro"><div class="k">Counterfactual post</div><div class="v" id="roCF">—</div></div>
+        </div>
+        <p class="note" id="didNote" style="margin-top:.5rem">—</p></div>
+    </div>
+  </section>
+
+  <section class="stage" id="interp">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>Interpretation</h2></div>
+    <div class="card"><div class="verdict" id="verdict">—</div>
+      <p class="note" style="margin-top:.6rem">The DiD effect is the vertical gap between the treated group's observed post value and its counterfactual (pre value plus the control group's change). It is only causal if parallel trends held — verify with pre-period data, not just this 2×2. Standard errors here assume independent group-period means; clustered/serial-correlation-robust SEs are usually larger in practice.</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced the DiD estimate, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: the counterfactual is drawn explicitly (the dashed line = treated pre + control change), so the DiD effect is visibly the gap to the observed treated post value, and the untestable parallel-trends assumption is stated rather than buried. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> Difference-in-differences rests on the parallel-trends assumption: absent the intervention, treated and control groups would have moved together. It cannot be proven, only supported by matching pre-period trends — inspect them before trusting the estimate. Demo data are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · causal · difference-in-differences · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="difference-in-differences-demo", LSKEY="e156:"+SLUG, Z=1.959963984540054;
+const DEFAULT={tpre:20,tpreSE:1.0,tpost:32,tpostSE:1.0,cpre:18,cpreSE:1.0,cpost:24,cpostSE:1.0};
+const erf=x=>{const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;};
+const Phi=z=>0.5*(1+erf(z/Math.SQRT2));
+const pz=z=>2*(1-Phi(Math.abs(z)));
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(s&&typeof s==='object')return clean(s);}}catch(e){}return {...DEFAULT};}
+function clean(o){const r={};Object.keys(DEFAULT).forEach(k=>r[k]=+o[k]||0);return r;}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(DEFAULT);document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+// 2x2 difference-in-differences
+function did(m){
+  const tD=m.tpost-m.tpre,cD=m.cpost-m.cpre,est=tD-cD;
+  const se=Math.sqrt(m.tpreSE**2+m.tpostSE**2+m.cpreSE**2+m.cpostSE**2);
+  const z=se>0?est/se:0,p=se>0?pz(z):1;const cf=m.tpre+cD;   // counterfactual treated post
+  return {est,se,z,p,lo:est-Z*se,hi:est+Z*se,tD,cD,cf};
+}
+const fmtP=p=>p<0.0001?'<0.0001':p.toFixed(4);
+function renderPlot(res,m){
+  const svg=document.getElementById('plot');
+  const W=460,H=300,padL=46,padR=70,padT=18,padB=40,plotW=W-padL-padR,plotH=H-padT-padB;
+  const vals=[m.tpre,m.tpost,m.cpre,m.cpost,res.cf];let lo=Math.min(...vals),hi=Math.max(...vals);const pd=(hi-lo)*0.15||1;lo-=pd;hi+=pd;
+  const X=t=>padL+t*plotW,Y=v=>padT+plotH-(v-lo)/(hi-lo)*plotH;
+  let s=`<rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="none" class="axis"/>`;
+  ['Pre','Post'].forEach((l,i)=>s+=`<text class="tick" x="${X(i)}" y="${H-padB+18}" text-anchor="middle">${l}</text>`);
+  for(let g=0;g<=4;g++){const v=lo+(hi-lo)*g/4;s+=`<text class="tick" x="${padL-7}" y="${Y(v)+3}" text-anchor="end">${v.toFixed(0)}</text>`;}
+  const wsk=(x,v,se)=>`<line class="whisk" x1="${x}" y1="${Y(v-Z*se)}" x2="${x}" y2="${Y(v+Z*se)}"/>`;
+  // control line
+  s+=`<line class="cline" x1="${X(0)}" y1="${Y(m.cpre)}" x2="${X(1)}" y2="${Y(m.cpost)}"/>`+wsk(X(0),m.cpre,m.cpreSE)+wsk(X(1),m.cpost,m.cpostSE);
+  s+=`<circle class="cpt" cx="${X(0)}" cy="${Y(m.cpre)}" r="4"/><circle class="cpt" cx="${X(1)}" cy="${Y(m.cpost)}" r="4"/>`;
+  // treated line
+  s+=`<line class="tline" x1="${X(0)}" y1="${Y(m.tpre)}" x2="${X(1)}" y2="${Y(m.tpost)}"/>`+wsk(X(0),m.tpre,m.tpreSE)+wsk(X(1),m.tpost,m.tpostSE);
+  s+=`<circle class="tpt" cx="${X(0)}" cy="${Y(m.tpre)}" r="4.5"/><circle class="tpt" cx="${X(1)}" cy="${Y(m.tpost)}" r="4.5"/>`;
+  // counterfactual treated line (parallel to control)
+  s+=`<line class="cfline" x1="${X(0)}" y1="${Y(m.tpre)}" x2="${X(1)}" y2="${Y(res.cf)}"/><circle cx="${X(1)}" cy="${Y(res.cf)}" r="3.5" fill="none" stroke="var(--accent)" stroke-dasharray="2 2"/>`;
+  // DiD gap arrow at post
+  s+=`<line class="didarrow" x1="${X(1)+8}" y1="${Y(res.cf)}" x2="${X(1)+8}" y2="${Y(m.tpost)}"/>`;
+  s+=`<text class="tick" x="${X(1)+14}" y="${(Y(res.cf)+Y(m.tpost))/2+3}" fill="var(--bad)">DiD ${res.est.toFixed(1)}</text>`;
+  // labels
+  s+=`<text class="tick" x="${X(1)+10}" y="${Y(m.tpost)+3}" fill="var(--accent-strong)">treated</text>`;
+  s+=`<text class="tick" x="${X(1)+10}" y="${Y(m.cpost)+3}" fill="var(--ink-soft)">control</text>`;
+  svg.innerHTML=s;
+}
+function renderReadouts(res,m){const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};const setH=(id,v)=>{const e=document.getElementById(id);if(e)e.innerHTML=v;};
+  document.getElementById('tChange').textContent=(res.tD>=0?'+':'')+res.tD.toFixed(1);document.getElementById('cChange').textContent=(res.cD>=0?'+':'')+res.cD.toFixed(1);
+  set('roDiD',(res.est>=0?'+':'')+res.est.toFixed(2));setH('roCI',`${res.lo.toFixed(2)} <small>to</small> ${res.hi.toFixed(2)}`);set('roP',fmtP(res.p));
+  set('roTd',(res.tD>=0?'+':'')+res.tD.toFixed(1));set('roCd',(res.cD>=0?'+':'')+res.cD.toFixed(1));set('roCF',res.cf.toFixed(1));
+  const sig=res.p<0.05;
+  document.getElementById('didNote').innerHTML=`Treated changed ${res.tD.toFixed(1)}, control ${res.cD.toFixed(1)}; the difference — the causal effect under parallel trends — is <b class="num">${res.est.toFixed(2)}</b> (95% CI ${res.lo.toFixed(2)}–${res.hi.toFixed(2)}).`;
+  const vd=document.getElementById('verdict');vd.className='verdict '+(sig?'good':'warn');
+  vd.innerHTML=sig?`<b>Effect of ${res.est.toFixed(2)} (${fmtP(res.p)}).</b> The treated group diverged from its counterfactual by ${res.est.toFixed(2)} units — causal if parallel trends held.`
+    :`<b>No significant effect (${res.est.toFixed(2)}, ${fmtP(res.p)}).</b> The treated group's change is within sampling error of the control group's.`;
+}
+function rcode(){
+  document.getElementById('rcode').textContent=
+`# 2x2 difference-in-differences (means form)
+did <- (${model.tpost} - ${model.tpre}) - (${model.cpost} - ${model.cpre})   # = ${(((model.tpost-model.tpre)-(model.cpost-model.cpre))).toFixed(2)}
+se  <- sqrt(${model.tpreSE}^2 + ${model.tpostSE}^2 + ${model.cpreSE}^2 + ${model.cpostSE}^2)
+c(did, se, p = 2*pnorm(-abs(did/se)))
+# regression form on micro-data:
+# lm(y ~ treated * post)   # the interaction coefficient IS the DiD
+# use clustered SEs (e.g. sandwich::vcovCL) in practice`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=did.toString();cd.dataset.done='1';}}
+function syncInputs(){Object.keys(DEFAULT).forEach(k=>{const el=document.getElementById(k);if(el)el.value=model[k];});}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=did(model);
+QA_RENDER([
+['Treatment-effect estimate is finite', !!(res&&isFinite(res.est))],
+['Standard error > 0', !!(res&&res.se>0)],
+['Confidence bounds are finite', !!(res&&isFinite(res.lo)&&isFinite(res.hi))],
+['p-value in [0,1]', !!(res&&res.p>=0&&res.p<=1)],
+['DiD recomputed from raw means matches estimate', !!(res&&Math.abs((model.tpost-model.tpre)-(model.cpost-model.cpre)-res.est)<1e-9)]
+]);}
+function renderOutputs(){const res=did(model);renderPlot(res,model);renderReadouts(res,model);rcode();renderInspect();renderQA();
+  document.getElementById('badgeDiD').textContent=`DiD ${res.est>=0?'+':''}${res.est.toFixed(1)}`;
+  const v=document.getElementById('verify');v.textContent=`DiD ${res.est.toFixed(2)} (95% CI ${res.lo.toFixed(2)}–${res.hi.toFixed(2)}, ${fmtP(res.p)}) ✓`;v.style.color=res.p<0.05?'var(--good)':'var(--warn)';}
+function renderAll(){syncInputs();renderOutputs();}
+
+document.getElementById('extraction').addEventListener('input',e=>{const id=e.target.id;if(!id||!(id in DEFAULT))return;model[id]=+e.target.value||0;renderOutputs();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model={...DEFAULT};try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

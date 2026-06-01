@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meta-regression — e156 living capsule (Type 8)</title>
+<meta name="description" content="A self-auditing, editable, living meta-regression capsule: random-effects regression of effect on a continuous moderator, bubble plot with fitted line and CI band, residual heterogeneity and R-squared.">
+<style>
+  :root{
+    --slug-hue:28;
+    --accent:hsl(var(--slug-hue) 52% 50%); --accent-strong:hsl(var(--slug-hue) 56% 40%); --accent-soft:hsl(var(--slug-hue) 48% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:24rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .ed{width:4rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed.t{width:6.5rem;text-align:left} .ed:focus{outline:2px solid var(--accent);outline-offset:1px} .ed.bad{border-color:var(--bad)}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.x{border:none;background:transparent;color:var(--ink-soft);padding:.2rem .4rem;font-size:1rem} .btn.x:hover{color:var(--bad)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .axis{stroke:var(--line)} .grid{stroke:var(--line);opacity:.5} .nullline{stroke:var(--ink-soft);stroke-width:1.25;stroke-dasharray:4 3}
+  .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .axlab{font-size:12px;fill:var(--ink-soft)}
+  .bubble{fill:var(--accent);opacity:.45;stroke:var(--accent-strong);stroke-width:1} .fitline{stroke:var(--accent-strong);stroke-width:2.5;fill:none} .ciband{fill:var(--accent);opacity:.14}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.2rem;margin-top:.6rem}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>log-scale pooling</span>
+  <span class="chk"><span class="dot" id="dotK"></span>k ≥ 10 for moderator</span>
+  <span class="chk"><span class="dot ok"></span>R² + residual τ² shown</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">fitting…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Search</a></li>
+  <li><a href="#screening">3 · Screening</a></li><li><a href="#extraction">4 · Extraction (editable)</a></li>
+  <li><a href="#reg">5 · Meta-regression</a></li><li><a href="#resid">6 · Residual τ² &amp; R²</a></li>
+  <li><a href="#xval">7 · R (metafor)</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · meta-regression</div>
+  <h1>Does the effect depend on something?</h1>
+  <p class="standfirst">A pooled estimate assumes one true effect; meta-regression asks whether it slides with a study-level moderator — baseline risk, dose, year — and reports how much of the heterogeneity that moderator explains.</p>
+  <p style="margin-top:.7rem"><span class="badge">Type 8 · Meta-regression</span> <span class="badge" id="badgeK">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>This asks whether a study-level factor — baseline risk, dose, year — explains why trials disagree, by fitting a line through their effects and seeing how much of the scatter it accounts for.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Review question — PICO + moderator</h3>
+      <div class="pico"><b>Population</b><span>Randomised trials of a binary outcome (illustrative).</span>
+        <b>Intervention</b><span>Active treatment vs control, summarised as an odds ratio.</span>
+        <b>Moderator</b><span>Baseline event risk (%) — a pre-specified study-level covariate.</span>
+        <b>Primary estimand</b><span>The meta-regression slope β₁ (change in log-OR per unit moderator), with its test.</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Search</h2></div>
+    <div class="card"><p>Registry + database search, de-duplicated. Effects and the moderator are <span class="illus">illustrative</span> and editable in stage 4; the regression re-runs as you type.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Screening</h2></div>
+    <div class="card"><p>Two-reviewer screening to RCTs reporting an OR with 95% CI and the pre-specified moderator.</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Extraction — editable</h2><span class="prismaref">OR + 95% CI + moderator</span></div>
+    <div class="card">
+      <p>Each trial contributes an OR with its 95% CI (pooled on the log scale) and a moderator value. The model is a random-effects meta-regression: yᵢ = β₀ + β₁·xᵢ + uᵢ + εᵢ, with residual between-study variance τ²_res estimated by method of moments. Edit, add or remove trials.</p>
+      <div class="tablewrap"><table id="cTable">
+        <thead><tr><th>Inc.</th><th>Trial</th><th class="n">Year</th><th class="n">OR</th><th class="n">LCI</th><th class="n">UCI</th><th class="n">Moderator (risk %)</th><th></th></tr></thead>
+        <tbody id="cBody"></tbody></table></div>
+      <div class="toolbar"><button class="btn" id="addRow">+ add trial</button><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="reg">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Meta-regression</h2><span class="prismaref">bubble ∝ weight · band = 95% CI of the line</span></div>
+    <div class="grid2">
+      <div class="card"><div style="font-size:.8rem;color:var(--ink-soft);margin-bottom:.3rem">Bubble plot — OR (log axis) vs moderator</div>
+        <svg class="bubble" id="bubble" viewBox="0 0 720 380" role="group" aria-label="Bubble plot of effect vs moderator"></svg></div>
+      <div class="card"><h3>The moderator slope</h3>
+        <div class="readouts">
+          <div class="ro"><div class="k">Slope β₁ (per unit)</div><div class="v" id="roB1">—</div></div>
+          <div class="ro"><div class="k">OR ratio per +10 units</div><div class="v" id="roOR10">—</div></div>
+          <div class="ro"><div class="k">Test of moderator</div><div class="v" id="roP">—</div></div>
+          <div class="ro"><div class="k">Intercept OR (x=0)</div><div class="v" id="roB0">—</div></div>
+        </div>
+        <p class="note" id="slopeNote">—</p></div>
+    </div>
+  </section>
+
+  <section class="stage" id="resid">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>Residual heterogeneity &amp; R²</h2></div>
+    <div class="card">
+      <div class="readouts">
+        <div class="ro"><div class="k">τ² (no moderator)</div><div class="v" id="roTau0">—</div></div>
+        <div class="ro"><div class="k">τ²_res (with moderator)</div><div class="v" id="roTauR">—</div></div>
+        <div class="ro"><div class="k">R² (variance explained)</div><div class="v" id="roR2">—</div></div>
+        <div class="ro"><div class="k">I²_res</div><div class="v" id="roI2">—</div></div>
+      </div>
+      <p class="note" id="residNote" style="margin-top:.6rem">—</p>
+      <p class="note" style="margin-top:.4rem">A high R² means the moderator accounts for much of the between-study variance — but with few trials this is fragile and prone to <b>ecological bias</b> (a study-level association need not hold within patients). Cochrane advises ≥10 studies per moderator; the ribbon flags when you have fewer.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation (metafor)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced every estimate, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: pooling and regression are on the log scale and back-transformed, residual τ² and R² are always shown beside the slope (a slope without them invites over-interpretation), and the ribbon warns when fewer than 10 trials support the moderator. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> A non-significant moderator slope does not prove there is no effect-modification — power is low with few studies. Beware aggregation bias: a study-level association can differ from the patient-level one. Demo data is illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · type 8 (meta-regression) · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="metareg-baseline-risk-demo", LSKEY="e156:"+SLUG, Z=1.959963984540054;
+const PUBLISHED=[
+  {trial:'TRIAL-1',year:2015,or:0.94,lci:0.85,uci:1.04,mod:8,inc:true},
+  {trial:'TRIAL-2',year:2016,or:0.99,lci:0.90,uci:1.09,mod:12,inc:true},
+  {trial:'TRIAL-3',year:2017,or:0.82,lci:0.74,uci:0.90,mod:16,inc:true},
+  {trial:'TRIAL-4',year:2018,or:0.88,lci:0.80,uci:0.97,mod:20,inc:true},
+  {trial:'TRIAL-5',year:2019,or:0.63,lci:0.57,uci:0.70,mod:25,inc:true},
+  {trial:'TRIAL-6',year:2020,or:0.68,lci:0.62,uci:0.75,mod:30,inc:true},
+  {trial:'TRIAL-7',year:2021,or:0.61,lci:0.55,uci:0.67,mod:35,inc:true}
+];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const erf=x=>{const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;};
+const Phi=z=>0.5*(1+erf(z/Math.SQRT2));
+const chisq1p=z2=>2*(1-Phi(Math.sqrt(Math.max(0,z2))));   // p-value for a 1-df Wald chi-square
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(Array.isArray(s)&&s.length)return s.map(clean);}}catch(e){}return PUBLISHED.map(o=>({...o}));}
+function clean(o){return {trial:String(o.trial||'trial'),year:+o.year||0,or:+o.or||0,lci:+o.lci||0,uci:+o.uci||0,mod:+o.mod||0,inc:o.inc!==false};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(PUBLISHED.map(o=>({...o})));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+const valid=r=>r.or>0&&r.lci>0&&r.uci>0&&r.uci>r.lci&&isFinite(r.mod);
+const toYV=r=>{const y=Math.log(r.or),se=(Math.log(r.uci)-Math.log(r.lci))/(2*Z);return {y,v:se*se};};
+// DerSimonian-Laird tau^2 for an intercept-only (no-moderator) random-effects model
+function tauDL(y,v){const k=y.length;if(k<2)return 0;const w=v.map(x=>1/x),sw=w.reduce((a,b)=>a+b,0);
+  const m=y.reduce((a,e,i)=>a+w[i]*e,0)/sw,Q=y.reduce((a,e,i)=>a+w[i]*(e-m)**2,0);
+  const C=sw-w.reduce((a,e)=>a+e*e,0)/sw;return C>0?Math.max(0,(Q-(k-1))/C):0;}
+// random-effects meta-regression on a single continuous moderator (method-of-moments tau^2_res)
+function metareg(rows){
+  const use=rows.filter(r=>r.inc&&valid(r));const k=use.length;if(k<2)return null;
+  const yv=use.map(toYV),y=yv.map(o=>o.y),v=yv.map(o=>o.v),x=use.map(r=>r.mod);
+  const p=2;                                  // intercept + slope
+  // weighted LS with fixed-effect weights to get Q_e and the MoM trace term
+  const fit=(w)=>{const Sw=w.reduce((a,b)=>a+b,0),Swx=w.reduce((a,b,i)=>a+b*x[i],0),Swxx=w.reduce((a,b,i)=>a+b*x[i]*x[i],0),
+    Swy=w.reduce((a,b,i)=>a+b*y[i],0),Swxy=w.reduce((a,b,i)=>a+b*x[i]*y[i],0),D=Sw*Swxx-Swx*Swx;
+    const b1=(Sw*Swxy-Swx*Swy)/D,b0=(Swy-b1*Swx)/Sw;
+    return {b0,b1,Sw,Swx,Swxx,D};};
+  const w0=v.map(x=>1/x),f0=fit(w0);
+  const Qe=y.reduce((a,e,i)=>a+w0[i]*(e-(f0.b0+f0.b1*x[i]))**2,0);
+  // trace[ (X'W0X)^-1 (X'W0^2X) ] for the MoM estimator
+  const Sww=w0.reduce((a,b)=>a+b*b,0),Swwx=w0.reduce((a,b,i)=>a+b*b*x[i],0),Swwxx=w0.reduce((a,b,i)=>a+b*b*x[i]*x[i],0);
+  const tr=(f0.Swxx*Sww-2*f0.Swx*Swwx+f0.Sw*Swwxx)/f0.D;
+  const cMoM=f0.Sw-tr;
+  const tau2res=(k>p&&cMoM>0)?Math.max(0,(Qe-(k-p))/cMoM):0;
+  // refit with random-effects weights 1/(v+tau2res); vcov = (X'WX)^-1
+  const wr=v.map(x=>1/(x+tau2res)),fr=fit(wr);
+  const varB1=fr.Sw/fr.D,varB0=fr.Swxx/fr.D,covB=-fr.Swx/fr.D,seB1=Math.sqrt(varB1);
+  const zB1=fr.b1/seB1,QM=zB1*zB1,pQM=chisq1p(QM);
+  const tau2tot=tauDL(y,v);
+  const R2=tau2tot>0?Math.max(0,Math.min(1,1-tau2res/tau2tot)):null;
+  const I2res=Qe>(k-p)?Math.max(0,(Qe-(k-p))/Qe)*100:0;
+  const predY=xx=>fr.b0+fr.b1*xx, predSE=xx=>Math.sqrt(Math.max(0,varB0+2*xx*covB+xx*xx*varB1));
+  return {use,k,x,y,v,wr,b0:fr.b0,b1:fr.b1,seB1,zB1,QM,pQM,tau2res,tau2tot,R2,I2res,Qe,predY,predSE,
+    xmin:Math.min(...x),xmax:Math.max(...x)};
+}
+const eOR=x=>Math.exp(x);
+function renderBubble(res){
+  const svg=document.getElementById('bubble');if(!res){svg.innerHTML='<text x="14" y="24" class="tick">need ≥2 valid trials</text>';return;}
+  const W=720,H=380,padL=64,padR=18,padT=18,padB=46,plotW=W-padL-padR,plotH=H-padT-padB;
+  const xr=res.xmax-res.xmin||1,xLo=res.xmin-xr*0.1,xHi=res.xmax+xr*0.1;
+  const ys=res.use.map((r,i)=>res.y[i]);
+  let yLoV=Math.min(...ys,res.predY(xLo)-Z*res.predSE(xLo),res.predY(xHi)-Z*res.predSE(xHi));
+  let yHiV=Math.max(...ys,res.predY(xLo)+Z*res.predSE(xLo),res.predY(xHi)+Z*res.predSE(xHi));
+  const ypad=(yHiV-yLoV)*0.1||0.2;yLoV-=ypad;yHiV+=ypad;
+  const X=x=>padL+(x-xLo)/(xHi-xLo)*plotW,Y=y=>padT+(yHiV-y)/(yHiV-yLoV)*plotH;
+  let s=`<rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="none" class="axis"/>`;
+  // y grid at OR ticks
+  const orTicks=[0.5,0.6,0.7,0.8,0.9,1,1.1,1.25].filter(t=>Math.log(t)>=yLoV&&Math.log(t)<=yHiV);
+  orTicks.forEach(t=>{const yy=Y(Math.log(t));s+=`<line class="grid" x1="${padL}" y1="${yy}" x2="${padL+plotW}" y2="${yy}"/><text class="tick" x="${padL-8}" y="${yy+3}" text-anchor="end">${t}</text>`;});
+  if(Math.log(1)>=yLoV&&Math.log(1)<=yHiV){const y1=Y(0);s+=`<line class="nullline" x1="${padL}" y1="${y1}" x2="${padL+plotW}" y2="${y1}"/>`;}
+  // x ticks
+  for(let t=0;t<=4;t++){const xx=xLo+(xHi-xLo)*t/4;s+=`<text class="tick" x="${X(xx)}" y="${H-padB+18}" text-anchor="middle">${xx.toFixed(0)}</text>`;}
+  // CI band + fit line
+  let band='',top='',bot='',line='';const N=40;
+  for(let i=0;i<=N;i++){const xx=xLo+(xHi-xLo)*i/N,yy=res.predY(xx),se=res.predSE(xx);top+=`${X(xx).toFixed(1)},${Y(yy+Z*se).toFixed(1)} `;line+=(i===0?'M':'L')+X(xx).toFixed(1)+' '+Y(yy).toFixed(1)+' ';}
+  for(let i=N;i>=0;i--){const xx=xLo+(xHi-xLo)*i/N,yy=res.predY(xx),se=res.predSE(xx);bot+=`${X(xx).toFixed(1)},${Y(yy-Z*se).toFixed(1)} `;}
+  s+=`<polygon class="ciband" points="${top}${bot}"/><path class="fitline" d="${line}"/>`;
+  // bubbles sized by RE weight
+  const maxW=Math.max(...res.wr,1e-9);
+  res.use.forEach((r,i)=>{const rad=5+Math.sqrt(res.wr[i]/maxW)*16;
+    s+=`<circle class="bubble" cx="${X(r.mod)}" cy="${Y(res.y[i])}" r="${rad.toFixed(1)}"><title>${esc(r.trial)}: OR ${r.or}, x=${r.mod}</title></circle>`;});
+  s+=`<text class="axlab" x="${padL+plotW/2}" y="${H-6}" text-anchor="middle">moderator (baseline risk %)</text>`;
+  s+=`<text class="axlab" x="16" y="${padT+plotH/2}" text-anchor="middle" transform="rotate(-90 16 ${padT+plotH/2})">odds ratio (log scale)</text>`;
+  svg.innerHTML=s;
+}
+function renderReadouts(res){const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};const setH=(id,v)=>{const e=document.getElementById(id);if(e)e.innerHTML=v;};
+  if(!res){['roB1','roOR10','roP','roB0','roTau0','roTauR','roR2','roI2'].forEach(id=>set(id,'—'));set('slopeNote','—');set('residNote','—');return;}
+  set('roB1',res.b1.toFixed(4));set('roOR10',Math.exp(res.b1*10).toFixed(3));
+  set('roP',res.pQM<0.001?'p < 0.001':'p = '+res.pQM.toFixed(3));set('roB0',eOR(res.b0).toFixed(2));
+  set('roTau0',res.tau2tot.toFixed(4));set('roTauR',res.tau2res.toFixed(4));
+  set('roR2',res.R2==null?'—':(res.R2*100).toFixed(0)+'%');set('roI2',res.I2res.toFixed(0)+'%');
+  const dir=res.b1<0?'falls':'rises',sig=res.pQM<0.05;
+  document.getElementById('slopeNote').innerHTML=`Per +10 units of the moderator, the odds ratio is multiplied by <b class="num">${Math.exp(res.b1*10).toFixed(3)}</b> — the effect ${dir} as the moderator increases. The moderator test is <b>${sig?'significant':'not significant'}</b> (${res.pQM<0.001?'p<0.001':'p='+res.pQM.toFixed(3)}, ${res.k} trials). ${res.pQM>=0.05?'<span style="color:var(--warn)">A non-significant slope does not establish no effect-modification — power is low with few studies.</span>':''}`;
+  document.getElementById('residNote').innerHTML=res.R2==null
+    ? 'No between-study variance to explain (τ²=0 without the moderator), so R² is undefined.'
+    : `The moderator explains about <b class="num">${(res.R2*100).toFixed(0)}%</b> of the between-study variance; residual τ² = <b class="num">${res.tau2res.toFixed(4)}</b> remains (I²_res ≈ ${res.I2res.toFixed(0)}%).`;
+  document.getElementById('dotK').className='dot '+(res.k>=10?'ok':'warn');
+}
+function rcode(){const use=model.filter(r=>r.inc&&valid(r));
+  const yi=use.map(r=>toYV(r).y.toFixed(4)).join(', '),vi=use.map(r=>toYV(r).v.toFixed(5)).join(', '),x=use.map(r=>r.mod).join(', ');
+  document.getElementById('rcode').textContent=
+`library(metafor)
+yi  <- c(${yi})   # log-OR
+vi  <- c(${vi})   # variances
+mod <- c(${x})
+res <- rma(yi, vi, mods = ~ mod, method = "REML")   # random-effects meta-regression
+summary(res)        # slope (b), QM test, tau^2 residual, R^2
+regplot(res, mod = "mod")                            # bubble plot + fitted line
+# note: this capsule uses method-of-moments tau^2; REML may differ slightly with small k`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[metareg,tauDL].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function renderTable(){let h='';model.forEach((r,i)=>{const bad=valid(r)?'':' bad';
+  h+=`<tr data-i="${i}"><td><input type="checkbox" class="inc" ${r.inc?'checked':''}></td>`+
+    `<td><input class="ed t" data-k="trial" value="${esc(r.trial)}"></td>`+
+    `<td class="n"><input class="ed" data-k="year" type="number" value="${r.year}" style="width:3.4rem"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="or" type="number" step="0.01" value="${r.or}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="lci" type="number" step="0.01" value="${r.lci}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="uci" type="number" step="0.01" value="${r.uci}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="mod" type="number" step="0.1" value="${r.mod}"></td>`+
+    `<td><button class="btn x" data-rm="${i}" title="remove">✕</button></td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=metareg(model),inc=model.filter(function(r){return r.inc&&valid(r);});
+QA_RENDER([
+['Every study OR > 0 with LCI ≤ OR ≤ UCI', inc.every(function(r){return r.or>0&&r.lci<=r.or&&r.or<=r.uci;})],
+['Moderator value is finite', inc.every(function(r){return isFinite(r.mod);})],
+['≥ 2 studies (regression estimable)', (res&&res.k>=2)?true:'warn'],
+['Residual τ² ≤ total τ² (moderator cannot add heterogeneity)', !!(res&&res.tau2res>=0&&res.tau2res<=res.tau2tot+1e-9)],
+['R² within [0,1]', (res&&res.R2!=null)?(res.R2>=0&&res.R2<=1):'warn'],
+['Slope standard error > 0', !!(res&&res.seB1>0)],
+['Residual I² within [0,100]', (res&&res.I2res!=null)?(res.I2res>=0&&res.I2res<=100):'warn']
+]);}
+function renderOutputs(){const res=metareg(model);renderBubble(res);renderReadouts(res);rcode();renderInspect();renderQA();
+  document.getElementById('badgeK').textContent=res?`${res.k} trials`:'—';
+  const v=document.getElementById('verify');if(res){v.textContent=`slope β₁ ${res.b1.toFixed(3)} (OR×${Math.exp(res.b1*10).toFixed(2)}/10u), ${res.pQM<0.001?'p<0.001':'p='+res.pQM.toFixed(3)}, R²=${res.R2==null?'—':(res.R2*100).toFixed(0)+'%'} ✓`;v.style.color='var(--good)';}else{v.textContent='need ≥2 valid trials';v.style.color='var(--warn)';}}
+function renderAll(){renderTable();renderOutputs();}
+
+document.getElementById('cBody').addEventListener('input',e=>{const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i;
+  if(e.target.classList.contains('inc')){model[i].inc=e.target.checked;renderTable();renderOutputs();persist();return;}
+  const k=e.target.dataset.k;if(!k)return;model[i][k]=(k==='trial')?e.target.value:(+e.target.value||0);
+  const bad=!valid(model[i]);tr.querySelectorAll('[data-k=or],[data-k=lci],[data-k=uci],[data-k=mod]').forEach(el=>el.classList.toggle('bad',bad));
+  renderOutputs();persist();});
+document.getElementById('cBody').addEventListener('click',e=>{const rm=e.target.closest('[data-rm]');if(rm){model.splice(+rm.dataset.rm,1);renderAll();persist();}});
+document.getElementById('addRow').addEventListener('click',()=>{model.push(clean({trial:'NEW',year:new Date().getFullYear(),or:0.8,lci:0.65,uci:0.98,mod:20,inc:true}));renderAll();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=PUBLISHED.map(o=>({...o}));try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

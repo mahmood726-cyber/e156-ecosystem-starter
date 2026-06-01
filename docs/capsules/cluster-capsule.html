@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cluster RCT (design effect) — e156 living capsule</title>
+<meta name="description" content="A self-auditing, editable, living cluster-randomised-trial capsule: intracluster correlation, design effect, effective sample size, and the naive-vs-cluster-adjusted confidence interval with cluster-based degrees of freedom — computed live in the browser.">
+<style>
+  :root{
+    --slug-hue:200;
+    --accent:hsl(var(--slug-hue) 64% 40%); --accent-strong:hsl(var(--slug-hue) 66% 30%); --accent-soft:hsl(var(--slug-hue) 60% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 64%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 64%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:24rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600} .warnf{color:var(--warn);font-weight:600}
+  .ed{width:5rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .field{display:inline-flex;flex-direction:column;gap:.15rem;margin:.2rem .8rem .2rem 0} .field label{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg.plot{display:block;width:100%;height:auto;font-family:var(--sans);max-width:640px;margin:0 auto}
+  .grid{stroke:var(--line);opacity:.55} .axis{stroke:var(--ink-soft);stroke-width:1} .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .zero{stroke:var(--ink-soft);stroke-dasharray:3 3;opacity:.6}
+  .ciN{stroke:var(--ink-soft);stroke-width:2.5;stroke-linecap:round} .ciA{stroke:var(--accent);stroke-width:3;stroke-linecap:round} .pt{fill:var(--accent-strong)} .rlbl{font-size:12px;fill:var(--ink)}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.2rem;margin-top:.6rem}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>DEFF = 1+(m̄−1)·ICC</span>
+  <span class="chk"><span class="dot ok"></span>N_eff = N / DEFF</span>
+  <span class="chk"><span class="dot ok"></span>df = clusters − 2</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">computing…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Clustering</a></li><li><a href="#inputs">2 · Trial (editable)</a></li>
+  <li><a href="#deff">3 · Design effect</a></li><li><a href="#ci">4 · Naive vs adjusted</a></li>
+  <li><a href="#flip">5 · Does it flip?</a></li><li><a href="#xval">6 · R</a></li>
+  <li><a href="#assurance">7 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · cluster-randomised trial</div>
+  <h1>Counting clusters, not people</h1>
+  <p class="standfirst">When you randomise whole clinics or villages, patients in the same cluster resemble each other — so each one carries less independent information than a lone participant would. Analyse a cluster trial as if everyone were independent and the confidence interval comes out too narrow; the design effect is the correction, and it can turn a "significant" result back into an open question.</p>
+  <p style="margin-top:.7rem"><span class="badge">Intracluster correlation</span> <span class="badge" id="badgeDeff">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>When whole clinics or villages are randomised, people in the same group resemble each other, so each one carries less information. This shows how much that shrinks the real evidence — enough, sometimes, to turn a 'significant' result back into an open question.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Why a person isn't worth a person</h2><span class="prismaref">ICC &amp; DEFF</span></div>
+    <div class="card"><h3>The design effect</h3>
+      <div class="pico"><b>ICC (ρ)</b><span>Intracluster correlation: how alike outcomes are within a cluster. Even 0.01–0.05 matters when clusters are large.</span>
+        <b>DEFF</b><span>Design effect = 1 + (m̄ − 1)·ρ, where m̄ is the average cluster size. The variance is inflated by this factor.</span>
+        <b>Effective N</b><span>N_eff = N / DEFF — the number of independent participants the trial is really worth.</span>
+        <b>Degrees of freedom</b><span>A cluster trial's information scales with the number of <em>clusters</em>; inference uses df ≈ (clusters − 2), not (participants − 2).</span></div>
+      <p class="note" style="margin-top:.6rem">The design effect <b>reduces</b> the effective sample size (N/DEFF); it never inflates it. A trial with many participants in few clusters can be far weaker than its headcount suggests.</p></div>
+  </section>
+
+  <section class="stage" id="inputs">
+    <div class="stagehdr"><span class="stagenum">02</span><h2>Trial — editable</h2><span class="prismaref">two arms, continuous outcome</span></div>
+    <div class="card">
+      <p>A continuous outcome (lower = better, e.g. a symptom score). For each arm: number of clusters, mean cluster size, outcome mean and SD. Plus the assumed ICC. Edit anything — the design effect and both confidence intervals re-run live.</p>
+      <div class="tablewrap"><table id="cTable">
+        <thead><tr><th>Arm</th><th class="n">Clusters</th><th class="n">Cluster size</th><th class="n">Mean</th><th class="n">SD</th></tr></thead>
+        <tbody id="cBody"></tbody></table></div>
+      <div style="margin-top:.6rem"><span class="field"><label for="iccIn">ICC (ρ)</label><input class="ed" id="iccIn" type="number" step="0.01" min="0" max="0.999" value="0.05"></span></div>
+      <div class="toolbar"><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="deff">
+    <div class="stagehdr"><span class="stagenum">03</span><h2>Design effect &amp; effective N</h2></div>
+    <div class="card">
+      <div class="readouts">
+        <div class="ro"><div class="k">Participants (N)</div><div class="v" id="roN">—</div></div>
+        <div class="ro"><div class="k">Mean cluster size</div><div class="v" id="roM">—</div></div>
+        <div class="ro"><div class="k">Design effect</div><div class="v" id="roDeff">—</div></div>
+        <div class="ro"><div class="k">Effective N</div><div class="v" id="roNeff">—</div></div>
+        <div class="ro"><div class="k">Clusters total</div><div class="v" id="roK">—</div></div>
+      </div>
+      <p id="deffNote" class="note" style="margin-top:.5rem">—</p>
+    </div>
+  </section>
+
+  <section class="stage" id="ci">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Naive vs cluster-adjusted</h2><span class="prismaref">mean difference</span></div>
+    <div class="card">
+      <svg class="plot" id="ciPlot" viewBox="0 0 640 200" role="img" aria-label="Naive vs adjusted confidence intervals"></svg>
+      <div class="readouts">
+        <div class="ro"><div class="k">Mean difference</div><div class="v" id="roMD">—</div></div>
+        <div class="ro"><div class="k">Naive 95% CI</div><div class="v" id="roCIn">—</div></div>
+        <div class="ro"><div class="k">Adjusted 95% CI</div><div class="v" id="roCIa">—</div></div>
+      </div>
+      <p class="note" style="margin-top:.5rem">Grey = naive interval (treats every participant as independent, large-sample z). Blue = cluster-adjusted (SE × √DEFF, t-distribution on clusters − 2 df). The dashed line is the null.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="flip">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Does the conclusion survive?</h2></div>
+    <div class="card"><p id="flipOut">—</p>
+      <p class="note">If the naive analysis is significant but the cluster-adjusted one is not, the apparent effect was an artefact of pretending correlated participants were independent — a common error in cluster trials and in re-analyses that ignore the design.</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>R cross-validation</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced every estimate, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live inputs</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>Assurance</h2></div>
+    <div class="card"><p>Self-auditing trust layer: the design effect uses the exact 1 + (m̄ − 1)·ρ formula and always <b>reduces</b> the effective sample size (N_eff = N/DEFF, never larger than N — checked live), and the adjusted inference uses the t-distribution on cluster-based degrees of freedom rather than the individual-level normal. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> In a cluster-randomised trial, participants within a cluster are correlated, so the effective sample size is N divided by the design effect 1+(m̄−1)·ICC — analysing it as if individually randomised understates the standard error and can manufacture significance. Demo data are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · cluster-randomised trial · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="cluster", LSKEY="e156:"+SLUG, Z=1.959963984540054;
+const PUBLISHED={arms:[
+  {name:'Control',k:12,m:25,mean:50.0,sd:12},
+  {name:'Intervention',k:12,m:25,mean:47.4,sd:12}
+],icc:0.05};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const f2=x=>(x>=0?'+':'')+x.toFixed(2), f2p=x=>x.toFixed(2);
+const T975={1:12.706,2:4.303,3:3.182,4:2.776,5:2.571,6:2.447,7:2.365,8:2.306,9:2.262,10:2.228,11:2.201,12:2.179,13:2.160,14:2.145,15:2.131,16:2.120,18:2.101,20:2.086,22:2.074,24:2.064,26:2.056,28:2.048,30:2.042,40:2.021,60:2.000,120:1.980};
+const tcrit=df=>{if(df<=0)return Z;if(T975[df])return T975[df];const ks=Object.keys(T975).map(Number).sort((a,b)=>a-b);let last=Z;for(const k of ks){if(df<=k)return T975[k];last=T975[k];}return 1.962;};
+function gammaln(x){const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];let y=x,tmp=x+5.5;tmp-=(x+0.5)*Math.log(tmp);let ser=1.000000000190015;for(let j=0;j<6;j++){y++;ser+=c[j]/y;}return -tmp+Math.log(2.5066282746310005*ser/x);}
+function betacf(a,b,x){const FPMIN=1e-300,EPS=3e-12;let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<FPMIN)d=FPMIN;d=1/d;let h=d;for(let m=1;m<=200;m++){let m2=2*m,aa=m*(b-m)*x/((qam+m2)*(a+m2));d=1+aa*d;if(Math.abs(d)<FPMIN)d=FPMIN;c=1+aa/c;if(Math.abs(c)<FPMIN)c=FPMIN;d=1/d;h*=d*c;aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));d=1+aa*d;if(Math.abs(d)<FPMIN)d=FPMIN;c=1+aa/c;if(Math.abs(c)<FPMIN)c=FPMIN;d=1/d;let del=d*c;h*=del;if(Math.abs(del-1)<EPS)break;}return h;}
+function ibeta(x,a,b){if(x<=0)return 0;if(x>=1)return 1;const lb=gammaln(a)+gammaln(b)-gammaln(a+b);const front=Math.exp(a*Math.log(x)+b*Math.log(1-x)-lb);return x<(a+1)/(a+b+2)?front*betacf(a,b,x)/a:1-front*betacf(b,a,1-x)/b;}
+function tP(t,df){if(df<=0||!isFinite(t))return NaN;return ibeta(df/(df+t*t),df/2,0.5);}
+function normalCDF(x){return 0.5*(1+erf(x/Math.SQRT2));}
+function erf(x){const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;}
+const zP=z=>2*(1-normalCDF(Math.abs(z)));
+const pfmt=p=>isNaN(p)?'—':(p<0.001?'< 0.001':p.toFixed(3));
+let cfg=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(s&&Array.isArray(s.arms)&&s.arms.length===2)return clean(s);}}catch(e){}return clean(JSON.parse(JSON.stringify(PUBLISHED)));}
+function clean(s){return {arms:s.arms.map(a=>({name:String(a.name||'arm'),k:Math.max(1,Math.round(+a.k||1)),m:Math.max(1,+a.m||1),mean:+a.mean||0,sd:Math.max(1e-9,+a.sd||0)})),icc:Math.max(0,Math.min(0.999,+s.icc||0))};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(cfg));}catch(e){}
+  const ed=JSON.stringify(cfg)!==JSON.stringify(clean(JSON.parse(JSON.stringify(PUBLISHED))));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+// ---- core ----
+function analyse(cfg){const A=cfg.arms[0],B=cfg.arms[1];
+  const nA=A.k*A.m,nB=B.k*B.m,N=nA+nB,K=A.k+B.k;
+  const mbar=N/K; // overall mean cluster size
+  const deff=1+(mbar-1)*cfg.icc;
+  const md=B.mean-A.mean;
+  const seInd=Math.sqrt(A.sd*A.sd/nA+B.sd*B.sd/nB); // individual-level (naive) SE
+  const seCl=seInd*Math.sqrt(deff);
+  const dfCl=Math.max(1,K-2);
+  const ciN=[md-Z*seInd,md+Z*seInd], zN=md/seInd, pN=zP(zN);
+  const tc=tcrit(dfCl);const ciA=[md-tc*seCl,md+tc*seCl], tA=md/seCl, pA=tP(tA,dfCl);
+  const sigN=!(ciN[0]<=0&&ciN[1]>=0), sigA=!(ciA[0]<=0&&ciA[1]>=0);
+  return {nA,nB,N,K,mbar,deff,neff:N/deff,md,seInd,seCl,dfCl,ciN,ciA,zN,pN,tA,pA,sigN,sigA,tc};}
+// ---- rendering ----
+function setH(id,v){const e=document.getElementById(id);if(e)e.innerHTML=v;}
+const setT=(id,x)=>{const e=document.getElementById(id);if(e)e.textContent=x;};
+function renderCI(r){const svg=document.getElementById('ciPlot');
+  const W=640,H=200,padL=120,padR=24,padT=28,padB=40,pw=W-padL-padR,ph=H-padT-padB;
+  let lo=Math.min(0,r.ciN[0],r.ciA[0]),hi=Math.max(0,r.ciN[1],r.ciA[1]);const pad=(hi-lo)*0.12||1;lo-=pad;hi+=pad;
+  const X=v=>padL+(v-lo)/(hi-lo)*pw;
+  let s='';const x0=X(0);s+=`<line class="zero" x1="${x0}" y1="${padT-6}" x2="${x0}" y2="${padT+ph+6}"/>`;
+  const xt=niceTicks(lo,hi,5);xt.forEach(t=>{const x=X(t);s+=`<text class="tick" x="${x}" y="${padT+ph+22}" text-anchor="middle">${t.toFixed(1)}</text>`;});
+  s+=`<text class="tick" x="${x0}" y="${padT-10}" text-anchor="middle">null</text>`;
+  const rowY=[padT+ph*0.32,padT+ph*0.74];
+  const draw=(y,cls,ci,lbl)=>{s+=`<text class="rlbl" x="14" y="${y+4}">${lbl}</text>`+
+    `<line class="${cls}" x1="${X(ci[0])}" y1="${y}" x2="${X(ci[1])}" y2="${y}"/>`+
+    `<line class="${cls}" x1="${X(ci[0])}" y1="${y-5}" x2="${X(ci[0])}" y2="${y+5}"/>`+
+    `<line class="${cls}" x1="${X(ci[1])}" y1="${y-5}" x2="${X(ci[1])}" y2="${y+5}"/>`+
+    `<circle class="pt" cx="${X(r.md)}" cy="${y}" r="4"/>`;};
+  draw(rowY[0],'ciN',r.ciN,'Naive');draw(rowY[1],'ciA',r.ciA,'Cluster-adj.');
+  svg.innerHTML=s;}
+function niceTicks(lo,hi,n){if(!isFinite(lo)||!isFinite(hi)||hi<=lo)return [lo];const raw=(hi-lo)/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),norm=raw/mag;const step=(norm<1.5?1:norm<3?2:norm<7?5:10)*mag;const start=Math.ceil(lo/step)*step,out=[];for(let v=start;v<=hi+1e-9;v+=step)out.push(+v.toFixed(10));return out;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=analyse(cfg);
+QA_RENDER([
+['ICC within [0, 1)', cfg.icc>=0&&cfg.icc<1],
+['Mean cluster size m̄ ≥ 1', !!(res&&res.mbar>=1)],
+['Design effect D = 1+(m̄−1)·ICC ≥ 1', !!(res&&res.deff>=1)],
+['Effective N = N / D ≤ N (clustering costs, not gains)', !!(res&&res.neff<=res.N+1e-9)],
+['Cluster SE inflated by √D (seCl = seInd·√D)', !!(res&&Math.abs(res.seCl-res.seInd*Math.sqrt(res.deff))<1e-9)],
+['Cluster analysis uses K−2 df (dfCl ≥ 1)', !!(res&&res.dfCl>=1)]
+]);}
+function renderOutputs(){const r=analyse(cfg);renderCI(r);
+  setT('roN',r.N+'');setT('roM',r.mbar.toFixed(1));setT('roDeff',r.deff.toFixed(2));setT('roNeff',Math.round(r.neff)+'');setT('roK',r.K+'');
+  setT('badgeDeff','DEFF '+r.deff.toFixed(2));
+  setH('deffNote',`With ICC = <b class="num">${f2p(cfg.icc)}</b> and mean cluster size <b class="num">${r.mbar.toFixed(1)}</b>, the design effect is <b class="num">${r.deff.toFixed(2)}</b>: the ${r.N} participants are worth only about <b class="num">${Math.round(r.neff)}</b> independent observations. `+
+    (r.deff>=1.5?'<span class="warnf">Large inflation</span> — the clustering costs a lot of effective sample.':'Modest inflation at this ICC and cluster size.'));
+  setT('roMD',f2(r.md));setH('roCIn',`${f2(r.ciN[0])} to ${f2(r.ciN[1])}`);setH('roCIa',`${f2(r.ciA[0])} to ${f2(r.ciA[1])}`);
+  // flip
+  let msg;
+  if(r.sigN&&!r.sigA)msg=`<span class="warnf">The conclusion flips.</span> The naive analysis is significant (z = ${r.zN.toFixed(2)}, p = ${pfmt(r.pN)}), but once the design effect is applied the cluster-adjusted interval crosses the null (t = ${r.tA.toFixed(2)} on ${r.dfCl} df, p = ${pfmt(r.pA)}). The apparent effect was an artefact of ignoring the clustering.`;
+  else if(!r.sigN&&r.sigA)msg=`Unusually, the adjusted analysis is significant while the naive one is not — check the inputs.`;
+  else if(r.sigN&&r.sigA)msg=`<span class="good">The conclusion holds.</span> Both analyses are significant — naive p = ${pfmt(r.pN)}, cluster-adjusted p = ${pfmt(r.pA)} (t on ${r.dfCl} df). The effect survives the design-effect correction, though the adjusted interval is wider.`;
+  else msg=`Neither analysis reaches significance (naive p = ${pfmt(r.pN)}, adjusted p = ${pfmt(r.pA)}). The trial does not provide clear evidence of an effect.`;
+  setH('flipOut',msg);
+  const vv=document.getElementById('verify');vv.textContent=`DEFF ${r.deff.toFixed(2)} · naive p ${pfmt(r.pN)} · adj p ${pfmt(r.pA)} ✓`;vv.style.color='var(--good)';
+  rcode(r);renderInspect();renderQA();}
+function rcode(r){const A=cfg.arms[0],B=cfg.arms[1];
+  document.getElementById('rcode').textContent=
+`# design effect and effective sample size
+m_bar <- ${r.mbar.toFixed(2)}; icc <- ${cfg.icc}
+deff  <- 1 + (m_bar - 1) * icc          # = ${r.deff.toFixed(3)}
+N_eff <- ${r.N} / deff                  # = ${r.neff.toFixed(1)}
+# cluster-adjusted CI for the mean difference (t on clusters-2 df)
+md <- ${r.md.toFixed(3)}; se_ind <- ${r.seInd.toFixed(4)}
+se_cl <- se_ind * sqrt(deff)
+md + c(-1,1) * qt(0.975, df = ${r.dfCl}) * se_cl
+# proper analysis: lmer(y ~ arm + (1 | cluster))  or  geeglm(... , id = cluster)`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(cfg,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[analyse,tcrit].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function renderTable(){let h='';cfg.arms.forEach((a,i)=>{
+  h+=`<tr data-i="${i}"><td><input class="ed" data-k="name" value="${esc(a.name)}" style="width:6.5rem;text-align:left"></td>`+
+    `<td class="n"><input class="ed" data-k="k" type="number" step="1" value="${a.k}"></td>`+
+    `<td class="n"><input class="ed" data-k="m" type="number" step="1" value="${a.m}"></td>`+
+    `<td class="n"><input class="ed" data-k="mean" type="number" step="0.5" value="${a.mean}"></td>`+
+    `<td class="n"><input class="ed" data-k="sd" type="number" step="0.5" value="${a.sd}"></td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function renderAll(){renderTable();document.getElementById('iccIn').value=cfg.icc;renderOutputs();}
+
+document.getElementById('cBody').addEventListener('input',e=>{const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i,k=e.target.dataset.k;if(!k)return;
+  cfg.arms[i][k]=(k==='name')?e.target.value:(+e.target.value||0);cfg=clean(cfg);renderOutputs();persist();});
+document.getElementById('iccIn').addEventListener('input',e=>{cfg.icc=Math.max(0,Math.min(0.999,+e.target.value||0));renderOutputs();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{cfg=clean(JSON.parse(JSON.stringify(PUBLISHED)));try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

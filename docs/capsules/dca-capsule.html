@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decision curve analysis — e156 living capsule</title>
+<meta name="description" content="A self-auditing, editable, living decision-curve-analysis capsule: net benefit of a prediction model against treat-all and treat-none across threshold probabilities, computed live in the browser.">
+<style>
+  :root{
+    --slug-hue:200;
+    --accent:hsl(var(--slug-hue) 64% 40%); --accent-strong:hsl(var(--slug-hue) 66% 30%); --accent-soft:hsl(var(--slug-hue) 60% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 64%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 64%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600} .warnf{color:var(--warn);font-weight:600}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  textarea{width:100%;min-height:7rem;font-family:var(--mono);font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.6rem;background:var(--paper);color:var(--ink);resize:vertical}
+  textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .ed{width:4.4rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg.plot{display:block;width:100%;height:auto;font-family:var(--sans);max-width:660px;margin:0 auto}
+  .grid{stroke:var(--line);opacity:.55} .axis{stroke:var(--ink-soft);stroke-width:1} .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)}
+  .cModel{stroke:var(--accent);stroke-width:2.4;fill:none} .cAll{stroke:var(--bad);stroke-width:1.8;fill:none;stroke-dasharray:6 4} .cNone{stroke:var(--ink-soft);stroke-width:1.4;fill:none} .thline{stroke:var(--accent-strong);stroke-width:1;stroke-dasharray:2 3;opacity:.8}
+  .axlbl{font-size:11px;fill:var(--ink-soft)}
+  .leg{display:flex;gap:1rem;flex-wrap:wrap;font-size:.78rem;margin-top:.3rem} .leg span{display:inline-flex;align-items:center;gap:.35rem} .ln{width:1.1rem;height:0;border-top-width:3px;border-top-style:solid;display:inline-block}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.2rem;margin-top:.6rem}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>0 ≤ risk ≤ 1</span>
+  <span class="chk"><span class="dot ok"></span>NB = TP/N − FP/N·odds</span>
+  <span class="chk"><span class="dot ok"></span>treat-all &amp; none shown</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">computing…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Net benefit</a></li><li><a href="#data">2 · Cohort (editable)</a></li>
+  <li><a href="#curve">3 · Decision curve</a></li><li><a href="#threshold">4 · At a threshold</a></li>
+  <li><a href="#range">5 · Useful range</a></li><li><a href="#xval">6 · R (dcurves)</a></li>
+  <li><a href="#assurance">7 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · decision curve analysis</div>
+  <h1>Is the model worth acting on?</h1>
+  <p class="standfirst">Discrimination and calibration tell you whether a model is <em>right</em>; they don't tell you whether using it beats the two trivial policies — treat everyone, or treat no one. Decision curve analysis weighs true against false positives at the threshold a clinician would actually act on, and asks: across the plausible thresholds, does the model earn its keep?</p>
+  <p style="margin-top:.7rem"><span class="badge">Net benefit</span> <span class="badge" id="badgeN">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>A risk model is only useful if acting on it beats the two simple policies — treat everyone, or treat no one. Across the thresholds a clinician might actually use, this shows whether the model earns its keep.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>The exchange rate of errors</h2><span class="prismaref">threshold probability</span></div>
+    <div class="card"><h3>What net benefit means</h3>
+      <div class="pico"><b>Threshold p<sub>t</sub></b><span>The risk at which a patient (or clinician) would opt for treatment — it encodes how many false positives are worth one true positive: the odds p<sub>t</sub>/(1−p<sub>t</sub>).</span>
+        <b>Net benefit</b><span>NB = TP/N − (FP/N)·p<sub>t</sub>/(1−p<sub>t</sub>) — true positives credited, false positives penalised at the threshold's exchange rate.</span>
+        <b>Treat all</b><span>Intervene on everyone; net benefit falls as the threshold rises.</span>
+        <b>Treat none</b><span>Net benefit is exactly zero everywhere — the floor any useful model must beat.</span></div>
+      <p class="note" style="margin-top:.6rem">A model is clinically useful over the range of thresholds where its curve sits <b>above both</b> treat-all and treat-none. Net benefit is on the scale of true positives per patient; multiply by 100 for "per 100 patients".</p></div>
+  </section>
+
+  <section class="stage" id="data">
+    <div class="stagehdr"><span class="stagenum">02</span><h2>Cohort — editable</h2><span class="prismaref">predicted risk + outcome</span></div>
+    <div class="card">
+      <p>One patient per line: <code>predicted_risk outcome</code> (risk in 0–1, outcome 1 = event, 0 = no event). Edit, paste your own, or add lines — the decision curve re-runs live.</p>
+      <textarea id="ta" spellcheck="false" aria-label="cohort data"></textarea>
+      <div class="toolbar"><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="curve">
+    <div class="stagehdr"><span class="stagenum">03</span><h2>Decision curve</h2><span class="prismaref">net benefit vs threshold</span></div>
+    <div class="card">
+      <svg class="plot" id="dcaPlot" viewBox="0 0 660 420" role="img" aria-label="Decision curve"></svg>
+      <div class="leg"><span><span class="ln" style="border-color:var(--accent)"></span>Model</span><span><span class="ln" style="border-color:var(--bad)"></span>Treat all</span><span><span class="ln" style="border-color:var(--ink-soft)"></span>Treat none (0)</span></div>
+      <div class="readouts">
+        <div class="ro"><div class="k">Patients</div><div class="v" id="roN">—</div></div>
+        <div class="ro"><div class="k">Prevalence</div><div class="v" id="roPrev">—</div></div>
+        <div class="ro"><div class="k">Max model NB</div><div class="v" id="roMaxNB">—</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stage" id="threshold">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>At a chosen threshold</h2></div>
+    <div class="card">
+      <p>Threshold probability p<sub>t</sub> = <input class="ed" id="ptIn" type="number" step="0.01" min="0.01" max="0.95" value="0.20" aria-label="threshold probability"> (treat if predicted risk ≥ p<sub>t</sub>).</p>
+      <div class="readouts">
+        <div class="ro"><div class="k">NB model</div><div class="v" id="roNBm">—</div></div>
+        <div class="ro"><div class="k">NB treat-all</div><div class="v" id="roNBa">—</div></div>
+        <div class="ro"><div class="k">Best strategy</div><div class="v" id="roBest">—</div></div>
+        <div class="ro"><div class="k">Net TP / 100</div><div class="v" id="roNet100">—</div></div>
+      </div>
+      <p id="thNote" class="note" style="margin-top:.5rem">—</p>
+    </div>
+  </section>
+
+  <section class="stage" id="range">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Where the model wins</h2></div>
+    <div class="card"><p id="rangeOut">—</p>
+      <p class="note">The threshold range where the model's net benefit exceeds both reference policies. If that range doesn't cover the thresholds clinicians actually use, a well-discriminating model can still be clinically useless.</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>R cross-validation (dcurves)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced every estimate, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>Assurance</h2></div>
+    <div class="card"><p>Self-auditing trust layer: every predicted risk is clamped to [0, 1] (checked live), net benefit uses the exact TP/N − FP/N·odds definition with treat-none pinned at zero, and the treat-all reference is always drawn so a model is never judged against itself alone. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> Decision-curve analysis weighs true against false positives at each risk threshold a clinician might use; net benefit is only meaningful over the clinically relevant threshold range, and good discrimination does not guarantee clinical utility. Demo data are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · decision curve analysis · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="dca", LSKEY="e156:"+SLUG;
+const PUBLISHED=[
+  [0.05,0],[0.08,0],[0.10,0],[0.12,0],[0.15,0],[0.18,1],[0.20,0],[0.22,0],
+  [0.25,1],[0.30,0],[0.32,1],[0.38,0],[0.42,1],[0.48,0],[0.52,1],[0.58,1],
+  [0.62,0],[0.66,1],[0.70,1],[0.76,1],[0.82,1],[0.88,1],[0.92,1],[0.96,1]
+];
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const f3=x=>x.toFixed(3);
+let model=load(), pt=loadPt();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(Array.isArray(s)&&s.length)return s.map(clean);}}catch(e){}return PUBLISHED.map(a=>clean(a));}
+function loadPt(){try{const r=localStorage.getItem(LSKEY+":pt");if(r)return clamp(+r,0.01,0.95);}catch(e){}return 0.20;}
+function clean(a){return {p:clamp(+a[0]||0,0,1),y:(+a[1]>=0.5)?1:0};}
+function parse(str){return String(str).split(/\n+/).map(l=>l.trim().split(/[,\s]+/).map(Number)).filter(a=>a.length>=2&&isFinite(a[0])&&isFinite(a[1])).map(a=>clean(a));}
+function toText(m){return m.map(r=>r.p+' '+r.y).join('\n');}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model.map(r=>[r.p,r.y])));localStorage.setItem(LSKEY+":pt",String(pt));}catch(e){}
+  const ed=JSON.stringify(model.map(r=>[r.p,r.y]))!==JSON.stringify(PUBLISHED);document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+// ---- net benefit ----
+function prevalence(rows){return rows.length?rows.reduce((a,r)=>a+r.y,0)/rows.length:0;}
+function nbAt(rows,t){const N=rows.length;if(!N||t>=1)return {nbModel:0,nbAll:0,tp:0,fp:0};
+  const odds=t/(1-t);let tp=0,fp=0;rows.forEach(r=>{if(r.p>=t){if(r.y)tp++;else fp++;}});
+  const ev=rows.reduce((a,r)=>a+r.y,0),ne=N-ev;
+  return {nbModel:tp/N-(fp/N)*odds, nbAll:ev/N-(ne/N)*odds, tp,fp};}
+function curve(rows){const out=[];for(let i=1;i<=79;i++){const t=i/100;const a=nbAt(rows,t);out.push({t,...a});}return out;}
+function usefulRange(c){let lo=null,hi=null;c.forEach(d=>{if(d.nbModel>d.nbAll+1e-9&&d.nbModel>1e-9){if(lo===null)lo=d.t;hi=d.t;}});return {lo,hi};}
+// ---- rendering ----
+function setH(id,v){const e=document.getElementById(id);if(e)e.innerHTML=v;}
+const setT=(id,x)=>{const e=document.getElementById(id);if(e)e.textContent=x;};
+function renderCurve(rows,c){const svg=document.getElementById('dcaPlot');
+  if(!rows.length){svg.innerHTML='<text x="14" y="24" class="tick">need ≥1 patient</text>';return;}
+  const W=660,H=420,padL=64,padR=18,padT=18,padB=46,pw=W-padL-padR,ph=H-padT-padB;
+  const tmax=0.8;const prev=prevalence(rows);
+  let ymax=Math.max(prev,...c.filter(d=>d.t<=tmax).map(d=>d.nbModel),0.01)*1.12;
+  let ymin=Math.min(0,...c.filter(d=>d.t<=tmax).map(d=>d.nbModel));ymin=Math.max(ymin,-prev*0.6)-0.01;
+  const X=t=>padL+t/tmax*pw, Y=v=>padT+ph-(clamp(v,ymin,ymax)-ymin)/(ymax-ymin)*ph;
+  let s='';s+=`<line class="axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+ph}"/><line class="axis" x1="${padL}" y1="${Y(0)}" x2="${padL+pw}" y2="${Y(0)}"/>`;
+  for(let t=0;t<=tmax+1e-9;t+=0.1){const x=X(t);s+=`<line class="grid" x1="${x}" y1="${padT}" x2="${x}" y2="${padT+ph}"/><text class="tick" x="${x}" y="${padT+ph+16}" text-anchor="middle">${t.toFixed(1)}</text>`;}
+  const yt=niceTicks(ymin,ymax,5);yt.forEach(v=>{const y=Y(v);s+=`<text class="tick" x="${padL-8}" y="${y+3}" text-anchor="end">${v.toFixed(2)}</text>`;});
+  s+=`<text class="axlbl" x="${padL+pw/2}" y="${H-6}" text-anchor="middle">threshold probability</text>`;
+  s+=`<text class="axlbl" transform="translate(14 ${padT+ph/2}) rotate(-90)" text-anchor="middle">net benefit</text>`;
+  const poly=(sel,key)=>{const pts=c.filter(d=>d.t<=tmax).map(d=>`${X(d.t).toFixed(1)},${Y(d[key]).toFixed(1)}`).join(' ');s+=`<polyline class="${sel}" points="${pts}"/>`;};
+  s+=`<line class="cNone" x1="${padL}" y1="${Y(0)}" x2="${padL+pw}" y2="${Y(0)}"/>`;
+  poly('cAll','nbAll');poly('cModel','nbModel');
+  if(pt<tmax){const x=X(pt);s+=`<line class="thline" x1="${x}" y1="${padT}" x2="${x}" y2="${padT+ph}"/>`;}
+  svg.innerHTML=s;}
+function niceTicks(lo,hi,n){if(!isFinite(lo)||!isFinite(hi)||hi<=lo)return [lo];const raw=(hi-lo)/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),norm=raw/mag;const step=(norm<1.5?1:norm<3?2:norm<7?5:10)*mag;const start=Math.ceil(lo/step)*step,out=[];for(let v=start;v<=hi+1e-9;v+=step)out.push(+v.toFixed(10));return out;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var rows=model,c=rows.length?curve(rows):[],a=rows.length?nbAt(rows,pt):null;
+QA_RENDER([
+['≥ 1 patient with risk & outcome', rows.length>=1],
+['Every predicted risk within [0,1]', rows.every(function(r){return r.p>=0&&r.p<=1;})],
+['Outcome is binary (0/1)', rows.every(function(r){return r.y===0||r.y===1;})],
+['Net-benefit curve computed across thresholds', !!(c&&c.length>=2)],
+['Model net benefit at p_t is finite', !!(a&&isFinite(a.nbModel))],
+['Treat-all & treat-none references computed', !!(a&&isFinite(a.nbAll))]
+]);}
+function renderOutputs(){
+  const rows=model;const c=rows.length?curve(rows):[];renderCurve(rows,c);
+  if(!rows.length){['roN','roPrev','roMaxNB','roNBm','roNBa','roBest','roNet100'].forEach(id=>setT(id,'—'));
+    setT('thNote','need ≥1 patient');setT('rangeOut','—');setT('badgeN','—');
+    const vv=document.getElementById('verify');vv.textContent='no patients';vv.style.color='var(--warn)';rcode();renderInspect();return;}
+  const prev=prevalence(rows),maxNB=Math.max(...c.map(d=>d.nbModel));
+  setT('roN',rows.length+'');setH('roPrev',(prev*100).toFixed(0)+'<small>%</small>');setT('roMaxNB',f3(maxNB));
+  setT('badgeN',rows.length+' patients');
+  // at threshold
+  const a=nbAt(rows,pt);const best=Math.max(a.nbModel,a.nbAll,0);
+  const bestName=(Math.abs(best-a.nbModel)<1e-9)?'Model':(Math.abs(best-a.nbAll)<1e-9?'Treat all':'Treat none');
+  setT('roNBm',f3(a.nbModel));setT('roNBa',f3(a.nbAll));setT('roBest',bestName);
+  const net100=(a.nbModel-a.nbAll)*100;
+  setH('roNet100',(net100>=0?'+':'')+net100.toFixed(1));
+  setH('thNote',`At p<sub>t</sub> = ${pt.toFixed(2)} (treat if risk ≥ ${(pt*100).toFixed(0)}%): the model gives <b class="num">${f3(a.nbModel)}</b> net benefit vs <b class="num">${f3(a.nbAll)}</b> for treat-all and 0 for treat-none. `+
+    (a.nbModel>a.nbAll+1e-9&&a.nbModel>1e-9?`<span class="good">The model is the best strategy here</span> — using it is like finding <b class="num">${net100.toFixed(1)}</b> extra true positives per 100 patients at no extra false-positive cost vs treating all.`:`<span class="warnf">A reference policy (${bestName.toLowerCase()}) does at least as well</span> at this threshold.`));
+  // useful range
+  const r=usefulRange(c);
+  if(r.lo!==null)setH('rangeOut',`The model's net benefit beats both treat-all and treat-none for thresholds roughly <b class="num">${(r.lo*100).toFixed(0)}%</b> to <b class="num">${(r.hi*100).toFixed(0)}%</b>. <span class="${(r.hi-r.lo)>=0.1?'good':'warnf'}">${(r.hi-r.lo)>=0.1?'A usable window':'A narrow window'}</span> — check it overlaps the thresholds clinicians actually use.`);
+  else setH('rangeOut',`<span class="warnf">The model never strictly beats both reference policies</span> — at every threshold, treating all or treating none does as well or better. Good discrimination alone has not translated into clinical utility here.`);
+  const vv=document.getElementById('verify');vv.textContent=`prev ${(prev*100).toFixed(0)}% · maxNB ${f3(maxNB)} · NB@${pt.toFixed(2)} ${f3(a.nbModel)} ✓`;vv.style.color='var(--good)';
+  rcode();renderInspect();}
+function rcode(){
+  document.getElementById('rcode').textContent=
+`library(dcurves); library(dplyr)
+# one row per patient: risk in 0-1, outcome 0/1
+dat <- data.frame(risk = c(${model.map(r=>r.p).join(', ')}),
+                  outcome = c(${model.map(r=>r.y).join(', ')}))
+dca(outcome ~ risk, data = dat,
+    thresholds = seq(0.01, 0.79, by = 0.01)) |>
+  plot(smooth = FALSE)        # net benefit: model vs treat-all vs treat-none
+# net_benefit = TP/N - (FP/N) * (pt/(1-pt))`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model.map(r=>[r.p,r.y]));
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[nbAt,curve,usefulRange].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function syncText(){const ta=document.getElementById('ta');if(ta&&document.activeElement!==ta)ta.value=toText(model);}
+function renderAll(){syncText();document.getElementById('ptIn').value=pt;renderOutputs();renderQA();}
+
+document.getElementById('ta').addEventListener('input',e=>{model=parse(e.target.value);renderOutputs();persist();});
+document.getElementById('ptIn').addEventListener('input',e=>{pt=clamp(+e.target.value||0.2,0.01,0.95);renderOutputs();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=PUBLISHED.map(a=>clean(a));pt=0.20;try{localStorage.removeItem(LSKEY);localStorage.removeItem(LSKEY+":pt");}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify({cohort:model.map(r=>[r.p,r.y]),pt},null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

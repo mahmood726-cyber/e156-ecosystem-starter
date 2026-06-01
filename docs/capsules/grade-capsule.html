@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GRADE Summary of Findings — e156 living capsule (Type 12)</title>
+<meta name="description" content="A self-auditing, editable, living GRADE Summary of Findings capsule: certainty derived from the eight GRADE domains, absolute effects from baseline risk, a full SoF table.">
+<style>
+  :root{
+    --slug-hue:268;
+    --accent:hsl(var(--slug-hue) 52% 50%); --accent-strong:hsl(var(--slug-hue) 56% 40%); --accent-soft:hsl(var(--slug-hue) 48% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --gHigh:#1f9d57; --gMod:#5b9bd5; --gLow:#e0a106; --gVlow:#d23b35;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+    --gHigh:#2fbf6e;--gMod:#7ab0e0;--gLow:#f0b429;--gVlow:#ef5751;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+    --gHigh:#2fbf6e;--gMod:#7ab0e0;--gLow:#f0b429;--gVlow:#ef5751;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)} th.c,td.c{text-align:center}
+  #cTable{min-width:60rem} #sofTable{min-width:44rem}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .ed{width:4rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed.t{width:9rem;text-align:left} .ed.s{width:2.8rem} .ed:focus{outline:2px solid var(--accent);outline-offset:1px} .ed.bad{border-color:var(--bad)}
+  select.ed{width:auto;text-align:left;font-size:.76rem}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.x{border:none;background:transparent;color:var(--ink-soft);padding:.2rem .4rem;font-size:1rem} .btn.x:hover{color:var(--bad)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  .cert{display:inline-flex;align-items:center;gap:.35rem;font-weight:700;font-size:.78rem}
+  .pips{display:inline-flex;gap:2px} .pip{width:.55rem;height:.55rem;border-radius:50%;background:var(--line)}
+  .cert.h .pip.on{background:var(--gHigh)} .cert.m .pip.on{background:var(--gMod)} .cert.l .pip.on{background:var(--gLow)} .cert.v .pip.on{background:var(--gVlow)}
+  .cert.h{color:var(--gHigh)} .cert.m{color:var(--gMod)} .cert.l{color:var(--gLow)} .cert.v{color:var(--gVlow)}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .barC{fill:var(--ctrl);opacity:.6} .barI{fill:var(--accent)} .barwhisk{stroke:var(--ink-soft);stroke-width:1.2} .barlbl{font-size:11px;fill:var(--ink-soft)} .barval{font-size:11px;fill:var(--ink);font-family:var(--mono)}
+  .step{display:flex;gap:.5rem;align-items:baseline;font-size:.82rem;padding:.15rem 0} .step .d{font-family:var(--mono);color:var(--bad);width:2.2rem;text-align:right} .step .u{color:var(--good)}
+  .ladder{display:inline-flex;flex-direction:column-reverse;gap:2px;vertical-align:middle}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>certainty derived</span>
+  <span class="chk"><span class="dot ok"></span>absolute effects shown</span>
+  <span class="chk"><span class="dot ok"></span>downgrades itemised</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">grading…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Search</a></li>
+  <li><a href="#screening">3 · Screening</a></li><li><a href="#extraction">4 · Judgements (editable)</a></li>
+  <li><a href="#sof">5 · Summary of Findings</a></li><li><a href="#derive">6 · Certainty algorithm</a></li>
+  <li><a href="#xval">7 · R / GRADEpro</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · GRADE Summary of Findings</div>
+  <h1>How sure are we, and what does it mean in people?</h1>
+  <p class="standfirst">GRADE turns eight domain judgements into one certainty rating, and a relative effect into an absolute one — events per 1000. This capsule derives both live, so the certainty can never drift from the domains and the absolute effect always matches the relative one.</p>
+  <p style="margin-top:.7rem"><span class="badge">Type 12 · GRADE SoF</span> <span class="badge" id="badgeK">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>This turns the evidence into one plain certainty rating and an absolute answer — how many people per 1,000 are helped — so the conclusion can never drift from the judgements and numbers underneath it.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Review question — PICO</h3>
+      <div class="pico"><b>Population</b><span>Patients in a systematic review of an intervention (illustrative).</span>
+        <b>Comparison</b><span>Intervention vs comparator across several outcomes.</span>
+        <b>Certainty</b><span>GRADE: RCTs start High; downgrade for risk of bias, inconsistency, indirectness, imprecision, publication bias; upgrade for large effect, dose-response, plausible confounding.</span>
+        <b>Output</b><span>A Summary of Findings table with absolute effects per 1000.</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Search</h2></div>
+    <div class="card"><p>Effects and judgements are <span class="illus">illustrative</span> and editable in stage 4; the SoF table, absolute effects and certainty re-derive as you change them.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Screening</h2></div>
+    <div class="card"><p>Two-reviewer screening; each outcome's body of evidence is rated against the GRADE domains (entered directly here, not modelled).</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Judgements — editable</h2><span class="prismaref">Certainty is derived, not entered</span></div>
+    <div class="card">
+      <p>Per outcome: design, relative effect (RR + 95% CI), comparator (baseline) risk per 1000, and the GRADE domains. Downgrades subtract levels (0 / −1 serious / −2 very serious); upgrades add levels (observational bodies of evidence). The <b>Certainty</b> column is computed.</p>
+      <div class="tablewrap"><table id="cTable">
+        <thead><tr><th>Inc.</th><th>Outcome</th><th>Design</th><th class="n">Studies</th><th class="n">N</th><th class="n">RR</th><th class="n">LCI</th><th class="n">UCI</th><th class="n">Base/1000</th>
+          <th class="c" title="Risk of bias">RoB</th><th class="c" title="Inconsistency">Inc</th><th class="c" title="Indirectness">Ind</th><th class="c" title="Imprecision">Imp</th><th class="c" title="Publication bias">PB</th>
+          <th class="c" title="Large effect">Lg</th><th class="c" title="Dose-response">DR</th><th class="c" title="Confounding">Cf</th><th class="c">Certainty</th><th></th></tr></thead>
+        <tbody id="cBody"></tbody></table></div>
+      <div class="toolbar"><button class="btn" id="addRow">+ add outcome</button><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="sof">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Summary of Findings</h2><span class="prismaref">absolute effects per 1000</span></div>
+    <div class="card"><div class="tablewrap"><table id="sofTable"><thead><tr>
+      <th>Outcome<br><span class="note">№ participants (studies)</span></th><th>Relative effect<br><span class="note">RR (95% CI)</span></th>
+      <th>Comparator risk</th><th>Intervention risk<br><span class="note">(95% CI)</span></th><th>Absolute effect</th><th>Certainty</th></tr></thead>
+      <tbody id="sofBody"></tbody></table></div>
+      <p class="note" style="margin-top:.5rem">Comparator risk is the assumed baseline; intervention risk = baseline × RR. Absolute effects are per 1000 patients, with the CI carried from the relative effect.</p></div>
+  </section>
+
+  <section class="stage" id="derive">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>Certainty algorithm</h2></div>
+    <div class="grid2">
+      <div class="card"><h3>How each rating was reached</h3><div id="deriveList"></div></div>
+      <div class="card"><h3>The GRADE algorithm</h3>
+        <p class="note" style="margin:.2rem 0">Start: <b>RCT → High (4 pips)</b>, observational → Low (2). Then:</p>
+        <ul class="note" style="margin:.2rem 0 .6rem 1.1rem;padding:0">
+          <li>− 1 per <b>serious</b>, − 2 per <b>very serious</b> concern across the five downgrade domains.</li>
+          <li>+ 1 or + 2 for a large effect, + 1 for a dose-response gradient, + 1 if plausible confounding would only reduce the effect (observational bodies).</li>
+          <li>Clamp to High (4) · Moderate (3) · Low (2) · Very low (≤1).</li>
+        </ul>
+        <p class="note" id="upNote">—</p>
+        <div class="readouts" style="margin-top:.5rem">
+          <div class="ro"><div class="k">Outcomes</div><div class="v" id="roK">—</div></div>
+          <div class="ro"><div class="k">High / Moderate</div><div class="v" id="roHM">—</div></div>
+          <div class="ro"><div class="k">Low / Very low</div><div class="v" id="roLV">—</div></div>
+        </div></div>
+    </div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>Cross-validation (GRADEpro GDT)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that derives certainty and absolute effects, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: certainty is <b>derived</b> from the eight GRADE domains by the published algorithm (and cannot be hand-set to contradict them), each downgrade is itemised so a reader can audit the reasoning, and the absolute effect is always computed from the same relative effect shown beside it. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> Certainty is derived from the GRADE domains and the absolute effect from baseline risk × relative effect, so neither can drift from the inputs; risk-of-bias, indirectness and publication-bias judgements remain the reviewer's. Demo data is illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · type 12 (GRADE Summary of Findings) · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="grade-sof-demo", LSKEY="e156:"+SLUG, Z=1.959963984540054;
+const DG=[['rob','Risk of bias'],['incons','Inconsistency'],['indirect','Indirectness'],['impr','Imprecision'],['pubbias','Publication bias']];
+const UG=[['large','Large effect',2],['doseresp','Dose-response',1],['confound','Confounding',1]];
+const LEVELS={4:{lab:'High',cls:'h'},3:{lab:'Moderate',cls:'m'},2:{lab:'Low',cls:'l'},1:{lab:'Very low',cls:'v'}};
+const PUBLISHED=[
+  {outcome:'All-cause mortality',design:'rct',studies:8,n:12000,rr:0.82,lci:0.74,uci:0.91,base:180,rob:0,incons:0,indirect:0,impr:0,pubbias:0,large:0,doseresp:0,confound:0,inc:true},
+  {outcome:'Major bleeding',design:'rct',studies:6,n:9000,rr:1.45,lci:1.10,uci:1.91,base:25,rob:0,incons:0,indirect:0,impr:1,pubbias:0,large:0,doseresp:0,confound:0,inc:true},
+  {outcome:'Hospitalisation',design:'rct',studies:5,n:7000,rr:0.75,lci:0.60,uci:0.94,base:300,rob:0,incons:1,indirect:0,impr:1,pubbias:0,large:0,doseresp:0,confound:0,inc:true},
+  {outcome:'Quality of life (responders)',design:'rct',studies:4,n:3000,rr:0.90,lci:0.78,uci:1.04,base:400,rob:1,incons:0,indirect:1,impr:2,pubbias:0,large:0,doseresp:0,confound:0,inc:true},
+  {outcome:'Symptom relief (registry)',design:'obs',studies:3,n:5400,rr:1.80,lci:1.45,uci:2.23,base:220,rob:0,incons:0,indirect:0,impr:0,pubbias:0,large:1,doseresp:1,confound:0,inc:true}
+];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(Array.isArray(s)&&s.length)return s.map(clean);}}catch(e){}return PUBLISHED.map(o=>({...o}));}
+function clean(o){const r={outcome:String(o.outcome||'outcome'),design:o.design==='obs'?'obs':'rct',studies:Math.max(0,+o.studies||0),n:Math.max(0,+o.n||0),
+  rr:+o.rr||0,lci:+o.lci||0,uci:+o.uci||0,base:Math.max(0,Math.min(1000,+o.base||0)),inc:o.inc!==false};
+  DG.forEach(([k])=>r[k]=Math.max(0,Math.min(2,Math.round(+o[k]||0))));UG.forEach(([k,,mx])=>r[k]=Math.max(0,Math.min(mx,Math.round(+o[k]||0))));return r;}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(PUBLISHED.map(o=>({...o})));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+const valid=r=>r.rr>0&&r.lci>0&&r.uci>0&&r.uci>=r.lci;
+// GRADE certainty: start by design, subtract downgrades, add upgrades, clamp to 1..4
+function deriveGRADE(r){
+  const start=r.design==='obs'?2:4;let level=start;const steps=[];
+  DG.forEach(([k,lbl])=>{const d=r[k];if(d>0){level-=d;steps.push({lbl,delta:-d});}});
+  UG.forEach(([k,lbl])=>{const u=r[k];if(u>0){level+=u;steps.push({lbl,delta:+u});}});
+  level=Math.max(1,Math.min(4,level));
+  return {start,level,steps,...LEVELS[level]};
+}
+// absolute effects per 1000 from baseline risk x relative effect
+function absEffect(r){const ci=v=>Math.round(Math.max(0,Math.min(1000,r.base*v)));
+  const comp=Math.round(r.base),interv=ci(r.rr),lo=ci(r.lci),hi=ci(r.uci),rd=interv-comp;return {comp,interv,lo,hi,rd};}
+function summarise(rows){const use=rows.filter(r=>r.inc&&valid(r));if(!use.length)return null;
+  let hm=0,lv=0,up=0;use.forEach(r=>{const g=deriveGRADE(r);if(g.level>=3)hm++;else lv++;if(UG.some(([k])=>r[k]>0))up++;});
+  return {use,k:use.length,hm,lv,up};}
+function pips(g){let p='';for(let i=1;i<=4;i++)p+=`<span class="pip ${i<=g.level?'on':''}"></span>`;return `<span class="cert ${g.cls}"><span class="pips">${p}</span>${g.lab}</span>`;}
+function renderBar(r){const a=absEffect(r),W=150,H=34,padL=2,plotW=W-12;const max=Math.max(a.comp,a.hi,1);
+  const X=v=>padL+v/max*plotW;const yC=8,yI=20,bh=8;
+  let s=`<rect class="barC" x="${padL}" y="${yC}" width="${X(a.comp)-padL}" height="${bh}"/>`;
+  s+=`<rect class="barI" x="${padL}" y="${yI}" width="${X(a.interv)-padL}" height="${bh}"/>`;
+  s+=`<line class="barwhisk" x1="${X(a.lo)}" y1="${yI+bh/2}" x2="${X(a.hi)}" y2="${yI+bh/2}"/>`;
+  s+=`<line class="barwhisk" x1="${X(a.lo)}" y1="${yI+1}" x2="${X(a.lo)}" y2="${yI+bh-1}"/><line class="barwhisk" x1="${X(a.hi)}" y1="${yI+1}" x2="${X(a.hi)}" y2="${yI+bh-1}"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:${W}px" role="img" aria-label="absolute risk bars"><text class="barlbl" x="${X(a.comp)+3}" y="${yC+bh}">${a.comp}</text>${s}<text class="barval" x="${X(a.interv)+3}" y="${yI+bh}">${a.interv}</text></svg>`;}
+function renderSoF(res){const tb=document.getElementById('sofBody');if(!res){tb.innerHTML='<tr><td colspan="6" class="note">no outcomes</td></tr>';return;}
+  tb.innerHTML=res.use.map(r=>{const g=deriveGRADE(r),a=absEffect(r);const fewer=a.rd<0;
+    return `<tr><td><b>${esc(r.outcome)}</b><br><span class="note">${r.n.toLocaleString()} (${r.studies} ${r.studies===1?'study':'studies'})</span></td>`+
+      `<td class="num">RR ${r.rr.toFixed(2)}<br><span class="note">(${r.lci.toFixed(2)}–${r.uci.toFixed(2)})</span></td>`+
+      `<td class="num">${a.comp} per 1000</td>`+
+      `<td class="num">${a.interv} per 1000<br><span class="note">(${a.lo}–${a.hi})</span></td>`+
+      `<td>${renderBar(r)}<span class="note">${a.rd>0?'+':''}${a.rd} per 1000${a.rd!==0?(fewer?' fewer':' more'):''}</span></td>`+
+      `<td>${pips(g)}</td></tr>`;}).join('');}
+function renderDerive(res){const el=document.getElementById('deriveList');if(!res){el.innerHTML='';return;}
+  el.innerHTML=res.use.map(r=>{const g=deriveGRADE(r);
+    const stepsTxt=g.steps.length?g.steps.map(s=>`<div class="step"><span class="${s.delta<0?'d':'u'}">${s.delta>0?'+':''}${s.delta}</span><span>${esc(s.lbl)}</span></div>`).join(''):'<div class="step"><span class="note">no domain concerns</span></div>';
+    return `<div style="padding:.5rem 0;border-bottom:1px solid var(--line)"><b>${esc(r.outcome)}</b> — start ${g.start===4?'High (RCT)':'Low (observational)'} → ${pips(g)}${stepsTxt}</div>`;}).join('');
+  document.getElementById('roK').textContent=res.k;document.getElementById('roHM').textContent=res.use.filter(r=>deriveGRADE(r).level>=3).length+' / '+res.k;
+  document.getElementById('roLV').textContent=res.use.filter(r=>deriveGRADE(r).level<3).length+' / '+res.k;
+  document.getElementById('upNote').innerHTML=res.up>0?`${res.up} outcome(s) use an upgrade (large effect / dose-response) — GRADE permits this mainly for observational evidence with no serious downgrades.`:'No outcome currently uses an upgrade.';}
+function rcode(){const use=model.filter(r=>r.inc&&valid(r));const cap=l=>['','Very low','Low','Moderate','High'][l];
+  document.getElementById('rcode').textContent=
+`# GRADE Summary of Findings — built in GRADEpro GDT (gradepro.org)
+# certainty derived here by deriveGRADE(); GRADEpro applies the same algorithm:
+#   start: RCT = High, observational = Low
+#   downgrade -1/-2 (RoB, inconsistency, indirectness, imprecision, publication bias)
+#   upgrade +1/+2 (large effect, dose-response, plausible confounding)
+# derived certainty for this body of evidence:
+${use.map(r=>`#   ${r.outcome}: ${cap(deriveGRADE(r).level)}`).join('\n')}
+# absolute effect (R):  risk_intervention = base_per_1000 * RR  (CI via RR CI)`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[deriveGRADE,absEffect].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function selDG(r,k){let o='';[[0,'0'],[1,'−1'],[2,'−2']].forEach(([v,t])=>o+=`<option value="${v}" ${r[k]===v?'selected':''}>${t}</option>`);return `<select class="ed" data-k="${k}">${o}</select>`;}
+function selUG(r,k,mx){let o='';for(let v=0;v<=mx;v++)o+=`<option value="${v}" ${r[k]===v?'selected':''}>${v>0?'+'+v:'0'}</option>`;return `<select class="ed" data-k="${k}">${o}</select>`;}
+function renderTable(){let h='';model.forEach((r,i)=>{const g=deriveGRADE(r),bad=valid(r)?'':' bad';
+  h+=`<tr data-i="${i}"><td><input type="checkbox" class="inc" ${r.inc?'checked':''}></td>`+
+    `<td><input class="ed t" data-k="outcome" value="${esc(r.outcome)}"></td>`+
+    `<td><select class="ed" data-k="design"><option value="rct" ${r.design==='rct'?'selected':''}>RCT</option><option value="obs" ${r.design==='obs'?'selected':''}>Obs</option></select></td>`+
+    `<td class="n"><input class="ed s" data-k="studies" type="number" value="${r.studies}"></td>`+
+    `<td class="n"><input class="ed" data-k="n" type="number" value="${r.n}" style="width:4.2rem"></td>`+
+    `<td class="n"><input class="ed s" data-k="rr" type="number" step="0.01" value="${r.rr}"></td>`+
+    `<td class="n"><input class="ed s${bad}" data-k="lci" type="number" step="0.01" value="${r.lci}"></td>`+
+    `<td class="n"><input class="ed s${bad}" data-k="uci" type="number" step="0.01" value="${r.uci}"></td>`+
+    `<td class="n"><input class="ed s" data-k="base" type="number" value="${r.base}"></td>`+
+    DG.map(([k])=>`<td class="c">${selDG(r,k)}</td>`).join('')+
+    UG.map(([k,,mx])=>`<td class="c">${selUG(r,k,mx)}</td>`).join('')+
+    `<td class="c">${pips(g)}</td>`+
+    `<td><button class="btn x" data-rm="${i}" title="remove">✕</button></td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=summarise(model),inc=model.filter(function(r){return r.inc&&valid(r);});
+QA_RENDER([
+['Every outcome RR > 0 with LCI ≤ RR ≤ UCI', inc.every(function(r){return r.rr>0&&r.lci<=r.rr&&r.rr<=r.uci;})],
+['≥ 1 outcome', (res&&res.k>=1)?true:'warn'],
+['Certainty level derived', !!(res&&res.lv!=null)],
+['Absolute effect derivable (baseline risk set per outcome)', !!(res&&res.use.every(function(r){return isFinite(r.base)&&r.base>=0;}))]
+]);}
+function renderOutputs(){const res=summarise(model);renderSoF(res);renderDerive(res);rcode();renderInspect();renderQA();
+  document.getElementById('badgeK').textContent=res?`${res.k} outcomes`:'—';
+  const v=document.getElementById('verify');if(res){v.textContent=`${res.k} outcomes graded · ${res.hm} high/moderate, ${res.lv} low/very-low ✓`;v.style.color='var(--good)';}else{v.textContent='no valid outcomes';v.style.color='var(--warn)';}}
+function renderAll(){renderTable();renderOutputs();}
+
+function onEdit(e){const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i;
+  if(e.target.classList.contains('inc')){model[i].inc=e.target.checked;renderTable();renderOutputs();persist();return;}
+  const k=e.target.dataset.k;if(!k)return;const numeric=['studies','n','rr','lci','uci','base'].includes(k),domain=DG.some(([d])=>d===k)||UG.some(([u])=>u===k);
+  model[i][k]=(k==='outcome'||k==='design')?e.target.value:(+e.target.value||0);model[i]=clean(model[i]);
+  if(domain||k==='design'){renderTable();}
+  const bad=!valid(model[i]);tr.querySelectorAll('[data-k=lci],[data-k=uci]').forEach(el=>el.classList.toggle('bad',bad));
+  renderOutputs();persist();}
+document.getElementById('cBody').addEventListener('input',onEdit);
+document.getElementById('cBody').addEventListener('change',onEdit);
+document.getElementById('cBody').addEventListener('click',e=>{const rm=e.target.closest('[data-rm]');if(rm){model.splice(+rm.dataset.rm,1);renderAll();persist();}});
+document.getElementById('addRow').addEventListener('click',()=>{model.push(clean({outcome:'New outcome',design:'rct',studies:3,n:2000,rr:0.85,lci:0.7,uci:1.03,base:200,inc:true}));renderAll();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=PUBLISHED.map(o=>({...o}));try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

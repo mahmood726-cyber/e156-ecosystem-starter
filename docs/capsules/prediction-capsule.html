@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediction model (TRIPOD) — e156 living capsule (primary)</title>
+<meta name="description" content="A self-auditing, editable, living prediction-model capsule: discrimination (ROC/AUC, Brier) and calibration (calibration plot + slope/intercept), per TRIPOD.">
+<style>
+  :root{
+    --slug-hue:160;
+    --accent:hsl(var(--slug-hue) 50% 42%); --accent-strong:hsl(var(--slug-hue) 54% 32%); --accent-soft:hsl(var(--slug-hue) 46% 94%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 58% 64%); --accent-strong:hsl(var(--slug-hue) 62% 72%); --accent-soft:hsl(var(--slug-hue) 26% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 58% 64%); --accent-strong:hsl(var(--slug-hue) 62% 72%); --accent-soft:hsl(var(--slug-hue) 26% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  textarea{width:100%;min-height:6rem;font-family:var(--mono);font-size:.82rem;border:1px solid var(--line);border-radius:8px;padding:.5rem .6rem;background:var(--paper);color:var(--ink);resize:vertical} textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .axis{stroke:var(--line)} .diag{stroke:var(--ctrl);stroke-width:1.3;stroke-dasharray:5 4} .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .axlab{font-size:12px;fill:var(--ink-soft)}
+  .roc{stroke:var(--accent-strong);stroke-width:2.5;fill:none} .rocfill{fill:var(--accent);opacity:.12}
+  .calln{stroke:var(--accent-strong);stroke-width:2;fill:none} .calpt{fill:var(--accent)} .calwhisk{stroke:var(--ink-soft);stroke-width:1}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.3rem;font-weight:600}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(7.5rem,1fr));gap:.4rem;margin-top:.6rem}
+  .verdict{font-family:var(--serif);font-size:1.05rem;padding:.5rem .8rem;border-radius:8px;border-left:4px solid var(--accent)}
+  .verdict.good{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--card))} .verdict.warn{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--card))}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>discrimination + calibration</span>
+  <span class="chk"><span class="dot" id="dotCal"></span>calibration slope ≈ 1</span>
+  <span class="chk"><span class="dot ok"></span>Brier shown</span>
+  <span class="chk"><span class="dot pending"></span>external validation</span>
+  <span class="grow"></span><span class="verify" id="verify">scoring…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Data</a></li>
+  <li><a href="#screening">3 · Measures</a></li><li><a href="#extraction">4 · Predictions (editable)</a></li>
+  <li><a href="#perf">5 · ROC &amp; calibration</a></li><li><a href="#interp">6 · Interpretation</a></li>
+  <li><a href="#xval">7 · R (pROC / rms)</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · primary study · prediction model</div>
+  <h1>Does it rank, and does it match?</h1>
+  <p class="standfirst">A risk model must do two things: discriminate (rank those who have the event above those who don't — the AUC) and calibrate (its predicted risks match observed frequencies). A high AUC with poor calibration still misleads patients.</p>
+  <p style="margin-top:.7rem"><span class="badge">Primary · TRIPOD</span> <span class="badge" id="badgeN">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>A risk model has to do two things: rank patients correctly (discrimination) and get the actual probabilities right (calibration). A high AUC with poor calibration still misleads — this shows both at once.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> Discrimination (AUC) and calibration are different things — a model can rank well yet be systematically over- or under-confident. These are apparent-performance metrics on the data shown; real validation needs an external or held-out sample. Demo data are illustrative.</div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Question</h3>
+      <div class="pico"><b>Input</b><span>For each subject: the model's predicted risk and the observed binary outcome.</span>
+        <b>Discrimination</b><span>Area under the ROC curve (c-statistic) and the Brier score.</span>
+        <b>Calibration</b><span>Calibration plot (predicted vs observed), with the calibration slope and intercept.</span>
+        <b>Standard</b><span>TRIPOD — report discrimination and calibration, ideally externally validated.</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Data</h2></div>
+    <div class="card"><p>Predictions are <span class="illus">illustrative</span> and editable in stage 4; AUC, Brier and calibration re-run as you type. Enter one <code>predicted,outcome</code> pair per line (probability 0–1, outcome 0/1).</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Measures</h2></div>
+    <div class="card"><p>Discrimination ≠ calibration. A model can rank perfectly (AUC = 1) yet be miscalibrated (e.g. all predictions doubled). Both are reported; calibration is the one most often neglected and most consequential for individual decisions.</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Predictions — editable</h2><span class="prismaref">predicted,outcome per line</span></div>
+    <div class="card">
+      <textarea id="data" spellcheck="false" aria-label="predicted,outcome pairs"></textarea>
+      <div class="toolbar"><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="perf">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Discrimination &amp; calibration</h2><span class="prismaref">ROC · calibration plot</span></div>
+    <div class="grid2">
+      <div class="card"><div style="font-size:.8rem;color:var(--ink-soft);margin-bottom:.3rem">ROC curve</div>
+        <svg id="roc" viewBox="0 0 240 240" role="group" aria-label="ROC curve"></svg></div>
+      <div class="card"><div style="font-size:.8rem;color:var(--ink-soft);margin-bottom:.3rem">Calibration plot</div>
+        <svg id="cal" viewBox="0 0 240 240" role="group" aria-label="calibration plot"></svg></div>
+    </div>
+    <div class="card"><div class="readouts">
+      <div class="ro"><div class="k">AUC (c-statistic)</div><div class="v" id="roAUC">—</div></div>
+      <div class="ro"><div class="k">Brier score</div><div class="v" id="roBrier">—</div></div>
+      <div class="ro"><div class="k">Calibration slope</div><div class="v" id="roSlope">—</div></div>
+      <div class="ro"><div class="k">Calibration intercept</div><div class="v" id="roInt">—</div></div>
+      <div class="ro"><div class="k">Events / n</div><div class="v" id="roN">—</div></div>
+    </div>
+    <p class="note" id="perfNote" style="margin-top:.5rem">—</p></div>
+  </section>
+
+  <section class="stage" id="interp">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>Interpretation</h2></div>
+    <div class="card"><div class="verdict" id="verdict">—</div>
+      <p class="note" style="margin-top:.6rem">Calibration slope &lt; 1 indicates over-fitting (extreme predictions too extreme); the intercept (calibration-in-the-large) shifts all predictions if non-zero. AUC ≈ 0.5 is chance, 0.7–0.8 acceptable, &gt;0.8 strong. These are apparent (in-sample) metrics — optimism-corrected or externally-validated performance is what TRIPOD ultimately requires.</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation (pROC / rms)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript for AUC and the calibration fit, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: discrimination (AUC) and calibration (slope, intercept, plot) are reported together — never AUC alone — the Brier score captures overall accuracy, and the ribbon dot flags a calibration slope far from 1. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on external validation.</p></div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · primary · prediction model (TRIPOD) · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="prediction-model-tripod-demo", LSKEY="e156:"+SLUG;
+const DEMO="0.05,0\n0.08,0\n0.10,0\n0.12,0\n0.15,0\n0.18,0\n0.20,1\n0.22,0\n0.25,0\n0.28,1\n0.30,0\n0.35,1\n0.38,0\n0.40,1\n0.45,0\n0.50,1\n0.55,1\n0.58,0\n0.62,1\n0.65,1\n0.68,1\n0.70,0\n0.75,1\n0.78,1\n0.82,1\n0.85,1\n0.88,1\n0.90,1\n0.93,1\n0.95,1";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const logit=p=>Math.log(clamp(p,1e-6,1-1e-6)/(1-clamp(p,1e-6,1-1e-6)));
+let text=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r!=null)return r;}catch(e){}return DEMO;}
+function persist(){try{localStorage.setItem(LSKEY,text);}catch(e){}
+  document.getElementById('liveTag').textContent=text.trim()!==DEMO?'edited — live re-run':'illustrative demo';}
+function parse(str){return String(str).split(/\n+/).map(l=>l.split(/[,\s]+/).map(Number)).filter(a=>a.length>=2&&isFinite(a[0])&&isFinite(a[1])).map(a=>({p:clamp(a[0],0,1),y:a[1]>=0.5?1:0}));}
+// logistic regression (2 params) by Newton-Raphson — for the calibration slope/intercept
+function logisticFit(x,y){let a=0,b=1;for(let it=0;it<100;it++){let g0=0,g1=0,h00=0,h01=0,h11=0;
+  for(let i=0;i<x.length;i++){const eta=a+b*x[i],p=1/(1+Math.exp(-eta)),w=p*(1-p),r=y[i]-p;g0+=r;g1+=r*x[i];h00+=w;h01+=w*x[i];h11+=w*x[i]*x[i];}
+  const det=h00*h11-h01*h01;if(Math.abs(det)<1e-12)break;const da=(h11*g0-h01*g1)/det,db=(h00*g1-h01*g0)/det;a+=da;b+=db;if(Math.abs(da)+Math.abs(db)<1e-9)break;}
+  return {a,b};}
+function evalModel(rows){
+  const n=rows.length;if(n<2)return null;const ev=rows.filter(r=>r.y===1),ct=rows.filter(r=>r.y===0);
+  if(!ev.length||!ct.length)return {n,ev:ev.length,noVar:true};
+  // AUC via all case-control pairs (0.5 for ties)
+  let conc=0;ev.forEach(e=>ct.forEach(c=>{conc+=e.p>c.p?1:(e.p===c.p?0.5:0);}));const auc=conc/(ev.length*ct.length);
+  const brier=rows.reduce((a,r)=>a+(r.p-r.y)**2,0)/n;
+  // ROC sweep
+  const ths=[...new Set(rows.map(r=>r.p))].sort((a,b)=>b-a);const roc=[{f:0,t:0}];
+  ths.forEach(th=>{const tp=ev.filter(e=>e.p>=th).length,fp=ct.filter(c=>c.p>=th).length;roc.push({f:fp/ct.length,t:tp/ev.length});});
+  roc.push({f:1,t:1});
+  // calibration logistic fit on logit(p)
+  const fit=logisticFit(rows.map(r=>logit(r.p)),rows.map(r=>r.y));
+  // calibration bins (quintiles by predicted)
+  const sorted=[...rows].sort((a,b)=>a.p-b.p);const B=Math.min(5,Math.max(2,Math.floor(n/5)));const bins=[];
+  for(let b=0;b<B;b++){const lo=Math.floor(b*n/B),hi=Math.floor((b+1)*n/B);const grp=sorted.slice(lo,hi);if(!grp.length)continue;
+    bins.push({pred:grp.reduce((a,r)=>a+r.p,0)/grp.length,obs:grp.reduce((a,r)=>a+r.y,0)/grp.length,n:grp.length});}
+  return {n,ev:ev.length,auc,brier,roc,slope:fit.b,intercept:fit.a,bins,noVar:false};
+}
+function renderROC(res){const svg=document.getElementById('roc');if(!res||res.noVar){svg.innerHTML='<text x="12" y="22" class="tick">need both outcomes</text>';return;}
+  const W=240,H=240,P=30,plot=W-P-10;const X=f=>P+f*plot,Y=t=>H-P-t*plot;
+  let s=`<rect x="${P}" y="${H-P-plot}" width="${plot}" height="${plot}" fill="none" class="axis"/><line class="diag" x1="${X(0)}" y1="${Y(0)}" x2="${X(1)}" y2="${Y(1)}"/>`;
+  let fill=`M ${X(0)} ${Y(0)} `,line='';res.roc.forEach((pt,i)=>{line+=(i===0?'M':'L')+X(pt.f).toFixed(1)+' '+Y(pt.t).toFixed(1)+' ';fill+=`L ${X(pt.f).toFixed(1)} ${Y(pt.t).toFixed(1)} `;});
+  fill+=`L ${X(1)} ${Y(0)} Z`;s+=`<path class="rocfill" d="${fill}"/><path class="roc" d="${line}"/>`;
+  [0,0.5,1].forEach(v=>{s+=`<text class="tick" x="${X(v)}" y="${H-P+14}" text-anchor="middle">${v}</text><text class="tick" x="${P-6}" y="${Y(v)+3}" text-anchor="end">${v}</text>`;});
+  s+=`<text class="axlab" x="${P+plot/2}" y="${H-2}" text-anchor="middle">1 − specificity</text>`;
+  s+=`<text class="tick" x="${X(0.55)}" y="${Y(0.3)}" fill="var(--accent-strong)">AUC ${res.auc.toFixed(3)}</text>`;
+  svg.innerHTML=s;}
+function renderCal(res){const svg=document.getElementById('cal');if(!res||res.noVar){svg.innerHTML='';return;}
+  const W=240,H=240,P=30,plot=W-P-10;const X=v=>P+v*plot,Y=v=>H-P-v*plot;
+  let s=`<rect x="${P}" y="${H-P-plot}" width="${plot}" height="${plot}" fill="none" class="axis"/><line class="diag" x1="${X(0)}" y1="${Y(0)}" x2="${X(1)}" y2="${Y(1)}"/>`;
+  [0,0.5,1].forEach(v=>{s+=`<text class="tick" x="${X(v)}" y="${H-P+14}" text-anchor="middle">${v}</text><text class="tick" x="${P-6}" y="${Y(v)+3}" text-anchor="end">${v}</text>`;});
+  let line='';res.bins.forEach((b,i)=>{line+=(i===0?'M':'L')+X(b.pred).toFixed(1)+' '+Y(b.obs).toFixed(1)+' ';});
+  s+=`<path class="calln" d="${line}"/>`;
+  res.bins.forEach(b=>{s+=`<circle class="calpt" cx="${X(b.pred)}" cy="${Y(b.obs)}" r="3.5"><title>pred ${(b.pred*100).toFixed(0)}% obs ${(b.obs*100).toFixed(0)}% (n=${b.n})</title></circle>`;});
+  s+=`<text class="axlab" x="${P+plot/2}" y="${H-2}" text-anchor="middle">predicted</text>`;
+  s+=`<text class="axlab" x="10" y="${P+plot/2}" text-anchor="middle" transform="rotate(-90 10 ${P+plot/2})">observed</text>`;
+  svg.innerHTML=s;}
+function renderReadouts(res){const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  if(!res||res.noVar){['roAUC','roBrier','roSlope','roInt','roN'].forEach(id=>set(id,'—'));document.getElementById('perfNote').textContent=res&&res.noVar?'need both events and non-events':'no data';document.getElementById('verdict').textContent='—';document.getElementById('dotCal').className='dot pending';return;}
+  set('roAUC',res.auc.toFixed(3));set('roBrier',res.brier.toFixed(3));set('roSlope',res.slope.toFixed(2));set('roInt',res.intercept.toFixed(2));set('roN',res.ev+' / '+res.n);
+  document.getElementById('dotCal').className='dot '+(Math.abs(res.slope-1)<0.3?'ok':'warn');
+  const disc=res.auc>=0.8?'strong':res.auc>=0.7?'acceptable':res.auc>=0.6?'weak':'near chance';
+  document.getElementById('perfNote').innerHTML=`Discrimination: AUC <b class="num">${res.auc.toFixed(3)}</b> (${disc}). Calibration slope <b class="num">${res.slope.toFixed(2)}</b> (ideal 1), intercept ${res.intercept.toFixed(2)} (ideal 0); Brier ${res.brier.toFixed(3)}.`;
+  const wellCal=Math.abs(res.slope-1)<0.3&&Math.abs(res.intercept)<0.5;
+  const vd=document.getElementById('verdict');vd.className='verdict '+(res.auc>=0.7&&wellCal?'good':'warn');
+  vd.innerHTML=(res.auc>=0.7&&wellCal)?`<b>${disc[0].toUpperCase()+disc.slice(1)} discrimination, reasonable calibration.</b> AUC ${res.auc.toFixed(3)}, slope ${res.slope.toFixed(2)} — the model both ranks and matches, subject to external validation.`
+    :`<b>${disc[0].toUpperCase()+disc.slice(1)} discrimination${wellCal?'':', miscalibrated'}.</b> AUC ${res.auc.toFixed(3)}, slope ${res.slope.toFixed(2)}${Math.abs(res.slope-1)>=0.3?' (≠1 — predictions '+(res.slope<1?'too extreme / over-fit':'too modest')+')':''}. ${res.auc<0.7?'Ranking is limited.':''}`;
+}
+function rcode(){
+  document.getElementById('rcode').textContent=
+`library(pROC); library(rms)
+d <- read.csv(text = "p,y\n${text.replace(/\n/g,'\\n')}")
+roc(d$y, d$p)$auc                       # AUC / c-statistic
+mean((d$p - d$y)^2)                      # Brier score
+val.prob(d$p, d$y)                       # calibration slope, intercept, plot (rms)
+# calibration slope = coef of logit(p) in glm(y ~ qlogis(p), binomial)`;}
+function renderInspect(){const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[evalModel,logisticFit].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var rows=parse(text),res=evalModel(rows);
+QA_RENDER([
+['≥ 1 row parsed', !!(res&&res.n>=1)],
+['Outcome has both events and non-events', !!(res&&!res.noVar)],
+['AUC within [0,1]', (res&&!res.noVar)?(res.auc>=0&&res.auc<=1):'warn'],
+['Brier score within [0,1]', (res&&!res.noVar)?(res.brier>=0&&res.brier<=1):'warn'],
+['Calibration slope is finite', (res&&!res.noVar)?isFinite(res.slope):'warn'],
+['ROC built from ranked predictions', (res&&res.roc&&res.roc.length>=2)?true:'warn']
+]);}
+function renderOutputs(){const rows=parse(text),res=evalModel(rows);renderROC(res);renderCal(res);renderReadouts(res);rcode();renderInspect();renderQA();
+  document.getElementById('badgeN').textContent=rows.length?`${rows.length} subjects`:'—';
+  const v=document.getElementById('verify');if(res&&!res.noVar){v.textContent=`AUC ${res.auc.toFixed(3)} · calibration slope ${res.slope.toFixed(2)} · Brier ${res.brier.toFixed(3)} ✓`;v.style.color='var(--good)';}else{v.textContent='need both outcomes';v.style.color='var(--warn)';}}
+function renderAll(){document.getElementById('data').value=text;renderOutputs();}
+
+document.getElementById('data').addEventListener('input',e=>{text=e.target.value;renderOutputs();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{text=DEMO;try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify({data:text},null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

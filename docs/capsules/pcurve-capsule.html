@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>p-curve — e156 living capsule (meta-research)</title>
+<meta name="description" content="A self-auditing, editable, living p-curve capsule: right-skew test for evidential value, 33%-power flatness test, estimated statistical power, p-curve plot.">
+<style>
+  :root{
+    --slug-hue:14;
+    --accent:hsl(var(--slug-hue) 52% 50%); --accent-strong:hsl(var(--slug-hue) 56% 40%); --accent-soft:hsl(var(--slug-hue) 48% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:20rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .ed{width:4rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed.t{width:7rem;text-align:left} .ed:focus{outline:2px solid var(--accent);outline-offset:1px} .ed.bad{border-color:var(--bad)} .ed.ns{color:var(--ink-soft);opacity:.6}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.x{border:none;background:transparent;color:var(--ink-soft);padding:.2rem .4rem;font-size:1rem} .btn.x:hover{color:var(--bad)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .axis{stroke:var(--line)} .grid{stroke:var(--line);opacity:.5}
+  .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .axlab{font-size:12px;fill:var(--ink-soft)}
+  .obsline{stroke:var(--accent-strong);stroke-width:2.5;fill:none} .obspt{fill:var(--accent-strong)}
+  .nullline{stroke:var(--ctrl);stroke-width:1.4;stroke-dasharray:5 4;fill:none} .p33line{stroke:var(--warn);stroke-width:1.4;stroke-dasharray:2 3;fill:none}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.2rem;margin-top:.6rem}
+  .verdict{font-family:var(--serif);font-size:1.05rem;padding:.5rem .8rem;border-radius:8px;border-left:4px solid var(--accent)}
+  .verdict.good{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--card))} .verdict.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,var(--card))} .verdict.warn{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--card))}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>only p&lt;.05 used</span>
+  <span class="chk"><span class="dot ok"></span>half-curve robustness</span>
+  <span class="chk"><span class="dot" id="dotEv"></span>evidential value</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">curving…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Search</a></li>
+  <li><a href="#screening">3 · Screening</a></li><li><a href="#extraction">4 · p-values (editable)</a></li>
+  <li><a href="#curve">5 · p-curve &amp; tests</a></li><li><a href="#verdict">6 · Verdict</a></li>
+  <li><a href="#xval">7 · R (p-curve)</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · meta-research · p-curve</div>
+  <h1>Does this literature have evidential value?</h1>
+  <p class="standfirst">If a set of significant findings reflects a real effect, their p-values pile up near zero — a right-skewed p-curve. If they were p-hacked or reflect no effect, the curve flattens. p-curve reads the shape of significance itself.</p>
+  <p style="margin-top:.7rem"><span class="badge">Meta-research · p-curve</span> <span class="badge" id="badgeK">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>If a batch of significant findings reflects a real effect, their p-values pile up just under 0.05 in a tell-tale right-skew. This tests for that shape — and for the flat pattern that signals nothing underneath.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Question</h3>
+      <div class="pico"><b>Input</b><span>A set of studies each testing the same hypothesis, with a two-sided p-value for the focal test.</span>
+        <b>Selection</b><span>Only statistically significant results (p &lt; .05) enter the p-curve.</span>
+        <b>Estimands</b><span>Right-skew test (evidential value present), 33%-power flatness test (evidential value inadequate), and estimated underlying power.</span>
+        <b>Caveat</b><span>p-curve assumes the reported tests are the focal ones and were selected only on significance.</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Search</h2></div>
+    <div class="card"><p>p-values are <span class="illus">illustrative</span> and editable in stage 4; the curve and tests re-run as you type. Enter the exact two-sided p of each study's focal test.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Screening</h2></div>
+    <div class="card"><p>One focal test per study; non-significant results (p ≥ .05) are shown but excluded from the curve by design.</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>p-values — editable</h2><span class="prismaref">two-sided focal-test p</span></div>
+    <div class="card">
+      <p>Each study contributes one two-sided p-value. Significant results (0 &lt; p &lt; .05) are used; others are greyed out and ignored, exactly as p-curve prescribes. Edit, add or remove studies.</p>
+      <div class="tablewrap"><table id="cTable">
+        <thead><tr><th>Use</th><th>Study</th><th class="n">p (two-sided)</th><th class="n">z</th><th></th></tr></thead>
+        <tbody id="cBody"></tbody></table></div>
+      <div class="toolbar"><button class="btn" id="addRow">+ add study</button><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="curve">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>p-curve &amp; tests</h2><span class="prismaref">observed vs null vs 33%-power</span></div>
+    <div class="grid2">
+      <div class="card"><div style="font-size:.8rem;color:var(--ink-soft);margin-bottom:.3rem">Distribution of significant p-values</div>
+        <svg id="curvePlot" viewBox="0 0 480 300" role="group" aria-label="p-curve plot"></svg>
+        <p class="note"><span style="color:var(--accent-strong)">━</span> observed · <span style="color:var(--ctrl)">╌</span> null (no effect, flat) · <span style="color:var(--warn)">┄</span> 33% power. A right-leaning observed curve (mass at .01) signals evidential value.</p></div>
+      <div class="card"><h3>Tests</h3>
+        <div class="readouts">
+          <div class="ro"><div class="k">Significant studies</div><div class="v" id="roK">—</div></div>
+          <div class="ro"><div class="k">Right-skew (full)</div><div class="v" id="roFull">—</div></div>
+          <div class="ro"><div class="k">Right-skew (half, p&lt;.025)</div><div class="v" id="roHalf">—</div></div>
+          <div class="ro"><div class="k">Flatter than 33% power</div><div class="v" id="roFlat">—</div></div>
+          <div class="ro"><div class="k">Estimated power</div><div class="v" id="roPow">—</div></div>
+        </div>
+        <p class="note" id="testNote" style="margin-top:.5rem">—</p></div>
+    </div>
+  </section>
+
+  <section class="stage" id="verdict">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>Verdict</h2></div>
+    <div class="card"><div class="verdict" id="verdictBox">—</div>
+      <p class="note" style="margin-top:.6rem">Inference rules (Simonsohn, Nelson &amp; Simmons): <b>evidential value present</b> if the half p-curve right-skew test is p&lt;.05, or both right-skew tests are p&lt;.1. <b>Evidential value inadequate</b> if the 33%-power flatness test is p&lt;.05 (full or half). Otherwise inconclusive. p-curve cannot detect effects from non-significant studies, and is fooled if the wrong test is selected.</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation (p-curve / dmetar)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced every test, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: only p&lt;.05 enter the curve (enforced, not assumed), the half p-curve (p&lt;.025) is reported alongside the full one to guard against ambitious p-hacking, and both the evidential-value and the flatness tests are shown so a flat curve can never be spun as support. Fisher's method combines pp-values exactly (χ² with 2k df). Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> P-curve assumes the analysed tests are statistically independent and were each selected against an a-priori prediction; it diagnoses evidential value but cannot rescue a biased set of studies. Demo p-values are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · meta-research · p-curve · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="p-curve-demo", LSKEY="e156:"+SLUG;
+const PUBLISHED=[
+  {study:'STUDY-1',p:0.001,use:true},{study:'STUDY-2',p:0.003,use:true},{study:'STUDY-3',p:0.008,use:true},
+  {study:'STUDY-4',p:0.002,use:true},{study:'STUDY-5',p:0.012,use:true},{study:'STUDY-6',p:0.005,use:true},
+  {study:'STUDY-7',p:0.001,use:true},{study:'STUDY-8',p:0.009,use:true},{study:'STUDY-9',p:0.018,use:true},
+  {study:'STUDY-10',p:0.004,use:true},{study:'STUDY-11',p:0.072,use:true}
+];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const erf=x=>{const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;};
+const Phi=z=>0.5*(1+erf(z/Math.SQRT2));
+function qnorm(p){if(p<=0)return -Infinity;if(p>=1)return Infinity;
+  const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];const pl=0.02425;let q,r;
+  if(p<pl){q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  if(p<=1-pl){q=p-0.5;r=q*q;return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+  q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+// upper-tail of chi-square with EVEN df=2k:  P(X> x) = e^{-x/2} * sum_{j=0}^{k-1} (x/2)^j / j!
+function chi2sf2k(x,k){if(k<=0)return 1;if(x<=0)return 1;const h=x/2;let term=1,sum=1;for(let j=1;j<k;j++){term*=h/j;sum+=term;}const v=Math.exp(-h)*sum;return Math.max(0,Math.min(1,v));}
+const ZC=qnorm(1-0.05/2);          // 1.959964  two-sided .05 critical z
+const Z025=qnorm(1-0.025/2);        // 2.241403  half-curve critical z
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(Array.isArray(s)&&s.length)return s.map(clean);}}catch(e){}return PUBLISHED.map(o=>({...o}));}
+function clean(o){return {study:String(o.study||'study'),p:+o.p||0,use:o.use!==false};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(PUBLISHED.map(o=>({...o})));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+const sig=r=>r.use&&r.p>0&&r.p<0.05;
+const zOf=p=>qnorm(1-p/2);
+// p-curve engine: right-skew (evidential value), half-curve, 33%-power flatness, power estimate
+function pcurve(rows){
+  const use=rows.filter(sig);const k=use.length;if(k<1)return null;
+  const ps=use.map(r=>r.p);
+  // right-skew: pp = p/.05 ; Fisher chi2 = -2*sum ln(pp), df=2k
+  const Xfull=-2*ps.reduce((a,p)=>a+Math.log(p/0.05),0);const pFull=chi2sf2k(Xfull,k);
+  const half=ps.filter(p=>p<0.025);const kh=half.length;
+  const Xhalf=-2*half.reduce((a,p)=>a+Math.log(p/0.025),0);const pHalf=kh>0?chi2sf2k(Xhalf,kh):NaN;
+  // 33%-power flatness: noncentrality d33 with power=.33 ; pp33 = P(Z>=z|sig,d)/... ; left-skew Fisher on (1-pp33)
+  const d33=ZC+qnorm(0.33);   // power = Phi(d - ZC) = .33  ->  d = ZC + qnorm(.33)
+  const ppAlt=(p,d)=>{const z=zOf(p);const num=1-Phi(z-d),den=1-Phi(ZC-d);return Math.min(1-1e-12,Math.max(1e-12,num/den));};
+  const Xflat=-2*ps.reduce((a,p)=>a+Math.log(1-ppAlt(p,d33)),0);const pFlat=chi2sf2k(Xflat,k);
+  // power estimate: find d where mean(ppAlt)=0.5 (uniform), power=Phi(d-ZC)+Phi(-d-ZC)
+  let lo=0,hi=5;for(let it=0;it<60;it++){const m=(lo+hi)/2;const mean=ps.reduce((a,p)=>a+ppAlt(p,m),0)/k;if(mean>0.5)lo=m;else hi=m;}
+  const dhat=(lo+hi)/2;const power=Math.min(0.999,Math.max(0.05,Phi(dhat-ZC)+Phi(-dhat-ZC)));
+  // bins for the plot: (0,.01],(.01,.02],(.02,.03],(.03,.04],(.04,.05]
+  const edges=[0,0.01,0.02,0.03,0.04,0.05];const obs=[0,0,0,0,0];
+  ps.forEach(p=>{for(let b=0;b<5;b++)if(p>edges[b]&&p<=edges[b+1]){obs[b]++;break;}});
+  const obsPct=obs.map(c=>c/k*100);
+  const nullPct=[20,20,20,20,20];
+  // expected under 33% power: fraction of significant p in each bin
+  const F=(x,d)=>{const zx=zOf(x);return (1-Phi(zx-d))/(1-Phi(ZC-d));};   // P(p<=x | sig, d)
+  const p33Pct=edges.slice(1).map((e,i)=>(F(e,d33)-F(edges[i],d33))*100);
+  // verdict (Simonsohn rules)
+  const present=(kh>0&&pHalf<0.05)||(pFull<0.1&&(isNaN(pHalf)||pHalf<0.1));
+  const inadequate=pFlat<0.05||(kh>0&&(()=>{const Xf2=-2*half.reduce((a,p)=>a+Math.log(1-ppAlt(p,d33)),0);return chi2sf2k(Xf2,kh)<0.05;})());
+  let verdict;
+  if(present&&!inadequate)verdict={k:'good',t:'Evidential value present'};
+  else if(inadequate&&!present)verdict={k:'bad',t:'Evidential value inadequate / absent'};
+  else if(present&&inadequate)verdict={k:'warn',t:'Mixed — right-skewed yet flatter than 33% power'};
+  else verdict={k:'warn',t:'Inconclusive'};
+  return {use,k,kh,pFull,pHalf,pFlat,power,dhat,obsPct,nullPct,p33Pct,present,inadequate,verdict,Xfull};
+}
+const fmtP=p=>isNaN(p)?'—':(p<0.0001?'p < .0001':'p = '+p.toFixed(4));
+function renderCurve(res){
+  const svg=document.getElementById('curvePlot');if(!res){svg.innerHTML='<text x="14" y="24" class="tick">need ≥1 significant study</text>';return;}
+  const W=480,H=300,padL=46,padR=14,padT=14,padB=40,plotW=W-padL-padR,plotH=H-padT-padB;
+  const maxY=Math.max(50,...res.obsPct,...res.p33Pct)*1.05;
+  const labels=['.01','.02','.03','.04','.05'];
+  const X=i=>padL+(i+0.5)/5*plotW,Y=v=>padT+plotH-v/maxY*plotH;
+  let s=`<rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="none" class="axis"/>`;
+  for(let g=0;g<=maxY;g+=20){s+=`<line class="grid" x1="${padL}" y1="${Y(g)}" x2="${padL+plotW}" y2="${Y(g)}"/><text class="tick" x="${padL-6}" y="${Y(g)+3}" text-anchor="end">${g}%</text>`;}
+  labels.forEach((l,i)=>s+=`<text class="tick" x="${X(i)}" y="${H-padB+18}" text-anchor="middle">${l}</text>`);
+  const path=(arr,cls)=>{let d='';arr.forEach((v,i)=>d+=(i===0?'M':'L')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' ');return `<path class="${cls}" d="${d}"/>`;};
+  s+=path(res.nullPct,'nullline')+path(res.p33Pct,'p33line')+path(res.obsPct,'obsline');
+  res.obsPct.forEach((v,i)=>{s+=`<circle class="obspt" cx="${X(i)}" cy="${Y(v)}" r="3.5"/><text class="tick" x="${X(i)}" y="${Y(v)-7}" text-anchor="middle" fill="var(--accent-strong)">${v.toFixed(0)}%</text>`;});
+  s+=`<text class="axlab" x="${padL+plotW/2}" y="${H-6}" text-anchor="middle">p-value (significant results only)</text>`;
+  svg.innerHTML=s;
+}
+function renderReadouts(res){const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  if(!res){['roK','roFull','roHalf','roFlat','roPow'].forEach(id=>set(id,'—'));document.getElementById('testNote').textContent='—';document.getElementById('verdictBox').textContent='—';return;}
+  set('roK',res.k);set('roFull',fmtP(res.pFull));set('roHalf',res.kh>0?fmtP(res.pHalf):'n/a');set('roFlat',fmtP(res.pFlat));set('roPow',(res.power*100).toFixed(0)+'%');
+  document.getElementById('dotEv').className='dot '+(res.present&&!res.inadequate?'ok':(res.inadequate?'warn':'pending'));
+  document.getElementById('testNote').innerHTML=`The right-skew test asks whether significant p's cluster near zero (evidential value); the flatness test asks whether the curve is flatter than studies powered at 33% (no value). Estimated underlying power ≈ <b class="num">${(res.power*100).toFixed(0)}%</b>.`;
+  const v=res.verdict,vd=document.getElementById('verdictBox');vd.className='verdict '+(v.k==='good'?'good':v.k==='bad'?'bad':'warn');
+  vd.innerHTML=`<b>${v.t}.</b> Full right-skew ${fmtP(res.pFull)}; half-curve ${res.kh>0?fmtP(res.pHalf):'n/a'}; flatter-than-33%-power ${fmtP(res.pFlat)}.`;
+}
+function rcode(){const use=model.filter(sig);
+  document.getElementById('rcode').textContent=
+`library(dmetar)   # or the online app at p-curve.com
+# p-curve takes the focal test statistics; here, two-sided p-values:
+p <- c(${use.map(r=>r.p).join(', ')})
+# convert to z and feed test results, e.g. "z=2.40" lines, or:
+pcurve(data.frame(studies = paste0("s", seq_along(p)),
+                  p = p))            # right-skew + 33%-power tests + power estimate
+# full vs half p-curve and the power estimate match this capsule (Fisher's method)`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[pcurve,chi2sf2k].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function renderTable(){let h='';model.forEach((r,i)=>{const s=sig(r),bad=(r.p>0&&r.p<1)?'':' bad',z=r.p>0&&r.p<1?zOf(r.p).toFixed(2):'—';
+  h+=`<tr data-i="${i}"><td><input type="checkbox" class="inc" ${r.use?'checked':''}></td>`+
+    `<td><input class="ed t" data-k="study" value="${esc(r.study)}"></td>`+
+    `<td class="n"><input class="ed${bad}${s?'':' ns'}" data-k="p" type="number" step="0.001" min="0" max="1" value="${r.p}"></td>`+
+    `<td class="n">${z}${s?'':' <span class="note">(ns)</span>'}</td>`+
+    `<td><button class="btn x" data-rm="${i}" title="remove">✕</button></td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=pcurve(model);
+QA_RENDER([
+['Every entered p-value in (0, 1)', model.every(function(r){return r.p>0&&r.p<1;})],
+['≥ 1 significant result (p<.05) to curve', (res&&res.k>=1)?true:'warn'],
+['Full & half p-curve tests computed', (res&&isFinite(res.pFull))?(res.kh===0||isFinite(res.pHalf)):'warn'],
+['Estimated statistical power in [0,1]', !!(res&&res.power>=0&&res.power<=1)],
+['Half-curve subset ≤ full set (kh ≤ k)', !!(res&&res.kh<=res.k)]
+]);}
+function renderOutputs(){const res=pcurve(model);renderCurve(res);renderReadouts(res);rcode();renderInspect();renderQA();
+  document.getElementById('badgeK').textContent=res?`${res.k} significant`:'—';
+  const v=document.getElementById('verify');if(res){v.textContent=`${res.k} sig studies · right-skew ${fmtP(res.pFull)} · ${res.verdict.t} ✓`;v.style.color=res.verdict.k==='good'?'var(--good)':'var(--warn)';}else{v.textContent='no significant studies';v.style.color='var(--warn)';}}
+function renderAll(){renderTable();renderOutputs();}
+
+document.getElementById('cBody').addEventListener('input',e=>{const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i;
+  if(e.target.classList.contains('inc')){model[i].use=e.target.checked;renderTable();renderOutputs();persist();return;}
+  const k=e.target.dataset.k;if(!k)return;model[i][k]=(k==='study')?e.target.value:(+e.target.value||0);renderTable();renderOutputs();persist();});
+document.getElementById('cBody').addEventListener('click',e=>{const rm=e.target.closest('[data-rm]');if(rm){model.splice(+rm.dataset.rm,1);renderAll();persist();}});
+document.getElementById('addRow').addEventListener('click',()=>{model.push(clean({study:'NEW',p:0.02,use:true}));renderAll();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=PUBLISHED.map(o=>({...o}));try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

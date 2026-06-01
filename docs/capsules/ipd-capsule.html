@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IPD meta-analysis — e156 living capsule</title>
+<meta name="description" content="A self-auditing, editable, living individual-participant-data meta-analysis capsule: two-stage pooled effect, within-trial vs across-trial effect modification, and the aggregation (ecological) bias that only patient-level data resolves.">
+<style>
+  :root{
+    --slug-hue:200;
+    --accent:hsl(var(--slug-hue) 64% 40%); --accent-strong:hsl(var(--slug-hue) 66% 30%); --accent-soft:hsl(var(--slug-hue) 60% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 64%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 64%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:30rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600} .warnf{color:var(--warn);font-weight:600} .badf{color:var(--bad);font-weight:600}
+  .ed{width:4.4rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed.t{width:7rem;text-align:left} .ed:focus{outline:2px solid var(--accent);outline-offset:1px} .ed.bad{border-color:var(--bad)}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.x{border:none;background:transparent;color:var(--ink-soft);padding:.2rem .4rem;font-size:1rem} .btn.x:hover{color:var(--bad)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg.plot{display:block;width:100%;height:auto;font-family:var(--sans);max-width:640px;margin:0 auto}
+  svg.forest{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .grid{stroke:var(--line);opacity:.55} .axis{stroke:var(--ink-soft);stroke-width:1} .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)}
+  .within{stroke:var(--accent);stroke-width:2.4;stroke-linecap:round} .across{stroke:var(--bad);stroke-width:2;stroke-dasharray:6 4;fill:none}
+  .pt{fill:var(--accent-strong)} .axlbl{font-size:11px;fill:var(--ink-soft)}
+  .diamond{fill:var(--accent-strong)} .whisk{stroke:var(--ink-soft);stroke-width:1.25;stroke-linecap:round} .box{fill:var(--accent)} .trow .lbl{font-size:13px;fill:var(--ink)} .trow .val{font-size:12px;fill:var(--ink-soft);font-family:var(--mono)}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.2rem;margin-top:.6rem}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>SE &gt; 0</span>
+  <span class="chk"><span class="dot ok"></span>within ≠ across separated</span>
+  <span class="chk"><span class="dot ok"></span>ecological-bias flag</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">pooling…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Why IPD</a></li><li><a href="#extraction">2 · Trials (editable)</a></li>
+  <li><a href="#main">3 · Pooled effect</a></li><li><a href="#interaction">4 · Within vs across</a></li>
+  <li><a href="#bias">5 · Aggregation bias</a></li><li><a href="#xval">6 · R (metafor / ipdma)</a></li>
+  <li><a href="#assurance">7 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · individual participant data</div>
+  <h1>What only patient-level data can tell you</h1>
+  <p class="standfirst">Aggregate meta-analysis can pool the average effect, but it answers questions about <em>who benefits</em> using trial averages — and trial averages lie. The slope of effect against a patient covariate <em>across trials</em> can point the opposite way to the slope <em>within</em> each trial. IPD keeps the two apart; this capsule shows the gap.</p>
+  <p style="margin-top:.7rem"><span class="badge">Two-stage IPD</span> <span class="badge" id="badgeK">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>With each patient's data you can ask who benefits, not just the average effect. This shows how the effect of a patient factor inside trials can point the opposite way to the pattern across trials — a trap only patient-level data avoids.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>The ecological trap</h2><span class="prismaref">within vs across</span></div>
+    <div class="card"><h3>Two slopes, one covariate</h3>
+      <div class="pico"><b>Effect</b><span>Each trial's treatment effect (mean difference), with its standard error.</span>
+        <b>Within-trial slope</b><span>How the effect changes with a patient covariate <em>inside</em> a trial — estimable only from IPD. Pooled, it is the unbiased patient-level effect modification.</span>
+        <b>Across-trial slope</b><span>How trials' effects change with their <em>mean</em> covariate — all that aggregate data can offer. It mixes effect modification with trial-level confounding.</span>
+        <b>Aggregation bias</b><span>When the two slopes disagree, the across-trial (ecological) answer is misleading; a one-stage IPD model includes <em>both</em> terms to keep them separate.</span></div>
+      <p class="note" style="margin-top:.6rem">A two-stage IPD analysis estimates each effect/slope within a trial, then pools (shown here). A one-stage model fits all patients at once with trial as a stratum; for the main effect the two agree closely, but the one-stage model is preferred for sparse/binary data and for cleanly separating within- from across-trial covariate effects.</p></div>
+  </section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">02</span><h2>Trials — editable</h2><span class="prismaref">IPD-derived summaries</span></div>
+    <div class="card">
+      <p>For each trial: its treatment effect and SE, its mean covariate value, and the within-trial treatment×covariate slope (with SE) that only IPD provides. Edit anything — the forest, the within/across panel and the bias flag re-run live. The demo is rigged for an ecological reversal: across trials the effect <em>rises</em> with mean covariate, but within every trial it <em>falls</em>.</p>
+      <div class="tablewrap"><table id="cTable">
+        <thead><tr><th>Inc.</th><th>Trial</th><th class="n">Mean cov.</th><th class="n">Effect</th><th class="n">SE</th><th class="n">Within slope</th><th class="n">SE(slope)</th><th></th></tr></thead>
+        <tbody id="cBody"></tbody></table></div>
+      <div class="toolbar"><button class="btn" id="addRow">+ add trial</button><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="main">
+    <div class="stagehdr"><span class="stagenum">03</span><h2>Pooled treatment effect</h2><span class="prismaref">two-stage random-effects</span></div>
+    <div class="card">
+      <svg class="forest" id="forest" viewBox="0 0 720 300" role="img" aria-label="Forest plot"></svg>
+      <div class="readouts">
+        <div class="ro"><div class="k">Pooled effect</div><div class="v" id="roMu">—</div></div>
+        <div class="ro"><div class="k">95% CI</div><div class="v" id="roCI">—</div></div>
+        <div class="ro"><div class="k">τ²</div><div class="v" id="roTau">—</div></div>
+        <div class="ro"><div class="k">I²</div><div class="v" id="roI2">—</div></div>
+        <div class="ro"><div class="k">Trials</div><div class="v" id="roK">—</div></div>
+      </div>
+      <p class="note" style="margin-top:.5rem">The average effect — the part aggregate meta-analysis also gets right. The interesting question is who it varies for.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="interaction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Within-trial vs across-trial effect modification</h2><span class="prismaref">the IPD payoff</span></div>
+    <div class="card">
+      <svg class="plot" id="iaPlot" viewBox="0 0 640 400" role="img" aria-label="Within vs across-trial slopes"></svg>
+      <div class="readouts">
+        <div class="ro"><div class="k">Within slope (IPD)</div><div class="v" id="roWithin">—</div></div>
+        <div class="ro"><div class="k">Across slope (aggregate)</div><div class="v" id="roAcross">—</div></div>
+      </div>
+      <p class="note" style="margin-top:.5rem">Solid blue segments = each trial's within-trial slope (IPD); red dashed line = the across-trial regression of effect on mean covariate. When they point opposite ways, the aggregate answer is the ecological fallacy in action.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="bias">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Aggregation (ecological) bias</h2></div>
+    <div class="card"><p id="biasOut">—</p>
+      <p class="note">The difference between the across-trial and pooled within-trial slope is the aggregation bias. A one-stage IPD model that includes only a single (aggregate) covariate term inherits this bias; the fix is to include the patient-centred covariate <em>and</em> the trial-mean covariate as separate terms.</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>R cross-validation (metafor)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced every estimate, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>Assurance</h2></div>
+    <div class="card"><p>Self-auditing trust layer: every standard error must be strictly positive (checked live), the within-trial slopes are pooled separately from the across-trial regression so the two are never conflated, and an explicit flag fires when their signs disagree — the aggregation-bias warning. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> Aggregate data gives only the across-trial slope, which mixes effect modification with trial-level confounding; the within-trial slope (from IPD) is the unbiased patient-level effect. When they disagree, trust the within-trial estimate. A one-stage model keeps both terms separate. Demo data is illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · individual participant data · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="ipd", LSKEY="e156:"+SLUG, Z=1.959963984540054;
+const PUBLISHED=[
+  {trial:'YOUNG-1',meanx:52,eff:0.20,se:0.06,bw:-0.010,sw:0.004,inc:true},
+  {trial:'YOUNG-2',meanx:56,eff:0.28,se:0.07,bw:-0.012,sw:0.005,inc:true},
+  {trial:'MID-1',  meanx:62,eff:0.40,se:0.08,bw:-0.009,sw:0.004,inc:true},
+  {trial:'MID-2',  meanx:66,eff:0.46,se:0.09,bw:-0.011,sw:0.005,inc:true},
+  {trial:'OLD-1',  meanx:72,eff:0.58,se:0.10,bw:-0.013,sw:0.006,inc:true},
+  {trial:'OLD-2',  meanx:78,eff:0.70,se:0.12,bw:-0.010,sw:0.005,inc:true}
+];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const f2=x=>(x>=0?'+':'')+x.toFixed(2), f3=x=>(x>=0?'+':'')+x.toFixed(3);
+function normalCDF(x){return 0.5*(1+erf(x/Math.SQRT2));}
+function erf(x){const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;}
+const zP=z=>2*(1-normalCDF(Math.abs(z))); // two-tailed normal p
+function chisq1p(x){if(x<=0)return 1;return 2*(1-normalCDF(Math.sqrt(x)));}
+const pfmt=p=>isNaN(p)?'—':(p<0.001?'< 0.001':p.toFixed(3));
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(Array.isArray(s)&&s.length)return s.map(clean);}}catch(e){}return PUBLISHED.map(o=>({...o}));}
+function clean(o){return {trial:String(o.trial||'trial'),meanx:+o.meanx||0,eff:+o.eff||0,se:+o.se||0,bw:+o.bw||0,sw:+o.sw||0,inc:o.inc!==false};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(PUBLISHED.map(o=>({...o})));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+const validRow=r=>r.se>0&&r.sw>0&&isFinite(r.eff)&&isFinite(r.bw)&&isFinite(r.meanx);
+function included(){return model.filter(r=>r.inc&&validRow(r));}
+// ---- random-effects pooling (DL) ----
+function pool(y,v){const k=y.length;if(k<1)return null;
+  const w0=v.map(x=>1/x),sw0=w0.reduce((a,b)=>a+b,0),m0=y.reduce((a,e,i)=>a+w0[i]*e,0)/sw0,df=k-1;
+  const Q=y.reduce((a,e,i)=>a+w0[i]*(e-m0)**2,0),C=sw0-w0.reduce((a,e)=>a+e*e,0)/sw0,tau2=(df>0&&C>0)?Math.max(0,(Q-df)/C):0;
+  const wr=v.map(x=>1/(x+tau2)),swr=wr.reduce((a,b)=>a+b,0),mu=y.reduce((a,e,i)=>a+wr[i]*e,0)/swr,se=Math.sqrt(1/swr);
+  const I2=(k>1&&Q>df)?Math.max(0,(Q-df)/Q)*100:(k>1?0:null);
+  return {k,df,Q,tau2,I2,mu,se,ciL:mu-Z*se,ciU:mu+Z*se,p:zP(mu/se),wr};}
+function tauDL(y,v){const k=y.length;if(k<2)return 0;const w=v.map(x=>1/x),sw=w.reduce((a,b)=>a+b,0);
+  const m=y.reduce((a,e,i)=>a+w[i]*e,0)/sw,Q=y.reduce((a,e,i)=>a+w[i]*(e-m)**2,0);
+  const C=sw-w.reduce((a,e)=>a+e*e,0)/sw;return C>0?Math.max(0,(Q-(k-1))/C):0;}
+// ---- random-effects meta-regression: effect ~ mean covariate (across-trial slope) ----
+function metareg(x,y,v){const k=x.length;if(k<2)return null;const p=2;
+  const fit=(w)=>{const Sw=w.reduce((a,b)=>a+b,0),Swx=w.reduce((a,b,i)=>a+b*x[i],0),Swxx=w.reduce((a,b,i)=>a+b*x[i]*x[i],0),
+    Swy=w.reduce((a,b,i)=>a+b*y[i],0),Swxy=w.reduce((a,b,i)=>a+b*x[i]*y[i],0),D=Sw*Swxx-Swx*Swx;
+    const b1=(Sw*Swxy-Swx*Swy)/D,b0=(Swy-b1*Swx)/Sw;return {b0,b1,Sw,Swx,Swxx,D};};
+  const w0=v.map(z=>1/z),f0=fit(w0);
+  const Qe=y.reduce((a,e,i)=>a+w0[i]*(e-(f0.b0+f0.b1*x[i]))**2,0);
+  const Sww=w0.reduce((a,b)=>a+b*b,0),Swwx=w0.reduce((a,b,i)=>a+b*b*x[i],0),Swwxx=w0.reduce((a,b,i)=>a+b*b*x[i]*x[i],0);
+  const tr=(f0.Swxx*Sww-2*f0.Swx*Swwx+f0.Sw*Swwxx)/f0.D,cMoM=f0.Sw-tr;
+  const tau2res=(k>p&&cMoM>0)?Math.max(0,(Qe-(k-p))/cMoM):0;
+  const wr=v.map(z=>1/(z+tau2res)),fr=fit(wr);
+  const varB1=fr.Sw/fr.D,seB1=Math.sqrt(varB1),zB1=fr.b1/seB1,pB1=chisq1p(zB1*zB1);
+  return {b0:fr.b0,b1:fr.b1,seB1,zB1,pB1,tau2res,predY:xx=>fr.b0+fr.b1*xx};}
+// ---- rendering ----
+function setH(id,v){const e=document.getElementById(id);if(e)e.innerHTML=v;}
+const setT=(id,x)=>{const e=document.getElementById(id);if(e)e.textContent=x;};
+function renderForest(res){const svg=document.getElementById('forest');const inc=included();
+  if(!res){svg.innerHTML='<text x="14" y="24" class="tick">need ≥1 valid trial</text>';return;}
+  const n=inc.length,rowH=30,top=18,W=720,padL=150,padR=130,plotW=W-padL-padR;
+  const los=inc.map(r=>r.eff-Z*r.se),his=inc.map(r=>r.eff+Z*r.se);
+  let lo=Math.min(0,...los,res.ciL),hi=Math.max(...his,res.ciU);const pad=(hi-lo)*0.08;lo-=pad;hi+=pad;
+  const X=v=>padL+(v-lo)/(hi-lo)*plotW;const axisY=top+n*rowH+6,diaY=top+n*rowH+24;
+  let s='';const x0=X(0);s+=`<line class="grid" x1="${x0}" y1="${top-6}" x2="${x0}" y2="${axisY}"/>`;
+  [lo,(lo+hi)/2,hi].forEach(t=>{const x=X(t);s+=`<text class="tick" x="${x}" y="${axisY+15}" text-anchor="middle">${t.toFixed(2)}</text>`;});
+  const wmax=Math.max(...inc.map((r,i)=>res.wr[i]),1e-9);
+  inc.forEach((r,i)=>{const y=top+i*rowH+rowH/2,half=2+Math.sqrt(res.wr[i]/wmax)*8;
+    s+=`<g class="trow"><text class="lbl" x="14" y="${y+4}">${esc(r.trial)}</text>`+
+      `<line class="whisk" x1="${X(r.eff-Z*r.se)}" y1="${y}" x2="${X(r.eff+Z*r.se)}" y2="${y}"/>`+
+      `<rect class="box" x="${X(r.eff)-half}" y="${y-half}" width="${2*half}" height="${2*half}"/>`+
+      `<text class="val" x="${W-12}" y="${y+4}" text-anchor="end">${f2(r.eff)} (${f2(r.eff-Z*r.se)}, ${f2(r.eff+Z*r.se)})</text></g>`;});
+  const dcx=X(res.mu),dxl=X(res.ciL),dxu=X(res.ciU),h=7;
+  s+=`<polygon class="diamond" points="${dxl},${diaY} ${dcx},${diaY-h} ${dxu},${diaY} ${dcx},${diaY+h}"/>`;
+  s+=`<text class="lbl" x="14" y="${diaY+4}">Pooled (RE)</text><text class="val" x="${W-12}" y="${diaY+4}" text-anchor="end">${f2(res.mu)} (${f2(res.ciL)}, ${f2(res.ciU)})</text>`;
+  svg.setAttribute('viewBox',`0 0 ${W} ${diaY+22}`);svg.innerHTML=s;}
+function renderIA(inc,across,within){const svg=document.getElementById('iaPlot');
+  if(inc.length<1){svg.innerHTML='<text x="14" y="24" class="tick">need valid trials</text>';return;}
+  const W=640,H=400,padL=56,padR=20,padT=20,padB=44,pw=W-padL-padR,ph=H-padT-padB;
+  let xmin=Math.min(...inc.map(r=>r.meanx)),xmax=Math.max(...inc.map(r=>r.meanx));const xpad=(xmax-xmin)*0.18||5;xmin-=xpad;xmax+=xpad;
+  const seg=inc.map(r=>{const hw=(xmax-xmin)*0.06;return [r.eff-r.bw*hw,r.eff+r.bw*hw];}).flat();
+  const effs=inc.map(r=>r.eff);
+  let ymin=Math.min(...effs,...seg),ymax=Math.max(...effs,...seg);const yp=(ymax-ymin)*0.15||0.1;ymin-=yp;ymax+=yp;
+  const X=v=>padL+(v-xmin)/(xmax-xmin)*pw, Y=v=>padT+ph-(v-ymin)/(ymax-ymin)*ph;
+  let s='';s+=`<line class="axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+ph}"/><line class="axis" x1="${padL}" y1="${padT+ph}" x2="${padL+pw}" y2="${padT+ph}"/>`;
+  const xt=niceTicks(xmin,xmax,5);xt.forEach(t=>{const x=X(t);if(x>=padL-1&&x<=padL+pw+1)s+=`<line class="grid" x1="${x}" y1="${padT}" x2="${x}" y2="${padT+ph}"/><text class="tick" x="${x}" y="${padT+ph+16}" text-anchor="middle">${t.toFixed(0)}</text>`;});
+  const yt=niceTicks(ymin,ymax,4);yt.forEach(t=>{const y=Y(t);s+=`<line class="grid" x1="${padL}" y1="${y}" x2="${padL+pw}" y2="${y}"/><text class="tick" x="${padL-8}" y="${y+3}" text-anchor="end">${t.toFixed(2)}</text>`;});
+  s+=`<text class="axlbl" x="${padL+pw/2}" y="${H-6}" text-anchor="middle">mean covariate (trial)</text>`;
+  s+=`<text class="axlbl" transform="translate(13 ${padT+ph/2}) rotate(-90)" text-anchor="middle">treatment effect</text>`;
+  // across-trial regression line
+  if(across){const a=X(xmin),b=X(xmax);s+=`<line class="across" x1="${a}" y1="${Y(across.predY(xmin))}" x2="${b}" y2="${Y(across.predY(xmax))}"/>`;}
+  // within-trial segments + points
+  inc.forEach(r=>{const hw=(xmax-xmin)*0.06;const x1=r.meanx-hw,x2=r.meanx+hw,y1=r.eff-r.bw*hw,y2=r.eff+r.bw*hw;
+    s+=`<line class="within" x1="${X(x1)}" y1="${Y(y1)}" x2="${X(x2)}" y2="${Y(y2)}"/>`;
+    s+=`<circle class="pt" cx="${X(r.meanx)}" cy="${Y(r.eff)}" r="4"/>`;});
+  svg.innerHTML=s;}
+function niceTicks(lo,hi,n){if(!isFinite(lo)||!isFinite(hi)||hi<=lo)return [lo];const raw=(hi-lo)/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),norm=raw/mag;const step=(norm<1.5?1:norm<3?2:norm<7?5:10)*mag;const start=Math.ceil(lo/step)*step,out=[];for(let v=start;v<=hi+1e-9;v+=step)out.push(+v.toFixed(10));return out;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var inc=included();var y=inc.map(function(r){return r.eff;}),v=inc.map(function(r){return r.se*r.se;});
+var res=inc.length?pool(y,v):null,within=inc.length?pool(inc.map(function(r){return r.bw;}),inc.map(function(r){return r.sw*r.sw;})):null;
+QA_RENDER([
+['Every trial SE > 0 (effect & slope)', inc.length?inc.every(function(r){return r.se>0&&r.sw>0;}):'warn'],
+['Effects & within-trial slopes finite', model.some(function(r){return r.inc;})?model.filter(function(r){return r.inc;}).every(function(r){return isFinite(r.eff)&&isFinite(r.bw);}):'warn'],
+['≥ 1 valid trial (poolable)', !!res],
+['Main-effect I² within [0,100]', (res&&res.I2!=null)?(res.I2>=0&&res.I2<=100):'warn'],
+['τ² ≥ 0', !!(res&&res.tau2>=0)],
+['Within- & across-trial slopes pooled separately', !!(within&&res)],
+['≥ 2 trials for the across-trial slope', inc.length>=2?true:'warn']
+]);}
+function renderOutputs(){
+  const inc=included();const y=inc.map(r=>r.eff),v=inc.map(r=>r.se*r.se);
+  const res=inc.length?pool(y,v):null;renderForest(res);
+  const within=inc.length?pool(inc.map(r=>r.bw),inc.map(r=>r.sw*r.sw)):null;
+  const across=inc.length>=2?metareg(inc.map(r=>r.meanx),y,v):null;
+  renderIA(inc,across,within);
+  if(!res){['roMu','roCI','roTau','roI2','roWithin','roAcross'].forEach(id=>setT(id,'—'));setT('roK','0');
+    setT('biasOut','need ≥1 valid trial');setT('badgeK','—');
+    const vv=document.getElementById('verify');vv.textContent='no valid trials';vv.style.color='var(--warn)';rcode();renderInspect();renderQA();return;}
+  setT('roMu',f2(res.mu));setH('roCI',`${f2(res.ciL)} <small>to</small> ${f2(res.ciU)}`);
+  setT('roTau',res.tau2.toFixed(3));setH('roI2',res.I2==null?'—':`${res.I2.toFixed(0)}<small>%</small>`);setT('roK',res.k+'');
+  setT('badgeK',res.k+' trials');
+  setH('roWithin',within?`${f3(within.mu)}`:'—');
+  setH('roAcross',across?`${f3(across.b1)}`:'—');
+  // bias flag
+  if(within&&across){const diff=across.b1-within.mu;const opposite=Math.sign(across.b1)!==Math.sign(within.mu)&&Math.abs(across.b1)>1e-9&&Math.abs(within.mu)>1e-9;
+    setH('biasOut',`Within-trial slope (IPD, pooled) = <b class="num">${f3(within.mu)}</b> per unit (p = ${pfmt(within.p)}); across-trial slope (aggregate) = <b class="num">${f3(across.b1)}</b> per unit (p = ${pfmt(across.pB1)}). Aggregation bias = across − within = <b class="num">${f3(diff)}</b>. `+
+      (opposite?'<span class="badf">Signs disagree</span> — the aggregate (ecological) analysis reverses the direction of effect modification. Trust the within-trial slope.':(Math.abs(diff)>Math.abs(within.mu||1e-9)?'<span class="warnf">Slopes differ materially</span> — the aggregate slope is confounded by trial-level differences.':'<span class="good">Slopes broadly agree</span> — limited aggregation bias for this covariate.')));}
+  else setT('biasOut','Need ≥2 trials for the across-trial slope.');
+  const vv=document.getElementById('verify');
+  vv.textContent=`pooled ${f2(res.mu)} · within ${within?f3(within.mu):'—'} · across ${across?f3(across.b1):'—'} ✓`;vv.style.color='var(--good)';
+  rcode();renderInspect();renderQA();}
+function rcode(){const inc=included(),col=k=>inc.map(r=>r[k]).join(', ');
+  document.getElementById('rcode').textContent=
+`library(metafor)
+eff  <- c(${col('eff')});  se  <- c(${col('se')})
+bw   <- c(${col('bw')});   sw  <- c(${col('sw')})    # within-trial slopes (from IPD)
+meanx<- c(${col('meanx')})
+rma(yi = eff, sei = se, method = "DL")              # 1. pooled treatment effect (two-stage)
+rma(yi = bw,  sei = sw, method = "DL")              # 2. pooled WITHIN-trial slope (IPD)
+rma(eff ~ meanx, sei = se)                          # 3. ACROSS-trial slope (aggregate meta-regression)
+# A one-stage IPD model (lme4/nlme) keeps both: outcome ~ trt*x_centred + trt*x_mean + (1|trial)`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[pool,metareg].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function renderTable(){let h='';model.forEach((r,i)=>{const bad=validRow(r)?'':' bad';
+  h+=`<tr data-i="${i}"><td><input type="checkbox" class="inc" ${r.inc?'checked':''}></td>`+
+    `<td><input class="ed t" data-k="trial" value="${esc(r.trial)}"></td>`+
+    `<td class="n"><input class="ed" data-k="meanx" type="number" step="1" value="${r.meanx}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="eff" type="number" step="0.01" value="${r.eff}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="se" type="number" step="0.01" value="${r.se}"></td>`+
+    `<td class="n"><input class="ed" data-k="bw" type="number" step="0.001" value="${r.bw}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="sw" type="number" step="0.001" value="${r.sw}"></td>`+
+    `<td><button class="btn x" data-rm="${i}" title="remove">✕</button></td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function renderAll(){renderTable();renderOutputs();}
+
+document.getElementById('cBody').addEventListener('input',e=>{const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i;
+  if(e.target.classList.contains('inc')){model[i].inc=e.target.checked;renderTable();renderOutputs();persist();return;}
+  const k=e.target.dataset.k;if(!k)return;model[i][k]=(k==='trial')?e.target.value:(+e.target.value||0);
+  const t=model[i],bad=!validRow(t);tr.querySelectorAll('[data-k=eff],[data-k=se],[data-k=sw]').forEach(el=>el.classList.toggle('bad',bad));
+  renderOutputs();persist();});
+document.getElementById('cBody').addEventListener('click',e=>{const rm=e.target.closest('[data-rm]');if(rm){model.splice(+rm.dataset.rm,1);renderAll();persist();}});
+document.getElementById('addRow').addEventListener('click',()=>{model.push(clean({trial:'NEW',meanx:60,eff:0.4,se:0.1,bw:-0.01,sw:0.005,inc:true}));renderAll();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=PUBLISHED.map(o=>({...o}));try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

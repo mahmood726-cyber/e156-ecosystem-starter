@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fragility index — e156 living capsule (meta-research)</title>
+<meta name="description" content="A self-auditing, editable, living fragility-index capsule: the number of single-patient outcome changes that flip a significant trial to non-significant, by Fisher's exact test, modifying one arm only.">
+<style>
+  :root{
+    --slug-hue:48;
+    --accent:hsl(var(--slug-hue) 52% 50%); --accent-strong:hsl(var(--slug-hue) 56% 40%); --accent-soft:hsl(var(--slug-hue) 48% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.9rem}
+  th,td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .ed{width:5rem;font-family:var(--mono);font-size:.9rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.2rem .35rem;background:var(--paper);color:var(--ink)}
+  .ed:focus{outline:2px solid var(--accent);outline-offset:1px} .ed.bad{border-color:var(--bad)}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .axis{stroke:var(--line)} .grid{stroke:var(--line);opacity:.5} .thresh{stroke:var(--bad);stroke-width:1.3;stroke-dasharray:5 4}
+  .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .axlab{font-size:12px;fill:var(--ink-soft)}
+  .pcurveline{stroke:var(--accent-strong);stroke-width:2.5;fill:none} .ppt{fill:var(--accent-strong)} .fimark{fill:none;stroke:var(--bad);stroke-width:2.5}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.4rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.4rem;margin-top:.6rem}
+  .verdict{font-family:var(--serif);font-size:1.05rem;padding:.5rem .8rem;border-radius:8px;border-left:4px solid var(--accent)}
+  .verdict.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,var(--card))} .verdict.warn{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--card))} .verdict.good{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--card))}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>Fisher exact</span>
+  <span class="chk"><span class="dot ok"></span>one arm modified</span>
+  <span class="chk"><span class="dot" id="dotLTFU"></span>FI vs lost-to-follow-up</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">counting…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Source</a></li>
+  <li><a href="#screening">3 · Eligibility</a></li><li><a href="#extraction">4 · 2×2 (editable)</a></li>
+  <li><a href="#fi">5 · Fragility index</a></li><li><a href="#interp">6 · Interpretation</a></li>
+  <li><a href="#xval">7 · R (fragility)</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · meta-research · fragility index</div>
+  <h1>How many patients is this result?</h1>
+  <p class="standfirst">A "significant" trial can rest on a handful of outcomes. The fragility index counts the smallest number of patients whose outcome would have to flip to erase the significance — and compares it to how many were lost to follow-up.</p>
+  <p style="margin-top:.7rem"><span class="badge">Meta-research · fragility</span> <span class="badge" id="badgeFI">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>How sturdy is a 'significant' trial? This counts how few patients would need a different outcome to erase the result — a small number means the finding hangs by a thread.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Question</h3>
+      <div class="pico"><b>Input</b><span>A two-arm trial with a binary outcome, reported as a 2×2 table.</span>
+        <b>Test</b><span>Fisher's exact test (two-sided) — the standard for the fragility index.</span>
+        <b>Estimand</b><span>Fragility index: minimum events to add to one arm to push p to ≥ 0.05; fragility quotient = FI / total N.</span>
+        <b>Rule</b><span>Modify one arm only (the arm with fewer events), one patient at a time.</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Source</h2></div>
+    <div class="card"><p>The 2×2 counts are <span class="illus">illustrative</span> and editable in stage 4; the fragility index and p-trajectory re-compute as you type. Enter events and totals per arm, plus the number lost to follow-up.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Eligibility</h2></div>
+    <div class="card"><p>The fragility index is defined for a 2-arm, 1:1-ish parallel trial with a dichotomous outcome and an initially significant result (Fisher p &lt; 0.05). For a non-significant result the capsule reports the <em>reverse</em> fragility index instead.</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>2×2 table — editable</h2><span class="prismaref">events / total per arm</span></div>
+    <div class="card">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Arm</th><th class="n">Events</th><th class="n">Total</th><th class="n">Non-events</th><th class="n">Risk</th></tr></thead>
+        <tbody>
+          <tr><td><b>Treatment</b></td><td class="n"><input class="ed" id="in_eT" type="number" min="0"></td><td class="n"><input class="ed" id="in_nT" type="number" min="1"></td><td class="n" id="neT">—</td><td class="n" id="rT">—</td></tr>
+          <tr><td><b>Control</b></td><td class="n"><input class="ed" id="in_eC" type="number" min="0"></td><td class="n"><input class="ed" id="in_nC" type="number" min="1"></td><td class="n" id="neC">—</td><td class="n" id="rC">—</td></tr>
+        </tbody></table></div>
+      <div style="margin-top:.7rem;font-size:.9rem">Patients lost to follow-up (total trial): <input class="ed" id="in_ltfu" type="number" min="0" style="width:4rem"></div>
+      <div class="toolbar"><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="fi">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Fragility index</h2><span class="prismaref">p vs events added to one arm</span></div>
+    <div class="grid2">
+      <div class="card"><div style="font-size:.8rem;color:var(--ink-soft);margin-bottom:.3rem">Fisher p as events are added to the fewer-event arm</div>
+        <svg id="ptraj" viewBox="0 0 480 280" role="group" aria-label="p-value trajectory"></svg>
+        <p class="note">The curve climbs as the arms converge; the fragility index is where it first crosses 0.05 (red).</p></div>
+      <div class="card"><h3>Result</h3>
+        <div class="readouts">
+          <div class="ro"><div class="k">Observed Fisher p</div><div class="v" id="roP">—</div></div>
+          <div class="ro"><div class="k">Fragility index</div><div class="v" id="roFI">—</div></div>
+          <div class="ro"><div class="k">Fragility quotient</div><div class="v" id="roFQ">—</div></div>
+          <div class="ro"><div class="k">Lost to follow-up</div><div class="v" id="roLTFU">—</div></div>
+        </div>
+        <p class="note" id="fiNote" style="margin-top:.5rem">—</p></div>
+    </div>
+  </section>
+
+  <section class="stage" id="interp">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>Interpretation</h2></div>
+    <div class="card"><div class="verdict" id="verdict">—</div>
+      <p class="note" style="margin-top:.6rem">A small fragility index — especially one smaller than the number lost to follow-up — means the result could be reversed by reclassifying a few patients, so it should be read cautiously regardless of the p-value. The fragility index is descriptive, not a hypothesis test; it does not replace the confidence interval, and it depends on the (Fisher's exact, one-arm) convention used here.</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation (fragility)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced the fragility index and Fisher p, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: significance is judged by <b>Fisher's exact</b> test (not a normal approximation), exactly <b>one arm</b> is modified one patient at a time (the documented convention), and the index is shown beside the number lost to follow-up so a fragile result cannot hide behind its p-value. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> The fragility index counts how many single-patient outcome flips erase significance — it modifies one arm only and is meaningful for a 2×2 trial whose result was significant; a small index does not by itself prove the trial is wrong. Demo counts are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · meta-research · fragility index · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="fragility-index-demo", LSKEY="e156:"+SLUG;
+const DEFAULT={eT:12,nT:120,eC:28,nC:120,ltfu:9};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// lgamma (Lanczos g=7) and log-binomial
+const G=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+function lgamma(z){if(z<0.5)return Math.log(Math.PI/Math.sin(Math.PI*z))-lgamma(1-z);z-=1;let x=G[0];for(let i=1;i<9;i++)x+=G[i]/(z+i);const t=z+7.5;return 0.5*Math.log(2*Math.PI)+(z+0.5)*Math.log(t)-t+Math.log(x);}
+const logC=(n,k)=>(k<0||k>n)?-Infinity:lgamma(n+1)-lgamma(k+1)-lgamma(n-k+1);
+// two-sided Fisher exact p for table [[a,b],[c,d]] (rows = arms, cols = event/non-event)
+function fisher(a,b,c,d){const n1=a+b,n2=c+d,m1=a+c,N=n1+n2;if(N<=0)return 1;
+  const lpObs=logC(n1,a)+logC(n2,c)-logC(N,m1);const aLo=Math.max(0,m1-n2),aHi=Math.min(n1,m1);
+  let p=0;for(let x=aLo;x<=aHi;x++){const lp=logC(n1,x)+logC(n2,m1-x)-logC(N,m1);if(lp<=lpObs+1e-7)p+=Math.exp(lp);}
+  return Math.min(1,p);}
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(s&&typeof s==='object')return clean(s);}}catch(e){}return clean(DEFAULT);}
+function clean(o){return {eT:Math.max(0,Math.round(+o.eT||0)),nT:Math.max(1,Math.round(+o.nT||1)),eC:Math.max(0,Math.round(+o.eC||0)),nC:Math.max(1,Math.round(+o.nC||1)),ltfu:Math.max(0,Math.round(+o.ltfu||0))};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(clean(DEFAULT));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+const valid=m=>m.eT<=m.nT&&m.eC<=m.nC&&m.nT>0&&m.nC>0;
+// fragility index: modify the fewer-event arm one patient at a time until significance flips
+function fragility(m){
+  if(!valid(m))return null;
+  let a=m.eT,b=m.nT-m.eT,c=m.eC,d=m.nC-m.eC;const N=m.nT+m.nC;
+  const p0=fisher(a,b,c,d);const sigStart=p0<0.05;
+  // pick the arm with FEWER events to modify
+  const modT=(m.eT<=m.eC);
+  const traj=[{step:0,p:p0,a,b,c,d}];let fi=null,steps=0;const maxSteps=N;
+  if(sigStart){
+    // add events to the fewer-event arm (event++, nonevent--) until p>=0.05
+    while(steps<maxSteps){
+      if(modT){if(b<=0)break;a++;b--;}else{if(d<=0)break;c++;d--;}
+      steps++;const p=fisher(a,b,c,d);traj.push({step:steps,p,a,b,c,d});
+      if(p>=0.05){fi=steps;break;}
+    }
+  } else {
+    // reverse FI: remove events from the fewer-event arm (event--, nonevent++) until p<0.05
+    while(steps<maxSteps){
+      if(modT){if(a<=0)break;a--;b++;}else{if(c<=0)break;c--;d++;}
+      steps++;const p=fisher(a,b,c,d);traj.push({step:steps,p,a,b,c,d});
+      if(p<0.05){fi=steps;break;}
+    }
+  }
+  const reached=fi!==null;const fq=reached?fi/N:null;
+  return {p0,sigStart,modT,fi,reached,fq,N,traj,ltfu:m.ltfu};
+}
+const fmtP=p=>p<0.0001?'<0.0001':p.toFixed(4);
+function renderTraj(res){
+  const svg=document.getElementById('ptraj');if(!res){svg.innerHTML='<text x="14" y="24" class="tick">invalid 2×2</text>';return;}
+  const W=480,H=280,padL=46,padR=14,padT=14,padB=38,plotW=W-padL-padR,plotH=H-padT-padB;
+  const n=res.traj.length;const maxX=Math.max(1,res.traj[n-1].step);const maxY=Math.max(0.1,...res.traj.map(t=>t.p))*1.1;
+  const X=s=>padL+(maxX?s/maxX:0)*plotW,Y=p=>padT+plotH-Math.min(p,maxY)/maxY*plotH;
+  let s=`<rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="none" class="axis"/>`;
+  const yt=maxY<=0.12?[0,0.025,0.05,0.075,0.1]:[0,0.05,0.1,0.2,0.3,0.5].filter(v=>v<=maxY);
+  yt.forEach(v=>s+=`<line class="grid" x1="${padL}" y1="${Y(v)}" x2="${padL+plotW}" y2="${Y(v)}"/><text class="tick" x="${padL-6}" y="${Y(v)+3}" text-anchor="end">${v}</text>`);
+  s+=`<line class="thresh" x1="${padL}" y1="${Y(0.05)}" x2="${padL+plotW}" y2="${Y(0.05)}"/><text class="tick" x="${padL+plotW}" y="${Y(0.05)-4}" text-anchor="end" fill="var(--bad)">α = .05</text>`;
+  let d='';res.traj.forEach((t,i)=>d+=(i===0?'M':'L')+X(t.step).toFixed(1)+' '+Y(t.p).toFixed(1)+' ');s+=`<path class="pcurveline" d="${d}"/>`;
+  res.traj.forEach(t=>s+=`<circle class="ppt" cx="${X(t.step)}" cy="${Y(t.p)}" r="3"/>`);
+  if(res.reached){const ft=res.traj[res.traj.length-1];s+=`<circle class="fimark" cx="${X(ft.step)}" cy="${Y(ft.p)}" r="7"/>`;}
+  for(let t=0;t<=maxX;t+=Math.max(1,Math.ceil(maxX/6)))s+=`<text class="tick" x="${X(t)}" y="${H-padB+18}" text-anchor="middle">${t}</text>`;
+  s+=`<text class="axlab" x="${padL+plotW/2}" y="${H-4}" text-anchor="middle">patients reclassified in one arm</text>`;
+  svg.innerHTML=s;
+}
+function renderReadouts(res,m){const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  document.getElementById('neT').textContent=m.nT-m.eT;document.getElementById('neC').textContent=m.nC-m.eC;
+  document.getElementById('rT').textContent=(m.eT/m.nT*100).toFixed(1)+'%';document.getElementById('rC').textContent=(m.eC/m.nC*100).toFixed(1)+'%';
+  if(!res){['roP','roFI','roFQ','roLTFU'].forEach(id=>set(id,'—'));document.getElementById('fiNote').textContent='invalid table';document.getElementById('verdict').textContent='—';return;}
+  set('roP',fmtP(res.p0));set('roLTFU',res.ltfu);
+  set('roFI',res.reached?(res.sigStart?res.fi:'rev '+res.fi):'—');
+  set('roFQ',res.reached?(res.fq*100).toFixed(2)+'%':'—');
+  const arm=res.modT?'treatment':'control';
+  if(res.sigStart){
+    document.getElementById('fiNote').innerHTML=res.reached
+      ?`Adding <b class="num">${res.fi}</b> event(s) to the ${arm} arm raises Fisher p from ${fmtP(res.p0)} to ≥ .05. Fragility quotient = ${res.fi}/${res.N} = ${(res.fq*100).toFixed(2)}%.`
+      :`The result stays significant even after exhausting the ${arm} arm's non-events — unusually robust for this convention.`;
+  } else {
+    document.getElementById('fiNote').innerHTML=`The result is <b>not</b> significant (p = ${fmtP(res.p0)}). Reverse fragility index = <b class="num">${res.reached?res.fi:'—'}</b> event(s) removed from the ${arm} arm to reach significance.`;
+  }
+  const ltfuWorse=res.sigStart&&res.reached&&res.ltfu>=res.fi;
+  document.getElementById('dotLTFU').className='dot '+(res.sigStart?(ltfuWorse?'warn':'ok'):'pending');
+  const vd=document.getElementById('verdict');
+  if(!res.sigStart){vd.className='verdict warn';vd.innerHTML=`<b>Not statistically significant.</b> Fragility analysis (reverse FI) shows how close it came: ${res.reached?res.fi+' patient(s)':'—'}.`;}
+  else if(ltfuWorse){vd.className='verdict bad';vd.innerHTML=`<b>Fragile result.</b> The fragility index (${res.fi}) is ≤ the ${res.ltfu} patients lost to follow-up — reclassifying fewer patients than were already unaccounted for would erase significance.`;}
+  else if(res.reached&&res.fi<=5){vd.className='verdict warn';vd.innerHTML=`<b>Low fragility index (${res.fi}).</b> Significance hinges on just ${res.fi} outcome(s); interpret alongside the confidence interval.`;}
+  else{vd.className='verdict good';vd.innerHTML=`<b>Fragility index ${res.reached?res.fi:'—'}.</b> The result tolerates reclassifying ${res.reached?res.fi:'several'} patients before losing significance${res.reached&&res.ltfu<res.fi?', more than the '+res.ltfu+' lost to follow-up':''}.`;}
+}
+function rcode(){
+  document.getElementById('rcode').textContent=
+`library(fragility)
+# 2x2 by arm:    events,  non-events
+#   treatment:   ${model.eT},  ${model.nT-model.eT}
+#   control:     ${model.eC},  ${model.nC-model.eC}
+m <- matrix(c(${model.eT}, ${model.nT-model.eT}, ${model.eC}, ${model.nC-model.eC}), nrow = 2, byrow = TRUE)
+frag.study(e0 = ${model.eC}, m0 = ${model.nC}, e1 = ${model.eT}, m1 = ${model.nT}, methods = "Fisher")
+# returns the fragility index + quotient (Fisher's exact, one arm modified) — matches this capsule`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[fragility,fisher].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function syncInputs(){['eT','nT','eC','nC','ltfu'].forEach(k=>{const el=document.getElementById('in_'+k);if(el)el.value=model[k];});}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=fragility(model);
+QA_RENDER([
+['Events ≤ arm size in both arms', model.eT<=model.nT&&model.eC<=model.nC],
+['Fragility index ≥ 0 (when significance reached)', (res&&res.reached)?(res.fi>=0):'warn'],
+['Fragility quotient = FI / N in [0,1]', (res&&res.reached&&res.fq!=null)?(res.fq>=0&&res.fq<=1):'warn'],
+['Lost-to-follow-up ≤ total randomised', model.ltfu<=(model.nT+model.nC)],
+['Baseline result significant (forward fragility)', (res&&res.sigStart)?true:'warn']
+]);}
+function renderOutputs(){const res=fragility(model);renderTraj(res);renderReadouts(res,model);rcode();renderInspect();renderQA();
+  document.getElementById('badgeFI').textContent=res&&res.reached?(res.sigStart?'FI = '+res.fi:'reverse FI = '+res.fi):'—';
+  const v=document.getElementById('verify');
+  if(res){v.textContent=res.sigStart?`Fisher p=${fmtP(res.p0)} · fragility index ${res.reached?res.fi:'>max'} ✓`:`not significant (p=${fmtP(res.p0)})`;v.style.color=res.sigStart?'var(--good)':'var(--warn)';}
+  else{v.textContent='invalid 2×2';v.style.color='var(--warn)';}}
+function renderAll(){syncInputs();renderOutputs();}
+
+document.getElementById('extraction').addEventListener('input',e=>{const id=e.target.id;if(!id||!id.startsWith('in_'))return;
+  model[id.slice(3)]=Math.max(0,Math.round(+e.target.value||0));model=clean(model);const bad=!valid(model);
+  ['in_eT','in_nT','in_eC','in_nC'].forEach(x=>{const el=document.getElementById(x);if(el)el.classList.toggle('bad',bad);});
+  renderOutputs();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=clean(DEFAULT);try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

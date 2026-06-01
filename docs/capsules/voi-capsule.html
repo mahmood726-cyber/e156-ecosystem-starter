@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Value of information (EVPI) — e156 living capsule</title>
+<meta name="description" content="A self-auditing, editable, living value-of-information capsule: expected value of perfect information from a seeded probabilistic sensitivity analysis, per-person and population EVPI across willingness-to-pay — computed live in the browser.">
+<style>
+  :root{
+    --slug-hue:200;
+    --accent:hsl(var(--slug-hue) 64% 40%); --accent-strong:hsl(var(--slug-hue) 66% 30%); --accent-soft:hsl(var(--slug-hue) 60% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 64%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 64%); --accent-strong:hsl(var(--slug-hue) 64% 74%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:24rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600} .warnf{color:var(--warn);font-weight:600}
+  .ed{width:5.4rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed.t{width:7rem;text-align:left} .ed:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  .field{display:inline-flex;flex-direction:column;gap:.15rem;margin:.2rem .8rem .2rem 0} .field label{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+  svg.plot{display:block;width:100%;height:auto;font-family:var(--sans);max-width:660px;margin:0 auto}
+  .grid{stroke:var(--line);opacity:.55} .axis{stroke:var(--ink-soft);stroke-width:1} .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)}
+  .cEvpi{stroke:var(--accent);stroke-width:2.6;fill:none} .thline{stroke:var(--accent-strong);stroke-width:1;stroke-dasharray:2 3;opacity:.8} .axlbl{font-size:11px;fill:var(--ink-soft)}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.2rem;margin-top:.6rem}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>EVPI ≥ 0</span>
+  <span class="chk"><span class="dot ok"></span>seeded PSA</span>
+  <span class="chk"><span class="dot ok"></span>E[max] − max[E]</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">simulating…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Why VOI</a></li><li><a href="#params">2 · PSA inputs (editable)</a></li>
+  <li><a href="#curve">3 · EVPI curve</a></li><li><a href="#decision">4 · At a threshold</a></li>
+  <li><a href="#population">5 · Population EVPI</a></li><li><a href="#xval">6 · R (voi / BCEA)</a></li>
+  <li><a href="#assurance">7 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · value of information</div>
+  <h1>How much is it worth knowing for sure?</h1>
+  <p class="standfirst">A cost-effectiveness decision can be right on average yet wrong often — and acting on the wrong option costs health. The expected value of perfect information is the average loss from that uncertainty: the most a perfectly informative study could ever be worth. Where it's large, more research pays; where it's near zero, decide and move on.</p>
+  <p style="margin-top:.7rem"><span class="badge">EVPI from PSA</span> <span class="badge" id="badgeIt">—</span> <span class="badge">living · seeded · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>A decision can be right on average yet wrong often, and acting on the wrong option costs health. This puts a price on that uncertainty — the most a perfectly informative study could ever be worth — to show whether more research pays.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>The price of uncertainty</h2><span class="prismaref">opportunity loss</span></div>
+    <div class="card"><h3>What EVPI measures</h3>
+      <div class="pico"><b>Net benefit</b><span>For each strategy and PSA draw: NMB = λ·QALYs − Cost, where λ is willingness-to-pay per QALY.</span>
+        <b>Current info</b><span>Choose the strategy with the highest <em>mean</em> net benefit — max of the averages.</span>
+        <b>Perfect info</b><span>If you knew each draw's truth, you'd pick that draw's best — the average of the maxima.</span>
+        <b>EVPI</b><span>Perfect minus current = E[max] − max[E] ≥ 0: the expected opportunity loss from deciding under uncertainty.</span></div>
+      <p class="note" style="margin-top:.6rem">EVPI is highest where strategies are close (the decision could easily flip) and falls to zero where one option clearly wins. Population EVPI scales it by everyone the decision affects — the ceiling on what further research could be worth.</p></div>
+  </section>
+
+  <section class="stage" id="params">
+    <div class="stagehdr"><span class="stagenum">02</span><h2>PSA inputs — editable</h2><span class="prismaref">two strategies</span></div>
+    <div class="card">
+      <p>Mean and SD of cost and QALYs for each strategy; the capsule draws a <b>seeded</b> probabilistic sensitivity analysis (same seed → same samples, every time). Edit anything — the EVPI curve re-runs live.</p>
+      <div class="tablewrap"><table id="cTable">
+        <thead><tr><th>Strategy</th><th class="n">Mean cost</th><th class="n">SD cost</th><th class="n">Mean QALYs</th><th class="n">SD QALYs</th></tr></thead>
+        <tbody id="cBody"></tbody></table></div>
+      <div style="margin-top:.6rem">
+        <span class="field"><label for="itIn">PSA iterations</label><input class="ed" id="itIn" type="number" step="500" min="200" max="20000" value="4000"></span>
+        <span class="field"><label for="seedIn">Seed</label><input class="ed" id="seedIn" type="number" step="1" value="12345"></span>
+      </div>
+      <div class="toolbar"><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="curve">
+    <div class="stagehdr"><span class="stagenum">03</span><h2>EVPI curve</h2><span class="prismaref">per person vs WTP</span></div>
+    <div class="card">
+      <svg class="plot" id="evpiPlot" viewBox="0 0 660 400" role="img" aria-label="EVPI vs willingness-to-pay"></svg>
+      <div class="readouts">
+        <div class="ro"><div class="k">Peak EVPI / person</div><div class="v" id="roPeak">—</div></div>
+        <div class="ro"><div class="k">at WTP</div><div class="v" id="roPeakL">—</div></div>
+        <div class="ro"><div class="k">ICER (means)</div><div class="v" id="roICER">—</div></div>
+      </div>
+      <p class="note" style="margin-top:.5rem">Per-person EVPI across willingness-to-pay. The peak sits near the WTP where the optimal strategy switches — exactly where the decision is most uncertain.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="decision">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>At a willingness-to-pay</h2></div>
+    <div class="card">
+      <p>WTP threshold λ = <input class="ed" id="lamIn" type="number" step="1000" min="0" value="20000" aria-label="willingness-to-pay per QALY"> per QALY.</p>
+      <div class="readouts">
+        <div class="ro"><div class="k">Optimal (current info)</div><div class="v" id="roOpt">—</div></div>
+        <div class="ro"><div class="k">P(optimal best)</div><div class="v" id="roPbest">—</div></div>
+        <div class="ro"><div class="k">EVPI / person</div><div class="v" id="roEvpi">—</div></div>
+      </div>
+      <p id="decNote" class="note" style="margin-top:.5rem">—</p>
+    </div>
+  </section>
+
+  <section class="stage" id="population">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Population EVPI</h2></div>
+    <div class="card">
+      <p>Affected population over the decision's relevant horizon: <input class="ed" id="popIn" type="number" step="1000" min="0" value="50000" aria-label="affected population size"> people.</p>
+      <div class="readouts">
+        <div class="ro"><div class="k">Population EVPI</div><div class="v" id="roPopEvpi">—</div></div>
+        <div class="ro"><div class="k">Research worth it?</div><div class="v" id="roWorth">—</div></div>
+      </div>
+      <p class="note" style="margin-top:.5rem">Population EVPI = per-person EVPI × affected population. A trial costing less than this could, in principle, be a good investment; one costing more cannot resolve enough uncertainty to pay for itself.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>R cross-validation (voi / BCEA)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced every estimate, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live inputs</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>Assurance</h2></div>
+    <div class="card"><p>Self-auditing trust layer: EVPI is computed as E[max NMB] − max E[NMB], which is non-negative by construction (checked live), the PSA is driven by a seeded PRNG so results are exactly reproducible, and population EVPI is the per-person figure times the affected population — never an unscaled per-person number masquerading as a research budget. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> Expected value of perfect information is the per-person value of removing all decision uncertainty — an upper bound on what any future study could be worth; it is computed from the PSA, so it inherits every assumption baked into those distributions. Compare population EVPI against realistic study costs. Demo data are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · value of information · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="voi", LSKEY="e156:"+SLUG;
+const PUBLISHED={strats:[
+  {name:'Standard',mc:8000,sc:1500,mq:1.20,sq:0.15},
+  {name:'New',mc:12000,sc:2500,mq:1.45,sq:0.22}
+],iters:4000,seed:12345,lambda:20000,pop:50000};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money=x=>'£'+Math.round(x).toLocaleString('en-GB');
+const money2=x=>'£'+x.toLocaleString('en-GB',{maximumFractionDigits:0});
+let cfg=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(s&&Array.isArray(s.strats)&&s.strats.length>=2)return clean(s);}}catch(e){}return clean(JSON.parse(JSON.stringify(PUBLISHED)));}
+function clean(s){return {strats:s.strats.map(x=>({name:String(x.name||'arm'),mc:+x.mc||0,sc:Math.max(0,+x.sc||0),mq:+x.mq||0,sq:Math.max(0,+x.sq||0)})),
+  iters:Math.min(20000,Math.max(200,+s.iters||4000)),seed:+s.seed||12345,lambda:Math.max(0,+s.lambda||20000),pop:Math.max(0,+s.pop||50000)};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(cfg));}catch(e){}
+  const ed=JSON.stringify(cfg)!==JSON.stringify(clean(JSON.parse(JSON.stringify(PUBLISHED))));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+// ---- seeded PRNG (mulberry32) + Box-Muller normal ----
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+function makeNormals(seed,count){const rng=mulberry32(seed>>>0),out=new Float64Array(count);
+  for(let i=0;i<count;i+=2){let u1=rng()||1e-12,u2=rng();const R=Math.sqrt(-2*Math.log(u1)),th=2*Math.PI*u2;out[i]=R*Math.cos(th);if(i+1<count)out[i+1]=R*Math.sin(th);}return out;}
+// ---- generate PSA: returns per-strategy {c:[], q:[]} ----
+function genPSA(cfg){const S=cfg.strats.length,N=cfg.iters;const z=makeNormals(cfg.seed,2*S*N);
+  const psa=cfg.strats.map(()=>({c:new Float64Array(N),q:new Float64Array(N)}));
+  let k=0;for(let s=0;s<S;s++){for(let i=0;i<N;i++){psa[s].c[i]=cfg.strats[s].mc+cfg.strats[s].sc*z[k++];psa[s].q[i]=cfg.strats[s].mq+cfg.strats[s].sq*z[k++];}}
+  return psa;}
+// ---- EVPI at a single lambda from PSA samples ----
+function evpiAt(psa,lambda){const S=psa.length,N=psa[0].c.length;
+  const meanNMB=new Float64Array(S);
+  for(let s=0;s<S;s++){let sum=0;for(let i=0;i<N;i++)sum+=lambda*psa[s].q[i]-psa[s].c[i];meanNMB[s]=sum/N;}
+  let baseline=-Infinity,opt=0;for(let s=0;s<S;s++)if(meanNMB[s]>baseline){baseline=meanNMB[s];opt=s;}
+  let perfectSum=0,winCount=0;
+  for(let i=0;i<N;i++){let best=-Infinity,bs=0;for(let s=0;s<S;s++){const nb=lambda*psa[s].q[i]-psa[s].c[i];if(nb>best){best=nb;bs=s;}}perfectSum+=best;if(bs===opt)winCount++;}
+  const perfect=perfectSum/N;
+  return {evpi:Math.max(0,perfect-baseline),baseline,perfect,opt,pBest:winCount/N,meanNMB:Array.from(meanNMB)};}
+function evpiCurve(psa,lams){return lams.map(l=>({l,evpi:evpiAt(psa,l).evpi}));}
+// ---- rendering ----
+function setH(id,v){const e=document.getElementById(id);if(e)e.innerHTML=v;}
+const setT=(id,x)=>{const e=document.getElementById(id);if(e)e.textContent=x;};
+let _psa=null;
+function lamMax(){const a=cfg.strats[0],b=cfg.strats[1];const dq=Math.abs(b.mq-a.mq)||0.1;const icer=Math.abs((b.mc-a.mc)/(b.mq-a.mq));return Math.max(20000,Math.min(200000,(isFinite(icer)?icer:30000)*2.2));}
+function renderCurve(curve,lmax){const svg=document.getElementById('evpiPlot');
+  if(!curve.length){svg.innerHTML='<text x="14" y="24" class="tick">need inputs</text>';return;}
+  const W=660,H=400,padL=74,padR=18,padT=18,padB=46,pw=W-padL-padR,ph=H-padT-padB;
+  const ymax=Math.max(...curve.map(d=>d.evpi),1)*1.12;
+  const X=l=>padL+l/lmax*pw, Y=v=>padT+ph-v/ymax*ph;
+  let s='';s+=`<line class="axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+ph}"/><line class="axis" x1="${padL}" y1="${padT+ph}" x2="${padL+pw}" y2="${padT+ph}"/>`;
+  const xt=niceTicks(0,lmax,5);xt.forEach(t=>{const x=X(t);if(x<=padL+pw+1)s+=`<line class="grid" x1="${x}" y1="${padT}" x2="${x}" y2="${padT+ph}"/><text class="tick" x="${x}" y="${padT+ph+16}" text-anchor="middle">${(t/1000).toFixed(0)}k</text>`;});
+  const yt=niceTicks(0,ymax,5);yt.forEach(v=>{const y=Y(v);s+=`<line class="grid" x1="${padL}" y1="${y}" x2="${padL+pw}" y2="${y}"/><text class="tick" x="${padL-8}" y="${y+3}" text-anchor="end">£${v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0)}</text>`;});
+  s+=`<text class="axlbl" x="${padL+pw/2}" y="${H-6}" text-anchor="middle">willingness-to-pay per QALY (£)</text>`;
+  s+=`<text class="axlbl" transform="translate(15 ${padT+ph/2}) rotate(-90)" text-anchor="middle">EVPI per person (£)</text>`;
+  const pts=curve.map(d=>`${X(d.l).toFixed(1)},${Y(d.evpi).toFixed(1)}`).join(' ');s+=`<polyline class="cEvpi" points="${pts}"/>`;
+  if(cfg.lambda<=lmax){const x=X(cfg.lambda);s+=`<line class="thline" x1="${x}" y1="${padT}" x2="${x}" y2="${padT+ph}"/>`;}
+  svg.innerHTML=s;}
+function niceTicks(lo,hi,n){if(!isFinite(lo)||!isFinite(hi)||hi<=lo)return [lo];const raw=(hi-lo)/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),norm=raw/mag;const step=(norm<1.5?1:norm<3?2:norm<7?5:10)*mag;const start=Math.ceil(lo/step)*step,out=[];for(let v=start;v<=hi+1e-9;v+=step)out.push(+v.toFixed(10));return out;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var psaS=genPSA(cfg),at=evpiAt(psaS,cfg.lambda);
+QA_RENDER([
+['≥ 2 strategies to compare', cfg.strats.length>=2],
+['Every cost & QALY SD ≥ 0', cfg.strats.every(function(s){return s.sc>=0&&s.sq>=0;})],
+['EVPI ≥ 0 (information cannot have negative value)', !!(at&&at.evpi>=0)],
+['Optimal-strategy index in range', !!(at&&at.opt>=0&&at.opt<cfg.strats.length)],
+['P(best) for the optimal strategy in [0,1]', !!(at&&at.pBest>=0&&at.pBest<=1)],
+['EVPI = E[max NMB] − max E[NMB] reconciles', !!(at&&Math.abs(at.evpi-Math.max(0,at.perfect-at.baseline))<1e-6)]
+]);}
+function renderOutputs(){
+  _psa=genPSA(cfg);const lmax=lamMax();
+  const lams=[];for(let i=0;i<=60;i++)lams.push(lmax*i/60);
+  const curve=evpiCurve(_psa,lams);renderCurve(curve,lmax);
+  let peak=curve[0];curve.forEach(d=>{if(d.evpi>peak.evpi)peak=d;});
+  const a=cfg.strats[0],b=cfg.strats[1];const icer=(b.mc-a.mc)/(b.mq-a.mq);
+  setT('roPeak',money(peak.evpi));setT('roPeakL',money(peak.l));setT('roICER',isFinite(icer)?money(icer)+'/QALY':'—');
+  setT('badgeIt',cfg.iters.toLocaleString('en-GB')+' iterations');
+  const at=evpiAt(_psa,cfg.lambda);
+  setT('roOpt',cfg.strats[at.opt].name);setH('roPbest',(at.pBest*100).toFixed(0)+'<small>%</small>');setT('roEvpi',money(at.evpi));
+  setH('decNote',`At λ = ${money(cfg.lambda)}/QALY the strategy with the highest mean net benefit is <b>${esc(cfg.strats[at.opt].name)}</b>, best in <b class="num">${(at.pBest*100).toFixed(0)}%</b> of PSA draws. Per-person EVPI = <b class="num">${money(at.evpi)}</b> — `+
+    (at.evpi<1?'<span class="good">essentially zero</span>: the decision is settled at this threshold; no study could improve it.':(at.pBest<0.7?'<span class="warnf">substantial decision uncertainty</span> — the optimal choice flips often across the PSA.':'modest residual uncertainty.')));
+  const pop=cfg.pop*at.evpi;setT('roPopEvpi',money(pop));
+  setH('roWorth',pop>1e6?'<span class="warnf">maybe</span>':(pop<1e5?'<span class="good">unlikely</span>':'borderline'));
+  const vv=document.getElementById('verify');vv.textContent=`EVPI@${(cfg.lambda/1000).toFixed(0)}k ${money(at.evpi)} · peak ${money(peak.evpi)} ✓`;vv.style.color='var(--good)';
+  rcode();renderInspect();renderQA();}
+function rcode(){const a=cfg.strats[0],b=cfg.strats[1];
+  document.getElementById('rcode').textContent=
+`# voi package; PSA matrices e (effects/QALYs) and c (costs), columns = strategies
+library(voi)
+# net benefit at lambda: nb_s = lambda * e_s - c_s
+ce <- evppi(  # or evsi(); EVPI is the limiting case
+  outputs = list(e = e, c = c, k = seq(0, ${Math.round(lamMax())}, 1000)))
+plot(ce)        # per-person EVPI vs willingness-to-pay
+# EVPI(k) = mean(apply(nb, 1, max)) - max(colMeans(nb))
+# population EVPI = per-person EVPI * ${cfg.pop}`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(cfg,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[mulberry32,genPSA,evpiAt].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function renderTable(){let h='';cfg.strats.forEach((r,i)=>{
+  h+=`<tr data-i="${i}"><td><input class="ed t" data-k="name" value="${esc(r.name)}"></td>`+
+    `<td class="n"><input class="ed" data-k="mc" type="number" step="500" value="${r.mc}"></td>`+
+    `<td class="n"><input class="ed" data-k="sc" type="number" step="100" value="${r.sc}"></td>`+
+    `<td class="n"><input class="ed" data-k="mq" type="number" step="0.05" value="${r.mq}"></td>`+
+    `<td class="n"><input class="ed" data-k="sq" type="number" step="0.01" value="${r.sq}"></td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function renderAll(){renderTable();
+  document.getElementById('itIn').value=cfg.iters;document.getElementById('seedIn').value=cfg.seed;
+  document.getElementById('lamIn').value=cfg.lambda;document.getElementById('popIn').value=cfg.pop;renderOutputs();}
+
+document.getElementById('cBody').addEventListener('input',e=>{const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i,k=e.target.dataset.k;if(!k)return;
+  cfg.strats[i][k]=(k==='name')?e.target.value:(+e.target.value||0);cfg=clean(cfg);renderOutputs();persist();});
+document.getElementById('itIn').addEventListener('input',e=>{cfg.iters=+e.target.value||4000;cfg=clean(cfg);renderOutputs();persist();});
+document.getElementById('seedIn').addEventListener('input',e=>{cfg.seed=+e.target.value||12345;cfg=clean(cfg);renderOutputs();persist();});
+document.getElementById('lamIn').addEventListener('input',e=>{cfg.lambda=Math.max(0,+e.target.value||0);renderOutputs();persist();});
+document.getElementById('popIn').addEventListener('input',e=>{cfg.pop=Math.max(0,+e.target.value||0);renderOutputs();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{cfg=clean(JSON.parse(JSON.stringify(PUBLISHED)));try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Observational cohort (STROBE) — e156 living capsule (primary)</title>
+<meta name="description" content="A self-auditing, editable, living observational-study capsule: crude vs adjusted effect, a confounding DAG, and the E-value for unmeasured confounding.">
+<style>
+  :root{
+    --slug-hue:38;
+    --accent:hsl(var(--slug-hue) 56% 46%); --accent-strong:hsl(var(--slug-hue) 60% 36%); --accent-soft:hsl(var(--slug-hue) 50% 94%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 62% 64%); --accent-strong:hsl(var(--slug-hue) 66% 72%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 62% 64%); --accent-strong:hsl(var(--slug-hue) 66% 72%); --accent-soft:hsl(var(--slug-hue) 28% 16%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+  .inputgrid{display:grid;grid-template-columns:auto auto auto auto;gap:.4rem .7rem;align-items:center;font-size:.9rem}
+  .inputgrid .hd{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600} .inputgrid .lbl{color:var(--ink-soft);font-weight:600}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .ed{width:4.5rem;font-family:var(--mono);font-size:.86rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.2rem .35rem;background:var(--paper);color:var(--ink)} .ed:focus{outline:2px solid var(--accent)} .ed.bad{border-color:var(--bad)} .ed.w{width:100%;text-align:left}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .axis{stroke:var(--line)} .nullline{stroke:var(--ink-soft);stroke-width:1.25} .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .axlab{font-size:12px;fill:var(--ink-soft)}
+  .crude .box{fill:var(--ctrl)} .crude .whisk{stroke:var(--ctrl)} .adj .box{fill:var(--accent)} .adj .whisk{stroke:var(--accent-strong)}
+  .whisk{stroke-width:2;stroke-linecap:round} .box{} .elbl{font-size:12px;fill:var(--ink)}
+  .node{fill:var(--card);stroke:var(--accent-strong);stroke-width:1.6} .node.conf{stroke:var(--warn)} .nodetxt{font-size:12px;fill:var(--ink);font-weight:600} .edge{stroke:var(--ink-soft);stroke-width:1.6;fill:none;marker-end:url(#ar)} .edge.conf{stroke:var(--warn)}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.3rem;font-weight:600} .ro .v small{font-size:.74rem;color:var(--ink-soft);font-weight:400}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.4rem;margin-top:.6rem}
+  .verdict{font-family:var(--serif);font-size:1.05rem;padding:.5rem .8rem;border-radius:8px;border-left:4px solid var(--accent)}
+  .verdict.good{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--card))} .verdict.warn{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--card))}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>crude vs adjusted</span>
+  <span class="chk"><span class="dot ok"></span>E-value reported</span>
+  <span class="chk"><span class="dot" id="dotConf">—</span>confounding shift</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">adjusting…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Cohort</a></li>
+  <li><a href="#screening">3 · Confounding</a></li><li><a href="#extraction">4 · Estimates (editable)</a></li>
+  <li><a href="#adj">5 · Crude vs adjusted</a></li><li><a href="#evalue">6 · E-value</a></li>
+  <li><a href="#xval">7 · R (EValue)</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · primary study · observational cohort</div>
+  <h1>An association, net of what we measured</h1>
+  <p class="standfirst">Observational effects are confounded until adjusted — and never fully, because some confounders go unmeasured. This capsule shows the crude-to-adjusted shift and the E-value: how strong an unmeasured confounder would have to be to explain the result away.</p>
+  <p style="margin-top:.7rem"><span class="badge">Primary · STROBE</span> <span class="badge" id="badgeE">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>Observational findings can be confounded. This shows the crude versus adjusted effect, a map of the assumed causes, and how strong an unmeasured confounder would have to be to explain the whole result away.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Question</h3>
+      <div class="pico"><b>Design</b><span>Observational cohort (or case-control) estimating an exposure–outcome association.</span>
+        <b>Inputs</b><span>Crude and covariate-adjusted effect (OR/RR) with 95% CIs, and the adjustment set.</span>
+        <b>Estimands</b><span>Confounding shift (crude→adjusted) and the E-value for residual unmeasured confounding.</span>
+        <b>Reporting</b><span>STROBE — report both crude and adjusted estimates and the confounders considered.</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Cohort</h2></div>
+    <div class="card"><p>Estimates are <span class="illus">illustrative</span> and editable in stage 4; the comparison, DAG and E-value re-run as you type.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Confounding</h2></div>
+    <div class="card"><p>A confounder causes both the exposure and the outcome. Adjustment removes confounding by measured variables only; the E-value quantifies vulnerability to the ones you didn't measure.</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Estimates — editable</h2><span class="prismaref">OR/RR + 95% CI</span></div>
+    <div class="card">
+      <div class="inputgrid">
+        <span class="hd"></span><span class="hd">Estimate</span><span class="hd">LCI</span><span class="hd">UCI</span>
+        <span class="lbl">Crude</span><input class="ed" id="cE" type="number" step="0.01"><input class="ed" id="cL" type="number" step="0.01"><input class="ed" id="cU" type="number" step="0.01">
+        <span class="lbl">Adjusted</span><input class="ed" id="aE" type="number" step="0.01"><input class="ed" id="aL" type="number" step="0.01"><input class="ed" id="aU" type="number" step="0.01">
+      </div>
+      <div style="margin-top:.7rem"><span class="note">Adjusted for: </span><input class="ed w" id="covs" style="max-width:30rem"></div>
+      <div class="toolbar"><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="adj">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Crude vs adjusted</h2><span class="prismaref">grey = crude · colour = adjusted</span></div>
+    <div class="grid2">
+      <div class="card"><svg id="forest" viewBox="0 0 460 170" role="group" aria-label="crude vs adjusted estimates"></svg>
+        <p class="note" id="shiftNote">—</p></div>
+      <div class="card"><h3>Causal structure (DAG)</h3>
+        <svg id="dag" viewBox="0 0 360 200" role="group" aria-label="confounding DAG"></svg>
+        <p class="note">Confounders (amber) cause both exposure and outcome; adjustment blocks those paths — for measured confounders only.</p></div>
+    </div>
+  </section>
+
+  <section class="stage" id="evalue">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>E-value</h2></div>
+    <div class="card">
+      <div class="readouts">
+        <div class="ro"><div class="k">Adjusted estimate</div><div class="v" id="roAdj">—</div></div>
+        <div class="ro"><div class="k">E-value (point)</div><div class="v" id="roEpt">—</div></div>
+        <div class="ro"><div class="k">E-value (CI limit)</div><div class="v" id="roEci">—</div></div>
+        <div class="ro"><div class="k">Confounding shift</div><div class="v" id="roShift">—</div></div>
+      </div>
+      <div class="verdict" id="verdict" style="margin-top:.6rem">—</div>
+      <p class="note" style="margin-top:.6rem">The E-value (VanderWeele &amp; Ding) is the minimum association — on the risk-ratio scale — that an unmeasured confounder would need with <em>both</em> the exposure and the outcome, above and beyond the measured covariates, to fully explain the observed effect. A large E-value relative to plausible confounders means the finding is robust; a small one means a modest unmeasured confounder could erase it.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation (EValue)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced the E-value, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: crude and adjusted estimates are shown side by side (the confounding shift is visible, not hidden), the E-value is computed for both the point estimate and the CI limit nearest the null, and the DAG names the structure adjustment can and cannot fix. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> An observational association is not a causal effect: adjustment can only remove confounding by the variables you measured and list, and residual or unmeasured confounding remains. Compare the crude and adjusted estimates and state every covariate. Demo data are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · primary · observational cohort (STROBE) · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="observational-strobe-demo", LSKEY="e156:"+SLUG, Z=1.959963984540054;
+const DEFAULT={cE:1.80,cL:1.50,cU:2.16,aE:1.35,aL:1.10,aU:1.66,covs:'age, sex, smoking, BMI, comorbidity, statin use'};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(s&&typeof s==='object')return clean(s);}}catch(e){}return clean(DEFAULT);}
+function clean(o){return {cE:+o.cE||0,cL:+o.cL||0,cU:+o.cU||0,aE:+o.aE||0,aL:+o.aL||0,aU:+o.aU||0,covs:String(o.covs||'')};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(clean(DEFAULT));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+const valid=m=>m.cE>0&&m.aE>0&&m.aL>0&&m.aU>0&&m.aU>m.aL;
+// E-value (VanderWeele & Ding 2017): minimum confounder RR to explain away an estimate
+function evalue1(rr){const r=rr>=1?rr:1/rr;return r+Math.sqrt(r*(r-1));}
+function eval2(m){
+  if(!valid(m))return null;
+  const ePt=evalue1(m.aE);
+  // CI limit closest to the null (RR=1)
+  let ciLim,eCi;
+  if(m.aE>1){ciLim=m.aL;eCi=ciLim<=1?1:evalue1(ciLim);}     // lower limit toward 1
+  else {ciLim=m.aU;eCi=ciLim>=1?1:evalue1(ciLim);}            // upper limit toward 1
+  const shift=(m.aE-m.cE)/Math.abs(m.cE-1||1);                // attenuation toward null relative to crude excess
+  const attenuationPct=m.cE!==1?((Math.abs(m.cE-1)-Math.abs(m.aE-1))/Math.abs(m.cE-1)*100):0;
+  const crossesNull=(m.aL<1&&m.aU>1);
+  return {ePt,eCi,ciLim,attenuationPct,crossesNull};
+}
+function renderForest(m){
+  const svg=document.getElementById('forest');if(!valid(m)){svg.innerHTML='<text x="14" y="24" class="tick">enter valid estimates</text>';return;}
+  const W=460,padL=70,padR=80,plotW=W-padL-padR,H=170,top=24;
+  const all=[m.cL,m.cU,m.aL,m.aU,1].map(Math.log);let lo=Math.min(...all),hi=Math.max(...all);const pd=(hi-lo)*0.12||0.2;lo-=pd;hi+=pd;
+  const X=v=>padL+(Math.log(v)-lo)/(hi-lo)*plotW;
+  let s=`<line class="nullline" x1="${X(1)}" y1="${top-10}" x2="${X(1)}" y2="${top+70}"/>`;
+  [0.5,1,1.5,2,3].filter(t=>Math.log(t)>=lo&&Math.log(t)<=hi).forEach(t=>s+=`<text class="tick" x="${X(t)}" y="${top+88}" text-anchor="middle">${t}</text>`);
+  const row=(y,cls,e,l,u,lab)=>`<g class="${cls}"><text class="elbl" x="14" y="${y+4}">${lab}</text>`+
+    `<line class="whisk" x1="${X(l)}" y1="${y}" x2="${X(u)}" y2="${y}"/><rect class="box" x="${X(e)-5}" y="${y-5}" width="10" height="10"/>`+
+    `<text class="tick" x="${W-10}" y="${y+4}" text-anchor="end">${e.toFixed(2)} (${l.toFixed(2)}–${u.toFixed(2)})</text></g>`;
+  s+=row(top+12,'crude',m.cE,m.cL,m.cU,'Crude')+row(top+44,'adj',m.aE,m.aL,m.aU,'Adjusted');
+  s+=`<text class="axlab" x="${padL+plotW/2}" y="${H-6}" text-anchor="middle">effect (log scale) · null = 1</text>`;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.innerHTML=s;
+}
+function renderDAG(){
+  const svg=document.getElementById('dag');
+  let s='<defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,1 L8,4.5 L0,8 z" fill="var(--ink-soft)"/></marker></defs>';
+  const E=[70,150],O=[290,150],C=[180,40];
+  s+=`<path class="edge" d="M ${E[0]+26} ${E[1]} L ${O[0]-26} ${O[1]}"/>`;
+  s+=`<path class="edge conf" d="M ${C[0]-12} ${C[1]+16} L ${E[0]+8} ${E[1]-22}"/>`;
+  s+=`<path class="edge conf" d="M ${C[0]+12} ${C[1]+16} L ${O[0]-8} ${O[1]-22}"/>`;
+  const node=(x,y,t,cls)=>`<circle class="node ${cls||''}" cx="${x}" cy="${y}" r="26"/><text class="nodetxt" x="${x}" y="${y+4}" text-anchor="middle">${t}</text>`;
+  s+=node(E[0],E[1],'Exp')+node(O[0],O[1],'Out')+node(C[0],C[1],'Conf','conf');
+  s+=`<text class="tick" x="180" y="185" text-anchor="middle">adjustment blocks Conf→Exp→… for measured Conf only</text>`;
+  svg.innerHTML=s;
+}
+function renderReadouts(m,e){const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  if(!e){['roAdj','roEpt','roEci','roShift'].forEach(id=>set(id,'—'));document.getElementById('shiftNote').textContent='enter valid estimates';document.getElementById('verdict').textContent='—';document.getElementById('dotConf').className='dot pending';return;}
+  set('roAdj',m.aE.toFixed(2)+' ('+m.aL.toFixed(2)+'–'+m.aU.toFixed(2)+')');set('roEpt',e.ePt.toFixed(2));set('roEci',e.eCi.toFixed(2));set('roShift',(e.attenuationPct>=0?'−':'+')+Math.abs(e.attenuationPct).toFixed(0)+'%');
+  document.getElementById('dotConf').className='dot '+(Math.abs(e.attenuationPct)>10?'warn':'ok');
+  document.getElementById('shiftNote').innerHTML=`Adjustment moved the estimate from <b class="num">${m.cE.toFixed(2)}</b> to <b class="num">${m.aE.toFixed(2)}</b> — the excess association shrank by ${Math.abs(e.attenuationPct).toFixed(0)}%, the footprint of measured confounding.`;
+  const vd=document.getElementById('verdict');
+  if(e.crossesNull){vd.className='verdict warn';vd.innerHTML=`<b>Adjusted CI crosses the null.</b> The association is not statistically significant after adjustment; the E-value for the CI is 1 (no confounding needed to reach the null).`;}
+  else if(e.eCi>=2){vd.className='verdict good';vd.innerHTML=`<b>Reasonably robust.</b> An unmeasured confounder would need RR ≥ <b class="num">${e.eCi.toFixed(2)}</b> with both exposure and outcome (beyond measured covariates) to bring the CI to the null — substantial for a well-adjusted study.`;}
+  else{vd.className='verdict warn';vd.innerHTML=`<b>Vulnerable to confounding.</b> An unmeasured confounder of only RR ${e.eCi.toFixed(2)} (CI limit) could explain the result away — modest given the covariates already adjusted for.`;}
+}
+function rcode(){
+  document.getElementById('rcode').textContent=
+`library(EValue)
+# adjusted estimate ${model.aE} (95% CI ${model.aL}–${model.aU})
+evalues.RR(est = ${model.aE}, lo = ${model.aL}, hi = ${model.aU})
+# returns the E-value for the point estimate and for the CI limit nearest the null
+# (use evalues.OR / evalues.HR for those scales)`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[eval2,evalue1].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function syncInputs(){['cE','cL','cU','aE','aL','aU'].forEach(k=>{const el=document.getElementById(k);if(el)el.value=model[k];});document.getElementById('covs').value=model.covs;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=eval2(model);
+QA_RENDER([
+['Crude estimate CI valid (0 < cL ≤ cE ≤ cU)', model.cL>0&&model.cL<=model.cE&&model.cE<=model.cU],
+['Adjusted estimate CI valid (0 < aL ≤ aE ≤ aU)', model.aL>0&&model.aL<=model.aE&&model.aE<=model.aU],
+['Effect point estimate is finite', !!(res&&isFinite(res.ePt))],
+['Confounders listed for adjustment', !!(model.covs&&model.covs.trim().length>0)],
+['Crude→adjusted attenuation computed', !!(res&&isFinite(res.attenuationPct))]
+]);}
+function renderOutputs(){const e=eval2(model);renderForest(model);renderDAG();renderReadouts(model,e);rcode();renderInspect();renderQA();
+  document.getElementById('badgeE').textContent=e?`E-value ${e.ePt.toFixed(2)}`:'—';
+  const v=document.getElementById('verify');if(e){v.textContent=`adjusted ${model.aE.toFixed(2)} · E-value ${e.ePt.toFixed(2)} (CI ${e.eCi.toFixed(2)}) ✓`;v.style.color='var(--good)';}else{v.textContent='enter valid estimates';v.style.color='var(--warn)';}}
+function renderAll(){syncInputs();renderOutputs();}
+
+document.getElementById('extraction').addEventListener('input',e=>{const id=e.target.id;
+  if(['cE','cL','cU','aE','aL','aU'].includes(id))model[id]=+e.target.value||0;else if(id==='covs')model.covs=e.target.value;else return;
+  const bad=!valid(model);['aE','aL','aU'].forEach(x=>{const el=document.getElementById(x);if(el)el.classList.toggle('bad',bad);});renderOutputs();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=clean(DEFAULT);try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propensity-score balance — e156 living capsule (causal)</title>
+<meta name="description" content="A self-auditing, editable, living propensity-score balance capsule: standardized mean differences before vs after adjustment, the love plot, and the 0.1 balance threshold.">
+<style>
+  :root{
+    --slug-hue:255;
+    --accent:hsl(var(--slug-hue) 50% 54%); --accent-strong:hsl(var(--slug-hue) 54% 44%); --accent-soft:hsl(var(--slug-hue) 46% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 58% 72%); --accent-strong:hsl(var(--slug-hue) 62% 80%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 58% 72%); --accent-strong:hsl(var(--slug-hue) 62% 80%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:30rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .ed{width:3.6rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed.t{width:6rem;text-align:left} .ed:focus{outline:2px solid var(--accent);outline-offset:1px} .ed.bad{border-color:var(--bad)}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.x{border:none;background:transparent;color:var(--ink-soft);padding:.2rem .4rem;font-size:1rem} .btn.x:hover{color:var(--bad)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .axis{stroke:var(--line)} .grid{stroke:var(--line);opacity:.5} .thresh{stroke:var(--warn);stroke-width:1.3;stroke-dasharray:5 4}
+  .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .axlab{font-size:12px;fill:var(--ink-soft)}
+  .covlbl{font-size:12px;fill:var(--ink)} .before{fill:none;stroke:var(--ctrl);stroke-width:2} .after{fill:var(--accent)} .conn{stroke:var(--line);stroke-width:1}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.3rem;font-weight:600}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.4rem;margin-top:.6rem}
+  .verdict{font-family:var(--serif);font-size:1.05rem;padding:.5rem .8rem;border-radius:8px;border-left:4px solid var(--accent)}
+  .verdict.good{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--card))} .verdict.warn{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--card))}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>SMD, not p-values</span>
+  <span class="chk"><span class="dot ok"></span>0.1 threshold</span>
+  <span class="chk"><span class="dot" id="dotBal"></span>balance achieved</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">balancing…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Cohort</a></li>
+  <li><a href="#screening">3 · Adjustment</a></li><li><a href="#extraction">4 · Covariates (editable)</a></li>
+  <li><a href="#love">5 · Love plot</a></li><li><a href="#interp">6 · Interpretation</a></li>
+  <li><a href="#xval">7 · R (cobalt / MatchIt)</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · causal · propensity-score balance</div>
+  <h1>Did adjustment actually balance the groups?</h1>
+  <p class="standfirst">Propensity-score matching or weighting is only as good as the balance it buys. Standardized mean differences — not significance tests — show whether treated and control groups look alike on each covariate after adjustment.</p>
+  <p style="margin-top:.7rem"><span class="badge">Causal · PS balance</span> <span class="badge" id="badgeK">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>After matching or weighting, the treated and untreated groups should look alike. For each characteristic this shows whether the adjustment actually balanced them — judged on the size of the difference, not on p-values.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Question</h3>
+      <div class="pico"><b>Setting</b><span>An observational comparison where treated and control groups differ at baseline.</span>
+        <b>Metric</b><span>Standardized mean difference SMD = (mean<sub>T</sub> − mean<sub>C</sub>) / SD<sub>pooled</sub>, per covariate.</span>
+        <b>Target</b><span>|SMD| &lt; 0.1 after matching/weighting = adequate balance.</span>
+        <b>Why not p-values</b><span>Balance tests confound effect size with sample size; SMD does not.</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Cohort</h2></div>
+    <div class="card"><p>Covariate means are <span class="illus">illustrative</span> and editable in stage 4; SMDs and the love plot re-run as you type. Enter treated/control means and a pooled SD, before and after adjustment.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Adjustment</h2></div>
+    <div class="card"><p>"After" columns are the group means once the propensity score has been used (matching, IPTW, or stratification). Balance on measured covariates does not guarantee balance on unmeasured ones — that assumption is untestable.</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Covariates — editable</h2><span class="prismaref">means + pooled SD, before &amp; after</span></div>
+    <div class="card">
+      <div class="tablewrap"><table id="cTable">
+        <thead><tr><th>Inc.</th><th>Covariate</th><th class="n">SD</th><th class="n">T before</th><th class="n">C before</th><th class="n">T after</th><th class="n">C after</th><th class="n">SMD before</th><th class="n">SMD after</th><th></th></tr></thead>
+        <tbody id="cBody"></tbody></table></div>
+      <div class="toolbar"><button class="btn" id="addRow">+ add covariate</button><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="love">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Love plot</h2><span class="prismaref">○ before · ● after · ┊ = 0.1</span></div>
+    <div class="grid2">
+      <div class="card"><svg id="lovePlot" viewBox="0 0 480 320" role="group" aria-label="Love plot of standardized mean differences"></svg></div>
+      <div class="card"><h3>Balance</h3>
+        <div class="readouts">
+          <div class="ro"><div class="k">Covariates</div><div class="v" id="roK">—</div></div>
+          <div class="ro"><div class="k">Max |SMD| before</div><div class="v" id="roMaxB">—</div></div>
+          <div class="ro"><div class="k">Max |SMD| after</div><div class="v" id="roMaxA">—</div></div>
+          <div class="ro"><div class="k">Imbalanced before</div><div class="v" id="roImbB">—</div></div>
+          <div class="ro"><div class="k">Imbalanced after</div><div class="v" id="roImbA">—</div></div>
+        </div>
+        <p class="note" id="balNote" style="margin-top:.5rem">—</p></div>
+    </div>
+  </section>
+
+  <section class="stage" id="interp">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>Interpretation</h2></div>
+    <div class="card"><div class="verdict" id="verdict">—</div>
+      <p class="note" style="margin-top:.6rem">If any covariate's |SMD| stays above 0.1 after adjustment, the groups remain unbalanced on it and the effect estimate may be confounded — refine the propensity model (add interactions/splines), trim non-overlap, or adjust for the residual in the outcome model. Good balance on measured covariates says nothing about unmeasured confounding.</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation (cobalt / MatchIt)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced the SMDs, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: balance is judged by <b>standardized mean difference</b> (sample-size-invariant), never by balance p-values, the 0.1 threshold is drawn on the love plot, and the ribbon dot turns amber if any covariate remains imbalanced after adjustment. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> Standardized mean differences check covariate balance after matching/weighting — the common rule is |SMD| < 0.1 — but balance on measured covariates says nothing about unmeasured confounding, which propensity methods cannot fix. Demo data are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · causal · propensity-score balance · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="propensity-balance-demo", LSKEY="e156:"+SLUG;
+const PUBLISHED=[
+  {cov:'Age',sd:12,tB:64,cB:58,tA:61,cA:60.5,inc:true},
+  {cov:'Diabetes %',sd:40,tB:55,cB:34,tA:44,cA:42,inc:true},
+  {cov:'Smoker %',sd:45,tB:48,cB:30,tA:39,cA:37.5,inc:true},
+  {cov:'BMI',sd:5,tB:31,cB:28.5,tA:29.8,cA:29.5,inc:true},
+  {cov:'Prior MI %',sd:38,tB:42,cB:25,tA:33,cA:31.5,inc:true},
+  {cov:'eGFR',sd:18,tB:62,cB:71,tA:67,cA:67.8,inc:true}
+];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(Array.isArray(s)&&s.length)return s.map(clean);}}catch(e){}return PUBLISHED.map(o=>({...o}));}
+function clean(o){return {cov:String(o.cov||'covariate'),sd:+o.sd||0,tB:+o.tB||0,cB:+o.cB||0,tA:+o.tA||0,cA:+o.cA||0,inc:o.inc!==false};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(PUBLISHED.map(o=>({...o})));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+const valid=r=>r.sd>0;
+const TH=0.1;
+// standardized mean differences before and after adjustment
+function balance(rows){
+  const use=rows.filter(r=>r.inc&&valid(r));const k=use.length;if(k<1)return null;
+  const rec=use.map(r=>({cov:r.cov,smdB:(r.tB-r.cB)/r.sd,smdA:(r.tA-r.cA)/r.sd}));
+  const maxB=Math.max(...rec.map(r=>Math.abs(r.smdB))),maxA=Math.max(...rec.map(r=>Math.abs(r.smdA)));
+  const imbB=rec.filter(r=>Math.abs(r.smdB)>TH).length,imbA=rec.filter(r=>Math.abs(r.smdA)>TH).length;
+  return {rec,k,maxB,maxA,imbB,imbA,balanced:imbA===0};
+}
+function renderLove(res){
+  const svg=document.getElementById('lovePlot');if(!res){svg.innerHTML='<text x="14" y="24" class="tick">need ≥1 covariate</text>';return;}
+  const n=res.rec.length,rowH=34,top=20,padL=110,padR=20,W=480,plotW=W-padL-padR,H=top+n*rowH+30;
+  const maxX=Math.max(0.3,res.maxB,res.maxA)*1.1;const X=v=>padL+v/maxX*plotW;
+  let s=`<line class="axis" x1="${padL}" y1="${top-6}" x2="${padL}" y2="${top+n*rowH}"/>`;
+  s+=`<line class="thresh" x1="${X(TH)}" y1="${top-6}" x2="${X(TH)}" y2="${top+n*rowH+4}"/><text class="tick" x="${X(TH)}" y="${top+n*rowH+18}" text-anchor="middle" fill="var(--warn)">0.1</text>`;
+  [0,0.2,0.4,0.6].filter(v=>v<=maxX).forEach(v=>s+=`<text class="tick" x="${X(v)}" y="${top+n*rowH+18}" text-anchor="middle">${v}</text>`);
+  res.rec.forEach((r,i)=>{const y=top+i*rowH+rowH/2;const xb=X(Math.abs(r.smdB)),xa=X(Math.abs(r.smdA));
+    s+=`<text class="covlbl" x="${padL-8}" y="${y+4}" text-anchor="end">${esc(r.cov)}</text>`;
+    s+=`<line class="conn" x1="${Math.min(xb,xa)}" y1="${y}" x2="${Math.max(xb,xa)}" y2="${y}"/>`;
+    s+=`<circle class="before" cx="${xb}" cy="${y}" r="5"><title>${r.cov} before: SMD ${r.smdB.toFixed(3)}</title></circle>`;
+    s+=`<circle class="after" cx="${xa}" cy="${y}" r="5" style="${Math.abs(r.smdA)>TH?'fill:var(--bad)':''}"><title>${r.cov} after: SMD ${r.smdA.toFixed(3)}</title></circle>`;});
+  s+=`<text class="axlab" x="${padL+plotW/2}" y="${H-2}" text-anchor="middle">|standardized mean difference|</text>`;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.innerHTML=s;
+}
+function renderReadouts(res){const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  if(!res){['roK','roMaxB','roMaxA','roImbB','roImbA'].forEach(id=>set(id,'—'));document.getElementById('balNote').textContent='need ≥1 covariate';document.getElementById('verdict').textContent='—';return;}
+  set('roK',res.k);set('roMaxB',res.maxB.toFixed(3));set('roMaxA',res.maxA.toFixed(3));set('roImbB',res.imbB+' / '+res.k);set('roImbA',res.imbA+' / '+res.k);
+  document.getElementById('dotBal').className='dot '+(res.balanced?'ok':'warn');
+  document.getElementById('balNote').innerHTML=`Before adjustment, ${res.imbB} of ${res.k} covariates exceed |SMD| 0.1 (max ${res.maxB.toFixed(2)}); after, ${res.imbA} do (max ${res.maxA.toFixed(2)}).`;
+  const vd=document.getElementById('verdict');vd.className='verdict '+(res.balanced?'good':'warn');
+  vd.innerHTML=res.balanced?`<b>Balance achieved.</b> Every covariate has |SMD| &lt; 0.1 after adjustment (max ${res.maxA.toFixed(2)}) — the groups are comparable on measured covariates.`
+    :`<b>Residual imbalance.</b> ${res.imbA} covariate(s) still exceed |SMD| 0.1 after adjustment (max ${res.maxA.toFixed(2)}) — refine the propensity model or adjust for the residual in the outcome analysis.`;
+}
+function rcode(){const use=model.filter(r=>r.inc&&valid(r));
+  document.getElementById('rcode').textContent=
+`library(cobalt)   # with a MatchIt / WeightIt object:
+# bal.tab(m.out, binary = "std", thresholds = c(m = 0.1))
+# love.plot(m.out, stats = "mean.diffs", abs = TRUE, thresholds = 0.1)
+# direct SMDs (this capsule):
+smd_before <- c(${use.map(r=>((r.tB-r.cB)/r.sd).toFixed(3)).join(', ')})
+smd_after  <- c(${use.map(r=>((r.tA-r.cA)/r.sd).toFixed(3)).join(', ')})
+# balanced if all abs(smd_after) < 0.1`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=balance.toString();cd.dataset.done='1';}}
+function renderTable(){let h='';model.forEach((r,i)=>{const bad=valid(r)?'':' bad';const sB=valid(r)?((r.tB-r.cB)/r.sd).toFixed(3):'—',sA=valid(r)?((r.tA-r.cA)/r.sd).toFixed(3):'—';
+  const aOK=valid(r)&&Math.abs((r.tA-r.cA)/r.sd)<=TH;
+  h+=`<tr data-i="${i}"><td><input type="checkbox" class="inc" ${r.inc?'checked':''}></td>`+
+    `<td><input class="ed t" data-k="cov" value="${esc(r.cov)}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="sd" type="number" step="0.1" value="${r.sd}"></td>`+
+    `<td class="n"><input class="ed" data-k="tB" type="number" step="0.1" value="${r.tB}"></td>`+
+    `<td class="n"><input class="ed" data-k="cB" type="number" step="0.1" value="${r.cB}"></td>`+
+    `<td class="n"><input class="ed" data-k="tA" type="number" step="0.1" value="${r.tA}"></td>`+
+    `<td class="n"><input class="ed" data-k="cA" type="number" step="0.1" value="${r.cA}"></td>`+
+    `<td class="n">${sB}</td><td class="n" style="${aOK?'':'color:var(--bad)'}">${sA}</td>`+
+    `<td><button class="btn x" data-rm="${i}" title="remove">✕</button></td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=balance(model),inc=model.filter(function(r){return r.inc;});
+QA_RENDER([
+['Every covariate has pooled SD > 0', inc.every(function(r){return r.sd>0;})],
+['≥ 1 covariate assessed', (res&&res.k>=1)?true:'warn'],
+['Max |SMD| before & after are finite', !!(res&&isFinite(res.maxB)&&isFinite(res.maxA))],
+['Worst imbalance not made worse by matching', !!(res&&res.maxA<=res.maxB+1e-9)],
+['Post-match imbalance count ≤ pre-match', !!(res&&res.imbA<=res.imbB)],
+['Balance verdict derived (all |SMD| < 0.1 ⇒ balanced)', !!(res&&typeof res.balanced==='boolean')]
+]);}
+function renderOutputs(){const res=balance(model);renderLove(res);renderReadouts(res);renderTable();rcode();renderInspect();renderQA();
+  document.getElementById('badgeK').textContent=res?`${res.k} covariates`:'—';
+  const v=document.getElementById('verify');if(res){v.textContent=`max |SMD| ${res.maxB.toFixed(2)} → ${res.maxA.toFixed(2)} after · ${res.balanced?'balanced':res.imbA+' imbalanced'} ✓`;v.style.color=res.balanced?'var(--good)':'var(--warn)';}else{v.textContent='need ≥1 covariate';v.style.color='var(--warn)';}}
+function renderAll(){renderOutputs();}
+
+document.getElementById('cBody').addEventListener('input',e=>{const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i;
+  if(e.target.classList.contains('inc')){model[i].inc=e.target.checked;renderOutputs();persist();return;}
+  const k=e.target.dataset.k;if(!k)return;model[i][k]=(k==='cov')?e.target.value:(+e.target.value||0);renderOutputs();persist();});
+document.getElementById('cBody').addEventListener('click',e=>{const rm=e.target.closest('[data-rm]');if(rm){model.splice(+rm.dataset.rm,1);renderOutputs();persist();}});
+document.getElementById('addRow').addEventListener('click',()=>{model.push(clean({cov:'New covariate',sd:10,tB:50,cB:45,tA:48,cA:47,inc:true}));renderOutputs();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=PUBLISHED.map(o=>({...o}));try{localStorage.removeItem(LSKEY);}catch(e){}renderOutputs();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

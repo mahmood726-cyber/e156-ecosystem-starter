@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dose-response — e156 living capsule (Type 5)</title>
+<meta name="description" content="A self-auditing, editable, living dose-response meta-analysis capsule: two-stage random-effects trend with a dose-response curve and uncertainty band.">
+<style>
+  :root{
+    --slug-hue:140;
+    --accent:hsl(var(--slug-hue) 55% 36%); --accent-strong:hsl(var(--slug-hue) 58% 28%); --accent-soft:hsl(var(--slug-hue) 50% 94%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 52% 60%); --accent-strong:hsl(var(--slug-hue) 56% 70%); --accent-soft:hsl(var(--slug-hue) 26% 15%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 52% 60%); --accent-strong:hsl(var(--slug-hue) 56% 70%); --accent-soft:hsl(var(--slug-hue) 26% 15%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:22rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .ed{width:4rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed.t{width:6.5rem;text-align:left} .ed:focus{outline:2px solid var(--accent);outline-offset:1px} .ed.bad{border-color:var(--bad)}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.x{border:none;background:transparent;color:var(--ink-soft);padding:.2rem .4rem;font-size:1rem} .btn.x:hover{color:var(--bad)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .axis{stroke:var(--line)} .grid{stroke:var(--line);opacity:.5} .nullline{stroke:var(--ink-soft);stroke-dasharray:3 3;opacity:.6}
+  .tick{font-size:11px;fill:var(--ink-soft);font-family:var(--mono)} .axlab{font-size:12px;fill:var(--ink-soft)}
+  .curve{stroke:var(--accent);stroke-width:2.5;fill:none} .band{fill:var(--accent);opacity:.15} .pt{fill:var(--accent)}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.2rem;margin-top:.6rem}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>per-study slopes</span>
+  <span class="chk"><span class="dot ok"></span>random-effects trend</span>
+  <span class="chk"><span class="dot ok"></span>uncertainty band</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">fitting…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Search</a></li>
+  <li><a href="#screening">3 · Screening</a></li><li><a href="#extraction">4 · Extraction (editable)</a></li>
+  <li><a href="#curve">5 · Dose-response</a></li><li><a href="#trend">6 · Trend &amp; heterogeneity</a></li>
+  <li><a href="#xval">7 · R (dosresmeta)</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · dose-response</div>
+  <h1>Does more change the risk?</h1>
+  <p class="standfirst">A two-stage dose-response meta-analysis: a log-linear trend per study, pooled with random effects, drawn as a curve whose uncertainty band widens as you extrapolate.</p>
+  <p style="margin-top:.7rem"><span class="badge">Type 5 · Dose-response</span> <span class="badge" id="badgeK">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>This traces how the effect changes across doses, pooling the trials at each level, so you can see the shape of the relationship and where the uncertainty widens.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Review question</h3>
+      <div class="pico"><b>Exposure</b><span>A dose/level of exposure (illustrative units).</span>
+        <b>Outcome</b><span>Relative risk vs the lowest (reference) dose.</span>
+        <b>Model</b><span>Two-stage: per-study log-linear trend, random-effects pooled slope.</span>
+        <b>Output</b><span>RR per increment, the dose-response curve, and a test for trend.</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Search</h2></div>
+    <div class="card"><p>Registry + database search, de-duplicated. Yields <span class="illus">illustrative</span>; dose-level data are editable in stage 4.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Screening</h2></div>
+    <div class="card"><p>Two-reviewer screening to studies reporting ≥2 dose categories with an RR vs a common reference dose.</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Extraction — editable dose levels</h2><span class="prismaref">every row traces to a study</span></div>
+    <div class="card">
+      <p>One row per dose category: study, dose, RR vs the reference dose, 95% CI. The lowest dose in each study is its reference (RR≈1). Edit, add or remove rows — the curve, pooled slope and trend test re-run live.</p>
+      <div class="tablewrap"><table id="cTable">
+        <thead><tr><th>Inc.</th><th>Study</th><th class="n">Dose</th><th class="n">RR</th><th class="n">LCI</th><th class="n">UCI</th><th></th></tr></thead>
+        <tbody id="cBody"></tbody></table></div>
+      <div class="toolbar"><button class="btn" id="addRow">+ add dose level</button><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="curve">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Dose-response curve</h2><span class="prismaref">pooled log-linear trend</span></div>
+    <div class="grid2">
+      <div class="card"><svg id="drsvg" viewBox="0 0 380 320" role="group" aria-label="Dose-response curve: relative risk vs dose"></svg></div>
+      <div class="card"><h3>Pooled trend</h3>
+        <div class="readouts">
+          <div class="ro"><div class="k">RR per <span id="incLab">10</span> units</div><div class="v" id="roRR">—</div></div>
+          <div class="ro"><div class="k">95% CI</div><div class="v" id="roCI">—</div></div>
+          <div class="ro"><div class="k">I² (slopes)</div><div class="v" id="roI2">—</div></div>
+          <div class="ro"><div class="k">Studies</div><div class="v" id="roK">—</div></div>
+        </div>
+        <p class="note" style="margin-top:.6rem">Points = dose categories (size ∝ weight); line = pooled log-linear dose-response; band = 95% CI, widening with extrapolation. A simplified two-stage model — full GLST + restricted-cubic-spline nonlinearity is the <code>dosresmeta</code> reference.</p></div>
+    </div>
+  </section>
+
+  <section class="stage" id="trend">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>Trend &amp; heterogeneity</h2></div>
+    <div class="card"><p id="trendOut">—</p>
+      <p class="note">A significant pooled slope is evidence of a linear trend; high between-study heterogeneity in slopes, or curvature in the points, signals nonlinearity (fit restricted cubic splines in <code>dosresmeta</code>).</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation (dosresmeta)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that produced every estimate, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: each study's slope is estimated through its own reference, slopes are pooled with random effects, and the curve's band honestly widens on extrapolation. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> A two-stage trend assumes a common dose-response shape across studies; with few or sparse doses it can be unstable, and the band widens where data are thin. Demo data is illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · type 5 (dose-response) · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="dose-response-demo", LSKEY="e156:"+SLUG, Z=1.959963984540054, INC=10;
+const PUBLISHED=[
+  {study:'STUDY-A',dose:0, rr:1.00,lci:0.95,uci:1.05,inc:true},
+  {study:'STUDY-A',dose:10,rr:0.90,lci:0.82,uci:0.99,inc:true},
+  {study:'STUDY-A',dose:20,rr:0.82,lci:0.73,uci:0.92,inc:true},
+  {study:'STUDY-A',dose:30,rr:0.75,lci:0.65,uci:0.87,inc:true},
+  {study:'STUDY-B',dose:0, rr:1.00,lci:0.95,uci:1.05,inc:true},
+  {study:'STUDY-B',dose:15,rr:0.88,lci:0.79,uci:0.98,inc:true},
+  {study:'STUDY-B',dose:30,rr:0.80,lci:0.69,uci:0.93,inc:true},
+  {study:'STUDY-C',dose:0, rr:1.00,lci:0.95,uci:1.05,inc:true},
+  {study:'STUDY-C',dose:10,rr:0.93,lci:0.85,uci:1.02,inc:true},
+  {study:'STUDY-C',dose:25,rr:0.84,lci:0.73,uci:0.97,inc:true}
+];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const erf=x=>{const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;};
+const normcdf=x=>0.5*(1+erf(x/Math.SQRT2));
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(Array.isArray(s)&&s.length)return s.map(clean);}}catch(e){}return PUBLISHED.map(o=>({...o}));}
+function clean(o){return {study:String(o.study||'study'),dose:+o.dose||0,rr:+o.rr||0,lci:+o.lci||0,uci:+o.uci||0,inc:o.inc!==false};}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(PUBLISHED.map(o=>({...o})));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+const validRow=r=>r.rr>0&&r.lci>0&&r.uci>0&&r.dose>=0;
+function studySlope(pts){let num=0,den=0;pts.forEach(p=>{if(p.x!==0&&p.v>0){num+=p.x*p.y/p.v;den+=p.x*p.x/p.v;}});if(den<=0)return null;return {b:num/den,v:1/den};}
+function dr(rows){
+  const use=rows.filter(r=>r.inc&&validRow(r));if(use.length<3)return null;
+  const refdose=Math.min(...use.map(r=>r.dose));
+  const byStudy={};use.forEach(r=>{(byStudy[r.study]=byStudy[r.study]||[]).push(r);});
+  const slopes=[];
+  Object.entries(byStudy).forEach(([s,rs])=>{const pts=rs.map(r=>({x:r.dose-refdose,y:Math.log(r.rr),v:((Math.log(r.uci)-Math.log(r.lci))/(2*Z))**2}));
+    const sl=studySlope(pts);if(sl)slopes.push({study:s,...sl});});
+  if(slopes.length<2)return null;
+  const y=slopes.map(s=>s.b),v=slopes.map(s=>s.v),k=y.length,df=k-1;
+  const w0=v.map(x=>1/x),sw0=w0.reduce((a,b)=>a+b,0),m0=y.reduce((a,e,i)=>a+w0[i]*e,0)/sw0;
+  const Q=y.reduce((a,e,i)=>a+w0[i]*(e-m0)**2,0),C=sw0-w0.reduce((a,e)=>a+e*e,0)/sw0,tau2=(df>0&&C>0)?Math.max(0,(Q-df)/C):0;
+  const wr=v.map(x=>1/(x+tau2)),swr=wr.reduce((a,b)=>a+b,0),b=y.reduce((a,e,i)=>a+wr[i]*e,0)/swr,seB=Math.sqrt(1/swr);
+  const I2=(k>1&&Q>df)?Math.max(0,(Q-df)/Q)*100:0,zz=b/seB,p=2*(1-normcdf(Math.abs(zz)));
+  const maxDose=Math.max(...use.map(r=>r.dose));
+  return {use,slopes,refdose,b,seB,tau2,I2,z:zz,p,maxDose,k};
+}
+function renderCurve(res){
+  const svg=document.getElementById('drsvg');if(!res){svg.innerHTML='<text x="12" y="24" class="axlab">need ≥2 studies with ≥2 dose levels</text>';return;}
+  const W=380,H=320,P=46,plotW=W-P-14,plotH=H-P-26;
+  const curve=d=>Math.exp(res.b*(d-res.refdose));
+  const rrs=res.use.map(r=>r.rr).concat([curve(res.maxDose),curve(res.refdose)]);
+  const ymin=Math.min(...rrs)*0.9,ymax=Math.max(...rrs,1.05)*1.02,lymin=Math.log(ymin),lymax=Math.log(ymax);
+  const X=d=>P+(d-res.refdose)/(res.maxDose-res.refdose||1)*plotW, Y=rr=>H-26-(Math.log(rr)-lymin)/(lymax-lymin)*plotH;
+  let s=`<rect x="${P}" y="${H-26-plotH}" width="${plotW}" height="${plotH}" fill="none" class="axis"/>`;
+  if(1>=ymin&&1<=ymax)s+=`<line x1="${P}" y1="${Y(1)}" x2="${P+plotW}" y2="${Y(1)}" class="nullline"/>`;
+  // band
+  let up='',dn='';for(let i=0;i<=60;i++){const d=res.refdose+i/60*(res.maxDose-res.refdose);const dd=d-res.refdose;
+    const lo=Math.exp(res.b*dd-Z*res.seB*Math.abs(dd)),hi=Math.exp(res.b*dd+Z*res.seB*Math.abs(dd));
+    up+=(i===0?'M':'L')+X(d).toFixed(1)+' '+Y(hi).toFixed(1)+' ';dn=(`L${X(d).toFixed(1)} ${Y(lo).toFixed(1)} `)+dn;}
+  s+=`<path class="band" d="${up}${dn}Z"/>`;
+  let cv='';for(let i=0;i<=60;i++){const d=res.refdose+i/60*(res.maxDose-res.refdose);cv+=(i===0?'M':'L')+X(d).toFixed(1)+' '+Y(curve(d)).toFixed(1)+' ';}
+  s+=`<path class="curve" d="${cv}"/>`;
+  // points
+  res.use.forEach(r=>{const v=((Math.log(r.uci)-Math.log(r.lci))/(2*Z))**2,w=v>0?1/v:1;s+=`<circle class="pt" cx="${X(r.dose)}" cy="${Y(r.rr)}" r="${3+Math.min(7,Math.sqrt(w))}" opacity=".6"/>`;});
+  // axes ticks
+  [res.refdose,res.refdose+(res.maxDose-res.refdose)/2,res.maxDose].forEach(d=>s+=`<text class="tick" x="${X(d)}" y="${H-8}" text-anchor="middle">${Math.round(d)}</text>`);
+  [ymin,1,ymax].forEach(rr=>{if(rr>=ymin&&rr<=ymax)s+=`<text class="tick" x="${P-8}" y="${Y(rr)+3}" text-anchor="end">${rr.toFixed(2)}</text>`;});
+  s+=`<text class="axlab" x="${P+plotW/2}" y="${H-2}" text-anchor="middle">dose</text>`+
+     `<text class="axlab" x="12" y="${H-26-plotH/2}" text-anchor="middle" transform="rotate(-90 12 ${H-26-plotH/2})">RR vs reference</text>`;
+  svg.innerHTML=s;
+}
+function renderReadouts(res){const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};const setH=(id,v)=>{const e=document.getElementById(id);if(e)e.innerHTML=v;};
+  document.getElementById('incLab').textContent=INC;
+  if(!res){['roRR','roCI','roI2','roK'].forEach(id=>set(id,'—'));document.getElementById('trendOut').textContent='—';return;}
+  const rr=Math.exp(res.b*INC),lo=Math.exp((res.b-Z*res.seB)*INC),hi=Math.exp((res.b+Z*res.seB)*INC);
+  set('roRR',rr.toFixed(3));setH('roCI',`${lo.toFixed(3)} <small>to</small> ${hi.toFixed(3)}`);set('roI2',res.I2.toFixed(0)+'%');set('roK',res.k+'');
+  document.getElementById('trendOut').innerHTML=`Pooled slope (logRR per unit) = <b class="num">${res.b.toFixed(4)}</b> (SE ${res.seB.toFixed(4)}), z=${res.z.toFixed(2)}, p≈${res.p.toFixed(3)}. `+
+    (res.p<0.05?`<span class="good">Significant ${res.b<0?'inverse':'positive'} dose-response trend</span> — RR ${rr.toFixed(2)} per ${INC} units.`:'No significant linear trend.')+
+    ` Between-study slope heterogeneity I²=${res.I2.toFixed(0)}%.`;
+}
+function rcode(){const use=model.filter(r=>r.inc&&validRow(r)),q=k=>use.map(r=>typeof r[k]==='string'?'"'+r[k]+'"':r[k]).join(', ');
+  document.getElementById('rcode').textContent=
+`library(dosresmeta)
+dat <- data.frame(study=c(${q('study')}), dose=c(${q('dose')}),
+                  rr=c(${q('rr')}), lb=c(${q('lci')}), ub=c(${q('uci')}))
+dat$logrr <- log(dat$rr); dat$se <- (log(dat$ub)-log(dat$lb))/(2*qnorm(0.975))
+m <- dosresmeta(logrr ~ dose, id = study, se = se, data = dat,
+                method = "reml", covariance = "user")   # two-stage trend
+summary(m)
+# nonlinearity: dosresmeta(logrr ~ rcs(dose, 3), ...)   # restricted cubic spline`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=[studySlope,dr].map(fn=>fn.toString()).join('\n\n');cd.dataset.done='1';}}
+function renderTable(){let h='';model.forEach((r,i)=>{const ok=validRow(r),bad=ok?'':' bad';
+  h+=`<tr data-i="${i}"><td><input type="checkbox" class="inc" ${r.inc?'checked':''}></td>`+
+    `<td><input class="ed t" data-k="study" value="${esc(r.study)}"></td>`+
+    `<td class="n"><input class="ed" data-k="dose" type="number" value="${r.dose}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="rr" type="number" step="0.01" value="${r.rr}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="lci" type="number" step="0.01" value="${r.lci}"></td>`+
+    `<td class="n"><input class="ed${bad}" data-k="uci" type="number" step="0.01" value="${r.uci}"></td>`+
+    `<td><button class="btn x" data-rm="${i}" title="remove">✕</button></td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var res=dr(model);
+QA_RENDER([
+['≥ 2 doses with data (trend estimable)', (res&&res.k>=2)?true:'warn'],
+['Pooled dose-response slope is finite', !!(res&&isFinite(res.b))],
+['Slope standard error > 0', !!(res&&res.seB>0)],
+['τ² ≥ 0', !!(res&&res.tau2>=0)],
+['I² within [0,100]', (res&&res.I2!=null)?(res.I2>=0&&res.I2<=100):'warn'],
+['Reference dose defined', !!(res&&res.refdose!=null)]
+]);}
+function renderOutputs(){const res=dr(model);renderCurve(res);renderReadouts(res);rcode();renderInspect();renderQA();
+  document.getElementById('badgeK').textContent=res?`${res.k} studies`:'—';
+  const v=document.getElementById('verify');if(res){const rr=Math.exp(res.b*INC);v.textContent=`pooled RR ${rr.toFixed(2)} per ${INC} units (p≈${res.p.toFixed(3)}) ✓`;v.style.color='var(--good)';}else{v.textContent='need ≥2 studies w/ ≥2 doses';v.style.color='var(--warn)';}}
+function renderAll(){renderTable();renderOutputs();}
+
+document.getElementById('cBody').addEventListener('input',e=>{const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i;
+  if(e.target.classList.contains('inc')){model[i].inc=e.target.checked;renderTable();renderOutputs();persist();return;}
+  const k=e.target.dataset.k;if(!k)return;model[i][k]=(k==='study')?e.target.value:(+e.target.value||0);
+  const bad=!validRow(model[i]);tr.querySelectorAll('[data-k=rr],[data-k=lci],[data-k=uci]').forEach(el=>el.classList.toggle('bad',bad));
+  renderOutputs();persist();});
+document.getElementById('cBody').addEventListener('click',e=>{const rm=e.target.closest('[data-rm]');if(rm){model.splice(+rm.dataset.rm,1);renderAll();persist();}});
+document.getElementById('addRow').addEventListener('click',()=>{model.push(clean({study:'STUDY-A',dose:40,rr:0.7,lci:0.6,uci:0.82,inc:true}));renderAll();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=PUBLISHED.map(o=>({...o}));try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>

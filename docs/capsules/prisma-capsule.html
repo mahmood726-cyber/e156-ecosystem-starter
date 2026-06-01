@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRISMA 2020 flow — e156 living capsule (Type 10)</title>
+<meta name="description" content="A self-auditing, editable, living PRISMA 2020 flow-diagram capsule: record counts flow through screening to inclusion, with arithmetic self-checks that flag any box that cannot reconcile.">
+<style>
+  :root{
+    --slug-hue:200;
+    --accent:hsl(var(--slug-hue) 52% 50%); --accent-strong:hsl(var(--slug-hue) 56% 40%); --accent-soft:hsl(var(--slug-hue) 48% 95%);
+    --ink:#16191d; --ink-soft:#4a5560; --line:#e7e3da; --paper:#faf8f4; --card:#fff; --ctrl:#9aa2ad;
+    --good:#15803d; --warn:#b45309; --bad:#b91c1c; --pending:#6b7280;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Segoe UI","SF Pro Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,ui-monospace,monospace;
+    --ribbonH:5rem;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }}
+  :root[data-theme="dark"]{
+    --accent:hsl(var(--slug-hue) 60% 70%); --accent-strong:hsl(var(--slug-hue) 64% 78%); --accent-soft:hsl(var(--slug-hue) 28% 17%);
+    --ink:#ece8e1; --ink-soft:#9aa2ad; --line:#2a2f35; --paper:#0e1013; --card:#15181c; --ctrl:#6b7280; --good:#4ade80;--warn:#fbbf24;--bad:#f87171;--pending:#9aa2ad;
+  }
+  .themebtn{font:inherit;font-size:.9rem;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:.2rem .45rem;cursor:pointer}
+  .themebtn:hover{border-color:var(--accent);color:var(--accent)}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:6rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:64rem;margin:0 auto;padding:0 1.4rem}
+  section.stage>p,.card>p,.note,.standfirst{max-width:40rem}
+  a{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.02em;margin:.4rem 0;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.01em;margin:.2rem 0 .7rem}
+  h3{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6rem}
+  .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .standfirst{font-family:var(--serif);font-size:1.2rem;line-height:1.4;color:var(--ink-soft);text-wrap:balance}
+  .badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;border:1px solid var(--line);border-radius:999px;padding:.2rem .6rem;color:var(--ink-soft)}
+  .illus{display:inline-block;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:5px;padding:0 .35rem;vertical-align:middle}
+  .ribbon{position:sticky;top:0;z-index:30;min-height:var(--ribbonH);display:flex;align-items:center;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .ribbon .inner{max-width:64rem;margin:0 auto;padding:.5rem 1.4rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.78rem;width:100%}
+  .tier{font-weight:800;letter-spacing:.03em;padding:.12rem .55rem;border-radius:6px;color:#26211a;background:linear-gradient(180deg,#e7c878,#caa544);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .chk{display:inline-flex;align-items:center;gap:.3rem;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem}
+  .dot{width:.5rem;height:.5rem;border-radius:50%} .dot.ok{background:var(--good)} .dot.pending{background:var(--pending)} .dot.warn{background:var(--warn)}
+  .ribbon .grow{flex:1} .verify{font-family:var(--mono);font-size:.72rem;color:var(--good)}
+  nav.toc{position:sticky;top:var(--ribbonH);z-index:20;background:var(--paper);border-bottom:1px solid var(--line);overflow-x:auto}
+  nav.toc ul{display:flex;gap:.2rem;list-style:none;margin:0 auto;padding:.4rem 1.4rem;max-width:64rem}
+  nav.toc a{display:block;white-space:nowrap;font-size:.78rem;color:var(--ink-soft);text-decoration:none;padding:.25rem .55rem;border-radius:7px}
+  nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--accent)} nav.toc a.active{color:var(--accent);font-weight:600}
+  section.stage{padding:2.2rem 0;border-top:1px solid var(--line)}
+  .stagehdr{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.4rem}
+  .stagenum{font-family:var(--serif);font-size:2.2rem;color:var(--line);font-weight:600;line-height:1}
+  .prismaref{font-size:.66rem;color:var(--ink-soft);margin-left:auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 30px -20px rgba(0,0,0,.28)}
+  .grid2{display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:18rem}
+  th,td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .pico{display:grid;grid-template-columns:auto 1fr;gap:.2rem .9rem;font-size:.95rem} .pico b{color:var(--accent)}
+  .note{font-size:.82rem;color:var(--ink-soft)} .good{color:var(--good);font-weight:600}
+  .ed{width:5rem;font-family:var(--mono);font-size:.82rem;text-align:right;border:1px solid var(--line);border-radius:6px;padding:.18rem .3rem;background:var(--paper);color:var(--ink)}
+  .ed.t{width:11rem;text-align:left} .ed:focus{outline:2px solid var(--accent);outline-offset:1px} .ed.bad{border-color:var(--bad)}
+  .inputgrid{display:grid;grid-template-columns:1fr auto;gap:.35rem .8rem;align-items:center;font-size:.9rem;max-width:32rem}
+  .inputgrid .lbl{color:var(--ink-soft)} .inputgrid .head{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700;grid-column:1/-1;margin-top:.5rem}
+  .btn{font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:.3rem .7rem;cursor:pointer} .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.x{border:none;background:transparent;color:var(--ink-soft);padding:.2rem .4rem;font-size:1rem} .btn.x:hover{color:var(--bad)}
+  .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center} .livetag{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-left:auto}
+  svg{display:block;width:100%;height:auto;font-family:var(--sans)}
+  .pbox{fill:var(--card);stroke:var(--accent);stroke-width:1.4} .pbox.side{stroke:var(--ctrl)} .pbox.bad{stroke:var(--bad);stroke-width:2;fill:color-mix(in srgb,var(--bad) 8%,var(--card))}
+  .pboxtxt{font-size:12px;fill:var(--ink)} .pboxtxt.n{font-family:var(--mono);font-weight:600} .pboxtxt.bad{fill:var(--bad);font-weight:600}
+  .lane{fill:var(--accent-soft)} .lanetxt{font-size:12px;font-weight:700;fill:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+  .flowarrow{stroke:var(--ink-soft);stroke-width:1.4;fill:none;marker-end:url(#ah)}
+  .check{display:flex;gap:.5rem;align-items:flex-start;font-size:.84rem;padding:.25rem 0;border-bottom:1px solid var(--line)} .check .eq{font-family:var(--mono);font-size:.78rem;color:var(--ink-soft)}
+  .ok{color:var(--good)} .no{color:var(--bad)}
+  .ro .k{font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft)} .ro .v{font-family:var(--mono);font-size:1.2rem;font-weight:600} .ro .v small{font-size:.78rem;color:var(--ink-soft);font-weight:400}
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.2rem;margin-top:.6rem}
+  pre.code{background:color-mix(in srgb,var(--ink) 5%,var(--card));border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.5;color:var(--ink)}
+  footer{color:var(--ink-soft);font-size:.82rem;padding:2rem 0 4rem;border-top:1px solid var(--line)} footer .motto{font-family:var(--serif);font-style:italic;color:var(--ink)}
+  @media print{.ribbon,nav.toc{position:static;backdrop-filter:none}}
+
+  .lay{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:.7rem 1rem;margin:1rem 0 .2rem}
+  .lay h2{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .35rem}
+  .lay p{margin:0;max-width:44rem}
+  .qagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.35rem;margin-top:.5rem}
+  .qacheck{display:flex;align-items:center;gap:.45rem;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem;background:var(--card)}
+  .qacheck .qd{width:.55rem;height:.55rem;border-radius:50%;flex:none} .qd.pass{background:var(--good)} .qd.warn{background:var(--warn)} .qd.fail{background:var(--bad)}
+  .qacheck .qx{margin-left:auto;font-family:var(--mono);font-size:.66rem;color:var(--ink-soft)}
+  .qabar{font-family:var(--mono);font-weight:700;font-size:1rem;margin:.2rem 0}
+  .limts{font-size:.84rem;color:var(--ink-soft);border-left:3px solid var(--warn);padding:.4rem .8rem;margin:.5rem 0;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0;max-width:44rem}
+</style>
+</head>
+<body>
+<div class="ribbon"><div class="inner" aria-label="Assurance status">
+  <span class="tier" id="tier">SILVER</span>
+  <span class="chk"><span class="dot ok"></span>boxes derived</span>
+  <span class="chk"><span class="dot" id="dotRec"></span>flow reconciles</span>
+  <span class="chk"><span class="dot ok"></span>PRISMA 2020 layout</span>
+  <span class="chk"><span class="dot pending"></span>independent reproduction</span>
+  <span class="grow"></span><span class="verify" id="verify">reconciling…</span><button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Toggle dark / light mode">☾</button>
+</div></div>
+
+<nav class="toc" aria-label="Pipeline"><ul>
+  <li><a href="#protocol">1 · Protocol</a></li><li><a href="#search">2 · Search</a></li>
+  <li><a href="#screening">3 · Screening</a></li><li><a href="#extraction">4 · Counts (editable)</a></li>
+  <li><a href="#flow">5 · Flow diagram</a></li><li><a href="#checks">6 · Reconciliation</a></li>
+  <li><a href="#xval">7 · R (PRISMA2020)</a></li><li><a href="#assurance">8 · Assurance</a></li>
+</ul></nav>
+
+<header class="wrap" style="padding:2.4rem 0 1rem">
+  <div class="eyebrow">e156 living evidence capsule · PRISMA 2020 flow</div>
+  <h1>A flow diagram that has to add up</h1>
+  <p class="standfirst">Every box in a PRISMA flow is the box above it minus what was removed. Enter the counts that were actually recorded; the capsule computes the rest and refuses to let a downstream box go negative — the classic way published flows silently break.</p>
+  <p style="margin-top:.7rem"><span class="badge">Type 10 · PRISMA 2020</span> <span class="badge" id="badgeIncl">—</span> <span class="badge">living · live re-run</span> <span class="illus">illustrative demo data</span></p>
+</header>
+
+<main class="wrap">
+  <div class="lay"><h2>What this means — in plain language</h2><p>This is the audit trail of a systematic review's searching and screening: every count has to add up, and the flow diagram turns red the instant a box would go negative.</p></div>
+  <section class="stage" id="protocol">
+    <div class="stagehdr"><span class="stagenum">01</span><h2>Protocol</h2></div>
+    <div class="card"><h3>Review question — PICO</h3>
+      <div class="pico"><b>Population</b><span>Records retrieved for a systematic review (illustrative).</span>
+        <b>Reporting</b><span>PRISMA 2020 flow diagram (databases + registers source variant).</span>
+        <b>Self-check</b><span>screened = identified − removed; sought = screened − excluded; assessed = sought − not retrieved; included = assessed − excluded with reasons.</span>
+        <b>Invariant</b><span>No box may be negative.</span></div></div>
+  </section>
+  <section class="stage" id="search"><div class="stagehdr"><span class="stagenum">02</span><h2>Search</h2></div>
+    <div class="card"><p>Counts are <span class="illus">illustrative</span> and editable in stage 4; the diagram and reconciliation re-compute as you type.</p></div></section>
+  <section class="stage" id="screening"><div class="stagehdr"><span class="stagenum">03</span><h2>Screening</h2></div>
+    <div class="card"><p>Two-reviewer screening; the counts below are what would be logged at each PRISMA stage.</p></div></section>
+
+  <section class="stage" id="extraction">
+    <div class="stagehdr"><span class="stagenum">04</span><h2>Counts — editable</h2><span class="prismaref">enter leaf counts; boxes are derived</span></div>
+    <div class="card">
+      <div class="inputgrid" id="inputs">
+        <div class="head">Identification</div>
+        <span class="lbl">Records from databases</span><input class="ed" id="in_db" type="number" min="0">
+        <span class="lbl">Records from registers</span><input class="ed" id="in_reg" type="number" min="0">
+        <div class="head">Removed before screening</div>
+        <span class="lbl">Duplicate records</span><input class="ed" id="in_dup" type="number" min="0">
+        <span class="lbl">Removed by automation</span><input class="ed" id="in_auto" type="number" min="0">
+        <span class="lbl">Removed for other reasons</span><input class="ed" id="in_other" type="number" min="0">
+        <div class="head">Screening</div>
+        <span class="lbl">Records excluded at screening</span><input class="ed" id="in_exclScr" type="number" min="0">
+        <span class="lbl">Reports not retrieved</span><input class="ed" id="in_notRet" type="number" min="0">
+      </div>
+      <h3 style="margin-top:1rem">Reports excluded at eligibility — with reasons</h3>
+      <div class="tablewrap"><table id="cTable"><thead><tr><th>Reason</th><th class="n">n</th><th></th></tr></thead><tbody id="cBody"></tbody></table></div>
+      <div class="toolbar"><button class="btn" id="addRow">+ add reason</button><button class="btn" id="resetData">Reset</button><button class="btn" id="exportData">Export JSON</button><span class="livetag" id="liveTag">illustrative demo</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="flow">
+    <div class="stagehdr"><span class="stagenum">05</span><h2>Flow diagram</h2><span class="prismaref">databases &amp; registers variant</span></div>
+    <div class="card"><svg id="flowPlot" viewBox="0 0 760 560" role="group" aria-label="PRISMA 2020 flow diagram"></svg>
+      <div class="readouts">
+        <div class="ro"><div class="k">Identified</div><div class="v" id="roId">—</div></div>
+        <div class="ro"><div class="k">Screened</div><div class="v" id="roScr">—</div></div>
+        <div class="ro"><div class="k">Assessed</div><div class="v" id="roAss">—</div></div>
+        <div class="ro"><div class="k">Included</div><div class="v" id="roInc">—</div></div>
+      </div></div>
+  </section>
+
+  <section class="stage" id="checks">
+    <div class="stagehdr"><span class="stagenum">06</span><h2>Reconciliation</h2></div>
+    <div class="card"><div id="checkList"></div>
+      <p class="note" id="recNote" style="margin-top:.6rem">—</p></div>
+  </section>
+
+  <section class="stage" id="xval">
+    <div class="stagehdr"><span class="stagenum">07</span><h2>R cross-validation (PRISMA2020)</h2></div>
+    <pre class="code" id="rcode"></pre>
+    <details class="card" id="inspect"><summary style="cursor:pointer;font-weight:600">Inspect the computation (reader) — data + the exact engine code</summary>
+      <p class="note" style="margin-top:.6rem">The actual JavaScript that derives every box, via <code>Function.toString()</code>.</p>
+      <h3 style="margin-top:.8rem">Live data</h3><pre class="code" id="dataDump"></pre>
+      <h3 style="margin-top:.8rem">Engine</h3><pre class="code" id="codeDump"></pre>
+    </details>
+  </section>
+
+  <section class="stage" id="assurance">
+    <div class="stagehdr"><span class="stagenum">08</span><h2>Assurance</h2></div>
+    <div class="card"><p>Same self-auditing trust layer: only the leaf counts are entered; every flow-through box (screened, sought, assessed, included) is <b>derived</b> by subtraction and turns red the instant it would go negative — an arithmetic impossibility that published PRISMA diagrams often hide. Accent is seeded from this capsule's slug. Tier reaches <b>Gold</b> only on independent reproduction.</p></div>
+    <div class="card"><h3>Self-audit — internal-consistency checks</h3>
+      <p class="note" style="margin-bottom:.2rem">Every check runs live against the current data. The capsule must agree with itself before asking the world to agree with it.</p>
+      <div class="qabar" id="qaBar">—</div><div class="qagrid" id="qaGrid"></div></div>
+    <div class="limts" id="limts"><b>How to read this · limitations.</b> Every box is derived by subtraction and turns red the instant it would go negative — the flow must reconcile before the review can be trusted. Yields shown are illustrative.</div>
+  </section>
+
+  <footer><p class="motto">The capsule must agree with itself before asking the world to agree with it.</p>
+    <p>e156 · type 10 (PRISMA 2020 flow) · living capsule · offline · <span class="num" id="genstamp"></span></p></footer>
+</main>
+
+<script>
+"use strict";
+const SLUG="prisma2020-demo", LSKEY="e156:"+SLUG;
+const DEFAULT={db:1240,reg:38,dup:290,auto:24,other:16,exclScr:812,notRet:12,
+  reasons:[{label:'Wrong population',n:38},{label:'Wrong comparator',n:22},{label:'Wrong outcome',n:18},{label:'Not an RCT',n:14},{label:'Duplicate data',n:6}]};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let model=load();
+function load(){try{const r=localStorage.getItem(LSKEY);if(r){const s=JSON.parse(r);if(s&&typeof s==='object')return clean(s);}}catch(e){}return clean(DEFAULT);}
+function clean(o){const r={};['db','reg','dup','auto','other','exclScr','notRet'].forEach(k=>r[k]=Math.max(0,Math.round(+o[k]||0)));
+  r.reasons=Array.isArray(o.reasons)?o.reasons.map(x=>({label:String(x.label||'reason'),n:Math.max(0,Math.round(+x.n||0))})):[];return r;}
+function persist(){try{localStorage.setItem(LSKEY,JSON.stringify(model));}catch(e){}
+  const ed=JSON.stringify(model)!==JSON.stringify(clean(DEFAULT));document.getElementById('liveTag').textContent=ed?'edited — live re-run':'illustrative demo';}
+// derive every PRISMA box by subtraction; ok flags catch negative (impossible) boxes
+function computeFlow(m){
+  const identified=m.db+m.reg, preRemoved=m.dup+m.auto+m.other;
+  const screened=identified-preRemoved, sought=screened-m.exclScr, notRet=m.notRet, assessed=sought-notRet;
+  const reasonsTotal=m.reasons.reduce((a,r)=>a+r.n,0), included=assessed-reasonsTotal;
+  const checks=[
+    {label:'Records screened',eq:`${identified} identified − ${preRemoved} removed`,value:screened},
+    {label:'Reports sought for retrieval',eq:`${screened} screened − ${m.exclScr} excluded`,value:sought},
+    {label:'Reports assessed for eligibility',eq:`${sought} sought − ${notRet} not retrieved`,value:assessed},
+    {label:'Studies included',eq:`${assessed} assessed − ${reasonsTotal} excluded with reasons`,value:included}
+  ].map(c=>({...c,ok:c.value>=0}));
+  const allOk=checks.every(c=>c.ok);
+  return {identified,preRemoved,screened,sought,assessed,included,reasonsTotal,notRet,checks,allOk};
+}
+function box(x,y,w,h,lines,cls){const bad=cls&&cls.includes('bad');let t='';const lh=15,startY=y+h/2-(lines.length-1)*lh/2;
+  lines.forEach((ln,i)=>{const isN=/^​/.test(ln);const txt=ln.replace(/^​/,'');
+    t+=`<text class="pboxtxt${isN?' n':''}${bad&&isN?' bad':''}" x="${x+w/2}" y="${(startY+i*lh+4).toFixed(1)}" text-anchor="middle">${esc(txt)}</text>`;});
+  return `<rect class="pbox ${cls||''}" x="${x}" y="${y}" width="${w}" height="${h}" rx="5"/>${t}`;}
+function renderFlow(f,m){
+  const svg=document.getElementById('flowPlot');const W=760;
+  const laneX=18,laneW=22,mainX=120,mainW=300,sideX=470,sideW=270;
+  const ys=[20,140,260,380,500],h=84,sh=84;
+  const N=v=>'​'+v.toLocaleString();
+  let s='<defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,1 L8,4.5 L0,8 z" fill="var(--ink-soft)"/></marker></defs>';
+  // lanes
+  s+=`<rect class="lane" x="${laneX}" y="${ys[0]}" width="${laneW}" height="${h}" rx="4"/><text class="lanetxt" x="${laneX+laneW/2}" y="${ys[0]+h/2}" text-anchor="middle" transform="rotate(-90 ${laneX+laneW/2} ${ys[0]+h/2})">Identification</text>`;
+  s+=`<rect class="lane" x="${laneX}" y="${ys[1]}" width="${laneW}" height="${ys[3]+h-ys[1]}" rx="4"/><text class="lanetxt" x="${laneX+laneW/2}" y="${(ys[1]+ys[3]+h)/2}" text-anchor="middle" transform="rotate(-90 ${laneX+laneW/2} ${(ys[1]+ys[3]+h)/2})">Screening</text>`;
+  s+=`<rect class="lane" x="${laneX}" y="${ys[4]}" width="${laneW}" height="${h}" rx="4"/><text class="lanetxt" x="${laneX+laneW/2}" y="${ys[4]+h/2}" text-anchor="middle" transform="rotate(-90 ${laneX+laneW/2} ${ys[4]+h/2})">Included</text>`;
+  // main boxes
+  s+=box(mainX,ys[0],mainW,h,['Records identified',`databases ${m.db.toLocaleString()} · registers ${m.reg.toLocaleString()}`,N(f.identified)],'');
+  s+=box(mainX,ys[1],mainW,h,['Records screened',N(f.screened)],f.screened<0?'bad':'');
+  s+=box(mainX,ys[2],mainW,h,['Reports sought for retrieval',N(f.sought)],f.sought<0?'bad':'');
+  s+=box(mainX,ys[3],mainW,h,['Reports assessed for eligibility',N(f.assessed)],f.assessed<0?'bad':'');
+  s+=box(mainX,ys[4],mainW,h,['Studies included in review',N(f.included)],f.included<0?'bad':'');
+  // side boxes
+  s+=box(sideX,ys[0],sideW,sh,['Records removed before screening',`dup ${m.dup} · auto ${m.auto} · other ${m.other}`,N(f.preRemoved)],'side');
+  s+=box(sideX,ys[1],sideW,sh,['Records excluded',N(m.exclScr)],'side');
+  s+=box(sideX,ys[2],sideW,sh,['Reports not retrieved',N(f.notRet)],'side');
+  s+=box(sideX,ys[3],sideW,sh,['Reports excluded, with reasons',`${m.reasons.length} reason(s)`,N(f.reasonsTotal)],'side');
+  // vertical arrows
+  for(let i=0;i<4;i++)s+=`<path class="flowarrow" d="M ${mainX+mainW/2} ${ys[i]+h} L ${mainX+mainW/2} ${ys[i+1]-2}"/>`;
+  // horizontal arrows to side boxes
+  [0,1,2,3].forEach(i=>{s+=`<path class="flowarrow" d="M ${mainX+mainW} ${ys[i]+h/2} L ${sideX-2} ${ys[i]+h/2}"/>`;});
+  svg.setAttribute('viewBox',`0 0 ${W} ${ys[4]+h+16}`);svg.innerHTML=s;
+}
+function renderChecks(f){const el=document.getElementById('checkList');
+  el.innerHTML=f.checks.map(c=>`<div class="check"><span class="${c.ok?'ok':'no'}">${c.ok?'✓':'✗'}</span><div><b>${esc(c.label)}</b> = <span class="num">${c.value.toLocaleString()}</span><br><span class="eq">${esc(c.eq)}</span>${c.ok?'':' <span class="no">— negative: this flow cannot reconcile</span>'}</div></div>`).join('');
+  document.getElementById('dotRec').className='dot '+(f.allOk?'ok':'warn');
+  document.getElementById('recNote').innerHTML=f.allOk
+    ? `<span class="good">All four derived boxes are non-negative — the flow reconciles.</span> ${f.included.toLocaleString()} studies included from ${f.identified.toLocaleString()} identified.`
+    : `<span style="color:var(--bad)">The flow does not reconcile</span> — a derived box is negative, so the entered counts are internally inconsistent. Fix the leaf counts above.`;
+}
+function renderReadouts(f){const set=(id,v)=>{document.getElementById(id).textContent=v.toLocaleString();};
+  set('roId',f.identified);set('roScr',f.screened);set('roAss',f.assessed);set('roInc',f.included);}
+function rcode(){
+  document.getElementById('rcode').textContent=
+`library(PRISMA2020)
+# counts entered as leaf values; derived boxes computed by the package the same way
+d <- PRISMA_data(read.csv(text = "data,n
+database_results,${model.db}
+register_results,${model.reg}
+duplicates,${model.dup}
+excluded_automatic,${model.auto}
+excluded_other,${model.other}
+records_screened,${model.db+model.reg-(model.dup+model.auto+model.other)}
+records_excluded,${model.exclScr}
+dbr_sought_reports,${model.db+model.reg-(model.dup+model.auto+model.other)-model.exclScr}
+dbr_notretrieved_reports,${model.notRet}
+dbr_assessed,${model.db+model.reg-(model.dup+model.auto+model.other)-model.exclScr-model.notRet}
+dbr_excluded,${model.reasons.reduce((a,r)=>a+r.n,0)}
+new_studies,${model.db+model.reg-(model.dup+model.auto+model.other)-model.exclScr-model.notRet-model.reasons.reduce((a,r)=>a+r.n,0)}"))
+PRISMA_flowdiagram(d, interactive = FALSE)   # same flow as above`;}
+function renderInspect(){const dd=document.getElementById('dataDump');if(dd)dd.textContent=JSON.stringify(model,null,2);
+  const cd=document.getElementById('codeDump');if(cd&&!cd.dataset.done){cd.textContent=computeFlow.toString();cd.dataset.done='1';}}
+function syncInputs(){['db','reg','dup','auto','other','exclScr','notRet'].forEach(k=>{const el=document.getElementById('in_'+k);if(el)el.value=model[k];});}
+function renderTable(){let h='';model.reasons.forEach((r,i)=>{
+  h+=`<tr data-i="${i}"><td><input class="ed t" data-k="label" value="${esc(r.label)}"></td>`+
+    `<td class="n"><input class="ed" data-k="n" type="number" min="0" value="${r.n}"></td>`+
+    `<td><button class="btn x" data-rm="${i}" title="remove">✕</button></td></tr>`;});
+  document.getElementById('cBody').innerHTML=h;}
+function QA_RENDER(checks){var grid=document.getElementById('qaGrid');if(!grid)return;
+  var pass=0,warn=0,fail=0;
+  grid.innerHTML=checks.map(function(c){var s=c[1],cl=s===true?'pass':s==='warn'?'warn':'fail';if(cl==='pass')pass++;else if(cl==='warn')warn++;else fail++;
+    return '<div class="qacheck"><span class="qd '+cl+'"></span><span>'+c[0]+'</span><span class="qx">'+(cl==='pass'?'PASS':cl==='warn'?'N/A':'FAIL')+'</span></div>';}).join('');
+  var bar=document.getElementById('qaBar');if(bar)bar.innerHTML='<span style="color:var(--good)">'+pass+' passed</span>'+(warn?' \u00b7 <span style="color:var(--warn)">'+warn+' n/a</span>':'')+(fail?' \u00b7 <span style="color:var(--bad)">'+fail+' failed</span>':'')+' of '+checks.length;
+  var tier=document.getElementById('tier');if(tier)tier.textContent=fail>0?'BRONZE':'SILVER';}
+function renderQA(){var f=computeFlow(model);
+QA_RENDER([
+['Flow diagram reconciles (no box goes negative)', !!(f&&f.allOk)],
+['Reports-sought stage reconciles (sought ≥ 0)', !!(f&&f.checks&&f.checks[1]&&f.checks[1].ok)],
+['Studies-included stage reconciles (included ≥ 0)', !!(f&&f.checks&&f.checks[3]&&f.checks[3].ok)],
+['Exclusion reasons are tallied', !!(f&&f.reasonsTotal!=null)]
+]);}
+function renderOutputs(){const f=computeFlow(model);renderFlow(f,model);renderChecks(f);renderReadouts(f);rcode();renderInspect();renderQA();
+  document.getElementById('badgeIncl').textContent=`${f.included.toLocaleString()} included`;
+  const v=document.getElementById('verify');if(f.allOk){v.textContent=`${f.included.toLocaleString()} included from ${f.identified.toLocaleString()} identified · reconciles ✓`;v.style.color='var(--good)';}else{v.textContent='flow does not reconcile — negative box';v.style.color='var(--bad)';}}
+function renderAll(){syncInputs();renderTable();renderOutputs();}
+
+document.getElementById('inputs').addEventListener('input',e=>{const id=e.target.id;if(!id||!id.startsWith('in_'))return;
+  model[id.slice(3)]=Math.max(0,Math.round(+e.target.value||0));renderOutputs();persist();});
+document.getElementById('cBody').addEventListener('input',e=>{const tr=e.target.closest('tr');if(!tr)return;const i=+tr.dataset.i,k=e.target.dataset.k;if(!k)return;
+  model.reasons[i][k]=(k==='label')?e.target.value:Math.max(0,Math.round(+e.target.value||0));renderOutputs();persist();});
+document.getElementById('cBody').addEventListener('click',e=>{const rm=e.target.closest('[data-rm]');if(rm){model.reasons.splice(+rm.dataset.rm,1);renderTable();renderOutputs();persist();}});
+document.getElementById('addRow').addEventListener('click',()=>{model.reasons.push({label:'New reason',n:0});renderTable();renderOutputs();persist();});
+document.getElementById('resetData').addEventListener('click',()=>{model=clean(DEFAULT);try{localStorage.removeItem(LSKEY);}catch(e){}renderAll();persist();});
+document.getElementById('exportData').addEventListener('click',()=>{const b=new Blob([JSON.stringify(model,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=SLUG+'-data.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+(function(){let h=0;for(const c of SLUG)h=(h*31+c.charCodeAt(0))>>>0;document.documentElement.style.setProperty('--slug-hue',h%360);})();
+(function(){const links=[...document.querySelectorAll('nav.toc a')],map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map[en.target.id];if(a)a.classList.add('active');}}),{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.stage').forEach(s=>io.observe(s));}})();
+document.getElementById('genstamp').textContent=new Date().toISOString().slice(0,10);
+renderAll();persist();
+
+// dark/light toggle (manual override of prefers-color-scheme, shared across the suite)
+(function(){var K='e156:theme',b=document.getElementById('themeBtn');
+function eff(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function ap(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');if(b)b.textContent=eff()==='dark'?'☀':'☾';}
+var s=null;try{s=localStorage.getItem(K);}catch(e){}ap(s);
+if(b)b.addEventListener('click',function(){var n=eff()==='dark'?'light':'dark';try{localStorage.setItem(K,n);}catch(e){}ap(n);});})();
+</script>
+</body>
+</html>
