@@ -149,6 +149,21 @@ assert_eq "$override_src" "git+https://github.com/mahmood726-cyber/overmind.git@
 start "install-projectindex.sh dot-sources cleanly"
 bash -c "source '$ROOT/scripts/install-projectindex.sh' --import && declare -F write_index_markdown_template write_reconcile_script > /dev/null" && ok
 
+start "install-extractor.sh dot-sources cleanly"
+bash -c "source '$ROOT/scripts/install-extractor.sh' --import && declare -F test_extractor_present extractor_default_ref extractor_repo_url > /dev/null" && ok
+
+start "extractor_default_ref pins to a SHA-or-tag by default"
+default_ref="$(bash -c "source '$ROOT/scripts/install-extractor.sh' --import && extractor_default_ref")"
+[[ "$default_ref" =~ ^(v[0-9]|[0-9a-f]{7,40})$ ]] && ok
+
+start "extractor_default_ref honours RCT_EXTRACTOR_REF override"
+override_ref="$(bash -c "export RCT_EXTRACTOR_REF=main; source '$ROOT/scripts/install-extractor.sh' --import; extractor_default_ref")"
+assert_eq "$override_ref" "main" && ok
+
+start "extractor_repo_url points at rct-extractor-v2"
+repo_url="$(bash -c "source '$ROOT/scripts/install-extractor.sh' --import && extractor_repo_url")"
+assert_eq "$repo_url" "https://github.com/mahmood726-cyber/rct-extractor-v2.git" && ok
+
 # Describe: log redaction (P1 — secrets must not survive in transcripts)
 redact_test() {
     local input="$1" expected="$2" label="$3"
