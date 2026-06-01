@@ -53,6 +53,8 @@ NON_INTERACTIVE=0
 IMPORT=0
 INSTALL_SENTINEL=""
 INSTALL_OVERMIND=0
+INSTALL_EXTRACTOR=0
+EXTRACTOR_TARGET=""
 PROJECT_INDEX_ROOT=""
 # Default rule-template paths align with where the .sh installers ACTUALLY
 # land things on a fresh student box (under $HOME/code/). The earlier
@@ -74,6 +76,8 @@ while [[ $# -gt 0 ]]; do
         --import)           IMPORT=1; shift ;;
         --install-sentinel) INSTALL_SENTINEL="$2"; shift 2 ;;
         --install-overmind) INSTALL_OVERMIND=1; shift ;;
+        --install-extractor) INSTALL_EXTRACTOR=1; shift ;;
+        --extractor-target) EXTRACTOR_TARGET="$2"; shift 2 ;;
         --project-index-root) PROJECT_INDEX_ROOT="$2"; shift 2 ;;
         --e156-home)        E156_HOME_VAR="$2"; shift 2 ;;
         --portfolio-root)   PORTFOLIO_ROOT="$2"; shift 2 ;;
@@ -517,9 +521,40 @@ if [[ "$do_pi" -eq 1 && -f "$SCRIPTS_DIR/install-projectindex.sh" ]]; then
     fi
 fi
 
+# 5d: Extractor (rct-extractor-v2: cardiology + malaria + HIV -> meta-kit config)
+do_extractor=0; extractor_target=""
+extractor_default="$HOME/code/rct-extractor-v2"
+if [[ "$INSTALL_EXTRACTOR" -eq 1 ]]; then
+    do_extractor=1; extractor_target="${EXTRACTOR_TARGET:-$extractor_default}"
+elif [[ "$FULL" -eq 1 ]]; then
+    do_extractor=1; extractor_target="${EXTRACTOR_TARGET:-$extractor_default}"
+    log_ok "(--full) Will install extractor (core only) at: $extractor_target"
+elif can_prompt; then
+    echo
+    log_step "RCT extractor (cardiology + malaria + HIV -> meta-starter-kit config; core is stdlib-only)"
+    if prompt_yn "Install the extractor now?" 1; then
+        read -r -p "Target dir (Enter for $extractor_default): " extractor_target
+        extractor_target="${extractor_target:-$extractor_default}"
+        do_extractor=1
+    fi
+fi
+chain_extractor="skipped"; chain_extractor_detail=""
+if [[ "$do_extractor" -eq 1 && -f "$SCRIPTS_DIR/install-extractor.sh" ]]; then
+    log_step "Chaining: install-extractor.sh --target $extractor_target"
+    if bash "$SCRIPTS_DIR/install-extractor.sh" --target "$extractor_target"; then
+        chain_extractor="ok"
+        chain_extractor_detail="installed at $extractor_target (core; --with-pdf-deps for PDFs)"
+    else
+        rc=$?
+        chain_extractor="failed"
+        chain_extractor_detail="exited $rc"
+        log_warn "install-extractor.sh exited $rc (continuing; reported in summary)"
+    fi
+fi
+
 # Step 6: honest summary (counts failed chains, exits non-zero if any failed).
 n_failed=0
-for st in "$chain_sentinel" "$chain_overmind" "$chain_pi"; do
+for st in "$chain_sentinel" "$chain_overmind" "$chain_pi" "$chain_extractor"; do
     [[ "$st" == "failed" ]] && n_failed=$((n_failed + 1))
 done
 
@@ -551,6 +586,7 @@ print_chain "rules+memory" "ok" ""
 print_chain "sentinel"     "$chain_sentinel"     "$chain_sentinel_detail"
 print_chain "overmind"     "$chain_overmind"     "$chain_overmind_detail"
 print_chain "projectindex" "$chain_pi"           "$chain_pi_detail"
+print_chain "extractor"    "$chain_extractor"    "$chain_extractor_detail"
 
 echo
 echo "Next steps:"
@@ -562,6 +598,7 @@ echo "    3. Edit ~/.claude/memory/*.md as you learn preferences"
 [[ "$chain_sentinel" != "ok" ]] && echo "    4. Re-try Sentinel later:  ./scripts/install-sentinel.sh --repo $sentinel_default_repo"
 [[ "$chain_overmind" != "ok" ]] && echo "    5. Re-try Overmind later:  ./scripts/install-overmind.sh"
 [[ "$chain_pi"       != "ok" ]] && echo "    6. Re-try ProjectIndex later:  ./scripts/install-projectindex.sh --root $pi_default"
+[[ "$chain_extractor" != "ok" ]] && echo "    7. Re-try extractor later:  ./scripts/install-extractor.sh --target $extractor_default"
 if [[ "$n_failed" -gt 0 ]]; then
     echo
     echo "If a sub-installer reported a Python error: install python3 and pip"

@@ -35,6 +35,8 @@ param(
     [switch]$NonInteractive,
     [string]$InstallSentinel,
     [switch]$InstallOvermind,
+    [switch]$InstallExtractor,
+    [string]$ExtractorTarget,
     [string]$ProjectIndexRoot,
     # Rules-template variables (substituted into rules/*.md + AGENTS.md on copy).
     # Defaults match Mahmood's working layout. Pass your own here to make the
@@ -502,6 +504,7 @@ $chainStatus = [ordered]@{
     'sentinel'      = 'skipped'
     'overmind'      = 'skipped'
     'projectindex'  = 'skipped'
+    'extractor'     = 'skipped'
 }
 $chainDetails = [ordered]@{}
 
@@ -660,6 +663,54 @@ if ($doProjectIndex) {
     }
 }
 
+# 5d: Extractor (rct-extractor-v2: cardiology + malaria + HIV -> meta-kit config)
+$doExtractor = $false
+$extractorTgt = $null
+$extractorDefault = Join-Path $studentCodeRoot 'rct-extractor-v2'
+if ($InstallExtractor) {
+    $doExtractor = $true
+    $extractorTgt = if ($ExtractorTarget) { Resolve-StarterPath -Input $ExtractorTarget -Default $ExtractorTarget } else { $extractorDefault }
+} elseif ($Full) {
+    $doExtractor = $true
+    $extractorTgt = if ($ExtractorTarget) { $ExtractorTarget } else { $extractorDefault }
+    Write-Host "    (-Full) Will install extractor (core only) at: $extractorTgt" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "RCT extractor (cardiology + malaria + HIV -> meta-starter-kit config; core is stdlib-only)"
+    if (Prompt-YesNo -Question "Install the extractor now?") {
+        $userInput = (Read-Host "Target dir (absolute, or name only -> goes under $studentCodeRoot\) [default: $extractorDefault]").Trim()
+        try {
+            $extractorTgt = Resolve-StarterPath -Input $userInput -Default $extractorDefault
+            $doExtractor = $true
+        } catch {
+            Write-Warning $_.Exception.Message
+            $chainStatus['extractor'] = 'failed'
+            $chainDetails['extractor'] = "rejected target: $($_.Exception.Message)"
+        }
+    }
+}
+if ($doExtractor) {
+    $extractorScript = Join-Path $scriptsDir 'install-extractor.ps1'
+    if (Test-Path $extractorScript) {
+        Write-Step "Chaining: install-extractor.ps1 -Target $extractorTgt"
+        try {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $extractorScript -Target $extractorTgt
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "install-extractor.ps1 exited $LASTEXITCODE"
+                $chainStatus['extractor'] = 'failed'
+                $chainDetails['extractor'] = "exited $LASTEXITCODE"
+            } else {
+                $chainStatus['extractor'] = 'ok'
+                $chainDetails['extractor'] = "installed at $extractorTgt (core; -WithPdfDeps for PDFs)"
+            }
+        } catch {
+            Write-Warning "install-extractor.ps1 failed: $($_.Exception.Message)"
+            $chainStatus['extractor'] = 'failed'
+            $chainDetails['extractor'] = $_.Exception.Message
+        }
+    }
+}
+
 # --- Step 6: honest summary ------------------------------------------------
 
 $nFailed = ($chainStatus.Values | Where-Object { $_ -eq 'failed' }).Count
@@ -705,6 +756,10 @@ if ($chainStatus['overmind'] -ne 'ok') {
 if ($chainStatus['projectindex'] -ne 'ok') {
     Write-Host "    6. Re-try ProjectIndex later:"
     Write-Host "         .\scripts\install-projectindex.ps1 -Root $studentCodeRoot\ProjectIndex"
+}
+if ($chainStatus['extractor'] -ne 'ok') {
+    Write-Host "    7. Re-try the extractor later:"
+    Write-Host "         .\scripts\install-extractor.ps1 -Target $studentCodeRoot\rct-extractor-v2"
 }
 if ($nFailed -gt 0) {
     Write-Host ""

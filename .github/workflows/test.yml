@@ -46,6 +46,7 @@ jobs:
             'bootstrap\pester.bat.tests.ps1',
             'scripts\pester.doctor-report.tests.ps1',
             'scripts\pester.install-sentinel.tests.ps1',
+            'scripts\pester.install-extractor.tests.ps1',
             'scripts\pester.phase3.tests.ps1',
             'scripts\pester.phase4.tests.ps1',
             'scripts\pester.update.tests.ps1',
@@ -164,6 +165,7 @@ jobs:
           shellcheck --severity=error --shell=bash \
             install/install.sh \
             scripts/install-sentinel.sh \
+            scripts/install-extractor.sh \
             scripts/install-overmind.sh \
             scripts/install-projectindex.sh \
             scripts/install-long-term-plan.sh \

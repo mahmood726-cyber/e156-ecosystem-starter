@@ -6,6 +6,12 @@
 
 # PowerShell tolerates either, so leave as native (Windows->CRLF, Linux->LF).
 *.ps1   text
+# EXCEPT install.ps1, which hashes ITSELF against docs/HASH.txt. Native eol
+# makes the Windows self-check (CRLF, Get-FileHash) and the Linux CI check
+# (LF, sha256sum via regen-hashes.sh) compute different hashes -- they can
+# never both pass. Pin it to LF (as install.sh already is) so every platform
+# agrees on one hash.
+install/install.ps1 text eol=lf
 
 # Markdown / config: native is fine.
 *.md    text
