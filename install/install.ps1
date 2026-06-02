@@ -263,6 +263,17 @@ function Copy-RulesToAgent {
         if (-not $preExisted -and $Manifest) { $Manifest.CreatedFiles.Add($dest) }
         $copied += $_.Name
     }
+    # JIT routing table (rules/_index.yaml): straight copy, no templating (it
+    # references rule files by name, has no {{PLACEHOLDER}} paths). Consumed by
+    # `overmind rules --for "<task>"`.
+    $idxSrc = Join-Path $SourceRulesDir '_index.yaml'
+    if (Test-Path $idxSrc) {
+        $idxDest = Join-Path $TargetRulesDir '_index.yaml'
+        $idxPreExisted = Test-Path $idxDest
+        Copy-Item $idxSrc $idxDest -Force
+        if (-not $idxPreExisted -and $Manifest) { $Manifest.CreatedFiles.Add($idxDest) }
+        $copied += '_index.yaml'
+    }
     return [PSCustomObject]@{ Copied = $copied; Backed = $backed }
 }
 

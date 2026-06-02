@@ -1,0 +1,82 @@
+# JIT rule index (1B). Maps task signals (file globs + keywords) to the rule
+# slices worth loading, so an agent/tool pulls only the relevant detail instead
+# of all four rules/*.md files. Source of truth for rule CONTENT stays the .md
+# files; this is just the routing table. Consume via: `overmind rules --for "<glob-or-task>"`.
+version: 1
+
+# Read-first, every session (the canonical core).
+always:
+  - AGENTS.md
+  - rules.md#Workflow
+
+# Situational slices. An entry matches if a task's file/glob hits when_globs OR
+# the task text contains any when_keywords (case-insensitive substring).
+rules:
+  - id: html-apps
+    when_globs: ["*.html", "*.htm", "*.js", "*.mjs", "*.cjs", "*.jsx", "*.tsx", "*.css"]
+    when_keywords: ["html app", "dashboard", "browser", "single-file", "github pages", "frontend"]
+    load:
+      - "rules.md#HTML apps (large single-file)"
+      - "rules.md#Browser testing"
+      - "lessons.md#JavaScript / HTML"
+
+  - id: python
+    when_globs: ["*.py"]
+    when_keywords: ["python", "pytest", "numpy", "pandas", "scipy", "statsmodels"]
+    load:
+      - "rules.md#Numerical baseline contract"
+      - "lessons.md#Python"
+      - "lessons.md#Python module / test collection traps (learned 2026-04-16)"
+
+  - id: r-stats
+    when_globs: ["*.R", "*.r", "*.Rmd", "*.rmd"]
+    when_keywords: ["r script", "rscript", "r validation", "renv"]
+    load:
+      - "rules.md#R validation"
+      - "advanced-stats.md#Numerical"
+
+  - id: meta-analysis
+    when_keywords: ["meta-analysis", "meta analysis", "pooling", "heterogeneity", "publication bias",
+                    "nma", "network meta", "dta", "diagnostic accuracy", "bayesian", "survival",
+                    "forest plot", "i2", "tsa", "sucra", "egger", "trim-and-fill"]
+    load:
+      - "advanced-stats.md"
+      - "lessons.md#Statistics"
+
+  - id: e156-paper
+    when_globs: ["*workbook*", "rewrite-workbook.txt"]
+    when_keywords: ["e156", "7-sentence", "micro-paper", "submission", "workbook", "abstract", "estimand"]
+    load:
+      - "e156.md"
+
+  - id: git-release
+    when_keywords: ["push", "deploy", "release", "ship", "commit", "pages", "tag"]
+    load:
+      - "rules.md#Git hygiene"
+      - "rules.md#Registry & lifecycle gates"
+      - "AGENTS.md#TruthCert and SHIP"
+
+  - id: portfolio-registry
+    when_globs: ["INDEX.md", "restart-manifest.json"]
+    when_keywords: ["portfolio", "registry", "index.md", "reconcile", "projectindex", "count", "drift"]
+    load:
+      - "lessons.md#Portfolio Registry (learned 2026-04-14)"
+      - "lessons.md#Portfolio audit patterns (learned 2026-04-16)"
+      - "e156.md#Push System"
+
+  - id: data-ctgov
+    when_keywords: ["ct.gov", "ctgov", "aact", "clinicaltrials", "trial registry", "nct"]
+    load:
+      - "lessons.md#CT.gov / AACT Queries"
+      - "lessons.md#Data Handling"
+
+  - id: testing
+    when_keywords: ["test", "verify", "regression", "smoke", "baseline", "monte carlo", "e2e"]
+    load:
+      - "rules.md#Testing"
+      - "rules.md#Verification readiness preflight"
+      - "rules.md#Bounded verify-fix-rerun"
+
+# When nothing matches, still surface the always-relevant bug-prevention lessons.
+fallback:
+  - "lessons.md#Agent Workflow"

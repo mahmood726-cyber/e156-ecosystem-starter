@@ -101,7 +101,13 @@ Claude and Codex are **execution leads** (implementation, repair, hardening, rel
 - **Integration tests first** for multi-component systems; define shared constants and integration contracts before implementation.
 - **Monte Carlo stochastic tests** may use `atol=0.05`; deterministic estimators keep `1e-6`.
 
-## Detailed Rules
+## Context loading (JIT)
+Two tiers:
+- **Read-first (always):** this file (AGENTS.md) + `rules.md#Workflow`.
+- **Situational (load on demand):** the `rules/*.md` detail below is load-on-demand. Pull only the slices a task needs via the routing table `rules/_index.yaml`:
+  - `overmind rules --for "<task or *.glob>"` → returns the matching rule slices (`--text` to inline them).
+
+## Detailed Rules (situational — see `rules/_index.yaml`)
 - `.claude/rules/rules.md` — consolidated workflow + testing + HTML-apps rules (merged 2026-04-15)
 - `.claude/rules/lessons.md` — bug-prevention rules from past sessions
 - `.claude/rules/e156.md` — E156 format + pipeline
