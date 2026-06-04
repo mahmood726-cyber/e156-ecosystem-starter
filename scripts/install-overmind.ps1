@@ -56,7 +56,7 @@ function Test-OvermindInstalled {
     return $?
 }
 
-$script:OvermindDefaultRef = '56af27f759ada57b988dea6f39a46a61e9561e83'   # 2026-06-04: evidence subsystem + pooling engine + gold-benchmark (measured output-correctness) + hybrid retrieval + reporting-bias. Override with $env:OVERMIND_REF=master.
+$script:OvermindDefaultRef = 'e3ab0f68cef3e9b9eac72650c6b14bb0ccad5846'   # 2026-06-04: evidence subsystem + pooling engine + gold-benchmark (measured output-correctness) + hybrid retrieval + reporting-bias. Override with $env:OVERMIND_REF=master.
 
 function Get-OvermindDefaultSource {
     # Pinned to a known-good commit by default so fresh installs are reproducible.
