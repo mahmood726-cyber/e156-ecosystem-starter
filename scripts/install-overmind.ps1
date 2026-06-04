@@ -56,7 +56,7 @@ function Test-OvermindInstalled {
     return $?
 }
 
-$script:OvermindDefaultRef = '4d9ef61'   # 2026-04-26 nightly snapshot. Bump to v0.1.0 once tagged.
+$script:OvermindDefaultRef = '2713358dbcd45ad1f7f5eaddab06dc786caec0a4'   # 2026-06-04: evidence subsystem + pooling engine + gold-benchmark (measured output-correctness) + hybrid retrieval + reporting-bias. Override with $env:OVERMIND_REF=master.
 
 function Get-OvermindDefaultSource {
     # Pinned to a known-good commit by default so fresh installs are reproducible.
