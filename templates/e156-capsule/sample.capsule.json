@@ -1,0 +1,26 @@
+{
+  "title": "Dapagliflozin in heart failure with reduced ejection fraction",
+  "estimand": {
+    "name": "hazard ratio",
+    "point": 0.74,
+    "lci": 0.65,
+    "uci": 0.85,
+    "null_value": 1.0,
+    "scale": "ratio"
+  },
+  "sentences": [
+    "Does dapagliflozin reduce cardiovascular death or worsening heart failure in adults with heart failure and reduced ejection fraction, as a hazard ratio?",
+    "A multicentre randomized trial enrolled 4744 such patients across 20 countries between 2017 and 2018 with confirmed reduced ejection fraction.",
+    "A Cox proportional-hazards model compared the dapagliflozin arm against placebo on the time to the first primary composite event.",
+    "Dapagliflozin lowered the primary composite of cardiovascular death or worsening heart failure with a hazard ratio of 0.74 and a 95% confidence interval from 0.65 to 0.85.",
+    "The benefit was consistent in patients with and without diabetes, and a prespecified subgroup analysis showed no significant interaction by baseline ejection fraction.",
+    "The result indicates a clinically meaningful relative reduction in the composite endpoint, supporting dapagliflozin as add-on therapy for this population.",
+    "The estimate does not extend to patients with preserved ejection fraction, who were excluded and require separate evidence."
+  ],
+  "metadata": {
+    "doi": null,
+    "dataset_url": null,
+    "date": "2026-06-04",
+    "author": "starter sample (synthetic-shaped, illustrative)"
+  }
+}

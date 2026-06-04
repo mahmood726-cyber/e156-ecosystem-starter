@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "E156 capsule",
+  "description": "The minimal capsule object. The 7-sentence body is the paper; everything else (estimand, metadata, the single chartable effect) lives here, NOT in the body.",
+  "type": "object",
+  "required": ["title", "estimand", "sentences"],
+  "additionalProperties": false,
+  "properties": {
+    "title": {"type": "string", "description": "Capsule title (not counted in the 156-word body)."},
+    "estimand": {
+      "type": "object",
+      "description": "The ONE named primary estimand the capsule reports.",
+      "required": ["name", "point"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {"type": "string", "description": "e.g. 'hazard ratio', 'risk difference', 'SMD'."},
+        "point": {"type": "number", "description": "The primary point estimate."},
+        "lci": {"type": ["number", "null"], "description": "Lower confidence/credible bound."},
+        "uci": {"type": ["number", "null"], "description": "Upper confidence/credible bound."},
+        "null_value": {"type": "number", "default": 1.0, "description": "Null effect: 1.0 for ratios, 0.0 for differences."},
+        "scale": {"type": "string", "enum": ["ratio", "difference"], "default": "ratio"}
+      }
+    },
+    "sentences": {
+      "type": "array",
+      "description": "Exactly 7 sentences S1..S7, in order.",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {"type": "string"}
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Kept OUT of the body by design (the E156 contract forbids body citations/links/metadata).",
+      "additionalProperties": true,
+      "properties": {
+        "doi": {"type": ["string", "null"]},
+        "dataset_url": {"type": ["string", "null"]},
+        "date": {"type": ["string", "null"]},
+        "author": {"type": ["string", "null"]}
+      }
+    }
+  }
+}
