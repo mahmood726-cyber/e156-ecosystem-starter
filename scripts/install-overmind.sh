@@ -49,7 +49,7 @@ assert_real_python() {
     fi
 }
 
-OVERMIND_DEFAULT_REF="41054c5c4ceb54868f27cb358a23fd18f0c55cdf"   # 2026-06-04: evidence subsystem + pooling engine + gold-benchmark (measured output-correctness) + hybrid retrieval + reporting-bias. Override with OVERMIND_REF=master.
+OVERMIND_DEFAULT_REF="7680d3ab2dd3a9cf166db80d582b37681ae0d9d1"   # 2026-06-04: evidence subsystem + pooling engine + gold-benchmark (measured output-correctness) + hybrid retrieval + reporting-bias. Override with OVERMIND_REF=master.
 
 overmind_default_source() {
     # Pinned to a known-good commit so fresh installs are reproducible. Override
