@@ -44,7 +44,14 @@ safe to type myself.
    (For local installs, replace the path with wherever you cloned
    `e156-ecosystem-starter/`.) Read the top 5 hits — name, README excerpt,
    code-grep results. Tell me in 3 lines what's reusable from existing repos
-   vs what is genuinely net-new. Then run
+   vs what is genuinely net-new. **Also search for reusable building blocks** so you
+   copy instead of regenerate — copying an existing primitive costs zero tokens,
+   regenerating it costs thousands:
+   ```
+   python /workspaces/e156-ecosystem-starter/scripts/reuse.py find "<what you need>"
+   ```
+   (e.g. "forest plot", "aact loader"). It returns the exact kit function and file
+   to copy. Then run
    `pip install git+https://github.com/mahmood726-cyber/e156-student-starter.git@main`
    and `student new <slug>` to scaffold under `~/code/<slug>/`. In the new
    repo's `docs/<criterion>.md`, cite the prior repos by name.

@@ -35,7 +35,14 @@ quelque chose en dehors de mon dossier personnel ou modifier le PATH système.
    (Pour les installations locales, remplace le chemin par celui où tu as cloné
    `e156-ecosystem-starter/`.) Lis les 5 meilleurs résultats — nom, extrait du README,
    résultats de grep de code. Dis-moi en 3 lignes ce qui est réutilisable depuis les
-   dépôts existants vs ce qui est vraiment nouveau. Puis exécute
+   dépôts existants vs ce qui est vraiment nouveau. **Cherche aussi les briques
+   réutilisables** pour copier au lieu de régénérer — copier une primitive existante
+   coûte zéro token, la régénérer en coûte des milliers :
+   ```
+   python /workspaces/e156-ecosystem-starter/scripts/reuse.py find "<ce dont tu as besoin>"
+   ```
+   (p. ex. « forest plot », « aact loader »). L'outil renvoie la fonction du kit et le
+   fichier exacts à copier. Puis exécute
    `pip install git+https://github.com/mahmood726-cyber/e156-student-starter.git@main`
    et `student new <slug>` pour scaffolder sous `~/code/<slug>/`. Dans le `docs/<criterion>.md`
    du nouveau dépôt, cite les dépôts antérieurs par nom.
