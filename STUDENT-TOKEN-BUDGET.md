@@ -55,7 +55,22 @@ to *edit* a near-final draft rather than generate from scratch.
    rule already does.
 6. **Reuse, don't regenerate.** The starter ships ~40 worked capsule examples
    (`docs/capsules/`) and each tool ships its own example output. Read those
-   instead of regenerating.
+   instead of regenerating. **Before asking an agent to write a forest plot, a
+   funnel plot, an AACT loader, or any analysis helper, search what already
+   exists — for zero tokens:**
+
+   ```bash
+   python scripts/reuse.py find "forest plot"     # -> renderForest(svgEl, studies, opts)
+   python scripts/reuse.py find "load aact table" # -> load_table(table, *, location, ...)
+   python scripts/reuse.py find "funnel" --plain  # human-friendly terminal output
+   ```
+
+   It searches a pre-baked, offline index of every reusable function/class in the
+   kits (built with the stdlib only — no LLM, no network) and tells you the exact
+   signature and file to copy. Regenerating a forest-plot renderer can cost
+   thousands of tokens; copying `renderForest` costs zero. If you installed a kit
+   into a non-default location, run `python scripts/reuse.py build` once to refresh
+   the index for your machine.
 
 ## One-line installs (all default to the low-token path)
 
