@@ -51,7 +51,7 @@ done
 aact_repo_url() { echo "https://github.com/mahmood726-cyber/aact-cockpit.git"; }
 
 # Pinned commit (2026-06-04). Override with AACT_REF=master for latest.
-AACT_DEFAULT_REF="f8cf87ab99e72e8c13b254534ab8cfd7960b9c3d"
+AACT_DEFAULT_REF="58a970868c9135accbdb11aef130757aa69558d2"
 aact_default_ref() { echo "${AACT_REF:-$AACT_DEFAULT_REF}"; }
 
 aact_default_target() { echo "${HOME}/code/aact-cockpit"; }

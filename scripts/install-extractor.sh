@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # install-extractor.sh -- bash parallel of scripts/install-extractor.ps1.
 #
-# Installs the rct-extractor-v2 RCT data extractor (cardiology + malaria + HIV)
-# that feeds the meta-starter-kit config the rest of the ecosystem consumes.
-# Clones the repo at a pinned commit into a target dir and exports
-# RCT_EXTRACTOR_PATH so the meta-system bridges (extractor_bridge/extract_meta.py)
-# auto-find it.
+# Installs the rct-extractor-v2 RCT data extractor (17 disease specialties: HIV,
+# malaria, typhoid, schistosomiasis, sickle cell, cholera, maternal/neonatal, TB,
+# hepatitis, meningitis, pneumonia, diarrhoeal, malnutrition, helminths,
+# hypertension, cervical cancer, diabetes) that feeds the meta-starter-kit config
+# the rest of the ecosystem consumes. Clones the repo at a pinned commit into a
+# target dir and exports RCT_EXTRACTOR_PATH so the meta-system bridges
+# (extractor_bridge/extract_meta.py) auto-find it. The clone also ships the
+# `rct-extract` CLI and the `rct_extractor` Python package.
 #
 # The student's core path -- trial text in, meta-starter-kit config out -- is
 # STDLIB-ONLY (no numpy / scipy / pdfplumber). Heavy PDF + scientific deps are
@@ -64,11 +67,13 @@ extractor_repo_url() {
     echo "https://github.com/mahmood726-cyber/rct-extractor-v2.git"
 }
 
-# Known-good extractor commit (cardiology + malaria + HIV; HIV MA agreement
-# 97.9%, malaria 99.4%). Pinned so a fresh clone is reproducible -- same
-# supply-chain approach as the Sentinel / Overmind installers. Override with
-# RCT_EXTRACTOR_REF=main (or any branch/tag/SHA) for bleeding edge.
-EXTRACTOR_DEFAULT_REF="dd299165a6cc1e637fe5a261e9a2f5f64ae90ff3"
+# Known-good extractor commit (all 17 disease specialties; packaged as the
+# pip-installable `rct_extractor` lib + `rct-extract` CLI; 1343 tests green).
+# Pinned so a fresh clone is reproducible -- same supply-chain approach as the
+# Sentinel / Overmind installers, and kept current by
+# scripts/refresh-ecosystem-pins.py. Override with RCT_EXTRACTOR_REF=main (or any
+# branch/tag/SHA) for bleeding edge.
+EXTRACTOR_DEFAULT_REF="1981da94935da371ae2b6d5aeb84cae2b4c3ef8d"
 
 extractor_default_ref() {
     echo "${RCT_EXTRACTOR_REF:-$EXTRACTOR_DEFAULT_REF}"
@@ -143,6 +148,8 @@ sys.path.insert(0, sys.argv[1])
 import scripts.build_metakit_config  # noqa: F401  (the bridge entrypoint)
 from src.specialties.registry import detect_specialty
 assert detect_specialty("viral suppression with dolutegravir")[0] == "hiv"
+# prove this is the 17-specialty build, not the old cardio+malaria+HIV one
+assert detect_specialty("empagliflozin in type 2 diabetes lowered HbA1c")[0] == "diabetes"
 print("ok")
 PY_EOF
 }
@@ -183,7 +190,7 @@ log_ok()   { printf '    %s\n' "$1"; }
 REF="$(extractor_default_ref)"
 
 echo
-echo "rct-extractor-v2 installer (cardiology + malaria + HIV)"
+echo "rct-extractor-v2 installer (17 disease specialties)"
 echo
 
 if [[ "$SKIP_CLONE" -eq 1 ]]; then
@@ -229,7 +236,15 @@ echo "    python extractor_bridge/extract_meta.py records.json --out config.json
 echo "  Or directly:"
 echo "    python \"$TARGET/scripts/build_metakit_config.py\" records.json --out config.json"
 echo
-echo "  Topics auto-detected: cardiology, malaria, hiv."
+echo "  Or the new unified CLI (after  pip install \"$TARGET\"):"
+echo "    rct-extract --list-specialties"
+echo "    rct-extract --specialty diabetes --input abstract.txt"
+echo "    rct-extract --auto --input ./corpus --json -o results.jsonl"
+echo
+echo "  17 specialties auto-detected: hiv, malaria, typhoid, schistosomiasis,"
+echo "    sickle_cell, cholera, maternal_neonatal, tuberculosis, hepatitis,"
+echo "    meningitis, pneumonia, diarrhoeal, malnutrition, helminths,"
+echo "    hypertension, cervical_cancer, diabetes."
 [[ "$WITH_PDF_DEPS" -eq 1 ]] || \
 echo "  For local PDF parsing later:  ./scripts/install-extractor.sh --with-pdf-deps"
 echo "====================================================="

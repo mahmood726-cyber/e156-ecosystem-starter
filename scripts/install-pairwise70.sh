@@ -46,7 +46,7 @@ done
 pairwise70_repo_url() { echo "https://github.com/mahmood726-cyber/pairwise70-workbench.git"; }
 
 # Pinned commit (2026-06-04). Override with PAIRWISE70_REF=master for latest.
-PAIRWISE70_DEFAULT_REF="fa0cba91ca9e24fee2f5cc96b3b167b1e6ccdb9e"
+PAIRWISE70_DEFAULT_REF="7303776bc84a86b75f06ec28dc6e776528698ed4"
 pairwise70_default_ref() { echo "${PAIRWISE70_REF:-$PAIRWISE70_DEFAULT_REF}"; }
 
 pairwise70_default_target() { echo "${HOME}/code/pairwise70-workbench"; }

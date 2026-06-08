@@ -27,7 +27,7 @@ $ErrorActionPreference = 'Stop'
 function Get-Pairwise70RepoUrl { return 'https://github.com/mahmood726-cyber/pairwise70-workbench.git' }
 
 # Pinned commit (2026-06-04). Override with $env:PAIRWISE70_REF=master for latest.
-$script:Pairwise70DefaultRef = 'fa0cba91ca9e24fee2f5cc96b3b167b1e6ccdb9e'
+$script:Pairwise70DefaultRef = '7303776bc84a86b75f06ec28dc6e776528698ed4'
 function Get-Pairwise70DefaultRef {
     if ($env:PAIRWISE70_REF) { return $env:PAIRWISE70_REF }
     return $script:Pairwise70DefaultRef

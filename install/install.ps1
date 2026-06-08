@@ -674,7 +674,7 @@ if ($doProjectIndex) {
     }
 }
 
-# 5d: Extractor (rct-extractor-v2: cardiology + malaria + HIV -> meta-kit config)
+# 5d: Extractor (rct-extractor-v2: 17 disease specialties -> meta-kit config)
 $doExtractor = $false
 $extractorTgt = $null
 $extractorDefault = Join-Path $studentCodeRoot 'rct-extractor-v2'
@@ -687,7 +687,7 @@ if ($InstallExtractor) {
     Write-Host "    (-Full) Will install extractor (core only) at: $extractorTgt" -ForegroundColor DarkGray
 } elseif (Test-CanPrompt) {
     Write-Host ""
-    Write-Step "RCT extractor (cardiology + malaria + HIV -> meta-starter-kit config; core is stdlib-only)"
+    Write-Step "RCT extractor (17 disease specialties -> meta-starter-kit config; core is stdlib-only)"
     if (Prompt-YesNo -Question "Install the extractor now?") {
         $userInput = (Read-Host "Target dir (absolute, or name only -> goes under $studentCodeRoot\) [default: $extractorDefault]").Trim()
         try {

@@ -21,10 +21,10 @@ assert_true()  { [[ "$1" -eq 0 ]] || { bad "expected success, got exit $1"; retu
 assert_false() { [[ "$1" -ne 0 ]] || { bad "expected failure, got success"; return 1; }; }
 
 # Pinned refs the installers must clone (bump here AND in the script together).
-RAPIDMETA_SHA="5a74f31847c6dddba58bc5a9e057c5dcb67b0e3f"
-AACT_SHA="f8cf87ab99e72e8c13b254534ab8cfd7960b9c3d"
-AACT_KIT_SHA="35a0c42c5123997b828da2cd36c9994accaeefa9"
-PAIRWISE70_SHA="fa0cba91ca9e24fee2f5cc96b3b167b1e6ccdb9e"
+RAPIDMETA_SHA="c195817b5e5ff913abbdf0fd5dbc3c81b32c6c9d"
+AACT_SHA="58a970868c9135accbdb11aef130757aa69558d2"
+AACT_KIT_SHA="b1995128747848d1567386266eca95e9230e19b9"
+PAIRWISE70_SHA="7303776bc84a86b75f06ec28dc6e776528698ed4"
 
 # --- rapidmeta -------------------------------------------------------------
 ( source "$SCRIPTS/install-rapidmeta.sh" --import

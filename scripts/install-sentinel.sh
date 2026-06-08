@@ -52,7 +52,7 @@ assert_real_python() {
 # Known-good Sentinel commit (the 53-rule build: 21 BLOCK / 28 WARN / 4 INFO).
 # v0.1.0 is stale (only ~12 rules); pin to this SHA until a newer semver tag
 # ships. Same "pin to a known-good commit" approach used for Overmind.
-SENTINEL_DEFAULT_REF="ebf065ccec049072d1b92b6ed20122581440e959"
+SENTINEL_DEFAULT_REF="5808f2bdc024506fa3d49a367c88b42b15fdf164"
 
 sentinel_default_source() {
     # Pinned to a known-good commit so fresh installs are reproducible. Override

@@ -21,10 +21,10 @@ verifier, and ProjectIndex registry.
 | `AGENTS.md` + `CLAUDE.md` / `GEMINI.md` / `CODEX.md` | v0.1.0 | Canonical + per-agent context files. Each agent auto-reads its own pointer; all pointers agree that `AGENTS.md` wins. |
 | `memory/` scaffold | v0.1.0 | Starter `MEMORY.md` index + 4 type templates (`user` / `feedback` / `project` / `reference`). Dropped only when your memory dir is empty — never clobbers existing memory. |
 | Sentinel pre-push hook | **v0.2.0** | `scripts/install-sentinel.ps1 -Repo <path>` pip-installs `sentinel` from the public repo and installs a pre-push hook with 53 rules (21 BLOCK / 28 WARN / 4 INFO; 656 tests) + skip-file marker (blocks: hardcoded paths, placeholder HMAC, silent sentinels, committed `.claude/` configs, empty-DataFrame access, stale agent-config versions, leaked secrets, MCP/JS lockfile + script integrity, baseline drift, dashboard-stat orphan, blueprint-implementation match). Bypass via `SENTINEL_BYPASS=1 git push` (logged to `~/.sentinel-logs/bypass.log`). |
-| Overmind verifier | **v0.4.0** | `scripts/install-overmind.ps1` pip-installs [overmind](https://github.com/mahmood726-cyber/overmind) (pinned `7680d3a`) from GitHub and generates a 64-hex-char `TRUTHCERT_HMAC_KEY` saved as a User env var. Run `overmind scan --repo <path>` for on-demand verification (PASS / FAIL / UNVERIFIED / REJECT). **Now includes the offline evidence-synthesis subsystem**: a deterministic meta-analysis pooling engine + `overmind gold-benchmark` (MEASURED output-correctness — reproduces published pooled estimates, e.g. metafor BCG logRR to 0.0005, fail-closed), BM25+vector hybrid retrieval, screening-recall calibration vs the 0.95 bar, claim-grounding, PRISMA flow, and reporting-bias accounting (registry linkage, ROB-ME, outcome-switching). |
+| Overmind verifier | **v0.4.0** | `scripts/install-overmind.ps1` pip-installs [overmind](https://github.com/mahmood726-cyber/overmind) (pinned `ec23ccb`) from GitHub and generates a 64-hex-char `TRUTHCERT_HMAC_KEY` saved as a User env var. Run `overmind scan --repo <path>` for on-demand verification (PASS / FAIL / UNVERIFIED / REJECT). **Now includes the offline evidence-synthesis subsystem**: a deterministic meta-analysis pooling engine + `overmind gold-benchmark` (MEASURED output-correctness — reproduces published pooled estimates, e.g. metafor BCG logRR to 0.0005, fail-closed), BM25+vector hybrid retrieval, screening-recall calibration vs the 0.95 bar, claim-grounding, PRISMA flow, and reporting-bias accounting (registry linkage, ROB-ME, outcome-switching). |
 | TruthCert engine | **v0.3.0** | Bundled inside Overmind (`overmind/verification/truthcert_engine.py`). HMAC-signs a certification bundle for each verified project. Requires `TRUTHCERT_HMAC_KEY` env var — installer generates and stores it. |
 | ProjectIndex seed | **v0.3.0** | `scripts/install-projectindex.ps1 -Root <dir>` drops a starter `INDEX.md` (active / submission-ready / shipped / triage sections) + `reconcile_counts.py` that fails-closed when listed project paths don't exist on disk. Parameterized — not hardcoded to `C:\ProjectIndex\`. |
-| RCT extractor | **v0.5.0** | `scripts/install-extractor.ps1 -Target <dir>` clones [rct-extractor-v2](https://github.com/mahmood726-cyber/rct-extractor-v2) at a pinned commit and persists `RCT_EXTRACTOR_PATH` so the meta-system bridges auto-find it. Turns trial PDFs / abstract text into a [meta-starter-kit](https://github.com/mahmood726-cyber/meta-starter-kit) config — auto-detecting **cardiology, malaria, and HIV** (HIV MA agreement 97.9%, malaria 99.4%). The student's text→config path is **stdlib-only**; heavy PDF/scientific deps (numpy/scipy/pdfplumber, ~150 MB) are opt-in via `-WithPdfDeps`. Runs under `-Full` (core only). |
+| RCT extractor | **v0.6.0** | `scripts/install-extractor.ps1 -Target <dir>` clones [rct-extractor-v2](https://github.com/mahmood726-cyber/rct-extractor-v2) at a pinned commit and persists `RCT_EXTRACTOR_PATH` so the meta-system bridges auto-find it. Turns trial PDFs / abstract text into a [meta-starter-kit](https://github.com/mahmood726-cyber/meta-starter-kit) config — auto-detecting **all 17 disease specialties** (HIV, malaria, typhoid, schistosomiasis, sickle cell, cholera, maternal/neonatal, TB, hepatitis, meningitis, pneumonia, diarrhoeal, malnutrition, helminths, hypertension, cervical cancer, diabetes). The clone also ships the `rct_extractor` pip package + the `rct-extract` CLI (`rct-extract --specialty diabetes --input abstract.txt`, `--auto`, `--list-specialties`). The student's text→config path is **stdlib-only**; heavy PDF/scientific deps (numpy/scipy/pdfplumber, ~150 MB) are opt-in via `-WithPdfDeps`. Runs under `-Full` (core only). |
 | `push-portfolio.py` | **v0.4.0** | Lightweight clone of Mahmood's `push_all_repos.py`. Scans any directory tree (configurable via `--scan-dir` / `PORTFOLIO_SCAN_DIRS` env) for git repos and either pushes existing ones or creates new GitHub repos via `gh`. Guards against the "parent repo config inheritance" gotcha (bare `.git` subdirs won't falsely inherit the home dir's remote). Flags: `--dry-run`, `--report`, `--new-only`, `--no-recursive`. |
 | `long-term-plan` (optional) | separate repo | `scripts/install-long-term-plan.ps1` clones [`mahmood726-cyber/long-term-plan`](https://github.com/mahmood726-cyber/long-term-plan) (pinned to `v0.7.0`) into `~/code/long-term-plan/` and installs the only runtime dep (`pyyaml`). A weekly-refreshed, deterministic, locally-rendered project backlog with no LLM in the loop. Ships Mahmood's real backlog (43 ideas + 5 OKRs anchored to north stars) as a reference — students are expected to fork or replace `ideas.yaml` with their own. |
 | `student` CLI | separate repo | Narrow submission pipeline: see [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter). |
@@ -49,7 +49,7 @@ Click that badge. A free GitHub-hosted workspace opens in your browser with **th
 - **Sentinel** pre-push hook in `~/code/my-first-repo/`
 - **Overmind** verifier on PATH with a `TRUTHCERT_HMAC_KEY` generated and persisted to `~/.bashrc`
 - **ProjectIndex** seed at `~/code/ProjectIndex/`
-- **RCT extractor** (cardiology + malaria + HIV) cloned to `~/code/rct-extractor-v2/` with `RCT_EXTRACTOR_PATH` set
+- **RCT extractor** (all 17 disease specialties) cloned to `~/code/rct-extractor-v2/` with `RCT_EXTRACTOR_PATH` set
 - **Gemini CLI** + **Claude Code CLI** pre-installed (`gemini` is free; `claude` needs an Anthropic key)
 
 No PowerShell, no terminal experience, no admin rights, no API key required for Gemini. **Build takes ~2-3 minutes** (universal image cold start + 2 npm installs + 3 pip installs from GitHub). Free tier: 60 hours/month for personal/Education GitHub accounts; remember to **stop your codespace** when done so it doesn't burn your hours. See [`.devcontainer/`](.devcontainer/) for the exact orchestration: `on-create.sh` runs `install.sh --full --github-user $GH_USER`; `on-attach.sh` prints a status report on first terminal open per session.
@@ -219,6 +219,59 @@ Flags:
 - `-Ref <tag>` — git ref to check out (default: `v0.7.0`)
 - `-Force` — re-run on an existing clone (otherwise idempotent)
 - `-Import` — dot-source helpers only (used by Pester tests)
+
+## Staying current
+
+The ecosystem moves. Two updaters keep a fresh install and the starter itself in
+sync — one for users, one for the maintainer.
+
+### Users — pull the latest published starter
+
+```powershell
+.\scripts\update-ecosystem.ps1            # download latest main, re-run install (memory preserved)
+.\scripts\update-ecosystem.ps1 -Full      # also re-chain Sentinel / Overmind / ProjectIndex
+.\scripts\update-ecosystem.ps1 -Ref v0.7.0   # pin to a tagged release instead of main
+```
+
+This downloads the current starter, re-copies rules/context (backing up any local
+edits as `*.user`), and **never clobbers your memory**. It's the `scoop update`
+of the ecosystem.
+
+### Maintainer — refresh the install-layer pins from source
+
+Each layer installs its source repo at a pinned 40-hex commit. When you push new
+work to `rct-extractor-v2`, `Sentinel`, `overmind`, `rapidmeta-kit`,
+`pairwise70-workbench`, `aact-cockpit`, or `aact-kit`, run the **author-side
+updater** so the starter ships your latest:
+
+```bash
+python scripts/refresh-ecosystem-pins.py            # dry-run: report drift
+python scripts/refresh-ecosystem-pins.py --check    # CI: exit 1 if any pin is stale
+python scripts/refresh-ecosystem-pins.py --apply             # rewrite stale pins (.sh + .ps1 + README)
+python scripts/refresh-ecosystem-pins.py --apply --layer extractor   # one layer
+python scripts/refresh-ecosystem-pins.py --apply --commit --push     # bump, commit, ff-only push
+```
+
+It queries each repo's latest pushed commit (`git ls-remote … HEAD`), rewrites the
+pin in both installers and the README short-SHA, and is **idempotent**
+(no-op when current), **non-destructive** (review-then-commit; ff-only push), and
+**pins-only** — it never touches memory, secrets, or rules. Tag-pinned layers
+(e.g. `long-term-plan`) are left alone. After it runs, if you also hand-edited
+`install/install.{ps1,sh}`, run `bash scripts/regen-hashes.sh`.
+
+**Memory + private settings** sync through a *separate, private* channel —
+[`claude-ecosystem-sync`](https://github.com/mahmood726-cyber/claude-ecosystem-sync)
+(`ecosync.ps1`) — by design, so nothing personal lands in this public starter.
+
+**Automate it (optional).** Re-pin weekly via a scheduled task:
+
+```powershell
+$action  = New-ScheduledTaskAction -Execute 'python' `
+  -Argument 'scripts\refresh-ecosystem-pins.py --apply --commit --push' `
+  -WorkingDirectory (Resolve-Path .).Path
+$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At 7am
+Register-ScheduledTask -TaskName 'e156-starter-pin-refresh' -Action $action -Trigger $trigger
+```
 
 ## Design principles (from `AGENTS.md`)
 

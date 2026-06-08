@@ -521,7 +521,7 @@ if [[ "$do_pi" -eq 1 && -f "$SCRIPTS_DIR/install-projectindex.sh" ]]; then
     fi
 fi
 
-# 5d: Extractor (rct-extractor-v2: cardiology + malaria + HIV -> meta-kit config)
+# 5d: Extractor (rct-extractor-v2: 17 disease specialties -> meta-kit config)
 do_extractor=0; extractor_target=""
 extractor_default="$HOME/code/rct-extractor-v2"
 if [[ "$INSTALL_EXTRACTOR" -eq 1 ]]; then
@@ -531,7 +531,7 @@ elif [[ "$FULL" -eq 1 ]]; then
     log_ok "(--full) Will install extractor (core only) at: $extractor_target"
 elif can_prompt; then
     echo
-    log_step "RCT extractor (cardiology + malaria + HIV -> meta-starter-kit config; core is stdlib-only)"
+    log_step "RCT extractor (17 disease specialties -> meta-starter-kit config; core is stdlib-only)"
     if prompt_yn "Install the extractor now?" 1; then
         read -r -p "Target dir (Enter for $extractor_default): " extractor_target
         extractor_target="${extractor_target:-$extractor_default}"
