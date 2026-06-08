@@ -30,8 +30,8 @@ $ErrorActionPreference = 'Stop'
 
 function Get-AactKitRepoUrl { return 'https://github.com/mahmood726-cyber/aact-kit.git' }
 
-# Pinned commit (2026-06-04). Override with $env:AACT_KIT_REF=main for latest.
-$script:AactKitDefaultRef = 'b1995128747848d1567386266eca95e9230e19b9'
+# Pinned to the v1.0.0 release tag. Override with $env:AACT_KIT_REF=main for latest.
+$script:AactKitDefaultRef = 'v1.0.0'
 function Get-AactKitDefaultRef {
     if ($env:AACT_KIT_REF) { return $env:AACT_KIT_REF }
     return $script:AactKitDefaultRef

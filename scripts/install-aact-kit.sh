@@ -50,8 +50,8 @@ done
 
 aactkit_repo_url() { echo "https://github.com/mahmood726-cyber/aact-kit.git"; }
 
-# Pinned commit (2026-06-04). Override with AACT_KIT_REF=main for latest.
-AACT_KIT_DEFAULT_REF="b1995128747848d1567386266eca95e9230e19b9"
+# Pinned to the v1.0.0 release tag. Override with AACT_KIT_REF=main for latest.
+AACT_KIT_DEFAULT_REF="v1.0.0"
 aactkit_default_ref() { echo "${AACT_KIT_REF:-$AACT_KIT_DEFAULT_REF}"; }
 
 aactkit_default_target() { echo "${HOME}/code/aact-kit"; }

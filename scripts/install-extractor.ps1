@@ -67,10 +67,10 @@ function Get-ExtractorRepoUrl {
 
 # Known-good extractor commit (all 17 disease specialties; packaged as the
 # pip-installable `rct_extractor` lib + `rct-extract` CLI; 1343 tests green).
-# Pinned for reproducible installs -- same supply-chain approach as Sentinel /
-# Overmind, and kept current by scripts/refresh-ecosystem-pins.py. Override with
+# Pinned to the v1.0.0 release tag (the reviewed/fixed build) for reproducible
+# installs -- same supply-chain approach as Sentinel / Overmind. Override with
 # $env:RCT_EXTRACTOR_REF.
-$script:ExtractorDefaultRef = '1981da94935da371ae2b6d5aeb84cae2b4c3ef8d'
+$script:ExtractorDefaultRef = 'v1.0.0'
 
 function Get-ExtractorDefaultRef {
     if ($env:RCT_EXTRACTOR_REF) { return $env:RCT_EXTRACTOR_REF }

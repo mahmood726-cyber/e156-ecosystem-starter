@@ -29,8 +29,8 @@ $ErrorActionPreference = 'Stop'
 
 function Get-AactRepoUrl { return 'https://github.com/mahmood726-cyber/aact-cockpit.git' }
 
-# Pinned commit (2026-06-04). Override with $env:AACT_REF=master for latest.
-$script:AactDefaultRef = '58a970868c9135accbdb11aef130757aa69558d2'
+# Pinned to the v1.0.0 release tag. Override with $env:AACT_REF=master for latest.
+$script:AactDefaultRef = 'v1.0.0'
 function Get-AactDefaultRef {
     if ($env:AACT_REF) { return $env:AACT_REF }
     return $script:AactDefaultRef

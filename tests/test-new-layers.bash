@@ -20,17 +20,17 @@ assert_eq() { [[ "$1" == "$2" ]] || { bad "expected '$2', got '$1'"; return 1; }
 assert_true()  { [[ "$1" -eq 0 ]] || { bad "expected success, got exit $1"; return 1; }; }
 assert_false() { [[ "$1" -ne 0 ]] || { bad "expected failure, got success"; return 1; }; }
 
-# Pinned refs the installers must clone (bump here AND in the script together).
-RAPIDMETA_SHA="c195817b5e5ff913abbdf0fd5dbc3c81b32c6c9d"
-AACT_SHA="58a970868c9135accbdb11aef130757aa69558d2"
-AACT_KIT_SHA="b1995128747848d1567386266eca95e9230e19b9"
-PAIRWISE70_SHA="7303776bc84a86b75f06ec28dc6e776528698ed4"
+# Pinned release tags the installers must clone (bump here AND in the script together).
+RAPIDMETA_REF="v1.1.0"
+AACT_REF="v1.0.0"
+AACT_KIT_REF="v1.0.0"
+PAIRWISE70_REF="v1.0.0"
 
 # --- rapidmeta -------------------------------------------------------------
 ( source "$SCRIPTS/install-rapidmeta.sh" --import
   set +e +o pipefail   # the sourced installer set -e; neutralize so a false present-check is a result, not an exit
   start "rapidmeta: repo url"; assert_eq "$(rapidmeta_repo_url)" "https://github.com/mahmood726-cyber/rapidmeta-kit.git" && ok
-  start "rapidmeta: pinned ref"; assert_eq "$(rapidmeta_default_ref)" "$RAPIDMETA_SHA" && ok
+  start "rapidmeta: pinned ref"; assert_eq "$(rapidmeta_default_ref)" "$RAPIDMETA_REF" && ok
   start "rapidmeta: default target under ~/code"; case "$(rapidmeta_default_target)" in */code/rapidmeta-kit) ok ;; *) bad "unexpected target $(rapidmeta_default_target)" ;; esac
   d="$(mktemp -d)"; : > "$d/clone.py"
   start "rapidmeta: present-check true when clone.py exists"; test_rapidmeta_present "$d"; assert_true $? && ok
@@ -42,7 +42,7 @@ PAIRWISE70_SHA="7303776bc84a86b75f06ec28dc6e776528698ed4"
 ( source "$SCRIPTS/install-aact.sh" --import
   set +e +o pipefail   # the sourced installer set -e; neutralize so a false present-check is a result, not an exit
   start "aact: repo url"; assert_eq "$(aact_repo_url)" "https://github.com/mahmood726-cyber/aact-cockpit.git" && ok
-  start "aact: pinned ref"; assert_eq "$(aact_default_ref)" "$AACT_SHA" && ok
+  start "aact: pinned ref"; assert_eq "$(aact_default_ref)" "$AACT_REF" && ok
   d="$(mktemp -d)"; mkdir -p "$d/scripts"; : > "$d/scripts/make_capsule.py"
   start "aact: present-check finds scripts/make_capsule.py"; test_aact_present "$d"; assert_true $? && ok
   start "aact: present-check false when only root file"; e="$(mktemp -d)"; : > "$e/make_capsule.py"; test_aact_present "$e"; assert_false $? && ok
@@ -53,7 +53,7 @@ PAIRWISE70_SHA="7303776bc84a86b75f06ec28dc6e776528698ed4"
 ( source "$SCRIPTS/install-aact-kit.sh" --import
   set +e +o pipefail   # the sourced installer set -e; neutralize so a false present-check is a result, not an exit
   start "aact-kit: repo url"; assert_eq "$(aactkit_repo_url)" "https://github.com/mahmood726-cyber/aact-kit.git" && ok
-  start "aact-kit: pinned ref"; assert_eq "$(aactkit_default_ref)" "$AACT_KIT_SHA" && ok
+  start "aact-kit: pinned ref"; assert_eq "$(aactkit_default_ref)" "$AACT_KIT_REF" && ok
   start "aact-kit: default target under ~/code"; case "$(aactkit_default_target)" in */code/aact-kit) ok ;; *) bad "unexpected target $(aactkit_default_target)" ;; esac
   d="$(mktemp -d)"; mkdir -p "$d/src/aact_kit"; : > "$d/src/aact_kit/__init__.py"
   start "aact-kit: present-check finds src/aact_kit/__init__.py"; test_aactkit_present "$d"; assert_true $? && ok
@@ -65,7 +65,7 @@ PAIRWISE70_SHA="7303776bc84a86b75f06ec28dc6e776528698ed4"
 ( source "$SCRIPTS/install-pairwise70.sh" --import
   set +e +o pipefail   # the sourced installer set -e; neutralize so a false present-check is a result, not an exit
   start "pairwise70: repo url"; assert_eq "$(pairwise70_repo_url)" "https://github.com/mahmood726-cyber/pairwise70-workbench.git" && ok
-  start "pairwise70: pinned ref"; assert_eq "$(pairwise70_default_ref)" "$PAIRWISE70_SHA" && ok
+  start "pairwise70: pinned ref"; assert_eq "$(pairwise70_default_ref)" "$PAIRWISE70_REF" && ok
   d="$(mktemp -d)"; : > "$d/index.html"
   start "pairwise70: present-check true when index.html exists"; test_pairwise70_present "$d"; assert_true $? && ok
   rm -rf "$d"

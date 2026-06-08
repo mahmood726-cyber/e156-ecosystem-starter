@@ -69,11 +69,11 @@ extractor_repo_url() {
 
 # Known-good extractor commit (all 17 disease specialties; packaged as the
 # pip-installable `rct_extractor` lib + `rct-extract` CLI; 1343 tests green).
-# Pinned so a fresh clone is reproducible -- same supply-chain approach as the
-# Sentinel / Overmind installers, and kept current by
-# scripts/refresh-ecosystem-pins.py. Override with RCT_EXTRACTOR_REF=main (or any
-# branch/tag/SHA) for bleeding edge.
-EXTRACTOR_DEFAULT_REF="1981da94935da371ae2b6d5aeb84cae2b4c3ef8d"
+# Pinned to the v1.0.0 release tag (the reviewed/fixed build) so a fresh clone is
+# reproducible -- same supply-chain approach as the Sentinel / Overmind
+# installers. Override with RCT_EXTRACTOR_REF=main (or any branch/tag/SHA) for
+# bleeding edge.
+EXTRACTOR_DEFAULT_REF="v1.0.0"
 
 extractor_default_ref() {
     echo "${RCT_EXTRACTOR_REF:-$EXTRACTOR_DEFAULT_REF}"

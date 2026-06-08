@@ -20,8 +20,13 @@ Design guarantees:
   * NON-DESTRUCTIVE. Edits tracked files in place; you review the diff. --commit
     makes a normal commit; --push uses fast-forward-only push (rejected, never
     forced, if the remote moved).
-  * Tag-pinned layers (e.g. long-term-plan @ v0.7.0) are left alone -- only
-    layers carrying a 40-hex SHA are bumped.
+  * Tag-pinned layers are left alone -- only layers carrying a 40-hex SHA are
+    bumped. As of 2026-06-08 every ecosystem layer (sentinel v1.0.0, extractor
+    v1.0.0, overmind v1.0.0, rapidmeta v1.1.0, pairwise70 v1.0.0, aact v1.0.0,
+    aact-kit v1.0.0) is pinned to a signed release tag, so a normal run reports
+    all layers [skip] -- which is the intended steady state. Re-point an
+    installer at a 40-hex SHA only to track an unreleased commit; this tool will
+    then resume bumping it.
 
 Usage:
   python scripts/refresh-ecosystem-pins.py            # dry-run: report drift

@@ -44,9 +44,10 @@ done
 
 rapidmeta_repo_url() { echo "https://github.com/mahmood726-cyber/rapidmeta-kit.git"; }
 
-# Pinned commit (2026-06-04). Reproducible clone -- same supply-chain approach as
-# the Sentinel/Overmind installers. Override with RAPIDMETA_REF=main for latest.
-RAPIDMETA_DEFAULT_REF="c195817b5e5ff913abbdf0fd5dbc3c81b32c6c9d"
+# Pinned to the v1.1.0 release tag (includes the anti-fabrication fix). Reproducible
+# clone -- same supply-chain approach as the Sentinel/Overmind installers. Override
+# with RAPIDMETA_REF=main for latest.
+RAPIDMETA_DEFAULT_REF="v1.1.0"
 rapidmeta_default_ref() { echo "${RAPIDMETA_REF:-$RAPIDMETA_DEFAULT_REF}"; }
 
 rapidmeta_default_target() { echo "${HOME}/code/rapidmeta-kit"; }

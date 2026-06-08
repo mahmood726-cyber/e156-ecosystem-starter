@@ -23,8 +23,9 @@ $ErrorActionPreference = 'Stop'
 
 function Get-RapidmetaRepoUrl { return 'https://github.com/mahmood726-cyber/rapidmeta-kit.git' }
 
-# Pinned commit (2026-06-04). Override with $env:RAPIDMETA_REF=main for latest.
-$script:RapidmetaDefaultRef = 'c195817b5e5ff913abbdf0fd5dbc3c81b32c6c9d'
+# Pinned to the v1.1.0 release tag (includes the anti-fabrication fix). Override
+# with $env:RAPIDMETA_REF=main for latest.
+$script:RapidmetaDefaultRef = 'v1.1.0'
 function Get-RapidmetaDefaultRef {
     if ($env:RAPIDMETA_REF) { return $env:RAPIDMETA_REF }
     return $script:RapidmetaDefaultRef
