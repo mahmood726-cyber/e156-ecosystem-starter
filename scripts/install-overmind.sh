@@ -49,7 +49,7 @@ assert_real_python() {
     fi
 }
 
-OVERMIND_DEFAULT_REF="ec23ccba27b6654a430161bcffbd73644c840c16"   # 2026-06-04: evidence subsystem + pooling engine + gold-benchmark (measured output-correctness) + hybrid retrieval + reporting-bias. Override with OVERMIND_REF=master.
+OVERMIND_DEFAULT_REF="v1.0.0"   # 2026-06-08: first stable tag (was ec23ccb, broken on fresh installs because cryptography was undeclared). v1.0.0 declares cryptography as a core dep -> clean fresh install (758 passed / 0 failed on isolated venv). Tag-pinned, so refresh-ecosystem-pins.py leaves it stable. Override with OVERMIND_REF=master.
 
 overmind_default_source() {
     # Pinned to a known-good commit so fresh installs are reproducible. Override
