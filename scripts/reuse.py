@@ -90,7 +90,6 @@ DEFAULT_KIT_CANDIDATES: dict[str, tuple[Path, ...]] = {
     ),
     "aact-kit": (
         _HOME / "code" / "aact-kit" / "src",
-        Path("C:/Users/mahmo/code/aact-kit/src"),
         Path("C:/Projects/aact-kit/src"),
     ),
     "rapidmeta-kit": (

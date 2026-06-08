@@ -59,3 +59,58 @@ def test_description_weight_boosts_match(tmp_path):
     (tmp_path / "MEMORY.md").write_text("# index\n", encoding="utf-8")
     hits = recall.recall("fragility", tmp_path, k=5)
     assert hits[0][1]["name"] == "doc-a"
+
+
+# --- default memory-dir discovery (no hardcoded per-user path) --------------
+
+
+def test_encode_project_dir_does_not_collapse_separators():
+    # Claude Code names the projects/ subdir by replacing EACH separator with a
+    # dash; "C:\\Users\\x" -> "C--Users-x" (colon AND backslash both -> dash).
+    # A regex that collapsed consecutive separators would yield "C-Users-x" and
+    # silently fail to match the real store. Guard against that regression.
+    assert recall._encode_project_dir(Path(r"C:\Users\x")) == "C--Users-x"
+    assert recall._encode_project_dir(Path("/home/x/proj")) == "-home-x-proj"
+
+
+def test_discover_respects_env_override(tmp_path, monkeypatch):
+    monkeypatch.setenv("CLAUDE_MEMORY_DIR", str(tmp_path / "custom"))
+    assert recall.discover_memory_dir() == (tmp_path / "custom")
+
+
+def test_discover_returns_none_when_no_projects(tmp_path, monkeypatch):
+    monkeypatch.delenv("CLAUDE_MEMORY_DIR", raising=False)
+    monkeypatch.setattr(recall.Path, "home", classmethod(lambda cls: tmp_path))
+    assert recall.discover_memory_dir() is None
+
+
+def test_discover_picks_sole_candidate(tmp_path, monkeypatch):
+    monkeypatch.delenv("CLAUDE_MEMORY_DIR", raising=False)
+    mem = tmp_path / ".claude" / "projects" / "some-proj" / "memory"
+    mem.mkdir(parents=True)
+    monkeypatch.setattr(recall.Path, "home", classmethod(lambda cls: tmp_path))
+    assert recall.discover_memory_dir() == mem
+
+
+def test_discover_prefers_cwd_match(tmp_path, monkeypatch):
+    monkeypatch.delenv("CLAUDE_MEMORY_DIR", raising=False)
+    projects = tmp_path / ".claude" / "projects"
+    other = projects / "other-proj" / "memory"
+    other.mkdir(parents=True)
+    fake_cwd = tmp_path / "work" / "repo"
+    fake_cwd.mkdir(parents=True)
+    encoded = recall._encode_project_dir(fake_cwd)
+    mine = projects / encoded / "memory"
+    mine.mkdir(parents=True)
+    monkeypatch.setattr(recall.Path, "home", classmethod(lambda cls: tmp_path))
+    monkeypatch.setattr(recall.Path, "cwd", classmethod(lambda cls: fake_cwd))
+    assert recall.discover_memory_dir() == mine
+
+
+def test_no_hardcoded_username_in_source():
+    # The whole point of the discovery refactor: the file must not ship a
+    # specific user's home/project path. (Guards against regressing to the old
+    # Path.home()/".claude"/"projects"/"C--Users-mahmo" default.)
+    src = (Path(recall.__file__)).read_text(encoding="utf-8")
+    assert "mahmo" not in src
+    assert "C--Users-mahmo" not in src

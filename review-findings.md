@@ -464,3 +464,184 @@ The second-pass review's lesson reapplied: **fixes that look correct in isolatio
 P0-W1 first (academic-integrity, blocks educator use of teaching materials) → P0-W2 (cliff re-introduction) → P1-W1 + P1-W2 → P2s.
 
 **If fixing only one thing**: P0-W1. The fabricated rule list is the worst single piece of content in this codebase right now and it sits in a teaching artifact.
+
+---
+
+# Seventh-Pass Review: e156-ecosystem-starter (post-c65b4c7, v0.8.0+55)
+
+**Date**: 2026-06-08
+**Why a seventh**: passes 1–6 (2026-04-21 → 04-28) reviewed the install machinery, i18n,
+teaching materials, and the user-POV flow. Since then **55 commits** landed
+(`v0.8.0..HEAD`) adding entirely new, never-reviewed surfaces: the **17-specialty RCT
+extractor** layer, **four research layers** (RapidMeta / AACT cockpit / AACT kit /
+Pairwise70 / E156 capsules), the **author-side pin-bumper** (`refresh-ecosystem-pins.py`),
+**offline BM25 memory recall** (`recall.py`), and the **offline reuse index** (`reuse.py`).
+This pass focuses there, through the four personas the maintainer requested.
+
+**Personas**: Security / supply-chain (highest priority) · Fresh-install · Maintainer / reproducibility · Docs.
+
+**Summary**: 0 P0 · 1 P1 · 3 P2 · 2 deferred design recommendations.
+**STATUS as of 2026-06-08 fix pass: 2 of 2 actionable code findings FIXED + tested.
+The headline freshness gap (P1-7a) needs a maintainer release decision (see end).**
+Test baseline before changes: pytest 44, bash 29+18+new-layers, i18n parity 3/3, HASH OK — all green.
+After fixes: pytest **51** (7 new), all bash suites green, HASH OK, i18n parity OK.
+
+---
+
+## Security / supply-chain (HIGHEST PRIORITY)
+
+**Verdict: no secret or private content leaks beyond two hardcoded-path tells (both fixed).
+Pin integrity is real and intact. The curl|iex entry point is honestly documented and
+self-hash-gated.** Detailed checks:
+
+- **Secret sweep (clean).** Full-tree grep for `ghp_/gho_/github_pat_/AKIA/xoxb/sk-…`,
+  PEM headers, `password`, `secret_key`, GMC number, real drive roots — only matches are
+  the *redaction patterns* in the installers (intended) and the public security-contact
+  email (`mahmood726@gmail.com`, intentional in CODE_OF_CONDUCT / SECURITY / CONTRIBUTING).
+- **Bundled samples (clean).** `memory/MEMORY.md` is a 25-line scaffold, NOT Mahmood's real
+  53-memory index. `.env.example` has empty values. `memory/sample-restart-manifest.json`
+  references only public `mahmood726-cyber/*` repos. `scripts/reuse-index.json` (216 symbols)
+  stores kit-relative paths only — no absolute build-machine paths leaked.
+- **Pin integrity (verified real).** All 7 layer pins (`extractor`, `sentinel`, `overmind`,
+  `rapidmeta`, `pairwise70`, `aact`, `aact-kit`) were checked against their remotes via
+  `git ls-remote` — every pin is a real 40-hex commit and currently `== HEAD` of its repo.
+  `.ps1` pins match `.sh` pins for all 7 layers; the README short-SHA (`ec23ccb`) matches the
+  overmind pin. `docs/HASH.txt` / `docs/HASH-linux.txt` match the current `install/install.{ps1,sh}`
+  byte-for-byte (`regen-hashes.sh --check` → OK). The `.gitattributes` `install/install.ps1 text eol=lf`
+  pin (so the Windows self-check and the Linux CI check agree on one hash) is correct.
+- **curl|iex posture (acceptable, honest).** `docs/bootstrap.ps1` fetches from the author's own
+  GitHub Pages, pins to a release **tag**, and `install.ps1` self-hashes against the shipped
+  HASH file. The script's own security note correctly states "download-integrity != tamper-proof"
+  and points high-trust installers at a signed-tag git-clone path. No third-party `curl|bash`;
+  every sub-installer clones `mahmood726-cyber/*` at a pinned SHA and pip/npm-installs pinned versions.
+- **on-create.sh (hardened).** TruthCert key is file-only (mode 600), never exported to the global
+  env (prior P1-3 stays fixed). npm CLIs are version-pinned with documented semver semantics.
+
+### Findings
+
+- **P2-7a** [FIXED 2026-06-08] [Security / privacy — username leak + dead path]:
+  **`scripts/reuse.py:93` hardcoded `Path("C:/Users/mahmo/code/aact-kit/src")`** as an aact-kit
+  root candidate. It leaks the maintainer's Windows username into a public file and never
+  resolves for any other user (their home is `C:/Users/<them>`). The home-relative candidate
+  `_HOME / "code" / "aact-kit" / "src"` already covers every user correctly, so the line was pure
+  dead weight + a privacy tell — and it violates the house rule "No hardcoded local paths in
+  deployable code" (`lessons.md`). **Fix**: removed the line; aact-kit now matches the other kits
+  (home-relative + generic `C:/Projects/...`). Added `tests/test_reuse.py::test_no_hardcoded_username_in_default_candidates`.
+
+- **P1-7b** [FIXED 2026-06-08] [Security/privacy + correctness]:
+  **`scripts/recall.py:34-36` shipped Mahmood's literal private memory path as the default**:
+  `Path.home() / ".claude" / "projects" / "C--Users-mahmo" / "memory"`. Two problems: (1) it leaks
+  the username (`C--Users-mahmo` is the Claude-Code encoding of `C:\Users\mahmo`), and (2) it is
+  **broken for 100% of other users** — their project dir is `C--Users-<them>` / `-home-<them>`, so
+  the default never resolves and the tool always errors out for the target audience. **Fix**:
+  replaced the constant with `discover_memory_dir()` — honors `$CLAUDE_MEMORY_DIR`, else globs
+  `~/.claude/projects/*/memory`, preferring the dir whose encoded name matches the current cwd, then
+  the sole candidate, then most-recently-modified; falls back to a clear `--memory-dir` hint. Raised
+  to **P1** (not just P2) because it is also a functional break for every fresh install, not only a leak.
+  - **Bug found while testing the fix (caught before commit):** my first encoding used
+    `re.sub(r"[:\\/]+", "-", …)` which *collapses* the consecutive `:\` in `C:\Users\…` into a single
+    dash → `C-Users-…`, so the cwd-match silently failed and discovery fell back to an empty project.
+    Claude Code replaces **each** separator individually → `C--Users-…`. Fixed the regex to
+    `[:\\/]` (no `+`); verified `recall.py --health` now finds the real 53-memory store and a live
+    query ranks `sentinel-overmind-stack` first. Locked in with
+    `test_encode_project_dir_does_not_collapse_separators`. Lesson: a path-encoding helper is exactly
+    the kind of "looks obviously right" code that must be tested against a real on-disk store.
+  - New tests: env override, none-when-no-projects, sole-candidate, cwd-preference, encoding,
+    and a `mahmo`/`C--Users-mahmo`-not-in-source guard.
+
+---
+
+## Fresh-install
+
+**Verdict: the headline install paths (Codespaces badge → builds from `main`; local
+`git clone` → `install.ps1`) give a brand-new user the CURRENT system with all 55 commits
+of new features. One path is stale, and the entry points disagree on pinning.**
+
+- **P1-7a** [DEFERRED — needs a maintainer release decision]: **The release tag is 55 commits
+  stale, and the install entry points disagree on what they fetch.**
+  - `docs/bootstrap.ps1` (the SAC-friendly `irm … | iex` one-liner on the landing page) pins to
+    **`v0.8.0`**, which is `v0.8.0..HEAD = 55 commits` behind. A student using that one-liner gets a
+    system **without** the 17-specialty extractor, the four research layers, `recall.py`/`reuse.py`,
+    the long-term-plan installer, or any of the overmind/sentinel pin bumps. It still *works*
+    (older pins are real, reproducible commits) — it's just materially older than what every other
+    path installs.
+  - `bootstrap/e156-setup.bat` downloads **`heads/main.zip`** and `bootstrap/e156-setup.sh` defaults
+    to **`main`** — i.e. unpinned bleeding-edge with no review window. On the `main` path the
+    self-hash gate is tautological (you verify `main`'s install.ps1 against `main`'s own HASH.txt),
+    so it provides MitM/corruption protection but NOT the "reviewed release" guarantee the pinned
+    `.ps1` path implies. The stated design intent (bootstrap.ps1 comments + prior P1-8) is
+    tag-pinning with main as an opt-in override; the `.bat`/`.sh` defaults contradict that.
+  - **Recommended fix (release action — not taken unilaterally):** cut **`v0.9.0`** at current HEAD,
+    then point `docs/bootstrap.ps1`, `bootstrap/e156-setup.bat`, and `bootstrap/e156-setup.sh` at the
+    same `v0.9.0` tag (override-to-main preserved). This makes every entry point consistent AND
+    current. Until a tag is cut, bumping the pinned path to a not-yet-existing tag would 404 the
+    download, so the tag and the reference bump must land together. Surfaced to the maintainer for a
+    go/no-go.
+
+- Could not run a full clean-container dry-run from this Windows host, but traced
+  `on-create.sh → install.sh --full` statically: GitHub-user resolution has a placeholder
+  fall-through, sub-installer failures are non-fatal with a status banner, npm/pip have
+  retry+backoff, and the extractor's clone has 3× retry. No missing-dep or hard-path break found
+  on the Codespaces path. `install-extractor.sh` is fail-closed (errors if the bridge entrypoint
+  is absent post-clone) and keeps the heavy scientific stack opt-in (`--with-pdf-deps`).
+
+---
+
+## Maintainer / reproducibility — `refresh-ecosystem-pins.py`
+
+**Verdict: idempotent, non-destructive, and genuinely pins-only as advertised — confirmed by
+live dry-run (all 7 layers report `current`, "nothing to do") and by the existing
+`test_refresh_pins.py` (extract, idempotent apply, drift detection, CRLF preservation,
+7-layer coverage). One real design risk and one latent robustness gap.**
+
+- **P2-7c** [DEFERRED — design recommendation]: **The bumper tracks moving HEADs, not tags/releases.**
+  `remote_head()` does `git ls-remote <url> HEAD` and bumps the pin to whatever the source repo's
+  default-branch tip is, with **no test/smoke gate**. So `--apply --commit --push` *can* advance a
+  public pin to an untested commit; a fresh install then pip-installs that untested HEAD. The
+  mitigations present are procedural only: dry-run is the default, `--push` is opt-in, the maintainer
+  reviews the diff. To answer the maintainer's explicit question — *yes*, it could in principle bump
+  to a broken HEAD. **Recommendation**: either (a) have the source repos cut release tags and pin to
+  tags (most robust), or (b) add a pre-push gate that clones the new SHA and runs each repo's smoke
+  test before allowing the bump to be pushed. Not fixed here because it's a workflow/policy choice
+  and the source repos don't yet all cut tags.
+- **P2-7d** [DEFERRED — minor robustness]: **Per-file old-pin assumption can silently leave a file stale.**
+  `process_layer` reads `old` from the `.sh` only, then does `text.replace(old, new)` on each target
+  (`.ps1`, README, tests). If a target had already drifted to a *different* SHA, the replace finds
+  nothing and that file is left at the old/divergent pin with no warning → `.sh` and `.ps1` diverge.
+  Currently harmless (this very tool keeps them in sync; verified all 7 match today), but a
+  belt-and-braces version would detect+report a target whose expected `old` SHA is absent.
+- `extract_pin`'s fallback (first 40-hex anywhere if `DEFAULT_REF…40hex` doesn't match) is a mild
+  foot-gun if an installer ever grows a second unrelated 40-hex constant above its pin line; all 7
+  installers currently carry exactly one `*_DEFAULT_REF="…40hex…"`, so it's fine today.
+
+---
+
+## Docs
+
+- README install paths are accurate for Codespaces and the local clone flow; the self-hash
+  "download-integrity, not tamper-proof" caveat is stated honestly in both README and bootstrap.ps1.
+- The version labels in the README "What you get" table (e.g. RCT extractor "v0.6.0") lag the actual
+  shipped capability (now the 17-specialty build). Cosmetic; bundle a refresh with the v0.9.0 cut.
+- The `STUDENT-WORKFLOW.md` / "staying current" guidance is followable; `update-ecosystem.ps1`
+  defaults to `main` and documents `-Ref <tag>` for pinning — consistent with the bat/sh main-default
+  (and with the same caveat as P1-7a).
+
+---
+
+## What this pass confirmed is correct (false-positive watch)
+
+- All 7 pins are real commits and `.ps1`/`.sh`/README agree. HASH files match. Not bugs.
+- `reuse-index.json` is portable (relative paths only). Not a leak.
+- `on-create.sh` TruthCert-key-file-only and npm version pins — prior fixes hold.
+- `install-extractor.sh` fail-closed + opt-in heavy deps + clone retry — sound.
+
+## Recommended action order
+
+1. **P1-7a** — maintainer go/no-go on cutting `v0.9.0` and aligning all three bootstrap entry points
+   (the single highest-leverage fresh-install fix; everything the last two months added is invisible
+   to one-liner installers until this lands).
+2. P2-7c / P2-7d — pin-bumper hardening, when convenient.
+
+**Residual risk after this pass**: the only material one is P1-7a (stale/inconsistent release
+pinning). The two code-level privacy/correctness bugs (P1-7b, P2-7a) are fixed and test-guarded.
+No secret or private-data leak remains in the public tree.

@@ -26,14 +26,50 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 import re
 import sys
 from collections import Counter
 from pathlib import Path
 
-DEFAULT_MEMORY_DIR = (
-    Path.home() / ".claude" / "projects" / "C--Users-mahmo" / "memory"
-)
+
+def _encode_project_dir(path: Path) -> str:
+    """Encode a project cwd the way Claude Code names its projects/ subdir:
+    EACH path separator and the drive colon becomes one '-'. Consecutive
+    separators are NOT collapsed -- a Windows ``C:\\Users\\x`` cwd has both the
+    colon and the backslash replaced, giving ``C--Users-x`` (two dashes)."""
+    return re.sub(r"[:\\/]", "-", str(path))
+
+
+def discover_memory_dir() -> Path | None:
+    """Best-effort location of THIS machine's Claude Code memory dir.
+
+    Claude Code stores per-project memory at
+    ``~/.claude/projects/<encoded-cwd>/memory/``. We never hardcode a specific
+    user's path (the dir name embeds the username, so a literal default leaks it
+    and never resolves for anyone else). Resolution order:
+      1. ``$CLAUDE_MEMORY_DIR`` if set (explicit override).
+      2. the project whose encoded name matches the current working directory;
+      3. the sole ``projects/*/memory`` dir if there is exactly one;
+      4. otherwise the most-recently-modified ``projects/*/memory`` dir.
+    Returns ``None`` if none exists (the caller then asks for ``--memory-dir``).
+    """
+    env = os.environ.get("CLAUDE_MEMORY_DIR")
+    if env:
+        return Path(env).expanduser()
+    projects = Path.home() / ".claude" / "projects"
+    if not projects.is_dir():
+        return None
+    candidates = [p for p in projects.glob("*/memory") if p.is_dir()]
+    if not candidates:
+        return None
+    encoded = _encode_project_dir(Path.cwd())
+    for c in candidates:
+        if c.parent.name == encoded:
+            return c
+    if len(candidates) == 1:
+        return candidates[0]
+    return max(candidates, key=lambda p: p.stat().st_mtime)
 
 # Recommend switching from flat-index loading to retrieval past this many
 # memories — the point where the index stops being cheap to reason over whole.
@@ -126,7 +162,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Offline BM25 recall over file-based memory.")
     ap.add_argument("query", nargs="?", default="", help="search query")
     ap.add_argument("-k", type=int, default=5, help="max results (default 5)")
-    ap.add_argument("--memory-dir", type=Path, default=DEFAULT_MEMORY_DIR)
+    ap.add_argument("--memory-dir", type=Path, default=None,
+                    help="memory dir (default: auto-discover ~/.claude/projects/*/memory, "
+                         "or set $CLAUDE_MEMORY_DIR)")
     ap.add_argument("--health", action="store_true", help="report index size and exit")
     args = ap.parse_args(argv)
 
@@ -137,13 +175,19 @@ def main(argv: list[str] | None = None) -> int:
     except (AttributeError, ValueError):
         pass
 
-    if not args.memory_dir.is_dir():
-        print(f"[recall] memory dir not found: {args.memory_dir}", file=sys.stderr)
+    memory_dir = args.memory_dir or discover_memory_dir()
+    if memory_dir is None:
+        print("[recall] could not locate a Claude Code memory dir under "
+              "~/.claude/projects/*/memory.\n"
+              "  Pass --memory-dir <path> or set $CLAUDE_MEMORY_DIR.", file=sys.stderr)
+        return 2
+    if not memory_dir.is_dir():
+        print(f"[recall] memory dir not found: {memory_dir}", file=sys.stderr)
         return 2
 
-    docs = _load(args.memory_dir)
+    docs = _load(memory_dir)
     if args.health:
-        idx = args.memory_dir / "MEMORY.md"
+        idx = memory_dir / "MEMORY.md"
         idx_lines = len(idx.read_text(encoding="utf-8").splitlines()) if idx.exists() else 0
         print(f"memories: {len(docs)}  |  MEMORY.md lines: {idx_lines}")
         if len(docs) > INDEX_SOFT_LIMIT:
@@ -155,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.query.strip():
         ap.error("a query is required unless --health is given")
-    hits = recall(args.query, args.memory_dir, args.k)
+    hits = recall(args.query, memory_dir, args.k)
     if not hits:
         print("(no relevant memories)")
         return 0

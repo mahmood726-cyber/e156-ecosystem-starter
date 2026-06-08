@@ -267,3 +267,12 @@ def test_cli_build_no_roots_exit_2(reuse, tmp_path, capsys, monkeypatch):
     rc = reuse.main(["build", "--roots", f"x={missing}", "--out", str(tmp_path / "o.json")])
     assert rc == 2
     assert "no kit roots" in capsys.readouterr().err.lower()
+
+
+def test_no_hardcoded_username_in_default_candidates():
+    # Public file: default kit-root candidates must be home-relative or generic
+    # drive paths, never a specific user's home (which leaks the username and
+    # never resolves for anyone else). Guards the C:/Users/mahmo/... regression.
+    src = SCRIPT_PATH.read_text(encoding="utf-8")
+    assert "mahmo" not in src
+    assert "C:/Users/" not in src
