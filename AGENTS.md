@@ -52,6 +52,13 @@ Ship OA-first meta-analysis tools as E156 micro-papers + GitHub repos + HTML das
 - For release-facing or data-sensitive work, run a second-pass review focused on identifiers, dates, and statistical claims.
 - If push or deploy is part of the task, verify the remote result after push rather than assuming success from local output.
 
+## Held-out evaluation (optimization & tuning claims)
+- Any "improvement", optimization, or tuning claim must be measured on a **held-out test split that played no role in tuning** — never in-sample. In-sample gain on its own is meaningless.
+- Define and freeze the split up front: **ℰ_dev** (tuning / model selection) and **ℰ_test** (frozen, read once for the final number). Record the split rule and the seed so it is reproducible.
+- Report the **ℰ_test number as the headline**. In-sample / ℰ_dev numbers are diagnostics only and must be labelled as such.
+- **Why (real lesson):** the `conformal-ma` "92% coverage vs standard 70%" claim was a circular **in-sample artifact** — it reversed under honest leave-one-out / out-of-sample evaluation, where standard prediction intervals actually won. See memory `conformal-ma-honest-refutation`.
+- **Accept the honest null.** A change that does not beat baseline on ℰ_test is a non-result — report it. Do not re-tune until ℰ_test agrees; touching ℰ_test repeatedly re-leaks it and rebuilds the same in-sample artifact.
+
 ## Browser and File Safety
 - Bind servers to `127.0.0.1:8000` and use absolute local URLs in tests.
 - Prefer `C:\Users\user\browser_rotator.py` and targeted `driver.quit()` cleanup over global browser kills.
