@@ -72,6 +72,27 @@ to *edit* a near-final draft rather than generate from scratch.
    into a non-default location, run `python scripts/reuse.py build` once to refresh
    the index for your machine.
 
+7. **Recall memories, don't reload the whole index.** As your saved memories grow,
+   loading the flat `MEMORY.md` index every session dilutes context (and burns
+   tokens). `recall.py` ranks your memory files by relevance (Okapi BM25, offline,
+   stdlib-only) so you retrieve only the few that matter:
+
+   ```bash
+   python scripts/recall.py "ed25519 signing provenance" -k 3
+   python scripts/recall.py --health            # is the flat index still cheap to load whole?
+   python scripts/recall.py "sentinel hook" --json   # machine-readable, for an agent
+   ```
+
+8. **Recon the portfolio before starting a new project.** Before an agent scaffolds
+   something from scratch, check whether you've built it before —
+   `find-related-repos.py` ranks your ProjectIndex portfolio by topic and surfaces
+   README excerpts + code hits, so you reuse instead of rebuild (offline, no LLM):
+
+   ```bash
+   python scripts/find-related-repos.py "fragility index meta-analysis" --top 8
+   python scripts/find-related-repos.py "transportability" --names-only
+   ```
+
 ## One-line installs (all default to the low-token path)
 
 ```bash

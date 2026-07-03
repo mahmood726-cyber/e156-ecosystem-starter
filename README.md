@@ -187,6 +187,45 @@ For each repo found:
 Skips: `node_modules`, `venv`, `.venv`, `__pycache__`, `build`, `dist`,
 `site-packages`, `.pytest_cache`, `.mypy_cache`.
 
+### Offline agent helpers — don't pay tokens for what you already have
+
+Three stdlib-only, offline, no-LLM scripts under `scripts/` cut the single
+biggest token cost on a capped plan: asking an agent to *regenerate* or
+*re-derive* something the ecosystem already ships. They read local files, never
+the network, and each supports `--json` (or structured) output so an agent can
+consume them programmatically as well as a human at a terminal.
+
+| Script | Answers | One-liner |
+|---|---|---|
+| `reuse.py` | "What reusable function/class already exists for X?" | `python scripts/reuse.py find "forest plot"` |
+| `recall.py` | "Which of my saved memories are relevant to X?" (Okapi BM25 over the memory dir) | `python scripts/recall.py "sentinel hook"` |
+| `find-related-repos.py` | "Have I built anything like X before?" (ranks the ProjectIndex portfolio) | `python scripts/find-related-repos.py "sglt2 hfpef"` |
+
+```powershell
+# Before asking an agent to write a chart/loader/helper — copy, don't regenerate:
+python scripts\reuse.py find "funnel plot" --plain
+python scripts\reuse.py find "aact loader" --json      # machine-readable
+
+# Retrieve relevant memories instead of loading the whole flat index:
+python scripts\recall.py "ed25519 signing" -k 3
+python scripts\recall.py "overmind nightly" --json     # machine-readable
+python scripts\recall.py --health                      # is the flat index still cheap?
+
+# Portfolio recon before starting a new project:
+python scripts\find-related-repos.py "fragility index meta-analysis" --top 8
+python scripts\find-related-repos.py "transportability" --names-only
+```
+
+`reuse.py` searches a pre-baked, committed index (`scripts/reuse-index.json`);
+run `python scripts/reuse.py build` once if you install a kit into a
+non-default location. `recall.py` auto-discovers your Claude Code memory dir
+(`~/.claude/projects/*/memory/`) or takes `--memory-dir` / `$CLAUDE_MEMORY_DIR`.
+`find-related-repos.py` reads the ProjectIndex manifest or `INDEX.md` (see
+["Adding a portfolio index"](#adding-a-portfolio-index-v030) above) and exits
+`2` with guidance if no index exists yet. See
+[`STUDENT-TOKEN-BUDGET.md`](STUDENT-TOKEN-BUDGET.md) for where these fit in the
+token-budget playbook.
+
 ### Adding a long-term-plan (optional)
 
 ```powershell
