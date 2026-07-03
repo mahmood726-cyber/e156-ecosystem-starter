@@ -1,6 +1,7 @@
 """Tests for recall.py — offline BM25 memory retrieval."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import recall
@@ -114,3 +115,49 @@ def test_no_hardcoded_username_in_source():
     src = (Path(recall.__file__)).read_text(encoding="utf-8")
     assert "mahmo" not in src
     assert "C--Users-mahmo" not in src
+
+
+# --- --json machine-readable output (agent/programmatic consumption) --------
+
+
+def test_json_query_emits_valid_ranked_json(tmp_path, capsys):
+    _corpus(tmp_path)
+    rc = recall.main(["how do I verify an ed25519 signed bundle",
+                      "--memory-dir", str(tmp_path), "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["count"] >= 1
+    assert payload["hits"][0]["name"] == "ed25519-signing"
+    top = payload["hits"][0]
+    # Contract: every hit carries these keys for a programmatic consumer.
+    assert set(top) == {"score", "name", "description", "path"}
+    assert isinstance(top["score"], float)
+
+
+def test_json_no_match_emits_empty_hits(tmp_path, capsys):
+    _corpus(tmp_path)
+    rc = recall.main(["zzz quantum bryophyte xylophone",
+                      "--memory-dir", str(tmp_path), "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["count"] == 0
+    assert payload["hits"] == []
+
+
+def test_json_health_reports_index_stats(tmp_path, capsys):
+    _corpus(tmp_path)
+    rc = recall.main(["--memory-dir", str(tmp_path), "--health", "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["memories"] == 3
+    assert payload["over_soft_limit"] is False
+    assert payload["soft_limit"] == recall.INDEX_SOFT_LIMIT
+
+
+def test_json_error_is_json_not_stderr_string(tmp_path, capsys):
+    # A --json consumer must ALWAYS get JSON, even on the missing-dir failure
+    # path — never a bare stderr string it can't parse.
+    rc = recall.main(["x", "--memory-dir", str(tmp_path / "nope"), "--json"])
+    assert rc == 2
+    payload = json.loads(capsys.readouterr().out)
+    assert "error" in payload

@@ -20,11 +20,14 @@ Design constraints (match the ecosystem ethos):
 Usage:
   python recall.py "ed25519 signing provenance"            # top-K for a query
   python recall.py "overmind nightly" -k 3 --memory-dir D  # custom dir / K
+  python recall.py "sentinel hook" --json                  # machine-readable
   python recall.py --health                                # index-size report
+  python recall.py --health --json                         # machine-readable health
 """
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 import re
@@ -166,6 +169,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="memory dir (default: auto-discover ~/.claude/projects/*/memory, "
                          "or set $CLAUDE_MEMORY_DIR)")
     ap.add_argument("--health", action="store_true", help="report index size and exit")
+    ap.add_argument("--json", action="store_true",
+                    help="emit machine-readable JSON (for agent/programmatic consumption)")
     args = ap.parse_args(argv)
 
     # Windows cp1252 stdout crashes/garbles on the em-dashes in descriptions
@@ -175,22 +180,39 @@ def main(argv: list[str] | None = None) -> int:
     except (AttributeError, ValueError):
         pass
 
+    def _emit_error(msg: str) -> int:
+        # A programmatic consumer (--json) always gets JSON, even on failure,
+        # so it never has to parse a stderr string. Humans get the message.
+        if args.json:
+            print(json.dumps({"error": msg}, ensure_ascii=False))
+        else:
+            print(f"[recall] {msg}", file=sys.stderr)
+        return 2
+
     memory_dir = args.memory_dir or discover_memory_dir()
     if memory_dir is None:
-        print("[recall] could not locate a Claude Code memory dir under "
-              "~/.claude/projects/*/memory.\n"
-              "  Pass --memory-dir <path> or set $CLAUDE_MEMORY_DIR.", file=sys.stderr)
-        return 2
+        return _emit_error(
+            "could not locate a Claude Code memory dir under "
+            "~/.claude/projects/*/memory. Pass --memory-dir <path> or set $CLAUDE_MEMORY_DIR.")
     if not memory_dir.is_dir():
-        print(f"[recall] memory dir not found: {memory_dir}", file=sys.stderr)
-        return 2
+        return _emit_error(f"memory dir not found: {memory_dir}")
 
     docs = _load(memory_dir)
     if args.health:
         idx = memory_dir / "MEMORY.md"
         idx_lines = len(idx.read_text(encoding="utf-8").splitlines()) if idx.exists() else 0
+        over_limit = len(docs) > INDEX_SOFT_LIMIT
+        if args.json:
+            print(json.dumps({
+                "memory_dir": str(memory_dir),
+                "memories": len(docs),
+                "index_lines": idx_lines,
+                "soft_limit": INDEX_SOFT_LIMIT,
+                "over_soft_limit": over_limit,
+            }, ensure_ascii=False))
+            return 0
         print(f"memories: {len(docs)}  |  MEMORY.md lines: {idx_lines}")
-        if len(docs) > INDEX_SOFT_LIMIT:
+        if over_limit:
             print(f"[recommend] {len(docs)} > {INDEX_SOFT_LIMIT}: prefer `recall.py <task>` "
                   f"over loading the whole flat index.")
         else:
@@ -200,6 +222,22 @@ def main(argv: list[str] | None = None) -> int:
     if not args.query.strip():
         ap.error("a query is required unless --health is given")
     hits = recall(args.query, memory_dir, args.k)
+    if args.json:
+        print(json.dumps({
+            "query": args.query,
+            "memory_dir": str(memory_dir),
+            "count": len(hits),
+            "hits": [
+                {
+                    "score": round(score, 4),
+                    "name": d["name"],
+                    "description": d["description"],
+                    "path": str(d["path"]),
+                }
+                for score, d in hits
+            ],
+        }, ensure_ascii=False))
+        return 0
     if not hits:
         print("(no relevant memories)")
         return 0
