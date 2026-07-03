@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 import recall
 
 
@@ -161,3 +163,15 @@ def test_json_error_is_json_not_stderr_string(tmp_path, capsys):
     assert rc == 2
     payload = json.loads(capsys.readouterr().out)
     assert "error" in payload
+
+
+# --- input validation on the -k flag ----------------------------------------
+
+
+@pytest.mark.parametrize("bad_k", ["-3", "0"])
+def test_negative_or_zero_k_is_rejected(tmp_path, bad_k):
+    # A negative -k would hit Python's `[:k]` slice and silently drop the last
+    # |k| hits rather than erroring. argparse .error() exits 2 via SystemExit.
+    with pytest.raises(SystemExit) as exc:
+        recall.main(["query", "--memory-dir", str(tmp_path), "-k", bad_k])
+    assert exc.value.code == 2

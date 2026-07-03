@@ -173,6 +173,12 @@ def main(argv: list[str] | None = None) -> int:
                     help="emit machine-readable JSON (for agent/programmatic consumption)")
     args = ap.parse_args(argv)
 
+    # Guard -k: a negative value would hit Python's `[:k]` slice and silently
+    # DROP the last |k| results instead of erroring — a footgun for a caller who
+    # fat-fingers the flag. Require a positive count.
+    if args.k < 1:
+        ap.error(f"-k must be >= 1 (got {args.k})")
+
     # Windows cp1252 stdout crashes/garbles on the em-dashes in descriptions
     # (lessons.md "Windows cp1252"). Force UTF-8 so output is faithful.
     try:
