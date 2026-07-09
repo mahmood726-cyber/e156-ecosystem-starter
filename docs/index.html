@@ -101,24 +101,29 @@
 </nav>
 <header>
   <h1>E156 Ecosystem Starter</h1>
-  <p class="sub">Set up your research laptop the way <a href="https://github.com/mahmood726-cyber" style="color:#555;">Mahmood Ahmad</a> does (cardiology research lead, Makerere &amp; Ziauddin). One click.</p>
+  <p class="sub">A safe, small-output research system for students: one browser workspace, one small project, one reproducible evidence artifact.</p>
+  <p style="color:#777; font-size:0.9em; margin:6px 0 0;">Built by <a href="https://github.com/mahmood726-cyber" style="color:#777;">Mahmood Ahmad</a> (cardiology research lead, Makerere &amp; Ziauddin) for students learning meta-analysis, evidence dashboards, and AI-assisted research.</p>
 </header>
 
 <main id="main">
 
-<!-- Recommended path for non-coders: zero local install, runs in the browser. -->
-<section class="cloud-banner" id="install-cloud" aria-labelledby="install-cloud-h">
-  <h2 id="install-cloud-h">Easiest — open in your browser, full install, zero terminal</h2>
-  <p>If you have never used a terminal, click this button. A free GitHub-hosted workspace opens with the <strong>full system pre-installed</strong>: rules, memory, Sentinel pre-push hook, Overmind verifier with a TruthCert HMAC key, ProjectIndex seed, and Gemini CLI. Nothing installs on your laptop.</p>
+<!-- SECTION 1 — Start now: one button, plain language, zero jargon above the fold. -->
+<section class="cloud-banner" id="start-now" aria-labelledby="start-now-h">
+  <h2 id="start-now-h">Start producing small research outputs &mdash; in your browser</h2>
+  <p><strong>No installation. No terminal. No setup.</strong> One free workspace opens in your browser with everything ready: a preconfigured research workspace with AI rules, quality checks, project memory, and example research workflows.</p>
   <a class="codespace-cta" href="https://codespaces.new/mahmood726-cyber/e156-ecosystem-starter?quickstart=1" rel="noopener">
-    Open in GitHub Codespaces &rarr;
+    Start in GitHub Codespaces &rarr;
   </a>
-  <span class="micro">~2-3 minute build. Best on a <strong>desktop or laptop</strong> — Codespaces in a phone browser technically works but the terminal is unreliable. Requires a free <a href="https://github.com/signup">GitHub account</a> (see below if you don't have one yet). <a href="#what-is-codespace">What is a Codespace?</a></span>
+  <span class="micro">~2&ndash;3 minute build. Best on a <strong>desktop or laptop</strong>. Needs a free <a href="https://github.com/signup">GitHub account</a>. <a href="#what-is-codespace">What is a Codespace?</a> &middot; <a href="#trust">Is this safe?</a></span>
 </section>
 
-<div class="warning" role="note" style="margin: 0 0 28px; background:#e7f6ec; border-left:4px solid #2da44e; padding:14px 18px; border-radius:4px; font-size:1.02em;">
-  <strong>If you used the green Codespaces button, you're done installing — skip the entire <a href="#local-install" style="color:#1a7f37;">Prerequisites / Local install</a> section.</strong> Python, R, and Node are already installed for you in the cloud. Go straight to <a href="#verify" style="color:#1a7f37;">Verify your install worked</a>, then <a href="#agents" style="color:#1a7f37;">add your free AI key</a>. Everything below the line about installing "on your own machine" is <em>only</em> for people not using Codespaces.
-</div>
+<p style="margin:0 0 20px;">After you click, a cloud computer builds your workspace (about 2&ndash;3 minutes) and opens a code editor in your browser. Nothing installs on your laptop. When it's ready, follow <a href="#first-30">Your first 30 minutes</a> below.</p>
+
+<nav aria-label="Other ways in" style="display:flex; flex-wrap:wrap; gap:10px; margin:0 0 28px;">
+  <a href="#local-install" style="flex:1 1 220px; min-width:200px; text-align:center; padding:12px 16px; border:1px solid #d0d7de; border-radius:8px; text-decoration:none; color:#0366d6;">Already know Git? Install locally &rarr;</a>
+  <a href="#teachers" style="flex:1 1 220px; min-width:200px; text-align:center; padding:12px 16px; border:1px solid #d0d7de; border-radius:8px; text-decoration:none; color:#0366d6;">Teacher or supervisor? Use this for a class &rarr;</a>
+  <a href="#technical" style="flex:1 1 220px; min-width:200px; text-align:center; padding:12px 16px; border:1px solid #d0d7de; border-radius:8px; text-decoration:none; color:#0366d6;">Security / source code / advanced install &rarr;</a>
+</nav>
 
 <details style="margin: 0 0 16px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
   <summary style="cursor:pointer; font-weight:600;">No GitHub account yet? Read this first.</summary>
@@ -154,208 +159,27 @@
   (P2-U2 from 2026-04-27 user-POV review.)
 -->
 
-<hr style="border:none; border-top:1px solid #e1e4e8; margin:8px 0 24px;">
-<p style="text-align:center; color:#777; font-size:0.95em; margin: 0 0 24px;">Not using Codespaces? You can install on your own laptop instead &mdash; <a href="#local-install">jump to Install on your own machine</a> (you'll need Python and Node installed first).</p>
+<!-- SECTION 2 — Your first 30 minutes: tiny, motivating first success. -->
+<h2 id="first-30">Your first 30 minutes</h2>
 
-<h2 id="verify">Verify your install worked</h2>
+<p>The shortest path from a blank browser to something real. <strong>By the end you'll open one example evidence capsule, change a single number, and watch every estimate, chart and self-audit check update</strong> &mdash; the fastest way to feel what a self-checking research tool does, and proof the whole thing works.</p>
 
-<p>After the installer says it's done, run this to confirm the rules + memory landed correctly:</p>
+<div class="step"><strong>1. Open your workspace.</strong> Click <em>Start in GitHub Codespaces</em> at the top and wait ~2&ndash;3 minutes while it builds. A code editor opens in your browser with everything already set up &mdash; nothing to install.</div>
 
-<pre><code># Windows PowerShell
-ls $env:USERPROFILE\.claude\rules
-ls $env:USERPROFILE\.claude\memory
+<div class="step"><strong>2. See it work &mdash; open one capsule.</strong> Open the <a href="./capsules/">living evidence capsules</a>, pick one (say a meta-analysis), change one number in its data, and watch the result, chart and self-audit checks re-run instantly. That's your first success. Each capsule is a single offline page that runs its own statistics <em>and checks itself</em> before asking you to trust it &mdash; the quality bar made tangible.</div>
 
-# macOS / Linux / WSL
-ls ~/.claude/rules
-ls ~/.claude/memory</code></pre>
+<div class="step"><strong>3. Add your free AI key and run a test prompt.</strong> In a Codespace the AI agent is already installed &mdash; you just add a free key (see <a href="#agents">Set up your AI key</a>), then ask it: <code>gemini "Summarise the rules in my .claude/rules/ folder"</code>. If it answers with the E156, lessons, advanced-stats and rules content, your agent is wired up.</div>
 
-<p>You should see four <code>.md</code> files in <code>rules/</code> (e156, lessons, advanced-stats, rules) and <code>MEMORY.md</code> + a <code>templates/</code> folder in <code>memory/</code>.</p>
+<div class="step"><strong>4. Learn the method.</strong> The real value is a <em>way of working</em>: <em>brainstorm &rarr; spec-lock &rarr; plan-lock &rarr; TDD &rarr; audit</em>. Read <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"><strong>STUDENT-WORKFLOW.md</strong></a> for the 5-step path to your first paper, the case studies behind each step, and what <code>UNVERIFIED</code> means (it is <em>not</em> a release pass). Worked-example repos to clone and reproduce: <a href="https://github.com/mahmood726-cyber/ma-workbench">ma-workbench (sglt2i-hfpef)</a>, <a href="https://github.com/mahmood726-cyber/repro-floor-atlas">repro-floor-atlas</a>, <a href="https://github.com/mahmood726-cyber/responder-floor-atlas">responder-floor-atlas</a>, <a href="https://github.com/mahmood726-cyber/impossible-ma">impossible-ma</a>.</div>
 
-<p>Then start an agent in any directory and ask it about the rules:</p>
+<div class="step"><strong>5. Create your first E156 project.</strong> Scaffold a new project with the <code>student new</code> CLI (from <a href="https://github.com/mahmood726-cyber/e156-student-starter"><code>e156-student-starter</code></a>) and aim for one small, reproducible output: <strong>one repo + one dashboard + one 156-word micro-paper</strong>. Pick a starting point from <a href="#examples">What you can build</a> below.</div>
 
-<pre><code>cd ~          # or any folder you want to work in
-gemini "Summarise the rules I have configured in my .claude/rules/ folder"</code></pre>
-
-<p>If the agent answers with E156, lessons, advanced-stats, and rules content, you're set. If it says "I don't see those rules" the agent CLI isn't reading the global config dir &mdash; check <a href="#agents">"Set up an AI agent CLI"</a> below.</p>
-
-<h2 id="next-step">Next step &mdash; produce work at the same quality bar</h2>
-
-<p>Installing the rules is half the job. The other half is using them with the same <strong>method</strong>: <em>brainstorm &rarr; spec-lock &rarr; plan-lock &rarr; TDD &rarr; audit</em>. That workflow is what turns the enforcement machinery (Sentinel, Overmind) into shippable papers instead of just "code that doesn't break."</p>
-
-<p>Read <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"><strong>STUDENT-WORKFLOW.md</strong></a> for:</p>
-
-<ul>
-  <li>The 5-step path to your first E156 paper (with the <code>student new</code> CLI from <a href="https://github.com/mahmood726-cyber/e156-student-starter"><code>e156-student-starter</code></a>).</li>
-  <li>The brainstorm &rarr; spec-lock &rarr; plan-lock &rarr; TDD &rarr; audit method, with the case studies that validated each step.</li>
-  <li>Worked-example repos to clone and reproduce: <a href="https://github.com/mahmood726-cyber/ma-workbench">ma-workbench (sglt2i-hfpef)</a>, <a href="https://github.com/mahmood726-cyber/repro-floor-atlas">repro-floor-atlas</a>, <a href="https://github.com/mahmood726-cyber/responder-floor-atlas">responder-floor-atlas</a>, <a href="https://github.com/mahmood726-cyber/impossible-ma">impossible-ma</a>.</li>
-  <li>How Sentinel + Overmind verdicts function as quality gates (and what <code>UNVERIFIED</code> means &mdash; it is <em>not</em> a release pass).</li>
-</ul>
-
-<h2 id="capsules">Living evidence capsules &mdash; 40 tools to learn from</h2>
-<p>Explore <a href="./capsules/"><strong>40 self-auditing evidence-synthesis capsules</strong></a>: meta-analysis, network meta-analysis, diagnostic-test accuracy, causal inference, and health economics &mdash; each a single offline web page that runs its statistics in your browser, lets you edit the data live, and <em>checks itself</em> before asking you to trust it. They are the quality bar made tangible: open one, change a number, and watch every estimate, chart and self-audit check re-run.</p>
 <div class="cta-wrap"><a class="cta" href="./capsules/" style="font-size:1.05em; padding:14px 32px;">Browse the 40 capsules &rarr;</a></div>
 
-<h2 id="whats-new">What's new in your toolkit</h2>
+<!-- SECTION 3 — What you can build: the 8-project table (unchanged). -->
+<h2 id="examples">What you can build</h2>
 
-<p>The starter keeps moving. If you installed an earlier version, here's what has been added since &mdash; all of it still <strong>offline-first and gentle on a free-tier quota</strong>, because that's the constraint most of you are working under.</p>
-
-<h3>Spend fewer tokens &mdash; reuse what the kit already ships</h3>
-<p>Three small offline helpers (no internet, no AI, no cost) cut the biggest hidden drain on your free requests: asking an agent to re-write something the ecosystem already contains. <code>reuse.py</code> finds an existing function to copy, <code>recall.py</code> pulls only the saved notes relevant to your question instead of loading your whole memory file, and <code>find-related-repos.py</code> checks whether you've built something similar before. See the <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-TOKEN-BUDGET.md">token-budget guide</a> for where your free requests actually go.</p>
-
-<h3>Turn a trial into an analysis config &mdash; now across 17 fields</h3>
-<p>The RCT extractor now auto-detects <strong>17 disease areas</strong>, including many that matter most where this toolkit is used &mdash; HIV, malaria, typhoid, schistosomiasis, sickle cell, cholera, TB, maternal/neonatal care, and more. Paste an abstract, get a starter meta-analysis config. The student path is standard-library-only (no heavy installs); the large PDF/science dependencies stay optional. Source: <a href="https://github.com/mahmood726-cyber/rct-extractor-v2">rct-extractor-v2</a>.</p>
-
-<h3>Rebuild the whole meta-analysis toolkit &mdash; offline</h3>
-<p>Five optional layers now let you recreate the full workflow end-to-end without spending tokens, each with a zero-cost path you can just open and read:</p>
-<ul>
-  <li><strong>RapidMeta kit</strong> &mdash; turns a small JSON config into a self-contained meta-analysis dashboard (standard-library only, offline).</li>
-  <li><strong>AACT cockpit</strong> &amp; <strong>AACT kit</strong> &mdash; analyse ClinicalTrials.gov / AACT data on your own machine, or just read the worked examples.</li>
-  <li><strong>Pairwise70 workbench</strong> &mdash; a static gallery that reproduces each analysis in your browser, no Python needed.</li>
-  <li><strong>E156 capsule + chart-kit</strong> &mdash; the 7-sentence paper contract plus a ~120-line pure-SVG forest-plot kit and a pre-baked sample. The lowest-footprint layer in the ecosystem.</li>
-</ul>
-<p>These sit alongside the <a href="./capsules/">40 living evidence capsules</a> already on this page.</p>
-
-<h3>A verifier that checks your meta-analysis math</h3>
-<p>The Overmind verifier is now at a stable <strong>v1.0.0</strong> release (pinned to a signed tag) and has gained an <strong>evidence-synthesis subsystem</strong>: a deterministic pooling engine and a gold-benchmark that reproduces a published pooled estimate and <em>fails closed</em> if the numbers don't match, plus screening-recall calibration, claim-grounding, and PRISMA-flow checks. Same idea as the capsules &mdash; don't trust a number until it has checked itself. Source: <a href="https://github.com/mahmood726-cyber/overmind">overmind</a>.</p>
-
-<h3>Method and standards you can map your own work to</h3>
-<p>The rules that guide the agent picked up new method guidance too &mdash; for example, requiring a held-out test split before any &ldquo;we tuned or optimised it&rdquo; claim, and a just-in-time rule index so the agent loads only the rules it needs for the task in front of it. The method also encourages an <strong>open-data-only, provenance-verified way of correcting published results</strong>: rebuild a number from freely-available sources (PubMed, ClinicalTrials.gov, Europe PMC), and where it doesn't hold up, <em>add</em> a corrected value beside the original with a link back to its source &mdash; never overwrite. These checks are written to follow and cite recognised standards &mdash; the <strong>Cochrane Handbook, Chapter 6</strong> (the right effect measure for the kind of data), <strong>GRADE</strong> indirectness, and the <strong>transitivity</strong> assumption &mdash; and the whole ecosystem is mapped to the 2025 <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/RAISE-alignment.md">RAISE framework for responsible AI in evidence synthesis</a>, so you can see &mdash; and learn &mdash; where your own project meets the bar.</p>
-
-<h3>Staying current</h3>
-<p>To pull the latest starter without losing your memory or your own edits, run <code>update-ecosystem.ps1</code> (add <code>-Full</code> to also refresh Sentinel, Overmind, and ProjectIndex). Think of it as the update button for the whole kit.</p>
-
-<div style="background:#f0f6ff; border-left:3px solid #0366d6; border-radius:4px; padding:12px 16px; margin:20px 0; font-size:0.95em;">
-  <strong>Honest about what's new.</strong> The individual methods here &mdash; pooling engines, GRADE, provenance tracking, integrity checks &mdash; all exist in the literature, and this builds on that prior art. What the starter adds is putting them together into one offline-first, open-data-only, self-checking toolkit a student can actually run on a free plan. Same rule as everywhere else on this page: real, named, runnable pieces behind each claim &mdash; no overclaiming.
-</div>
-
-<h2>What this installs</h2>
-<table>
-  <tr><th scope="col">Layer</th><th scope="col">Purpose</th></tr>
-  <tr><td>AI agent rules</td><td>Four curated rules files that load into Claude Code, Gemini CLI, and Codex automatically.</td></tr>
-  <tr><td>Memory scaffold</td><td>Cross-session memory the AI grows as you work. Four types: user profile, working-style rules, project notes, external references.</td></tr>
-  <tr><td>AGENTS.md / CLAUDE.md / GEMINI.md / CODEX.md</td><td>Per-agent context files so all three CLIs behave consistently.</td></tr>
-  <tr><td>Sentinel (optional)</td><td>Pre-push hook with ~50 rules (around 20 of them blocking; the exact counts grow over time — run <code>python -m sentinel list-rules</code> for the current set) that catch the common AI-agent defects (hardcoded paths, placeholder HMAC, silent sentinels, XSS sinks, empty-DataFrame access, leaked secrets, lockfile integrity, baseline drift) in about 2 seconds per push.</td></tr>
-  <tr><td>Overmind + TruthCert (optional)</td><td>On-demand verifier that runs tests + smoke + numerical baselines and emits HMAC-signed certification bundles for submissions.</td></tr>
-  <tr><td>ProjectIndex (optional)</td><td>Portfolio tracker + fail-closed reconcile script that catches registry drift.</td></tr>
-  <tr><td>long-term-plan (optional)</td><td>Weekly-refreshed deterministic backlog reranker. No LLM in the loop. Clones <a href="https://github.com/mahmood726-cyber/long-term-plan">mahmood726-cyber/long-term-plan</a> as a reference; you replace its ideas with your own.</td></tr>
-</table>
-
-<h2 id="local-install">Install on your own machine (local)</h2>
-
-<div class="warning" role="note" style="background:#e7f6ec; border-left:4px solid #2da44e; border-radius:4px;">
-  <strong>Using Codespaces? You can skip this whole section.</strong> Everything below is only for installing on your own laptop instead of in the browser. The cloud workspace already has Python, R, and Node set up for you.
-</div>
-
-<h3>Step 1 &mdash; prerequisites (local install only)</h3>
-<p>On your own machine, install <strong>Python</strong> and <strong>Node.js</strong> first (both free). <strong>R is optional</strong> — you only need it for the R cross-validation check, and the installer just prints a warning and carries on if R is missing. The installer <em>does</em> stop with a clear message if Python or Node is absent. A 156-word first paper does not need R.</p>
-
-<h4 id="prereq-python">Python 3.11 or newer <span style="color:#1a7f37;">(required)</span></h4>
-
-<div class="warning" role="note" style="background:#fff5b1; border-left-color:#ffd33d;">
-  <strong>Critical:</strong> Windows 10/11 ships with a Microsoft Store stub at <code>python.exe</code> that <em>looks</em> like Python is installed but actually opens the Store when you try to use it. <strong>You must install real Python from python.org, not the Store.</strong> The installer detects the stub and refuses to continue if it's all you have.
-</div>
-
-<div class="step"><strong>1.</strong> Download from <a href="https://www.python.org/downloads/">python.org/downloads</a> (latest 3.x).</div>
-<div class="step"><strong>2.</strong> Run the installer. <strong>On the first screen, tick "Add python.exe to PATH"</strong> &mdash; this is the most-missed step.</div>
-<div class="step"><strong>3.</strong> Click <em>Install Now</em>. It takes about 1 minute.</div>
-<div class="step"><strong>4.</strong> Verify in a <em>new</em> PowerShell window:
-<pre><code>python --version</code></pre>
-You should see a <code>Python 3.x</code> version. If you see "Python was not found" or it opens the Microsoft Store, the Store stub is shadowing your install — see <a href="#advanced">Advanced</a> for the one-line fix (turning off the app-execution alias).
-</div>
-
-<h4 id="prereq-node">Node.js 20 or newer <span style="color:#1a7f37;">(required)</span></h4>
-<p>Needed because Gemini CLI / Claude Code / Codex are all distributed via npm.</p>
-<div class="step"><strong>1.</strong> Download the <strong>LTS</strong> version from <a href="https://nodejs.org/en/download">nodejs.org/en/download</a> and run it (default options).</div>
-<div class="step"><strong>2.</strong> Verify in a new PowerShell window:
-<pre><code>node --version
-npm --version</code></pre>
-You should see <code>v20.x.x</code> or higher.
-</div>
-
-<details id="prereq-r" style="margin: 16px 0 28px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
-  <summary style="cursor:pointer; font-weight:600;">R 4.5+ (optional — only for the metafor cross-check)</summary>
-  <p style="margin:10px 0 0;">R is used to cross-validate your meta-analysis pools against the gold-standard <code>metafor</code> package. <strong>It is entirely optional</strong> — skip it and the installer simply prints a warning and moves on; your dashboards still work, they just won't run the extra R cross-check. Add it later if you want that belt-and-braces validation.</p>
-  <div class="step" style="margin-top:12px;"><strong>1.</strong> Download from <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org/bin/windows/base/</a> and run the installer (defaults are fine).</div>
-  <div class="step"><strong>2.</strong> Add R to PATH and install <code>metafor</code> — the terminal steps are in <a href="#advanced">Advanced</a>, since they involve editing PATH by hand.</div>
-</details>
-
-<h3>Step 2 &mdash; install (clone, read, run)</h3>
-
-<p><strong>Recommended &mdash; download the installer, read it, then run it.</strong> You're about to run a script that writes files into your home folder, so the safest habit (especially if you've never used a terminal) is to get the source first, look at it, and run it from disk — not pipe a web address straight into your shell.</p>
-
-<pre><code>git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
-cd e156-ecosystem-starter
-# open and skim install/install.ps1 (Windows) or install/install.sh (macOS/Linux/WSL)
-# — both are short and commented — then run the one for your system:
-.\install\install.ps1        # Windows PowerShell
-bash install/install.sh      # macOS / Linux / WSL</code></pre>
-
-<p>The installer asks a few Yes/No questions (all default to Yes) and finishes in about 2 minutes. Then <a href="#verify">verify it worked</a> above.</p>
-
-<p style="margin-top:20px;">Prefer a one-click download instead? Grab the installer file and run it:</p>
-<div class="cta-wrap" style="margin:12px 0 8px;">
-  <a class="cta" href="./e156-setup.bat" download="e156-setup.bat" style="font-size:1em; padding:12px 24px;">Download .bat (Windows)</a>
-  <a class="cta" href="./e156-setup.sh" download="e156-setup.sh" style="background:#28a745; font-size:1em; padding:12px 24px;">Download .sh (macOS / Linux)</a>
-</div>
-<p class="cta-hint" style="text-align:center;">On Windows the <code>.bat</code> may be blocked by Smart App Control — see <a href="#advanced">Advanced</a> for the fix. On macOS/Linux: <code>chmod +x e156-setup.sh &amp;&amp; ./e156-setup.sh</code>.</p>
-
-<details style="margin: 20px 0 8px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
-  <summary style="cursor:pointer; font-weight:600;">One-liner install (faster, but pipes a remote script into your shell)</summary>
-  <p style="margin:10px 0 0;">If you understand the trade-off — you're running code straight from the web before reading it — the one-liners are:</p>
-  <pre style="margin:8px 0;"><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex   # Windows PowerShell
-curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash   # macOS / Linux / WSL</code></pre>
-  <p style="margin:8px 0 0;">The clone-and-read path above is preferred, especially for a first-time terminal user. The source is open and auditable: <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/bootstrap.ps1">bootstrap.ps1</a>, <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/install/install.sh">install.sh</a>.</p>
-</details>
-
-<h2 id="agents">Set up an AI agent CLI</h2>
-
-<p>The starter rules and memory are designed for three agents. <strong>You only need one</strong> to get going. If you're starting from zero, install Gemini CLI &mdash; the free tier is the most generous.</p>
-
-<div class="warning" role="note" style="background:#e7f6ec; border-left:4px solid #2da44e; border-radius:4px;">
-  <strong>In a Codespace, Gemini CLI is already installed for you.</strong> You can skip straight to step 3 below — getting your free API key — and set it with <code>export GEMINI_API_KEY="your-key"</code> in the terminal.
-</div>
-
-<h3>Option A: Gemini CLI (recommended &mdash; free tier)</h3>
-
-<div class="step"><strong>1.</strong> Install <a href="https://nodejs.org/en/download">Node.js 20 or newer</a> (Windows installer, default options).</div>
-<div class="step"><strong>2.</strong> Open a fresh PowerShell window and install the CLI globally:
-<pre><code>npm install -g @google/gemini-cli</code></pre>
-</div>
-<div class="step"><strong>3.</strong> Get a <strong>free</strong> Google API key (no credit card needed):
-<ol style="margin:8px 0 0 0;">
-  <li>Go to <a href="https://aistudio.google.com/app/apikey">aistudio.google.com/app/apikey</a> and sign in with any Google account.</li>
-  <li>Click <strong>Create API key</strong> &rarr; <em>Create API key in new project</em>.</li>
-  <li>Copy the long key (starts with <code>AIza...</code>). Treat it like a password &mdash; never paste it into a public repo or chat.</li>
-</ol>
-</div>
-<div class="step"><strong>4.</strong> Tell Windows the key is yours so the CLI can find it:
-<pre><code>setx GEMINI_API_KEY "paste-your-key-here"</code></pre>
-Close and reopen your terminal so the new variable loads.
-</div>
-<div class="step"><strong>5.</strong> Test it:
-<pre><code>gemini "summarise this file" &lt; README.md</code></pre>
-If you get a coherent answer, you're done.
-</div>
-
-<div class="warning" role="note">
-  <strong>Free-tier limits (Google AI Studio):</strong> the current free Flash model comes with a daily request quota and no card required &mdash; usually plenty for a student week of meta-analysis work. Google changes these limits fairly often (both the model name and the daily cap move), so check the live numbers at <a href="https://ai.google.dev/gemini-api/docs/rate-limits">ai.google.dev/gemini-api/docs/rate-limits</a>. If you hit a wall, the CLI tells you when the quota resets.
-</div>
-
-<h3>Option B: Claude Code</h3>
-<p>Paid (Anthropic API or Claude Pro/Max). Best at long-context work. Install:</p>
-<pre><code>npm install -g @anthropic-ai/claude-code
-claude login</code></pre>
-<p>See <a href="https://docs.anthropic.com/en/docs/claude-code">docs.anthropic.com/en/docs/claude-code</a>.</p>
-
-<h3>Option C: OpenAI Codex</h3>
-<p>Free with a ChatGPT Plus account (uses your subscription quota), or pay-per-token via API key. Install:</p>
-<pre><code>npm install -g @openai/codex
-codex</code></pre>
-<p>On first run it walks you through sign-in. See <a href="https://github.com/openai/codex">github.com/openai/codex</a>.</p>
-
-<h2 id="examples">What can I build with this? &mdash; example projects</h2>
-
-<p>Once the agent + rules are installed, you can build small but real research artifacts in a few hours. Pick one. Each is sized for a single sitting and produces something you can put on your CV.</p>
+<p>Once your workspace is open, you can build small but real research artifacts in a few hours. Pick one. Each is sized for a single sitting and produces something you can put on your CV.</p>
 
 <table>
   <tr><th scope="col">Project</th><th scope="col">What you build</th><th scope="col">Skill stretched</th></tr>
@@ -403,20 +227,190 @@ codex</code></pre>
 
 <p>Each project should ship as <strong>one GitHub repo</strong> + <strong>one GitHub Pages dashboard</strong> + <strong>one E156 micro-paper</strong> (156 words). The starter rules teach the agent how to keep all three in sync.</p>
 
-<h2 id="advanced">Advanced / power users</h2>
+<h3 id="teachers">For teachers &amp; supervisors</h3>
+<p>Running this for a class? Every student gets an <strong>identical, offline-first workspace</strong> in the browser &mdash; no lab machines to configure, no "it works on my laptop." Assign any row above as a one-sitting project; the <a href="./capsules/">evidence capsules</a> work as live lecture demos (change a number, show the result move); and <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md">STUDENT-WORKFLOW.md</a> is the method to grade against. Everything is open source and free-tier-friendly.</p>
+
+<!-- SECTION 4 — Install on your own machine. Beginners can ignore all of this. -->
+<h2 id="local-install">Install on your own machine</h2>
+
+<div class="warning" role="note" style="background:#e7f6ec; border-left:4px solid #2da44e; border-radius:4px;">
+  <strong>Using Codespaces? You can skip this whole section.</strong> Everything below is only for installing on your own laptop instead of in the browser. The cloud workspace already has Python, R, and Node set up for you.
+</div>
+
+<div id="trust" style="background:#f0f6ff; border-left:4px solid #0366d6; border-radius:4px; padding:14px 18px; margin:16px 0 24px; font-size:0.98em;">
+  <strong>Is this safe?</strong> Yes &mdash; it's open source, and you can read every script before running it. The safest route is <a href="#start-now">GitHub Codespaces</a>: nothing installs on your laptop at all. If you do install locally, the recommended path below is to <strong>clone the repo and read the scripts first</strong>, rather than pipe a web address straight into your shell. For institutional or shared machines, use the tagged <code>git clone</code> route with the signed release (see <a href="#security">Security model</a>) instead of the one-liner.
+</div>
+
+<h3>Step 1 &mdash; prerequisites (local install only)</h3>
+<p>On your own machine, install <strong>Python</strong> and <strong>Node.js</strong> first (both free). <strong>R is optional</strong> — you only need it for the R cross-validation check, and the installer just prints a warning and carries on if R is missing. The installer <em>does</em> stop with a clear message if Python or Node is absent. A 156-word first paper does not need R.</p>
+
+<h4 id="prereq-python">Python 3.11 or newer <span style="color:#1a7f37;">(required)</span></h4>
+
+<div class="warning" role="note" style="background:#fff5b1; border-left-color:#ffd33d;">
+  <strong>Critical:</strong> Windows 10/11 ships with a Microsoft Store stub at <code>python.exe</code> that <em>looks</em> like Python is installed but actually opens the Store when you try to use it. <strong>You must install real Python from python.org, not the Store.</strong> The installer detects the stub and refuses to continue if it's all you have.
+</div>
+
+<div class="step"><strong>1.</strong> Download from <a href="https://www.python.org/downloads/">python.org/downloads</a> (latest 3.x).</div>
+<div class="step"><strong>2.</strong> Run the installer. <strong>On the first screen, tick "Add python.exe to PATH"</strong> &mdash; this is the most-missed step.</div>
+<div class="step"><strong>3.</strong> Click <em>Install Now</em>. It takes about 1 minute.</div>
+<div class="step"><strong>4.</strong> Verify in a <em>new</em> PowerShell window:
+<pre><code>python --version</code></pre>
+You should see a <code>Python 3.x</code> version. If you see "Python was not found" or it opens the Microsoft Store, the Store stub is shadowing your install — see <a href="#advanced">Advanced</a> for the one-line fix (turning off the app-execution alias).
+</div>
+
+<h4 id="prereq-node">Node.js 20 or newer <span style="color:#1a7f37;">(required)</span></h4>
+<p>Needed because Gemini CLI / Claude Code / Codex are all distributed via npm.</p>
+<div class="step"><strong>1.</strong> Download the <strong>LTS</strong> version from <a href="https://nodejs.org/en/download">nodejs.org/en/download</a> and run it (default options).</div>
+<div class="step"><strong>2.</strong> Verify in a new PowerShell window:
+<pre><code>node --version
+npm --version</code></pre>
+You should see <code>v20.x.x</code> or higher.
+</div>
+
+<details id="prereq-r" style="margin: 16px 0 28px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">R 4.5+ (optional — only for the metafor cross-check)</summary>
+  <p style="margin:10px 0 0;">R is used to cross-validate your meta-analysis pools against the gold-standard <code>metafor</code> package. <strong>It is entirely optional</strong> — skip it and the installer simply prints a warning and moves on; your dashboards still work, they just won't run the extra R cross-check. Add it later if you want that belt-and-braces validation.</p>
+  <div class="step" style="margin-top:12px;"><strong>1.</strong> Download from <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org/bin/windows/base/</a> and run the installer (defaults are fine).</div>
+  <div class="step"><strong>2.</strong> Add R to PATH and install <code>metafor</code> — the terminal steps are in <a href="#advanced">Advanced</a>, since they involve editing PATH by hand.</div>
+</details>
+
+<h3>Step 2 &mdash; install (clone, read, run)</h3>
+
+<p><strong>Recommended &mdash; download the installer, read it, then run it.</strong> You're about to run a script that writes files into your home folder, so the safest habit (especially if you've never used a terminal) is to get the source first, look at it, and run it from disk — not pipe a web address straight into your shell.</p>
+
+<pre><code>git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
+cd e156-ecosystem-starter
+# open and skim install/install.ps1 (Windows) or install/install.sh (macOS/Linux/WSL)
+# — both are short and commented — then run the one for your system:
+.\install\install.ps1        # Windows PowerShell
+bash install/install.sh      # macOS / Linux / WSL</code></pre>
+
+<p>The installer asks a few Yes/No questions (all default to Yes) and finishes in about 2 minutes. Confirm it worked by listing the installed rules: <code>ls ~/.claude/rules</code> (macOS/Linux) or <code>ls $env:USERPROFILE\.claude\rules</code> (Windows) &mdash; you should see four <code>.md</code> files (e156, lessons, advanced-stats, rules).</p>
+
+<p style="margin-top:20px;">Prefer a one-click download instead? Grab the installer file and run it:</p>
+<div class="cta-wrap" style="margin:12px 0 8px;">
+  <a class="cta" href="./e156-setup.bat" download="e156-setup.bat" style="font-size:1em; padding:12px 24px;">Download .bat (Windows)</a>
+  <a class="cta" href="./e156-setup.sh" download="e156-setup.sh" style="background:#28a745; font-size:1em; padding:12px 24px;">Download .sh (macOS / Linux)</a>
+</div>
+<p class="cta-hint" style="text-align:center;">On Windows the <code>.bat</code> may be blocked by Smart App Control — see <a href="#advanced">Advanced</a> for the fix. On macOS/Linux: <code>chmod +x e156-setup.sh &amp;&amp; ./e156-setup.sh</code>.</p>
+
+<details style="margin: 20px 0 8px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">One-liner install (faster, but pipes a remote script into your shell)</summary>
+  <p style="margin:10px 0 0;">If you understand the trade-off — you're running code straight from the web before reading it — the one-liners are:</p>
+  <pre style="margin:8px 0;"><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex   # Windows PowerShell
+curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash   # macOS / Linux / WSL</code></pre>
+  <p style="margin:8px 0 0;">The clone-and-read path above is preferred, especially for a first-time terminal user. The source is open and auditable: <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/bootstrap.ps1">bootstrap.ps1</a>, <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/install/install.sh">install.sh</a>.</p>
+</details>
+
+<h3 id="agents">Set up your AI key (agent CLI)</h3>
+
+<p>The starter rules and memory are designed for three agents. <strong>You only need one</strong> to get going. If you're starting from zero, install Gemini CLI &mdash; the free tier is the most generous.</p>
+
+<div class="warning" role="note" style="background:#e7f6ec; border-left:4px solid #2da44e; border-radius:4px;">
+  <strong>In a Codespace, Gemini CLI is already installed for you.</strong> You can skip straight to step 3 below — getting your free API key — and set it with <code>export GEMINI_API_KEY="your-key"</code> in the terminal.
+</div>
+
+<h4>Option A: Gemini CLI (recommended &mdash; free tier)</h4>
+
+<div class="step"><strong>1.</strong> Install <a href="https://nodejs.org/en/download">Node.js 20 or newer</a> (Windows installer, default options).</div>
+<div class="step"><strong>2.</strong> Open a fresh PowerShell window and install the CLI globally:
+<pre><code>npm install -g @google/gemini-cli</code></pre>
+</div>
+<div class="step"><strong>3.</strong> Get a <strong>free</strong> Google API key (no credit card needed):
+<ol style="margin:8px 0 0 0;">
+  <li>Go to <a href="https://aistudio.google.com/app/apikey">aistudio.google.com/app/apikey</a> and sign in with any Google account.</li>
+  <li>Click <strong>Create API key</strong> &rarr; <em>Create API key in new project</em>.</li>
+  <li>Copy the long key (starts with <code>AIza...</code>). Treat it like a password &mdash; never paste it into a public repo or chat.</li>
+</ol>
+</div>
+<div class="step"><strong>4.</strong> Tell Windows the key is yours so the CLI can find it:
+<pre><code>setx GEMINI_API_KEY "paste-your-key-here"</code></pre>
+Close and reopen your terminal so the new variable loads.
+</div>
+<div class="step"><strong>5.</strong> Test it:
+<pre><code>gemini "summarise this file" &lt; README.md</code></pre>
+If you get a coherent answer, you're done.
+</div>
+
+<div class="warning" role="note">
+  <strong>Free-tier limits (Google AI Studio):</strong> the free tier needs no credit card, and <strong>Gemini Flash is usually enough for small research tasks</strong>. The exact limits change by model and by account, so check <em>your</em> active limits in <a href="https://aistudio.google.com/">Google AI Studio</a> (or the <a href="https://ai.google.dev/gemini-api/docs/rate-limits">rate-limits page</a>). If you hit a wall, the CLI tells you when the quota resets.
+</div>
+
+<h4>Option B: Claude Code</h4>
+<p>Paid (Anthropic API or Claude Pro/Max). Best at long-context work. Install:</p>
+<pre><code>npm install -g @anthropic-ai/claude-code
+claude login</code></pre>
+<p>See <a href="https://docs.anthropic.com/en/docs/claude-code">docs.anthropic.com/en/docs/claude-code</a>.</p>
+
+<h4>Option C: OpenAI Codex</h4>
+<p>Free with a ChatGPT Plus account (uses your subscription quota), or pay-per-token via API key. Install:</p>
+<pre><code>npm install -g @openai/codex
+codex</code></pre>
+<p>On first run it walks you through sign-in. See <a href="https://github.com/openai/codex">github.com/openai/codex</a>.</p>
+
+<!-- SECTION 5 — Technical reference & security: every real component name lives here. -->
+<h2 id="technical">Technical reference &amp; security</h2>
+<p>The plain-language intro at the top calls this "AI rules, quality checks, and project memory." Here are the real component names, what each does, and the security model &mdash; for supervisors, IT staff, and the curious.</p>
+
+<h3 id="whats-new">What's new in the toolkit</h3>
+
+<p>The starter keeps moving. If you installed an earlier version, here's what has been added since &mdash; all of it still <strong>offline-first and gentle on a free-tier quota</strong>, because that's the constraint most students are working under.</p>
+
+<h4>Spend fewer tokens &mdash; reuse what the kit already ships</h4>
+<p>Three small offline helpers (no internet, no AI, no cost) cut the biggest hidden drain on your free requests: asking an agent to re-write something the ecosystem already contains. <code>reuse.py</code> finds an existing function to copy, <code>recall.py</code> pulls only the saved notes relevant to your question instead of loading your whole memory file, and <code>find-related-repos.py</code> checks whether you've built something similar before. See the <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-TOKEN-BUDGET.md">token-budget guide</a> for where your free requests actually go.</p>
+
+<h4>Turn a trial into an analysis config &mdash; now across 17 fields</h4>
+<p>The RCT extractor now auto-detects <strong>17 disease areas</strong>, including many that matter most where this toolkit is used &mdash; HIV, malaria, typhoid, schistosomiasis, sickle cell, cholera, TB, maternal/neonatal care, and more. Paste an abstract, get a starter meta-analysis config. The student path is standard-library-only (no heavy installs); the large PDF/science dependencies stay optional. Source: <a href="https://github.com/mahmood726-cyber/rct-extractor-v2">rct-extractor-v2</a>.</p>
+
+<h4>Rebuild the whole meta-analysis toolkit &mdash; offline</h4>
+<p>Five optional layers now let you recreate the full workflow end-to-end without spending tokens, each with a zero-cost path you can just open and read:</p>
+<ul>
+  <li><strong>RapidMeta kit</strong> &mdash; turns a small JSON config into a self-contained meta-analysis dashboard (standard-library only, offline).</li>
+  <li><strong>AACT cockpit</strong> &amp; <strong>AACT kit</strong> &mdash; analyse ClinicalTrials.gov / AACT data on your own machine, or just read the worked examples.</li>
+  <li><strong>Pairwise70 workbench</strong> &mdash; a static gallery that reproduces each analysis in your browser, no Python needed.</li>
+  <li><strong>E156 capsule + chart-kit</strong> &mdash; the 7-sentence paper contract plus a ~120-line pure-SVG forest-plot kit and a pre-baked sample. The lowest-footprint layer in the ecosystem.</li>
+</ul>
+<p>These sit alongside the <a href="./capsules/">40 living evidence capsules</a> already on this page.</p>
+
+<h4>A verifier that checks your meta-analysis math</h4>
+<p>The Overmind verifier is now at a stable <strong>v1.0.0</strong> release (pinned to a signed tag) and has gained an <strong>evidence-synthesis subsystem</strong>: a deterministic pooling engine and a gold-benchmark that reproduces a published pooled estimate and <em>fails closed</em> if the numbers don't match, plus screening-recall calibration, claim-grounding, and PRISMA-flow checks. Same idea as the capsules &mdash; don't trust a number until it has checked itself. Source: <a href="https://github.com/mahmood726-cyber/overmind">overmind</a>.</p>
+
+<h4>Method and standards you can map your own work to</h4>
+<p>The rules that guide the agent picked up new method guidance too &mdash; for example, requiring a held-out test split before any &ldquo;we tuned or optimised it&rdquo; claim, and a just-in-time rule index so the agent loads only the rules it needs for the task in front of it. The method also encourages an <strong>open-data-only, provenance-verified way of correcting published results</strong>: rebuild a number from freely-available sources (PubMed, ClinicalTrials.gov, Europe PMC), and where it doesn't hold up, <em>add</em> a corrected value beside the original with a link back to its source &mdash; never overwrite. These checks are written to follow and cite recognised standards &mdash; the <strong>Cochrane Handbook, Chapter 6</strong> (the right effect measure for the kind of data), <strong>GRADE</strong> indirectness, and the <strong>transitivity</strong> assumption &mdash; and the whole ecosystem is mapped to the 2025 <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/RAISE-alignment.md">RAISE framework for responsible AI in evidence synthesis</a>, so you can see &mdash; and learn &mdash; where your own project meets the bar.</p>
+
+<h4>Staying current</h4>
+<p>To pull the latest starter without losing your memory or your own edits, run <code>update-ecosystem.ps1</code> (add <code>-Full</code> to also refresh Sentinel, Overmind, and ProjectIndex). Think of it as the update button for the whole kit.</p>
+
+<div style="background:#f0f6ff; border-left:3px solid #0366d6; border-radius:4px; padding:12px 16px; margin:20px 0; font-size:0.95em;">
+  <strong>Honest about what's new.</strong> The individual methods here &mdash; pooling engines, GRADE, provenance tracking, integrity checks &mdash; all exist in the literature, and this builds on that prior art. What the starter adds is putting them together into one offline-first, open-data-only, self-checking toolkit a student can actually run on a free plan. Same rule as everywhere else on this page: real, named, runnable pieces behind each claim &mdash; no overclaiming.
+</div>
+
+<h3>What this installs</h3>
+<table>
+  <tr><th scope="col">Layer</th><th scope="col">Purpose</th></tr>
+  <tr><td>AI agent rules</td><td>Four curated rules files that load into Claude Code, Gemini CLI, and Codex automatically.</td></tr>
+  <tr><td>Memory scaffold</td><td>Cross-session memory the AI grows as you work. Four types: user profile, working-style rules, project notes, external references.</td></tr>
+  <tr><td>AGENTS.md / CLAUDE.md / GEMINI.md / CODEX.md</td><td>Per-agent context files so all three CLIs behave consistently.</td></tr>
+  <tr><td>Sentinel (optional)</td><td>Pre-push hook with ~50 rules (around 20 of them blocking; the exact counts grow over time — run <code>python -m sentinel list-rules</code> for the current set) that catch the common AI-agent defects (hardcoded paths, placeholder HMAC, silent sentinels, XSS sinks, empty-DataFrame access, leaked secrets, lockfile integrity, baseline drift) in about 2 seconds per push.</td></tr>
+  <tr><td>Overmind + TruthCert (optional)</td><td>On-demand verifier that runs tests + smoke + numerical baselines and emits HMAC-signed certification bundles for submissions.</td></tr>
+  <tr><td>ProjectIndex (optional)</td><td>Portfolio tracker + fail-closed reconcile script that catches registry drift.</td></tr>
+  <tr><td>long-term-plan (optional)</td><td>Weekly-refreshed deterministic backlog reranker. No LLM in the loop. Clones <a href="https://github.com/mahmood726-cyber/long-term-plan">mahmood726-cyber/long-term-plan</a> as a reference; you replace its ideas with your own.</td></tr>
+</table>
+
+<h3 id="advanced">Advanced / power users</h3>
 <p>Terminal-heavy bits a first-time user can safely ignore. Grouped here so the main path stays clean.</p>
 
-<h3>Python opens the Microsoft Store instead of running</h3>
+<h4>Python opens the Microsoft Store instead of running</h4>
 <p>The Store stub is shadowing your real install. Turn it off: Windows Settings &rarr; Apps &rarr; Advanced app settings &rarr; App execution aliases &rarr; toggle <strong>off</strong> <code>python.exe</code> and <code>python3.exe</code>, then reopen PowerShell.</p>
 
-<h3>Finish the optional R setup (PATH + metafor)</h3>
+<h4>Finish the optional R setup (PATH + metafor)</h4>
 <p>The R installer doesn't add R to PATH. In PowerShell, point PATH at the newest R's <code>bin</code>:</p>
 <pre><code>$rDir = (Get-ChildItem 'C:\Program Files\R' -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName + '\bin'
 [Environment]::SetEnvironmentVariable('Path', "$env:Path;$rDir", 'User')</code></pre>
 <p>Close and reopen PowerShell, confirm <code>Rscript --version</code>, then install the validation package (once per machine):</p>
 <pre><code>Rscript -e "install.packages('metafor', repos='https://cloud.r-project.org')"</code></pre>
 
-<h3>Windows Smart App Control blocks the .bat</h3>
+<h4>Windows Smart App Control blocks the .bat</h4>
 <p>Windows 11 Smart App Control (different from SmartScreen) blocks unsigned downloaded scripts <strong>without</strong> a "Run anyway" button. In order of effort:</p>
 <ol>
   <li><strong>Use the clone-and-read path</strong> in <a href="#local-install">Install on your own machine</a> — Smart App Control trusts <code>git.exe</code>, so cloning and running <code>.\install\install.ps1</code> is not blocked.</li>
@@ -424,11 +418,11 @@ codex</code></pre>
   <li><strong>Use the PowerShell one-liner</strong> (in the Local install one-liner box) — it runs in memory without writing an unsigned file to disk.</li>
 </ol>
 
-<h3>Full install / CI / unattended</h3>
+<h4>Full install / CI / unattended</h4>
 <pre><code>.\install\install.ps1 -Full            # all optional layers (Sentinel, Overmind, ProjectIndex...)
 .\install\install.ps1 -NonInteractive  # no prompts, for CI / scripted setup</code></pre>
 
-<h2 id="troubleshooting">What if something goes wrong</h2>
+<h3 id="troubleshooting">What if something goes wrong</h3>
 <ul>
   <li>Python not found &rarr; install from <a href="https://www.python.org/downloads/">python.org</a>, <strong>tick Add Python to PATH</strong>. If it opens the Store instead, see <a href="#advanced">Advanced</a>.</li>
   <li>Download blocked &rarr; check your firewall isn't blocking <code>github.com</code>.</li>
@@ -436,7 +430,7 @@ codex</code></pre>
   <li>SmartScreen or Smart App Control blocked the .bat &rarr; use the clone-and-read install in <a href="#local-install">Install on your own machine</a>, or see <a href="#advanced">Advanced &rarr; Smart App Control</a>. SmartScreen's <em>More info &rarr; Run anyway</em> works for it; Smart App Control has no override, so the clone path or the in-memory one-liner is the way through.</li>
 </ul>
 
-<h2 id="security">Security model — what the SHA gate does and doesn't protect</h2>
+<h3 id="security">Security model — what the SHA gate does and doesn't protect</h3>
 
 <p><strong>The SHA gate is for download integrity, not source integrity.</strong> Specifically:</p>
 
