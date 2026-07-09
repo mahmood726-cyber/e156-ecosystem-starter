@@ -6,10 +6,11 @@
 <title>E156 Ecosystem Starter</title>
 <meta name="description" content="Set up your research laptop with Mahmood's quality-dev environment: AI agent rules, memory, Sentinel, Overmind, TruthCert. One click.">
 <meta property="og:title" content="E156 Ecosystem Starter">
-<meta property="og:description" content="Mahmood's quality-dev environment, as a machine bootstrap. For African research students.">
+<meta property="og:description" content="Mahmood's quality-dev environment, as a machine bootstrap. For research students in Africa, South Asia, and other low-resource settings.">
 <link rel="alternate" hreflang="en" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/">
 <link rel="alternate" hreflang="fr" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/fr/">
 <link rel="alternate" hreflang="pt" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/pt/">
+<link rel="alternate" hreflang="sw" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/sw/">
 <link rel="alternate" hreflang="ar" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/ar/">
 <link rel="alternate" hreflang="ur" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/ur/">
 <link rel="alternate" hreflang="x-default" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/">
@@ -94,6 +95,7 @@
   <a href="./" hreflang="en" lang="en" aria-current="page">English</a><span class="lang-sep" aria-hidden="true">·</span>
   <a href="./fr/" hreflang="fr" lang="fr">Français</a><span class="lang-sep" aria-hidden="true">·</span>
   <a href="./pt/" hreflang="pt" lang="pt">Português</a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="./sw/" hreflang="sw" lang="sw">Kiswahili</a><span class="lang-sep" aria-hidden="true">·</span>
   <a href="./ar/" hreflang="ar" lang="ar">العربية</a><span class="lang-sep" aria-hidden="true">·</span>
   <a href="./ur/" hreflang="ur" lang="ur">اردو</a>
 </nav>
@@ -114,10 +116,14 @@
   <span class="micro">~2-3 minute build. Best on a <strong>desktop or laptop</strong> — Codespaces in a phone browser technically works but the terminal is unreliable. Requires a free <a href="https://github.com/signup">GitHub account</a> (see below if you don't have one yet). <a href="#what-is-codespace">What is a Codespace?</a></span>
 </section>
 
+<div class="warning" role="note" style="margin: 0 0 28px; background:#e7f6ec; border-left:4px solid #2da44e; padding:14px 18px; border-radius:4px; font-size:1.02em;">
+  <strong>If you used the green Codespaces button, you're done installing — skip the entire <a href="#local-install" style="color:#1a7f37;">Prerequisites / Local install</a> section.</strong> Python, R, and Node are already installed for you in the cloud. Go straight to <a href="#verify" style="color:#1a7f37;">Verify your install worked</a>, then <a href="#agents" style="color:#1a7f37;">add your free AI key</a>. Everything below the line about installing "on your own machine" is <em>only</em> for people not using Codespaces.
+</div>
+
 <details style="margin: 0 0 16px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
   <summary style="cursor:pointer; font-weight:600;">No GitHub account yet? Read this first.</summary>
   <ul style="margin:12px 0 0; padding-left:22px;">
-    <li><strong>If you have a university email</strong> ending in <code>.ac.ug</code>, <code>.ac.za</code>, <code>.edu.pk</code>, <code>.edu</code>, etc. — apply for <a href="https://education.github.com">GitHub Education</a> first. You get 90 free Codespaces hours/month (vs 60), no phone-verification step, and access to other paid tools (Copilot, JetBrains, etc.).</li>
+    <li><strong>If you have a university email</strong> ending in <code>.ac.ug</code>, <code>.ac.za</code>, <code>.edu.pk</code>, <code>.edu</code>, etc. — apply for <a href="https://education.github.com">GitHub Education</a>. As a verified student you get GitHub Pro-level Codespaces (<strong>180 core-hours/month</strong> — about 90 hours of use on the standard 2-core machine, vs 120 core-hours / ~60 hours on a free account — plus more storage) and free access to paid tools like Copilot and JetBrains. Verifying is a one-time step: you confirm your student status with a school-issued email or dated proof of enrolment, usually approved within about 72 hours. (This is a <em>separate</em> check from the phone verification you may hit when first creating a GitHub account — it doesn't replace it.)</li>
     <li><strong>If you only have personal email</strong> (Gmail/Yahoo) — sign up at <a href="https://github.com/signup">github.com/signup</a>. GitHub will ask for SMS phone verification; this can fail silently on some African mobile networks (Airtel, MTN). If your code never arrives, retry from a different network or use the GitHub Education path above.</li>
     <li><strong>If your phone is your only device</strong> — borrow a friend's laptop for the first 90 minutes of setup; after that you can do most writing from your phone via the GitHub web editor.</li>
   </ul>
@@ -125,17 +131,18 @@
 
 <details style="margin: 0 0 28px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;" id="what-is-codespace">
   <summary style="cursor:pointer; font-weight:600;">What is a GitHub Codespace? (1-paragraph version)</summary>
-  <p style="margin:10px 0 0;">A Codespace is a Linux computer that runs in GitHub's cloud, with VS Code (a code editor) opened in your web browser. Nothing installs on your laptop — everything happens on the cloud machine. You write code in the browser, save it to GitHub, and it's still there when you close the tab. Free for 60 hours/month on personal accounts (90 on Education accounts), then pauses until next month. Like Google Docs, but for a programming environment.</p>
+  <p style="margin:10px 0 0;">A Codespace is a Linux computer that runs in GitHub's cloud, with VS Code (a code editor) opened in your web browser. Nothing installs on your laptop — everything happens on the cloud machine. You write code in the browser, save it to GitHub, and it's still there when you close the tab. Free each month — 120 core-hours (about 60 hours of use on the standard 2-core machine) on a personal account, or 180 core-hours (~90 hours) once you verify as a student — then it pauses until the next month. Like Google Docs, but for a programming environment.</p>
 </details>
 
 <aside class="warning" role="note" style="margin: 0 0 28px; background: #fff5b1; border-left: 4px solid #ffd33d; padding: 12px 16px; border-radius: 4px; font-size: 0.95em;">
   <strong>Important — when you're done, stop your codespace.</strong>
   Idle codespaces keep using your monthly hours until they auto-suspend (default: 30 min). To stop one immediately: visit <a href="https://github.com/codespaces">github.com/codespaces</a> and click <strong>⋯ → Stop codespace</strong>. Leaving a tab open all day will eat through your free tier in under a week.
+  <br><br><strong>Storage counts too.</strong> Even a <em>stopped</em> codespace keeps using your free storage (15 GB) — GitHub only stops counting when you <strong>delete</strong> it (⋯ → Delete). A large dataset can hit the storage limit before your hours run out, so delete codespaces you've finished with.
 </aside>
 
 <details style="margin: 0 0 28px; padding: 12px 16px; background:#f0f6ff; border-left:3px solid #0366d6; border-radius:4px; font-size:0.95em;">
   <summary style="cursor:pointer; font-weight:600;">Already installed an older version? (upgrading)</summary>
-  <p style="margin:10px 0 0;">If you ran the installer before (e.g. v0.7.0 in March), just <strong>re-run the same one-liner</strong> at the top of this page. The new bootstrap pulls the latest tagged release and overwrites your rules + memory templates. Files you've edited yourself (<code>*.md.user</code>) are preserved. To check what version you have installed, in any Codespace terminal run <code>e156 version</code>.</p>
+  <p style="margin:10px 0 0;">If you ran the installer before (e.g. an earlier release), just <strong>re-run the installer you used the first time</strong>: open a fresh Codespace with the green button above (the rebuild pulls the latest), or on a local install re-run <code>update-ecosystem.ps1</code> — see <a href="#local-install">Install on your own machine</a>. Either way it pulls the latest tagged release and overwrites your rules + memory templates; files you've edited yourself (<code>*.md.user</code>) are preserved. To see which version you're on, check the <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/releases">Releases</a> page.</p>
   <p style="margin:8px 0 0;">If a re-install fails with <em>"install.ps1 hash mismatch"</em>, that just means your locally-cached install.ps1 is older than the recorded hash for the new version — re-running the bootstrap one-liner will pull a fresh copy and resolve it.</p>
 </details>
 
@@ -147,58 +154,8 @@
   (P2-U2 from 2026-04-27 user-POV review.)
 -->
 
-<nav aria-label="Operating system" class="os-tabs">
-  <a class="os-tab primary" href="#install-windows">Windows</a>
-  <a class="os-tab" href="#install-macos-linux">macOS / Linux / WSL</a>
-</nav>
-<p style="text-align:center; color:#777; font-size:0.9em; margin: -8px 0 24px;">…or install locally on your own machine:</p>
-
-<section id="install-windows" aria-labelledby="install-windows-h">
-<h2 id="install-windows-h" style="margin-top:8px;">Windows</h2>
-<div class="cta-wrap">
-  <p style="margin:0 0 16px; font-weight:600; font-size:1.05em;">Recommended &mdash; PowerShell one-liner (works under Smart App Control):</p>
-  <pre style="text-align:left; max-width:720px; margin:0 auto;"><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex</code></pre>
-  <div class="cta-hint" style="margin-top:8px;"><strong>Open PowerShell, not Command Prompt.</strong> Press Win+R, type <code>powershell</code>, press Enter. Paste the line above, hit Enter. (PowerShell has a blue background; cmd.exe has a black background and won't recognize <code>irm</code>.)</div>
-  <div style="margin:28px 0 8px; color:#595e63; font-size:0.85em;" aria-hidden="true">— or —</div>
-  <a class="cta" href="./e156-setup.bat" download="e156-setup.bat" style="font-size:1.05em; padding:14px 32px;">
-    Download .bat installer
-  </a>
-  <div class="cta-hint">Double-click to install. <strong>May be blocked by Smart App Control</strong> &mdash; see workarounds below.</div>
-</div>
-</section>
-
-<section id="install-macos-linux" aria-labelledby="install-macos-linux-h">
-<h2 id="install-macos-linux-h">macOS / Linux / WSL</h2>
-<div class="cta-wrap">
-  <p style="margin:0 0 16px; font-weight:600; font-size:1.05em;">One-liner for any Unix shell:</p>
-  <pre style="text-align:left; max-width:720px; margin:0 auto;"><code>curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash</code></pre>
-  <div class="cta-hint" style="margin-top:8px;">Works on macOS Terminal, Linux distros, and Windows Subsystem for Linux (WSL). Requires <code>python3</code>, <code>curl</code>, and <code>unzip</code> on PATH.</div>
-  <div style="margin:28px 0 8px; color:#595e63; font-size:0.85em;" aria-hidden="true">— or —</div>
-  <a class="cta" href="./e156-setup.sh" download="e156-setup.sh" style="background:#28a745; font-size:1.05em; padding:14px 32px;">
-    Download .sh installer
-  </a>
-  <div class="cta-hint">Then: <code>chmod +x e156-setup.sh &amp;&amp; ./e156-setup.sh</code></div>
-</div>
-</section>
-
-<div class="warning" role="note">
-  <strong>If Smart App Control or SmartScreen blocks the .bat:</strong> Windows 11 Smart App Control (different from SmartScreen) blocks unsigned downloaded scripts <strong>without</strong> a "Run anyway" button. Three ways through, in order of effort:
-
-  <ol style="margin:10px 0 0 0;">
-    <li><strong>Easiest &mdash; use the PowerShell one-liner above.</strong> Smart App Control allows <code>iex</code> from a trusted Microsoft origin (your shell), and the script runs in memory without writing an unsigned executable to disk first.</li>
-    <li><strong>Unblock the .bat manually.</strong> In File Explorer, right-click <code>e156-setup.bat</code> &rarr; <strong>Properties</strong> &rarr; tick <strong>Unblock</strong> at the bottom &rarr; <strong>OK</strong>. Then double-click again. Or in PowerShell:
-      <pre style="margin:6px 0;"><code>Unblock-File ~\Downloads\e156-setup.bat
-~\Downloads\e156-setup.bat</code></pre>
-    </li>
-    <li><strong>Power-user fallback &mdash; clone the repo directly</strong> (Smart App Control trusts <code>git.exe</code>):
-      <pre style="margin:6px 0;"><code>git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
-cd e156-ecosystem-starter
-.\install\install.ps1</code></pre>
-    </li>
-  </ol>
-
-  <p style="margin:10px 0 0 0;">The source is open and auditable <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/bootstrap.ps1">here</a> (PowerShell) and <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/bootstrap/e156-setup.bat">here</a> (.bat).</p>
-</div>
+<hr style="border:none; border-top:1px solid #e1e4e8; margin:8px 0 24px;">
+<p style="text-align:center; color:#777; font-size:0.95em; margin: 0 0 24px;">Not using Codespaces? You can install on your own laptop instead &mdash; <a href="#local-install">jump to Install on your own machine</a> (you'll need Python and Node installed first).</p>
 
 <h2 id="verify">Verify your install worked</h2>
 
@@ -277,77 +234,86 @@ gemini "Summarise the rules I have configured in my .claude/rules/ folder"</code
   <tr><td>AI agent rules</td><td>Four curated rules files that load into Claude Code, Gemini CLI, and Codex automatically.</td></tr>
   <tr><td>Memory scaffold</td><td>Cross-session memory the AI grows as you work. Four types: user profile, working-style rules, project notes, external references.</td></tr>
   <tr><td>AGENTS.md / CLAUDE.md / GEMINI.md / CODEX.md</td><td>Per-agent context files so all three CLIs behave consistently.</td></tr>
-  <tr><td>Sentinel (optional)</td><td>Pre-push hook with 53 rules (21 blocking) that catch the common AI-agent defects (hardcoded paths, placeholder HMAC, silent sentinels, XSS sinks, empty-DataFrame access, leaked secrets, lockfile integrity, baseline drift) in about 2 seconds per push.</td></tr>
+  <tr><td>Sentinel (optional)</td><td>Pre-push hook with ~50 rules (around 20 of them blocking; the exact counts grow over time — run <code>python -m sentinel list-rules</code> for the current set) that catch the common AI-agent defects (hardcoded paths, placeholder HMAC, silent sentinels, XSS sinks, empty-DataFrame access, leaked secrets, lockfile integrity, baseline drift) in about 2 seconds per push.</td></tr>
   <tr><td>Overmind + TruthCert (optional)</td><td>On-demand verifier that runs tests + smoke + numerical baselines and emits HMAC-signed certification bundles for submissions.</td></tr>
   <tr><td>ProjectIndex (optional)</td><td>Portfolio tracker + fail-closed reconcile script that catches registry drift.</td></tr>
   <tr><td>long-term-plan (optional)</td><td>Weekly-refreshed deterministic backlog reranker. No LLM in the loop. Clones <a href="https://github.com/mahmood726-cyber/long-term-plan">mahmood726-cyber/long-term-plan</a> as a reference; you replace its ideas with your own.</td></tr>
 </table>
 
-<h2>Install in 3 steps</h2>
-<div class="step"><strong>1.</strong> Click <em>Download for Windows</em> above.</div>
-<div class="step"><strong>2.</strong> Open your Downloads folder and double-click <code>e156-setup.bat</code>.</div>
-<div class="step"><strong>3.</strong> Answer the Yes/No prompts (all default to Yes). Done in about 2 minutes.</div>
+<h2 id="local-install">Install on your own machine (local)</h2>
 
-<h2>Prerequisites</h2>
-
-<p>You'll need three free tools installed before running the bootstrap. <strong>Do these in order</strong> — the bootstrap will fail-closed with a clear message if any are missing.</p>
-
-<h3 id="prereq-python">1. Python 3.11 or newer</h3>
-
-<div class="warning" role="note" style="background:#fff5b1; border-left-color:#ffd33d;">
-  <strong>Critical:</strong> Windows 10/11 ships with a Microsoft Store stub at <code>python.exe</code> that <em>looks</em> like Python is installed but actually opens the Store when you try to use it. <strong>You must install real Python from python.org, not the Store.</strong> The bootstrap detects the stub and refuses to continue if it's all you have.
+<div class="warning" role="note" style="background:#e7f6ec; border-left:4px solid #2da44e; border-radius:4px;">
+  <strong>Using Codespaces? You can skip this whole section.</strong> Everything below is only for installing on your own laptop instead of in the browser. The cloud workspace already has Python, R, and Node set up for you.
 </div>
 
-<div class="step"><strong>1.</strong> Download from <a href="https://www.python.org/downloads/">python.org/downloads</a> (latest 3.x &mdash; currently 3.13).</div>
+<h3>Step 1 &mdash; prerequisites (local install only)</h3>
+<p>On your own machine, install <strong>Python</strong> and <strong>Node.js</strong> first (both free). <strong>R is optional</strong> — you only need it for the R cross-validation check, and the installer just prints a warning and carries on if R is missing. The installer <em>does</em> stop with a clear message if Python or Node is absent. A 156-word first paper does not need R.</p>
+
+<h4 id="prereq-python">Python 3.11 or newer <span style="color:#1a7f37;">(required)</span></h4>
+
+<div class="warning" role="note" style="background:#fff5b1; border-left-color:#ffd33d;">
+  <strong>Critical:</strong> Windows 10/11 ships with a Microsoft Store stub at <code>python.exe</code> that <em>looks</em> like Python is installed but actually opens the Store when you try to use it. <strong>You must install real Python from python.org, not the Store.</strong> The installer detects the stub and refuses to continue if it's all you have.
+</div>
+
+<div class="step"><strong>1.</strong> Download from <a href="https://www.python.org/downloads/">python.org/downloads</a> (latest 3.x).</div>
 <div class="step"><strong>2.</strong> Run the installer. <strong>On the first screen, tick "Add python.exe to PATH"</strong> &mdash; this is the most-missed step.</div>
 <div class="step"><strong>3.</strong> Click <em>Install Now</em>. It takes about 1 minute.</div>
 <div class="step"><strong>4.</strong> Verify in a <em>new</em> PowerShell window:
 <pre><code>python --version</code></pre>
-You should see <code>Python 3.13.x</code> (or whichever version you installed). If you see "Python was not found" or it opens the Microsoft Store, the Store stub is shadowing your install &mdash; fix it via Windows Settings &rarr; Apps &rarr; Advanced app settings &rarr; App execution aliases &rarr; toggle off <code>python.exe</code> and <code>python3.exe</code>.
+You should see a <code>Python 3.x</code> version. If you see "Python was not found" or it opens the Microsoft Store, the Store stub is shadowing your install — see <a href="#advanced">Advanced</a> for the one-line fix (turning off the app-execution alias).
 </div>
 
-<h3 id="prereq-r">2. R 4.5 or newer</h3>
-
-<p>Used for cross-validating meta-analysis pools against the gold-standard <code>metafor</code> package. Without R, the validation step in your dashboards will be skipped.</p>
-
-<div class="step"><strong>1.</strong> Download from <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org/bin/windows/base/</a> (the big "Download R x.y.z for Windows" link near the top).</div>
-<div class="step"><strong>2.</strong> Run the installer. Default options are fine. R installs to <code>C:\Program Files\R\R-x.y.z\</code>.</div>
-<div class="step"><strong>3.</strong> Add R to PATH (the installer doesn't do this automatically). In PowerShell:
-<pre><code># find where Rscript was installed
-$rDir = (Get-ChildItem 'C:\Program Files\R' -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName + '\bin'
-[Environment]::SetEnvironmentVariable('Path', "$env:Path;$rDir", 'User')</code></pre>
-Close and reopen PowerShell so the new PATH loads.
-</div>
-<div class="step"><strong>4.</strong> Verify:
-<pre><code>Rscript --version</code></pre>
-You should see <code>Rscript (R) version 4.x.x</code>.
-</div>
-<div class="step"><strong>5.</strong> Install the <code>metafor</code> package (used for validation):
-<pre><code>Rscript -e "install.packages('metafor', repos='https://cloud.r-project.org')"</code></pre>
-Takes about 2 minutes. You only need to do this once per machine.
-</div>
-
-<h3 id="prereq-node">3. Node.js 20 or newer</h3>
-
+<h4 id="prereq-node">Node.js 20 or newer <span style="color:#1a7f37;">(required)</span></h4>
 <p>Needed because Gemini CLI / Claude Code / Codex are all distributed via npm.</p>
-
-<div class="step"><strong>1.</strong> Download the <strong>LTS</strong> version from <a href="https://nodejs.org/en/download">nodejs.org/en/download</a>.</div>
-<div class="step"><strong>2.</strong> Run the installer with default options.</div>
-<div class="step"><strong>3.</strong> Verify in a new PowerShell window:
+<div class="step"><strong>1.</strong> Download the <strong>LTS</strong> version from <a href="https://nodejs.org/en/download">nodejs.org/en/download</a> and run it (default options).</div>
+<div class="step"><strong>2.</strong> Verify in a new PowerShell window:
 <pre><code>node --version
 npm --version</code></pre>
 You should see <code>v20.x.x</code> or higher.
 </div>
 
-<h3>4. An AI agent CLI</h3>
-<p>See <a href="#agents">"Set up an AI agent CLI"</a> below. Gemini CLI is recommended for new students because Google gives you a generous <strong>free</strong> API key (no credit card needed).</p>
+<details id="prereq-r" style="margin: 16px 0 28px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">R 4.5+ (optional — only for the metafor cross-check)</summary>
+  <p style="margin:10px 0 0;">R is used to cross-validate your meta-analysis pools against the gold-standard <code>metafor</code> package. <strong>It is entirely optional</strong> — skip it and the installer simply prints a warning and moves on; your dashboards still work, they just won't run the extra R cross-check. Add it later if you want that belt-and-braces validation.</p>
+  <div class="step" style="margin-top:12px;"><strong>1.</strong> Download from <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org/bin/windows/base/</a> and run the installer (defaults are fine).</div>
+  <div class="step"><strong>2.</strong> Add R to PATH and install <code>metafor</code> — the terminal steps are in <a href="#advanced">Advanced</a>, since they involve editing PATH by hand.</div>
+</details>
 
-<h3>5. Internet connection</h3>
-<p>About 50 MB of pip deps if you opt into Sentinel + Overmind during install.</p>
+<h3>Step 2 &mdash; install (clone, read, run)</h3>
+
+<p><strong>Recommended &mdash; download the installer, read it, then run it.</strong> You're about to run a script that writes files into your home folder, so the safest habit (especially if you've never used a terminal) is to get the source first, look at it, and run it from disk — not pipe a web address straight into your shell.</p>
+
+<pre><code>git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
+cd e156-ecosystem-starter
+# open and skim install/install.ps1 (Windows) or install/install.sh (macOS/Linux/WSL)
+# — both are short and commented — then run the one for your system:
+.\install\install.ps1        # Windows PowerShell
+bash install/install.sh      # macOS / Linux / WSL</code></pre>
+
+<p>The installer asks a few Yes/No questions (all default to Yes) and finishes in about 2 minutes. Then <a href="#verify">verify it worked</a> above.</p>
+
+<p style="margin-top:20px;">Prefer a one-click download instead? Grab the installer file and run it:</p>
+<div class="cta-wrap" style="margin:12px 0 8px;">
+  <a class="cta" href="./e156-setup.bat" download="e156-setup.bat" style="font-size:1em; padding:12px 24px;">Download .bat (Windows)</a>
+  <a class="cta" href="./e156-setup.sh" download="e156-setup.sh" style="background:#28a745; font-size:1em; padding:12px 24px;">Download .sh (macOS / Linux)</a>
+</div>
+<p class="cta-hint" style="text-align:center;">On Windows the <code>.bat</code> may be blocked by Smart App Control — see <a href="#advanced">Advanced</a> for the fix. On macOS/Linux: <code>chmod +x e156-setup.sh &amp;&amp; ./e156-setup.sh</code>.</p>
+
+<details style="margin: 20px 0 8px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">One-liner install (faster, but pipes a remote script into your shell)</summary>
+  <p style="margin:10px 0 0;">If you understand the trade-off — you're running code straight from the web before reading it — the one-liners are:</p>
+  <pre style="margin:8px 0;"><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex   # Windows PowerShell
+curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash   # macOS / Linux / WSL</code></pre>
+  <p style="margin:8px 0 0;">The clone-and-read path above is preferred, especially for a first-time terminal user. The source is open and auditable: <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/bootstrap.ps1">bootstrap.ps1</a>, <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/install/install.sh">install.sh</a>.</p>
+</details>
 
 <h2 id="agents">Set up an AI agent CLI</h2>
 
 <p>The starter rules and memory are designed for three agents. <strong>You only need one</strong> to get going. If you're starting from zero, install Gemini CLI &mdash; the free tier is the most generous.</p>
+
+<div class="warning" role="note" style="background:#e7f6ec; border-left:4px solid #2da44e; border-radius:4px;">
+  <strong>In a Codespace, Gemini CLI is already installed for you.</strong> You can skip straight to step 3 below — getting your free API key — and set it with <code>export GEMINI_API_KEY="your-key"</code> in the terminal.
+</div>
 
 <h3>Option A: Gemini CLI (recommended &mdash; free tier)</h3>
 
@@ -372,7 +338,7 @@ If you get a coherent answer, you're done.
 </div>
 
 <div class="warning" role="note">
-  <strong>Free-tier limits (Google AI Studio):</strong> currently <strong>1,500 requests/day</strong> and <strong>1M tokens/min</strong> on Gemini 2.0 Flash, with no card required. That's far more than a typical student week of meta-analysis work. If you hit a quota wall the CLI will tell you to wait until UTC midnight. Quotas change &mdash; check <a href="https://ai.google.dev/gemini-api/docs/rate-limits">ai.google.dev/gemini-api/docs/rate-limits</a>.
+  <strong>Free-tier limits (Google AI Studio):</strong> the current free Flash model comes with a daily request quota and no card required &mdash; usually plenty for a student week of meta-analysis work. Google changes these limits fairly often (both the model name and the daily cap move), so check the live numbers at <a href="https://ai.google.dev/gemini-api/docs/rate-limits">ai.google.dev/gemini-api/docs/rate-limits</a>. If you hit a wall, the CLI tells you when the quota resets.
 </div>
 
 <h3>Option B: Claude Code</h3>
@@ -437,22 +403,37 @@ codex</code></pre>
 
 <p>Each project should ship as <strong>one GitHub repo</strong> + <strong>one GitHub Pages dashboard</strong> + <strong>one E156 micro-paper</strong> (156 words). The starter rules teach the agent how to keep all three in sync.</p>
 
-<h2>Power users</h2>
+<h2 id="advanced">Advanced / power users</h2>
+<p>Terminal-heavy bits a first-time user can safely ignore. Grouped here so the main path stays clean.</p>
 
-<p>Prefer git? Clone and run directly:</p>
-<pre><code>git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
-cd e156-ecosystem-starter
-.\install\install.ps1 -Full</code></pre>
+<h3>Python opens the Microsoft Store instead of running</h3>
+<p>The Store stub is shadowing your real install. Turn it off: Windows Settings &rarr; Apps &rarr; Advanced app settings &rarr; App execution aliases &rarr; toggle <strong>off</strong> <code>python.exe</code> and <code>python3.exe</code>, then reopen PowerShell.</p>
 
-<p>CI / unattended:</p>
-<pre><code>.\install\install.ps1 -NonInteractive</code></pre>
+<h3>Finish the optional R setup (PATH + metafor)</h3>
+<p>The R installer doesn't add R to PATH. In PowerShell, point PATH at the newest R's <code>bin</code>:</p>
+<pre><code>$rDir = (Get-ChildItem 'C:\Program Files\R' -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName + '\bin'
+[Environment]::SetEnvironmentVariable('Path', "$env:Path;$rDir", 'User')</code></pre>
+<p>Close and reopen PowerShell, confirm <code>Rscript --version</code>, then install the validation package (once per machine):</p>
+<pre><code>Rscript -e "install.packages('metafor', repos='https://cloud.r-project.org')"</code></pre>
+
+<h3>Windows Smart App Control blocks the .bat</h3>
+<p>Windows 11 Smart App Control (different from SmartScreen) blocks unsigned downloaded scripts <strong>without</strong> a "Run anyway" button. In order of effort:</p>
+<ol>
+  <li><strong>Use the clone-and-read path</strong> in <a href="#local-install">Install on your own machine</a> — Smart App Control trusts <code>git.exe</code>, so cloning and running <code>.\install\install.ps1</code> is not blocked.</li>
+  <li><strong>Unblock the .bat manually:</strong> right-click <code>e156-setup.bat</code> &rarr; Properties &rarr; tick <strong>Unblock</strong> &rarr; OK, then double-click again. Or in PowerShell: <code>Unblock-File ~\Downloads\e156-setup.bat</code> and run it.</li>
+  <li><strong>Use the PowerShell one-liner</strong> (in the Local install one-liner box) — it runs in memory without writing an unsigned file to disk.</li>
+</ol>
+
+<h3>Full install / CI / unattended</h3>
+<pre><code>.\install\install.ps1 -Full            # all optional layers (Sentinel, Overmind, ProjectIndex...)
+.\install\install.ps1 -NonInteractive  # no prompts, for CI / scripted setup</code></pre>
 
 <h2 id="troubleshooting">What if something goes wrong</h2>
 <ul>
-  <li>Python not found &rarr; install from <a href="https://www.python.org/downloads/">python.org</a>, <strong>tick Add Python to PATH</strong>.</li>
+  <li>Python not found &rarr; install from <a href="https://www.python.org/downloads/">python.org</a>, <strong>tick Add Python to PATH</strong>. If it opens the Store instead, see <a href="#advanced">Advanced</a>.</li>
   <li>Download blocked &rarr; check your firewall isn't blocking <code>github.com</code>.</li>
   <li>Install failed mid-way &rarr; the installer writes a transcript to <code>%LOCALAPPDATA%\e156\logs\install-&lt;ts&gt;.log</code>. Open an issue with that log attached, or run <code>.\scripts\doctor-report.ps1</code> to package it.</li>
-  <li>SmartScreen or Smart App Control blocked the .bat &rarr; switch to the PowerShell one-liner (<a href="#download">top of page</a>) which avoids the unsigned-binary check entirely. SmartScreen's <em>More info &rarr; Run anyway</em> works for it; Smart App Control has no override and the one-liner is the only option there.</li>
+  <li>SmartScreen or Smart App Control blocked the .bat &rarr; use the clone-and-read install in <a href="#local-install">Install on your own machine</a>, or see <a href="#advanced">Advanced &rarr; Smart App Control</a>. SmartScreen's <em>More info &rarr; Run anyway</em> works for it; Smart App Control has no override, so the clone path or the in-memory one-liner is the way through.</li>
 </ul>
 
 <h2 id="security">Security model — what the SHA gate does and doesn't protect</h2>
