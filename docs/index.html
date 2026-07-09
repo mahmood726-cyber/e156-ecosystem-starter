@@ -238,26 +238,37 @@ gemini "Summarise the rules I have configured in my .claude/rules/ folder"</code
 <p>Explore <a href="./capsules/"><strong>40 self-auditing evidence-synthesis capsules</strong></a>: meta-analysis, network meta-analysis, diagnostic-test accuracy, causal inference, and health economics &mdash; each a single offline web page that runs its statistics in your browser, lets you edit the data live, and <em>checks itself</em> before asking you to trust it. They are the quality bar made tangible: open one, change a number, and watch every estimate, chart and self-audit check re-run.</p>
 <div class="cta-wrap"><a class="cta" href="./capsules/" style="font-size:1.05em; padding:14px 32px;">Browse the 40 capsules &rarr;</a></div>
 
-<h2 id="whats-new">What's new &mdash; watch real evidence get corrected, with the receipts</h2>
+<h2 id="whats-new">What's new in your toolkit</h2>
 
-<p>The newest piece of this toolkit is a <strong>provenance-gated evidence-correction pipeline</strong>, and it is now live with worked examples you can open and read for yourself. Here is the plain-language version: it takes a <em>real, already-published</em> meta-analysis, rebuilds the numbers using <strong>only data anyone can open for free</strong> &mdash; PubMed abstracts, ClinicalTrials.gov registry results, and Europe PMC open-access full text &mdash; and where a published figure doesn't hold up, it <strong>adds a corrected number right next to the original</strong>. Nothing is deleted or quietly overwritten: the original stays, the correction sits beside it, and each correction carries a link back to the exact source so you can check it yourself.</p>
+<p>The starter keeps moving. If you installed an earlier version, here's what has been added since &mdash; all of it still <strong>offline-first and gentle on a free-tier quota</strong>, because that's the constraint most of you are working under.</p>
 
-<p>Open any of these four full, self-auditing review pages and click through the corrections:</p>
+<h3>Spend fewer tokens &mdash; reuse what the kit already ships</h3>
+<p>Three small offline helpers (no internet, no AI, no cost) cut the biggest hidden drain on your free requests: asking an agent to re-write something the ecosystem already contains. <code>reuse.py</code> finds an existing function to copy, <code>recall.py</code> pulls only the saved notes relevant to your question instead of loading your whole memory file, and <code>find-related-repos.py</code> checks whether you've built something similar before. See the <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-TOKEN-BUDGET.md">token-budget guide</a> for where your free requests actually go.</p>
+
+<h3>Turn a trial into an analysis config &mdash; now across 17 fields</h3>
+<p>The RCT extractor now auto-detects <strong>17 disease areas</strong>, including many that matter most where this toolkit is used &mdash; HIV, malaria, typhoid, schistosomiasis, sickle cell, cholera, TB, maternal/neonatal care, and more. Paste an abstract, get a starter meta-analysis config. The student path is standard-library-only (no heavy installs); the large PDF/science dependencies stay optional. Source: <a href="https://github.com/mahmood726-cyber/rct-extractor-v2">rct-extractor-v2</a>.</p>
+
+<h3>Rebuild the whole meta-analysis toolkit &mdash; offline</h3>
+<p>Five optional layers now let you recreate the full workflow end-to-end without spending tokens, each with a zero-cost path you can just open and read:</p>
 <ul>
-  <li><a href="https://mahmood726-cyber.github.io/rapidmeta-finerenone/FASINUMAB_OA_AUTO_FULL_REVIEW.html">Fasinumab in osteoarthritis pain</a></li>
-  <li><a href="https://mahmood726-cyber.github.io/rapidmeta-finerenone/DARIDOREXANT_INSOMNIA_AUTO_FULL_REVIEW.html">Daridorexant in insomnia</a></li>
-  <li><a href="https://mahmood726-cyber.github.io/rapidmeta-finerenone/ELAMIPRETIDE_AUTO_FULL_REVIEW.html">Elamipretide</a></li>
-  <li><a href="https://mahmood726-cyber.github.io/rapidmeta-finerenone/RIVAROXABAN_ACS_AUTO_FULL_REVIEW.html">Rivaroxaban in acute coronary syndrome</a></li>
+  <li><strong>RapidMeta kit</strong> &mdash; turns a small JSON config into a self-contained meta-analysis dashboard (standard-library only, offline).</li>
+  <li><strong>AACT cockpit</strong> &amp; <strong>AACT kit</strong> &mdash; analyse ClinicalTrials.gov / AACT data on your own machine, or just read the worked examples.</li>
+  <li><strong>Pairwise70 workbench</strong> &mdash; a static gallery that reproduces each analysis in your browser, no Python needed.</li>
+  <li><strong>E156 capsule + chart-kit</strong> &mdash; the 7-sentence paper contract plus a ~120-line pure-SVG forest-plot kit and a pre-baked sample. The lowest-footprint layer in the ecosystem.</li>
 </ul>
+<p>These sit alongside the <a href="./capsules/">40 living evidence capsules</a> already on this page.</p>
 
-<h3>Reading results when the paper is behind a paywall</h3>
-<p>A new <strong>ClinicalTrials.gov v2 registry-results adapter</strong> pulls a pivotal trial's actual results straight from the open registry when the journal article is paywalled &mdash; which, if you are studying somewhere full-text access is thin, is most of the time. It's the same skill you practise in <a href="#examples">example project #4 (the CT.gov mini-audit)</a> above, now doing real work inside the correction loop.</p>
+<h3>A verifier that checks your meta-analysis math</h3>
+<p>The Overmind verifier is now at a stable <strong>v1.0.0</strong> release (pinned to a signed tag) and has gained an <strong>evidence-synthesis subsystem</strong>: a deterministic pooling engine and a gold-benchmark that reproduces a published pooled estimate and <em>fails closed</em> if the numbers don't match, plus screening-recall calibration, claim-grounding, and PRISMA-flow checks. Same idea as the capsules &mdash; don't trust a number until it has checked itself. Source: <a href="https://github.com/mahmood726-cyber/overmind">overmind</a>.</p>
 
-<h3>Built on recognised standards &mdash; so you can hold your own work to them</h3>
-<p>The pipeline's safety checks don't invent their own rules; they follow and cite the standards reviewers already use: the <strong>Cochrane Handbook, Chapter 6</strong> (which effect measure is right for which kind of data), <strong>GRADE</strong> indirectness, the <strong>transitivity</strong> assumption behind indirect comparisons, and a citation / quotation-error taxonomy. Reading how the checks apply these is a fast, concrete way to learn to hold your own analysis to the same bar.</p>
+<h3>Method and standards you can map your own work to</h3>
+<p>The rules that guide the agent picked up new method guidance too &mdash; for example, requiring a held-out test split before any &ldquo;we tuned or optimised it&rdquo; claim, and a just-in-time rule index so the agent loads only the rules it needs for the task in front of it. The method also encourages an <strong>open-data-only, provenance-verified way of correcting published results</strong>: rebuild a number from freely-available sources (PubMed, ClinicalTrials.gov, Europe PMC), and where it doesn't hold up, <em>add</em> a corrected value beside the original with a link back to its source &mdash; never overwrite. These checks are written to follow and cite recognised standards &mdash; the <strong>Cochrane Handbook, Chapter 6</strong> (the right effect measure for the kind of data), <strong>GRADE</strong> indirectness, and the <strong>transitivity</strong> assumption &mdash; and the whole ecosystem is mapped to the 2025 <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/RAISE-alignment.md">RAISE framework for responsible AI in evidence synthesis</a>, so you can see &mdash; and learn &mdash; where your own project meets the bar.</p>
+
+<h3>Staying current</h3>
+<p>To pull the latest starter without losing your memory or your own edits, run <code>update-ecosystem.ps1</code> (add <code>-Full</code> to also refresh Sentinel, Overmind, and ProjectIndex). Think of it as the update button for the whole kit.</p>
 
 <div style="background:#f0f6ff; border-left:3px solid #0366d6; border-radius:4px; padding:12px 16px; margin:20px 0; font-size:0.95em;">
-  <strong>Honest about what's new.</strong> None of the individual techniques here are ours &mdash; re-deriving an effect, checking that the right effect measure was used, GRADE, provenance tracking: all exist in the literature, and this builds on that prior art. What is new is the <em>combination</em> &mdash; an open-data-only, provenance-verified loop that <strong>adds</strong> a corrected result alongside the original and re-publishes both, so nothing is hidden and every claim points to a source you can click. Same rule as everywhere else on this page: real numbers, a named live artifact behind each claim, no overclaiming.
+  <strong>Honest about what's new.</strong> The individual methods here &mdash; pooling engines, GRADE, provenance tracking, integrity checks &mdash; all exist in the literature, and this builds on that prior art. What the starter adds is putting them together into one offline-first, open-data-only, self-checking toolkit a student can actually run on a free plan. Same rule as everywhere else on this page: real, named, runnable pieces behind each claim &mdash; no overclaiming.
 </div>
 
 <h2>What this installs</h2>
@@ -399,7 +410,7 @@ codex</code></pre>
   </tr>
   <tr>
     <td><strong>4. CT.gov mini-audit</strong></td>
-    <td>Pull all interventional trials in your country / specialty from the ClinicalTrials.gov v2 API, count <em>completed but no results posted at 2 years</em>. One page, three numbers, one chart. <strong>New:</strong> the same registry-results adapter now runs live inside the <a href="#whats-new">evidence-correction pipeline</a> to read trial results when the paper is paywalled.</td>
+    <td>Pull all interventional trials in your country / specialty from the ClinicalTrials.gov v2 API, count <em>completed but no results posted at 2 years</em>. One page, three numbers, one chart. <strong>Tip:</strong> reading results straight from the open registry when a paper is paywalled is now part of the toolkit's method &mdash; see <a href="#whats-new">What's new</a>.</td>
     <td>REST APIs, pagination, dates, honest framing of negative findings.</td>
   </tr>
   <tr>
