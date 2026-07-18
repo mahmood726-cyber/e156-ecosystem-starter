@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E156 Ecosystem Starter — Kuanza haraka (Kiswahili)</title>
+<meta name="description" content="Sanidi kompyuta yako ya utafiti na mazingira ya ukuzaji ya Mahmood: sheria za wakala wa AI, kumbukumbu, Sentinel, Overmind. Amri moja.">
+<link rel="alternate" hreflang="en" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/">
+<link rel="alternate" hreflang="fr" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/fr/">
+<link rel="alternate" hreflang="pt" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/pt/">
+<link rel="alternate" hreflang="sw" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/sw/">
+<link rel="alternate" hreflang="ar" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/ar/">
+<link rel="alternate" hreflang="ur" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/ur/">
+<link rel="alternate" hreflang="x-default" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; max-width: 780px; margin: 0 auto; padding: 48px 24px 96px; color: #1a1a1a; line-height: 1.55; }
+  header { text-align: center; margin-bottom: 32px; }
+  h1 { font-size: 2.4em; margin: 0 0 0.3em; letter-spacing: -0.02em; }
+  p.sub { color: #555; font-size: 1.1em; margin: 0; }
+  h2 { font-size: 1.4em; margin-top: 40px; border-bottom: 1px solid #e1e4e8; padding-bottom: 6px; }
+  code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; font-family: "SF Mono", "Consolas", monospace; }
+  pre { background: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.9em; }
+  pre code { background: none; padding: 0; }
+  @media (max-width: 480px) { pre { white-space: pre-wrap; word-break: break-all; } }
+  .lang-picker { text-align: center; margin: 16px 0 24px; font-size: 0.95em; }
+  .lang-picker a { display: inline-block; padding: 12px 14px; margin: 2px; color: #0366d6; text-decoration: none; min-width: 44px; min-height: 44px; line-height: 1.3; }
+  .lang-picker a[aria-current="page"] { font-weight: 600; color: #1a1a1a; text-decoration: underline; }
+  .lang-sep { color: #999; padding: 0 4px; }
+  .skip-link { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+  .skip-link:focus { position: static; width: auto; height: auto; padding: 8px; background: #0366d6; color: white; }
+  .notice { background: #fff5b1; border-left: 3px solid #ffd33d; padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 0.95em; }
+  .footer { margin-top: 60px; color: #595e63; font-size: 0.9em; text-align: center; }
+  .footer a { color: #444; }
+  .cloud-banner { background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; padding: 24px; border-radius: 10px; margin: 0 0 28px; text-align: center; }
+  .cloud-banner h2 { color: white; border: none; margin: 0 0 8px; padding: 0; font-size: 1.3em; }
+  .cloud-banner p { margin: 0 0 16px; }
+  .cloud-banner a.codespace-cta { display: inline-block; background: white; color: #1a7f37; font-weight: 700; padding: 12px 28px; border-radius: 8px; text-decoration: none; }
+  pre { position: relative; }
+  .copy-btn { position: absolute; top: 6px; right: 6px; background: white; border: 1px solid #d0d7de; border-radius: 4px; padding: 4px 10px; font-size: 0.75em; color: #1a1a1a; cursor: pointer; opacity: 0.55; font-family: inherit; }
+  pre:hover .copy-btn { opacity: 1; }
+  .copy-btn[data-state="copied"] { background: #2da44e; color: white; border-color: #2da44e; opacity: 1; }
+  @media (max-width: 720px) { .copy-btn { opacity: 1; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Nenda kwenye maudhui kuu</a>
+<nav class="lang-picker" aria-label="Lugha zinazopatikana">
+  <a href="../" hreflang="en" lang="en"><bdi>English</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="../fr/" hreflang="fr" lang="fr"><bdi>Français</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="../pt/" hreflang="pt" lang="pt"><bdi>Português</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="../ar/" hreflang="ar" lang="ar"><bdi>العربية</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="../ur/" hreflang="ur" lang="ur"><bdi>اردو</bdi></a><span class="lang-sep" aria-hidden="true">·</span>
+  <a href="./" hreflang="sw" lang="sw" aria-current="page"><bdi>Kiswahili</bdi></a>
+</nav>
+
+<header>
+  <h1>E156 Ecosystem Starter</h1>
+  <p class="sub">Sanidi kompyuta yako ya utafiti kama anavyofanya <a href="https://github.com/mahmood726-cyber" style="color:#555;">Mahmood Ahmad</a> (kiongozi wa utafiti wa magonjwa ya moyo, Makerere &amp; Ziauddin). Amri moja.</p>
+</header>
+
+<main id="main">
+
+<section class="cloud-banner">
+  <h2>Rahisi zaidi — fungua kwenye kivinjari chako, usakinishaji kamili, hakuna terminal</h2>
+  <p>Ikiwa haujawahi kutumia terminal, bofya kitufe hiki. Eneo la kazi la bure linalohifadhiwa na GitHub litafunguka likiwa na <strong>mfumo mzima uliosakinishwa kabla</strong>: sheria, kumbukumbu, Sentinel pre-push hook, Overmind verifier yenye ufunguo wa TruthCert HMAC, ProjectIndex seed, na Gemini CLI. Hakuna kitu kitakachosakinishwa kwenye kompyuta yako.</p>
+  <a class="codespace-cta" href="https://codespaces.new/mahmood726-cyber/e156-ecosystem-starter?quickstart=1" rel="noopener">
+    Fungua kwenye GitHub Codespaces &rarr;
+  </a>
+  <p style="margin-top:14px; font-size:0.85em; opacity:0.9;">Inachukua ~dakika 2-3 kujenga. <strong>Ni bora zaidi kwenye kompyuta ya mezani au mpakato (laptop)</strong> — Codespaces kwenye kivinjari cha simu inafanya kazi kitaalamu lakini terminal si thabiti.</p>
+</section>
+
+<details style="margin: 0 0 16px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">Je, hauna akaunti ya GitHub bado? Soma hii kwanza.</summary>
+  <ul style="margin:12px 0 0; padding-left:22px;">
+    <li><strong>Ikiwa una barua pepe ya chuo kikuu</strong> inayoishia na <code>.ac.ug</code>, <code>.ac.za</code>, <code>.edu</code>, n.k. — omba <a href="https://education.github.com">GitHub Education</a> kwanza. Unapata saa 90 za bure za Codespaces kwa mwezi (badala ya 60), hakuna hatua ya uhakiki wa simu, na ufikiaji wa zana zingine za kulipia.</li>
+    <li><strong>Ikiwa una barua pepe ya kibinafsi tu</strong> (Gmail/Yahoo) — jisajili kwenye <a href="https://github.com/signup">github.com/signup</a>. GitHub itaomba uhakiki wa simu kwa njia ya SMS; hii inaweza kufeli kimyakimya kwenye baadhi ya mitandao ya simu ya Afrika (Airtel, MTN). Ikiwa nambari ya siri haifiki, jaribu tena kutumia mtandao tofauti au tumia njia ya GitHub Education hapo juu.</li>
+    <li><strong>Ikiwa simu yako ndio kifaa chako pekee</strong> — azima kompyuta ya rafiki yako kwa dakika 90 za kwanza za usanidi; baada ya hapo unaweza kufanya uandishi mwingi kutoka kwa simu yako kupitia hariri ya wavuti ya GitHub.</li>
+  </ul>
+</details>
+
+<details style="margin: 0 0 28px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;" id="what-is-codespace">
+  <summary style="cursor:pointer; font-weight:600;">GitHub Codespace ni nini? (Toleo la aya 1)</summary>
+  <p style="margin:10px 0 0;">Codespace ni kompyuta ya Linux inayofanya kazi kwenye wingu (cloud) la GitHub, ikiwa na VS Code (programu ya kuhariri nambari za kompyuta) iliyofunguliwa kwenye kivinjari chako cha wavuti. Hakuna kitu kinachowekwa kwenye laptop yako — kila kitu kinafanyika kwenye kompyuta ya wingu. Unaandika nambari kwenye kivinjari, unahifadhi kwenye GitHub, na bado zitakuwepo utakapofunga tabo hiyo. Ni bure kwa saa 60 kwa mwezi kwenye akaunti za kibinafsi (saa 90 kwenye akaunti za Masomo), kisha inasitishwa hadi mwezi unaofuata. Ni kama Google Docs, lakini kwa mazingira ya programu.</p>
+</details>
+
+<details style="margin: 0 0 28px; padding: 12px 16px; background:#f0f6ff; border-left:3px solid #0366d6; border-radius:4px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">Tayari umesakinisha toleo la zamani? (kusasisha)</summary>
+  <p style="margin:10px 0 0;">Ikiwa uliendesha kisakinishi hapo awali (k.m. v0.7.0 mnamo Machi), <strong>endesha tena mstari ule ule mmoja wa amri</strong> ulio juu ya ukurasa huu. Mchakato mpya utaleta toleo la mwisho lililowekewa alama na kufuta sheria na templeti zako za zamani. Faili ulizohariri mwenyewe (<code>*.md.user</code>) zinalindwa. Ili kuangalia toleo ulilosakinisha, endesha <code>e156 version</code> kwenye terminal yoyote ya Codespace.</p>
+  <p style="margin:8px 0 0;"><strong>Kidokezo cha i18n:</strong> kuweka kila kitu kwa Kiswahili ndani ya Codespace, ongeza <code>E156_LANG=sw</code> kwenye siri zako za mtumiaji wa Codespaces (Codespaces user secrets) katika <a href="https://github.com/settings/codespaces">github.com/settings/codespaces</a>. Hii itatumika kwa kila codespace utakayofungua.</p>
+</details>
+
+<aside class="notice" role="note" style="background:#fff5b1; border-left:4px solid #ffd33d;">
+  <strong>Muhimu — ukimaliza, simamisha codespace yako.</strong>
+  Codespaces ambazo hazitumiki zinaendelea kutumia saa zako za kila mwezi hadi zitakapojisimamisha zenyewe (kawaida: dakika 30). Ili kusitisha mara moja: tembelea <a href="https://github.com/codespaces">github.com/codespaces</a> na ubofye <strong>⋯ → Stop codespace</strong>, au endesha <code>gh codespace stop</code> kwenye terminal. Ukiwa na saa 60 za bure kwa mwezi, kuacha tabo wazi siku nzima kutamaliza salio lako ndani ya wiki moja.
+</aside>
+
+<div class="notice" role="note">
+  <strong>Kumbuka:</strong> Ukurasa huu ni toleo lililofupishwa kwa Kiswahili. <a href="../">Toleo kamili la Kiingereza</a> lina maelezo yote ya kina (mahitaji ya awali, utatuzi wa matatizo, mfano wa usalama, mifano ya miradi). Amri za usakinishaji hapa chini ni sawa katika lugha zote.
+</div>
+
+<h2>Usakinishaji — Windows</h2>
+<p>Fungua <strong>PowerShell</strong> (sio Command Prompt). Bonyeza Win+R, andika <code>powershell</code>, kisha bonyeza Enter. Bandika amri hii:</p>
+<pre><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex</code></pre>
+
+<h2>Usakinishaji — macOS / Linux / WSL</h2>
+<pre><code>curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash</code></pre>
+
+<h2>Kuhakiki Usakinishaji</h2>
+<pre><code># Windows PowerShell
+ls $env:USERPROFILE\.claude\rules
+
+# macOS / Linux / WSL
+ls ~/.claude/rules</code></pre>
+<p>Unapaswa kuona faili nne za <code>.md</code>: <code>e156</code>, <code>lessons</code>, <code>advanced-stats</code>, na <code>rules</code>.</p>
+
+<h2>Hatua inayofuata — zalisha kazi kwa kiwango kile kile cha ubora</h2>
+<p>Kusakinisha sheria ni nusu tu ya kazi. Nusu nyingine ni kuzitumia kwa kutumia <strong>mbinu</strong> ile ile: <em>brainstorm &rarr; spec-lock &rarr; plan-lock &rarr; TDD &rarr; audit</em>.</p>
+<p>Soma <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"><strong>STUDENT-WORKFLOW.md</strong></a> (kwa Kiingereza) kwa mwongozo kamili: mbinu ya hatua kwa hatua, mifano ya hazina za kukloni, na jinsi Sentinel + Overmind zinavyofanya kazi kama walinzi wa ubora.</p>
+
+<h2>Mahitaji ya Awali</h2>
+<ul>
+  <li><strong>Python 3.11+</strong> kutoka <a href="https://www.python.org/downloads/">python.org/downloads</a> (weka alama ya tiki kwenye "Add python.exe to PATH").</li>
+  <li><strong>R 4.5+</strong> kutoka <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org</a>.</li>
+  <li><strong>Node.js 20+</strong> kutoka <a href="https://nodejs.org/en/download">nodejs.org</a>.</li>
+  <li>Wakala mmoja wa CLI wa AI: <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a> (bure), <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> (ya kulipia), au <a href="https://github.com/openai/codex">OpenAI Codex</a>.</li>
+</ul>
+
+<h2>Ikitokea matatizo</h2>
+<ul>
+  <li>Tazama sehemu ya "What if something goes wrong" kwenye <a href="../#troubleshooting">ukurasa wa Kiingereza</a>.</li>
+  <li>Kisakinishi huandika kumbukumbu (log) kwenye <code>%LOCALAPPDATA%\e156\logs\install-&lt;ts&gt;.log</code> (Windows) au <code>~/.local/state/e156/logs/install-&lt;ts&gt;.log</code> (Linux/WSL). Vifunguo vya API na siri hufichwa kiotomatiki kabla ya kushirikiwa.</li>
+</ul>
+
+</main>
+
+<footer class="footer" role="contentinfo">
+  Chanzo: <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter">github.com/mahmood726-cyber/e156-ecosystem-starter</a>
+  · <a href="../">Toleo Kamili la Kiingereza</a>
+  · Tafsiri hii ya Kiswahili imetolewa kwa nia njema; kwa mashaka yoyote ya kiufundi, toleo la Kiingereza ndilo la kuaminika zaidi. <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/issues/new?title=Kuboresha+tafsiri+ya+Kiswahili">Pendekeza marekebisho</a>.
+</footer>
+<script>
+(function(){'use strict';document.querySelectorAll('pre').forEach(function(pre){var code=pre.querySelector('code');if(!code)return;var btn=document.createElement('button');btn.type='button';btn.className='copy-btn';btn.textContent='Nakili';btn.setAttribute('aria-label','Nakili nambari');btn.setAttribute('role','status');btn.setAttribute('aria-live','polite');btn.addEventListener('click',function(){var t=code.innerText;var ok=function(){btn.textContent='Imenakiliwa';btn.setAttribute('data-state','copied');setTimeout(function(){btn.textContent='Nakili';btn.removeAttribute('data-state');},1600);};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(function(){});}else{try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();}catch(e){}}});pre.appendChild(btn);});})();
+</script>
+</body>
+</html>

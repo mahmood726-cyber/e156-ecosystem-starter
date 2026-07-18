@@ -32,7 +32,7 @@ esac
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 en="$repo_root/docs/index.html"
-declare -a langs=(fr pt ar ur)
+declare -a langs=(fr pt ar ur sw)
 
 [[ -f "$en" ]] || { echo "ERROR: English page missing at $en" >&2; exit 2; }
 
