@@ -200,7 +200,18 @@
   </tr>
   <tr>
     <td><strong>4. CT.gov mini-audit</strong></td>
-    <td>Pull all interventional trials in your country / specialty from the ClinicalTrials.gov v2 API, count <em>completed but no results posted at 2 years</em>. One page, three numbers, one chart. <strong>Tip:</strong> reading results straight from the open registry when a paper is paywalled is now part of the toolkit's method &mdash; see <a href="#whats-new">What's new</a>.</td>
+    <td>Pull all interventional trials in your country / specialty from the ClinicalTrials.gov v2 API, count <em>completed but no results posted at 2 years</em>. One page, three numbers, one chart. <strong>Tip:</strong> reading results straight from the open registry when a paper is paywalled is now part of the toolkit's method &mdash; see <a href="#whats-new">What's new</a>.
+    <br><br>
+    <strong style="color:#8b2020;">Limit you must state in your write-up:</strong>
+    CT.gov is <em>one</em> registry. Trials run in Africa are frequently registered with
+    <a href="https://pactr.samrc.ac.za/">PACTR</a> or
+    <a href="https://www.isrctn.com/">ISRCTN</a> instead, and will be invisible to this
+    audit. <strong>"Not in this registry" is not "does not exist."</strong> A count of
+    "hidden" trials built on a CT.gov-only denominator will over-report hiddenness, and it
+    will over-report it worst for exactly the countries this toolkit is built for. Report
+    your denominator as "CT.gov-registered trials", never as "trials". If you can,
+    cross-check PACTR and ISRCTN by hand and report the overlap you found.
+    </td>
     <td>REST APIs, pagination, dates, honest framing of negative findings.</td>
   </tr>
   <tr>
@@ -348,6 +359,52 @@ claude login</code></pre>
 codex</code></pre>
 <p>On first run it walks you through sign-in. See <a href="https://github.com/openai/codex">github.com/openai/codex</a>.</p>
 
+<!-- SECTION 4b - What this toolkit cannot do. Placed BEFORE the technical section on
+     purpose: limits must be readable without scrolling past marketing. -->
+<h2 id="limits">What this toolkit cannot do</h2>
+
+<p>Every tool here states its blind spot next to its feature, because a tool that hides its
+blind spot is the thing this project exists to replace. Read this section before you trust
+a number it gives you.</p>
+
+<ul>
+  <li><strong>One-registry checks over-report hiddenness.</strong> Any check built on
+  ClinicalTrials.gov alone cannot see PACTR, ISRCTN, CTRI, or ChiCTR registrations. It will
+  falsely flag African- and Asian-registered trials as missing. See Project 4 above.</li>
+
+  <li><strong>Cross-family agreement is weaker than it looks.</strong> A panel of models
+  drawn from different families gives roughly <strong>two effective independent votes</strong>,
+  not one per model. Do not read panel agreement as replication.</li>
+
+  <li><strong>Our nulls, published:</strong> seven novelty claims we tested did not survive;
+  six forensic bids returned clean nulls. These are findings, not embarrassments &mdash; they are
+  here so you do not spend your time re-running them.</li>
+
+  <li><strong>Coverage floors are usually our failure, not the world's.</strong> When this
+  toolkit reports "no data available", treat that as a statement about the toolkit's reach
+  until you have checked a second source yourself.</li>
+</ul>
+
+<h3 id="prior-art">Prior art &mdash; we are mostly not first</h3>
+
+<p>Assume this project is <em>last</em> until shown otherwise. Named, so you can go read the
+originals and judge for yourself:</p>
+
+<ul>
+  <li><strong>Weak supervision / labelling rules</strong> &mdash; Snorkel and the data-programming
+  literature. Our Tier-1 rules are this idea, applied to evidence synthesis.</li>
+  <li><strong>Model cascades for cost</strong> &mdash; FrugalGPT. Our cheap-check-first routing is
+  this idea.</li>
+  <li><strong>Document-processing harnesses</strong> &mdash; ScriptoriumWS / Alfred.</li>
+  <li><strong>Estimating what you missed</strong> &mdash; capture&ndash;recapture methods, long-standing
+  in software engineering and ecology before we applied them here.</li>
+  <li><strong>Registry-vs-publication discrepancy</strong> &mdash; Hartung &amp; Zarin (2014);
+  Wieseler (2013) on regulatory data completeness. They found it first.</li>
+  <li><strong>Missing-data handling in synthesis</strong> &mdash; Mavridis (2020).</li>
+</ul>
+
+<p><strong>What is ours:</strong> the assembly &mdash; offline-first, open-data-only, fail-closed,
+runnable on a weak laptop with no API key and no paywalled source. Not the parts.</p>
 <!-- SECTION 5 — Technical reference & security: every real component name lives here. -->
 <h2 id="technical">Technical reference &amp; security</h2>
 <p>The plain-language intro at the top calls this "AI rules, quality checks, and project memory." Here are the real component names, what each does, and the security model &mdash; for supervisors, IT staff, and the curious.</p>
