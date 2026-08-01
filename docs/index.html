@@ -383,6 +383,40 @@ a number it gives you.</p>
   <li><strong>Coverage floors are usually our failure, not the world's.</strong> When this
   toolkit reports "no data available", treat that as a statement about the toolkit's reach
   until you have checked a second source yourself.</li>
+
+  <li><strong>The self-audit's <code>CLEAN</code> means "no detector fired", not "correct".</strong>
+  Its 16 checks are text-pattern matching over one rendered page &mdash; they do not understand your
+  clinical question, cannot see your extraction sheet, your protocol or your actual search, and
+  cannot tell a well-justified decision from a badly-justified one, only whether a justification is
+  present. Nothing in it recomputes your pooled estimate from your raw data. The classes it
+  <em>cannot</em> catch are listed by name in the
+  <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/META-ERROR-LIBRARY.md#what-is-not-automated">error
+  library</a>, and they include the worst one on the list: a number that is simply wrong at the
+  source, inside a table that is internally consistent.</li>
+
+  <li><strong>The double-count check is bounded, and matches exactly.</strong> It searches subsets
+  of 2&ndash;5 rows in tables up to 60 rows; anything larger returns <code>INCONCLUSIVE</code>, which
+  is honest but is not a check. And it finds sums that match to the patient &mdash; a duplicate where
+  one report dropped two patients for missing data will not match, and will not be found.</li>
+
+  <li><strong>The contamination list is a list.</strong> The template-leak detector knows the donor
+  strings from <em>our</em> corpus. Your template will leak different words and it will not know
+  them. Two of its rules exist only because running it on real files produced false positives
+  ("Conflicts of interest: None declared" is correct English; <code>NaN</code> inside a
+  <code>&lt;script&gt;</code> is ordinary JavaScript). Expect more.</li>
+
+  <li><strong>The optional pooling witness has a known false FAIL.</strong> Its scale-invariance
+  relation doubles every effect without rescaling the variances, which is not a change of units &mdash;
+  so a <em>correct</em> random-effects estimator fails it by construction (measured ratio 1.862, not
+  2.000, because &tau;&sup2; absorbs the spread). The relation is valid for fixed-effect pooling only.
+  The audit names this rather than hiding it.</li>
+
+  <li><strong>The adversarial cross-family gating is not in the free-tier kit.</strong> The
+  model-dependent half of this work &mdash; running a finding past independent model families to see
+  whether it survives &mdash; needs paid API access and cannot run offline. It is documented as
+  optional guidance, not shipped as a capability, and its own limit is the one stated above: a
+  multi-family panel gives roughly two effective independent votes, not one per model. What you get
+  for free is the deterministic half, which is the half that does not need a model at all.</li>
 </ul>
 
 <h3 id="prior-art">Prior art &mdash; we are mostly not first</h3>
@@ -435,6 +469,42 @@ runnable on a weak laptop with no API key and no paywalled source. Not the parts
 <h4>Method and standards you can map your own work to</h4>
 <p>The rules that guide the agent picked up new method guidance too &mdash; for example, requiring a held-out test split before any &ldquo;we tuned or optimised it&rdquo; claim, and a just-in-time rule index so the agent loads only the rules it needs for the task in front of it. The method also encourages an <strong>open-data-only, provenance-verified way of correcting published results</strong>: rebuild a number from freely-available sources (PubMed, ClinicalTrials.gov, Europe PMC), and where it doesn't hold up, <em>add</em> a corrected value beside the original with a link back to its source &mdash; never overwrite. These checks are written to follow and cite recognised standards &mdash; the <strong>Cochrane Handbook, Chapter 6</strong> (the right effect measure for the kind of data), <strong>GRADE</strong> indirectness, and the <strong>transitivity</strong> assumption &mdash; and the whole ecosystem is mapped to the 2025 <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/RAISE-alignment.md">RAISE framework for responsible AI in evidence synthesis</a>, so you can see &mdash; and learn &mdash; where your own project meets the bar.</p>
 
+<h4>A library of real meta-analysis errors &mdash; and a self-audit that looks for them</h4>
+
+<p>A new optional layer, and the most directly useful one if you are writing a review rather than
+building tools. It has two halves.</p>
+
+<p>The <strong><a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/META-ERROR-LIBRARY.md">meta-analysis
+error library</a></strong> catalogues ways a meta-analysis goes wrong &mdash; each class with a
+plain-language description, a real worked example with real numbers, why it slips past a careful
+reader, and how to detect and correct it. Every class was found in an actual review or an actual
+generated dashboard; none were invented to round out a list. The most surprising finding is worth
+stating up front: across 97 generated review dashboards audited one file at a time, the three
+near-universal defects were <em>not</em> statistical. They were a status badge that was green
+because someone wrote it green (97/97), a provenance claim the page was not entitled to make
+(97/97), and a pooling engine that would combine things that do not belong together (96/97). The
+arithmetic was almost always right; the framing around it almost never was.</p>
+
+<p>The second half is machinery, not advice. <code>scripts/meta-self-audit.py</code> points 16
+deterministic detectors at your own single-file dashboard &mdash; <strong>offline,
+standard-library-only, no API key, no AI call, about a second on a weak laptop</strong>. It looks
+for a continuous outcome reported as a ratio, an effect measure that contradicts the extracted
+data, the same trial counted twice (a subset-sum over the participant column &mdash; the check that
+catches a pooled trial entered alongside its own component arms), a point estimate printed outside
+its own interval, Egger's test run below k=10, a PRISMA flow that does not add up,
+&ldquo;fragility index = 0, therefore robust&rdquo;, a missing harms synthesis, template text
+describing the wrong drug, a commit timestamp claimed as PROSPERO registration, and more. Each
+finding comes with the evidence and the correction, not just a flag.</p>
+
+<p>It is <strong>fail-closed by construction</strong>: there is deliberately no verdict called
+&ldquo;passed&rdquo;. A check that cannot establish the facts it needs returns
+<code>INCONCLUSIVE</code> and exits non-zero, because &ldquo;I could not check this&rdquo; quietly
+becoming &ldquo;this is fine&rdquo; is itself one of the catalogued errors &mdash; and a tool that
+committed it while detecting it would not deserve to be believed. If you have Overmind installed it
+can additionally reuse Overmind's metamorphic witness to test your pooling code against invariants
+any correct implementation must satisfy. The detectors' own blind spots are listed above under
+<a href="#limits">what this toolkit cannot do</a>, and in more detail in the library.</p>
+
 <h4>Staying current</h4>
 <p>To pull the latest starter without losing your memory or your own edits, run <code>update-ecosystem.ps1</code> (add <code>-Full</code> to also refresh Sentinel, Overmind, and ProjectIndex). Think of it as the update button for the whole kit.</p>
 
@@ -451,6 +521,7 @@ runnable on a weak laptop with no API key and no paywalled source. Not the parts
   <tr><td>Sentinel (optional)</td><td>Pre-push hook with ~50 rules (around 20 of them blocking; the exact counts grow over time — run <code>python -m sentinel list-rules</code> for the current set) that catch the common AI-agent defects (hardcoded paths, placeholder HMAC, silent sentinels, XSS sinks, empty-DataFrame access, leaked secrets, lockfile integrity, baseline drift) in about 2 seconds per push.</td></tr>
   <tr><td>Overmind + TruthCert (optional)</td><td>On-demand verifier that runs tests + smoke + numerical baselines and emits HMAC-signed certification bundles for submissions.</td></tr>
   <tr><td>ProjectIndex (optional)</td><td>Portfolio tracker + fail-closed reconcile script that catches registry drift.</td></tr>
+  <tr><td>Meta self-audit (optional)</td><td>16 offline, deterministic detectors you point at your own meta-analysis dashboard (<code>python scripts/meta-self-audit.py MY_REVIEW.html</code>). Standard library only, no API key. Fail-closed: no verdict called "passed"; an unestablishable check returns <code>INCONCLUSIVE</code> and exits non-zero. Paired with the <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/META-ERROR-LIBRARY.md">meta-analysis error library</a>, which explains each class it looks for and the classes it cannot catch.</td></tr>
   <tr><td>long-term-plan (optional)</td><td>Weekly-refreshed deterministic backlog reranker. No LLM in the loop. Clones <a href="https://github.com/mahmood726-cyber/long-term-plan">mahmood726-cyber/long-term-plan</a> as a reference; you replace its ideas with your own.</td></tr>
 </table>
 

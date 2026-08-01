@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Example review — passes the self-audit</title></head>
+<body>
+<!--
+  A deliberately minimal, deliberately CORRECT single-file review, kept as a
+  fixture so `meta-self-audit.py` is provably able to return CLEAN. A detector
+  suite that can only ever fire is not a check -- the same reason every detector
+  in tests/test_meta_self_audit.py has a known-good case as well as a known-bad
+  one.
+
+  Run it:
+      python scripts/meta-self-audit.py templates/meta-self-audit/example_clean_review.html
+      echo $?    # 0
+
+  Read it as a checklist of what the detectors are looking FOR: an effect
+  measure that matches the data type, a trials table whose denominators don't
+  sum into each other, a headline labelled with the method that produced it,
+  harms pooled alongside efficacy, a PRISMA flow that reconciles, no
+  small-study machinery below k=10, and a badge whose colour is computed.
+-->
+
+<h1>Example review — pooled risk ratio (Hartung-Knapp), all-cause mortality</h1>
+<span id="status-badge">INTERNAL CHECKS PASSED</span>
+
+<p><strong>Prespecified analysis:</strong> random-effects pooling with the
+Hartung-Knapp (HKSJ) interval. The headline below is the HKSJ estimate.</p>
+
+<p><strong>Headline (HKSJ):</strong> risk ratio 0.82 (95% CI 0.71 to 0.95),
+k = 12 trials, 8,431 participants.</p>
+
+<h2>Included trials</h2>
+<table>
+  <tr><th>Trial</th><th>N</th><th>Events/Total (intervention)</th></tr>
+  <tr><td>Trial A 2016</td><td>612</td><td>41/306</td></tr>
+  <tr><td>Trial B 2017</td><td>734</td><td>52/367</td></tr>
+  <tr><td>Trial C 2017</td><td>489</td><td>30/244</td></tr>
+  <tr><td>Trial D 2018</td><td>903</td><td>61/451</td></tr>
+  <tr><td>Trial E 2018</td><td>571</td><td>38/285</td></tr>
+  <tr><td>Trial F 2019</td><td>688</td><td>45/344</td></tr>
+  <tr><td>Trial G 2019</td><td>812</td><td>55/406</td></tr>
+  <tr><td>Trial H 2020</td><td>759</td><td>49/379</td></tr>
+  <tr><td>Trial I 2020</td><td>643</td><td>42/321</td></tr>
+  <tr><td>Trial J 2021</td><td>877</td><td>58/438</td></tr>
+  <tr><td>Trial K 2021</td><td>701</td><td>46/350</td></tr>
+  <tr><td>Trial L 2022</td><td>642</td><td>40/321</td></tr>
+</table>
+
+<h2>Harms</h2>
+<p>Serious adverse events were pooled as a co-primary outcome: risk ratio 1.04
+(95% CI 0.88 to 1.23). All-cause discontinuation is reported separately as a
+tolerability proxy, not an adverse event.</p>
+
+<h2>Small-study effects</h2>
+<p>Egger's test was run because k = 12 exceeds the threshold of 10 recommended
+by the Cochrane Handbook: p = 0.41. The funnel plot is shown above.</p>
+
+<h2>Search</h2>
+<p>We searched MEDLINE, Embase and CENTRAL from 2010 to 2026. Last search run:
+2026. Report generated: 2026. Eligibility was not restricted by publication
+date or by comparator type; both placebo-controlled and active-comparator
+trials were eligible.</p>
+
+<h2>PRISMA flow</h2>
+<p>Records identified: 1200. Duplicates removed: 200. Records screened: 1000.
+Records excluded: 940. Full-text articles assessed: 60. Full-text articles
+excluded: 48. Studies included: 12.</p>
+
+<h2>Registration</h2>
+<p>The protocol was committed before data extraction began. The commit
+timestamp is a tamper-evident local record of the protocol date. This review is
+not registered on PROSPERO.</p>
+
+<script>
+  // MEL-06: the badge colour is DERIVED from the verdict object, never written
+  // as a literal. This is the whole difference between a badge that can fail
+  // and a badge that is decoration.
+  const verdict = { status: "PASS", checks: 12, failed: 0 };
+  const el = document.getElementById("status-badge");
+  el.textContent = verdict.status === "PASS"
+    ? "INTERNAL CHECKS PASSED"
+    : "CHECKS INCOMPLETE — DO NOT CITE";
+  el.style.background = verdict.status === "PASS" ? "#28a745" : "#d73a49";
+</script>
+</body>
+</html>

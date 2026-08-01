@@ -128,6 +128,59 @@ Emits one of: `PASS`, `CERTIFIED`, `FAIL`, `UNVERIFIED`, `REJECT`.
 A passing Overmind verdict is the only authoritative ship signal. Don't
 promote project status from "memory" or stale prose.
 
+### Pre-submission: the meta self-audit
+
+Sentinel checks your *code*. Overmind checks that your project *verifies*.
+Neither reads your meta-analysis as a meta-analysis. That's the third gate:
+
+```bash
+python scripts/meta-self-audit.py MY_REVIEW.html
+```
+
+Sixteen deterministic detectors over your dashboard — offline, stdlib-only, no
+API key, no model call. They come from a corpus audit of 97 generated review
+dashboards plus an audit of the published literature in one clinical area; each
+class is written up with a real worked example in
+[`docs/META-ERROR-LIBRARY.md`](docs/META-ERROR-LIBRARY.md).
+
+Read the library even if your dashboard comes back `CLEAN`. The single most
+useful thing in it is not a detector — it's the finding that in that corpus the
+three near-universal defects were **not statistical**. The pooling arithmetic
+was almost always right. What was wrong was a badge that was green because
+someone wrote it green (97/97), a provenance claim the artefact wasn't entitled
+to make (97/97), and an engine that would pool incompatible things (96/97).
+Those are the defects a statistics course does not teach you to look for.
+
+Verdicts: `CLEAN` (0), `DEFECTS-FOUND` (1), `INCONCLUSIVE` (2). There is no
+verdict called "passed" — a check that can't establish its facts exits non-zero
+rather than defaulting to fine. That's the same fail-closed discipline as the
+`UNVERIFIED` verdict above, for the same reason.
+
+> **What it can't do.** It reads one rendered page. It can't see your extraction
+> sheet, your protocol or your actual search string, it doesn't understand your
+> clinical question, and it never recomputes your pooled estimate from raw data.
+> The error classes it *cannot* catch are named in the library's "What is not
+> automated" table — and they include the worst one, a number that's simply
+> wrong at the source inside a table that's internally consistent. `CLEAN` means
+> "no detector fired", not "correct".
+
+### Optional: adversarial cross-family review (not free, not offline)
+
+The model-dependent half of this method — running a finding past independent
+model families to see whether it survives — is **deliberately not shipped** in
+the kit. It needs paid API access across vendors, so it can't run offline and
+isn't something the free-tier path gets automatically. It's described here as
+guidance, with its real limit stated: a panel drawn from different model
+families gives roughly **two effective independent votes, not one per model**.
+Don't read panel agreement as replication.
+
+If you have the access, the pattern that works: give each family the *same
+evidence inline* (so it needs no file tools), ask it to **refute** rather than
+review, and count a finding as surviving only if a majority fail to refute it.
+If you don't have the access, you lose nothing structural — the deterministic
+detectors above are the half that doesn't need a model at all, and in the corpus
+audit they're the half that found the near-universal defects.
+
 ## Token economy — drive deterministic tools with a config, don't compute in chat
 
 The fastest way to exhaust a free Gemini quota is to make the **agent itself the
