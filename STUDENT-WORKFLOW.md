@@ -147,8 +147,9 @@ Read the library even if your dashboard comes back `CLEAN`. The single most
 useful thing in it is not a detector — it's the finding that in that corpus the
 three near-universal defects were **not statistical**. The pooling arithmetic
 was almost always right. What was wrong was a badge that was green because
-someone wrote it green (97/97), a provenance claim the artefact wasn't entitled
-to make (97/97), and an engine that would pool incompatible things (96/97).
+someone wrote it green (532 of 626), a provenance claim the artefact wasn't
+entitled to make (540 of 626), and an engine that would pool incompatible
+things (610 of 626).
 Those are the defects a statistics course does not teach you to look for.
 
 Verdicts: `CLEAN` (0), `DEFECTS-FOUND` (1), `INCONCLUSIVE` (2). There is no
@@ -163,6 +164,26 @@ rather than defaulting to fine. That's the same fail-closed discipline as the
 > automated" table — and they include the worst one, a number that's simply
 > wrong at the source inside a table that's internally consistent. `CLEAN` means
 > "no detector fired", not "correct".
+
+### When a check sends you back for a better number
+
+A detector tells you a number is wrong or missing; it can't tell you what the
+right one is. [`docs/SOURCING-METHOD.md`](docs/SOURCING-METHOD.md) is the
+open-data route to it — the hierarchy in yield order (supplementary tables of
+prior meta-analyses first, then PMC / Europe PMC, then FDA statistical reviews
+and EMA EPARs, then ClinicalTrials.gov posted results), all free, no login.
+
+Three rules from it are worth internalising before you start:
+
+- **Every number carries a provenance line** naming which table it came from,
+  written when you change it. Provenance reconstructed later is a guess wearing
+  a citation's clothes.
+- **Corrections go beside the original, never over it.** Overwriting destroys
+  the evidence that a correction happened and leaves your reader unable to tell
+  a transcription fix from a silent re-analysis.
+- **If you can't source it, leave the original and say so.** A documented gap is
+  a contribution. A substituted guess is not — and if a gate only goes green
+  after you edit a trial ID or a date, the gate just found something.
 
 ### Optional: adversarial cross-family review (not free, not offline)
 

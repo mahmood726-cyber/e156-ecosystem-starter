@@ -32,7 +32,7 @@ verifier, and ProjectIndex registry.
 | **AACT cockpit** | **v0.6.0** | `scripts/install-aact.ps1` clones [aact-cockpit](https://github.com/mahmood726-cyber/aact-cockpit) at a pinned commit and persists `AACT_COCKPIT_PATH`. A local DuckDB-backed cockpit for large-scale ClinicalTrials.gov/AACT analysis that emits self-auditing e156 capsules. Clone is free; **running** needs `duckdb`+`numpy` (opt-in `-WithDataDeps`/`--with-data-deps`) **and a local AACT snapshot**. Zero-setup path: read the committed `analyses/` + `templates/` examples. |
 | **AACT kit** *(library)* | **v0.1.0** | `scripts/install-aact-kit.ps1` clones [aact-kit](https://github.com/mahmood726-cyber/aact-kit) at a pinned commit and persists `AACT_KIT_PATH`. The shared **library** other CT.gov projects import: one API to resolve / load / validate / aggregate AACT across five local backends (Postgres, SQLite, ZIP, pipe-delimited TSV dir, CSV dir). Only hard dep is `pandas` (`psycopg2` optional); install is opt-in `-WithDeps`/`--with-deps`. Zero-setup path: read `src/aact_kit/` + `README.md`. **Distinct from the AACT cockpit** above (which is a DuckDB analysis app). |
 | **Pairwise70 workbench** | **v0.6.0** | `scripts/install-pairwise70.ps1` clones [pairwise70-workbench](https://github.com/mahmood726-cyber/pairwise70-workbench) at a pinned commit and persists `PAIRWISE70_PATH`. An offline gallery hub that shows + reproduces every Pairwise70-family analysis; **static HTML, stats run offline in the browser, no Python deps, no tokens** — just open `index.html`. |
-| **Meta self-audit + error library** | **v0.1.0** | `python scripts/meta-self-audit.py MY_REVIEW.html` runs 16 deterministic detectors over a single-file meta-analysis dashboard — **stdlib-only, offline, zero deps, no LLM**. Mined from a 97-dashboard corpus audit plus a published-literature error registry; every class is documented with a real worked example in [`docs/META-ERROR-LIBRARY.md`](docs/META-ERROR-LIBRARY.md). Fail-closed: verdicts are `CLEAN` / `DEFECTS-FOUND` / `INCONCLUSIVE` — there is deliberately **no verdict called "passed"**, and an unestablishable check exits non-zero. Optional `--metamorphic` reuses Overmind's `MetamorphicWitness` for pooling invariants. Blind spots documented alongside the detectors. |
+| **Meta self-audit + error library** | **v0.2.0** | `python scripts/meta-self-audit.py MY_REVIEW.html` runs 18 deterministic detectors over a single-file meta-analysis dashboard — **stdlib-only, offline, zero deps, no LLM**. Mined from a 626-dashboard corpus audit plus a published-literature error registry; every class is documented with a real worked example in [`docs/META-ERROR-LIBRARY.md`](docs/META-ERROR-LIBRARY.md), and [`docs/SOURCING-METHOD.md`](docs/SOURCING-METHOD.md) sets out where to source a replacement number from open data (supplements → PMC → FDA/EMA → ClinicalTrials.gov), with provenance lines and corrections recorded *beside* the original rather than over it. Fail-closed: verdicts are `CLEAN` / `DEFECTS-FOUND` / `INCONCLUSIVE` — there is deliberately **no verdict called "passed"**, and an unestablishable check exits non-zero. Optional `--metamorphic` reuses Overmind's `MetamorphicWitness` for pooling invariants. Blind spots documented alongside the detectors. |
 | **E156 capsule + chart-kit** | **v0.6.0** | `scripts/install-e156-capsules.ps1` copies the **bundled** `templates/e156-capsule/` (no clone, **zero network**) and persists `E156_CAPSULES_PATH`. The E156 7-sentence capsule contract + a ~120-line **stdlib-only SVG chart-kit** (forest plot, no numpy/matplotlib) + a **pre-baked sample** capsule and chart you can read with **zero tokens**. The lowest-footprint layer in the ecosystem. |
 
 > **The five layers above let students recreate Mahmood's meta-analysis tooling end-to-end.** Each defaults to an **offline / low-token** path and keeps heavy deps opt-in — see [`STUDENT-TOKEN-BUDGET.md`](STUDENT-TOKEN-BUDGET.md) for where tokens are (and aren't) spent.
@@ -188,7 +188,7 @@ For each repo found:
 Skips: `node_modules`, `venv`, `.venv`, `__pycache__`, `build`, `dist`,
 `site-packages`, `.pytest_cache`, `.mypy_cache`.
 
-### Auditing your own meta-analysis (v0.1.0)
+### Auditing your own meta-analysis (v0.2.0)
 
 ```bash
 python scripts/meta-self-audit.py MY_REVIEW.html            # human-readable
@@ -200,16 +200,20 @@ python scripts/meta-self-audit.py MY_REVIEW.html \
     --metamorphic templates/meta-self-audit/pooling_probe.py
 ```
 
-Sixteen deterministic detectors over one self-contained HTML report. **Offline,
+Eighteen deterministic detectors over one self-contained HTML report. **Offline,
 standard library only, no API key, no model call**, about a second on a weak
 laptop. Each class is documented with a real worked example in
 [`docs/META-ERROR-LIBRARY.md`](docs/META-ERROR-LIBRARY.md):
 
 | | Detectors |
 |---|---|
-| **Critical** | continuous outcome pooled as a ratio · effect measure vs data type · the same trial counted twice (subset-sum on denominators) · point estimate outside its own interval · impossible value on the ratio scale · false-green badge · headline vs prespecified estimate |
-| **High** | Egger/funnel/trim-fill/meta-regression below k=10 (and the `k >= 3` gate bug itself) · PRISMA arithmetic that doesn't reconcile · "FI=0 means robust" · missing harms synthesis · studies outside the stated search window |
+| **Critical** | continuous outcome pooled as a ratio · effect measure vs data type · the same trial counted twice (subset-sum on denominators) · point estimate outside its own interval · impossible value on the ratio scale · false-green badge · headline vs prespecified estimate · forest-plot labels reversed or permuted against their values |
+| **High** | Egger/funnel/trim-fill/meta-regression below k=10 (and the `k >= 3` gate bug itself) · PRISMA arithmetic that doesn't reconcile · "FI=0 means robust" · missing harms synthesis · studies outside the stated search window · malformed or self-contradictory registry identifiers |
 | **Medium** | template contamination and placeholder leaks · commit timestamp claimed as PROSPERO registration · unjustified date floor / placebo-only comparator filter · stale search sold as current |
+
+When a detector sends you back for a better number,
+[`docs/SOURCING-METHOD.md`](docs/SOURCING-METHOD.md) is the open-data route to
+it — and the rule that a correction goes *beside* the original, never over it.
 
 Verdicts are `CLEAN` (exit 0), `DEFECTS-FOUND` (exit 1) and `INCONCLUSIVE`
 (exit 2). There is deliberately **no verdict called "passed"**: a detector that

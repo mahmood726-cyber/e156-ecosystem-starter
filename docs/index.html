@@ -405,6 +405,26 @@ a number it gives you.</p>
   ("Conflicts of interest: None declared" is correct English; <code>NaN</code> inside a
   <code>&lt;script&gt;</code> is ordinary JavaScript). Expect more.</li>
 
+  <li><strong>The forest-plot order check cannot see a picture.</strong> It compares the label and
+  value arrays, and the plot order against the extraction table. A forest plot drawn into a
+  <code>&lt;canvas&gt;</code>, rendered server-side, or pasted in as an image is reported
+  <em>not applicable</em> &mdash; which is honest, and is not a check. It also cannot tell you the
+  order is wrong if labels and values were mis-paired back at extraction and have been consistently
+  mis-paired ever since; it only sees two views of one file disagreeing.</li>
+
+  <li><strong>The registry-ID check is offline, so it cannot confirm an ID is the right one.</strong>
+  It knows that an NCT number is well formed, that the page does not contradict itself about which
+  trial an ID belongs to, and that an ID is not older than its own number block. A perfectly
+  well-formed NCT that belongs to a <em>different</em> trial passes clean. Confirming an identifier
+  points at the study you actually analysed means opening the registry record yourself &mdash; and a
+  wrong-but-well-formed ID is worse than a missing one, because it sends your reader to a real trial
+  page and so makes your provenance look stronger than it is.</li>
+
+  <li><strong>Quiet on our corpus is not the same as sensitive.</strong> Those two detectors fired on
+  none of 431 real dashboards. That measures how rarely they cry wolf on already-repaired files. It
+  is not evidence of how much they would catch in yours; that rests on the known-bad fixtures in the
+  test suite, where each detector must fire on a defect and stay silent on a correct page.</li>
+
   <li><strong>The optional pooling witness has a known false FAIL.</strong> Its scale-invariance
   relation doubles every effect without rescaling the variances, which is not a change of units &mdash;
   so a <em>correct</em> random-effects estimator fails it by construction (measured ratio 1.862, not
@@ -479,13 +499,19 @@ error library</a></strong> catalogues ways a meta-analysis goes wrong &mdash; ea
 plain-language description, a real worked example with real numbers, why it slips past a careful
 reader, and how to detect and correct it. Every class was found in an actual review or an actual
 generated dashboard; none were invented to round out a list. The most surprising finding is worth
-stating up front: across 97 generated review dashboards audited one file at a time, the three
-near-universal defects were <em>not</em> statistical. They were a status badge that was green
-because someone wrote it green (97/97), a provenance claim the page was not entitled to make
-(97/97), and a pooling engine that would combine things that do not belong together (96/97). The
+stating up front: across <strong>626 generated review dashboards</strong> audited and repaired one
+file at a time, the three near-universal defects were <em>not</em> statistical. They were a pooling
+engine that would combine things that do not belong together (610 of 626, 97%), a provenance claim
+the page was not entitled to make &mdash; a commit timestamp offered as prospective registration
+(540, 86%) &mdash; and a status badge that was green because someone wrote it green (532, 85%). The
 arithmetic was almost always right; the framing around it almost never was.</p>
 
-<p>The second half is machinery, not advice. <code>scripts/meta-self-audit.py</code> points 16
+<p class="note" style="font-size:0.93em; color:#555;">Those counts are a point-in-time snapshot
+(2026-08-02) of one corpus from one generator &mdash; dashboards with a shared ancestor, which is
+exactly why three defects reach 85%. Read them as &ldquo;this is what a family of generated reviews
+gets wrong&rdquo;, not as a field-wide rate.</p>
+
+<p>The second half is machinery, not advice. <code>scripts/meta-self-audit.py</code> points 18
 deterministic detectors at your own single-file dashboard &mdash; <strong>offline,
 standard-library-only, no API key, no AI call, about a second on a weak laptop</strong>. It looks
 for a continuous outcome reported as a ratio, an effect measure that contradicts the extracted
@@ -496,6 +522,22 @@ its own interval, Egger's test run below k=10, a PRISMA flow that does not add u
 describing the wrong drug, a commit timestamp claimed as PROSPERO registration, and more. Each
 finding comes with the evidence and the correction, not just a flag.</p>
 
+<p>Two detectors were added after the first release, both for defects the corpus run had catalogued
+but not yet automated. <strong>Forest-plot rows labelled in a different order from their
+values</strong> &mdash; the pooled diamond stays correct, because the summary row never reads the
+labels, so the only way to catch it by eye is to check an individual trial against its source.
+And <strong>a registry identifier that cannot be right</strong>: a malformed NCT number, or the
+same ID attached to two different trials, or an ID stated against a year before that block of
+numbers existed. Both check the file's own internal consistency; neither needs the network.</p>
+
+<p class="note" style="font-size:0.93em; color:#555;">Worth knowing how those two were tuned,
+because it is the honest part. Both were run across <strong>431 real dashboards</strong>, and three
+separate rounds of false positives were traced to root cause and removed &mdash; a proximity rule
+that bound one trial ID to the nearest capitalised word and so fired on 38 of 40 files; a sample
+size of 1,912 read as a publication year; and one trial name split in two because it appeared once
+escaped and once decoded. None of those were caught by the unit tests. A test suite written by
+whoever wrote the detector shares its blind spots; only real files find that class of bug.</p>
+
 <p>It is <strong>fail-closed by construction</strong>: there is deliberately no verdict called
 &ldquo;passed&rdquo;. A check that cannot establish the facts it needs returns
 <code>INCONCLUSIVE</code> and exits non-zero, because &ldquo;I could not check this&rdquo; quietly
@@ -504,6 +546,29 @@ committed it while detecting it would not deserve to be believed. If you have Ov
 can additionally reuse Overmind's metamorphic witness to test your pooling code against invariants
 any correct implementation must satisfy. The detectors' own blind spots are listed above under
 <a href="#limits">what this toolkit cannot do</a>, and in more detail in the library.</p>
+
+<h4>Where to get the number &mdash; a sourcing method you can follow</h4>
+
+<p>The library tells you what is wrong; the new
+<strong><a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/SOURCING-METHOD.md">sourcing
+method</a></strong> tells you where to get the number that puts it right, using only free sources.
+It sets out the hierarchy in <em>yield</em> order &mdash; supplementary tables of prior published
+meta-analyses first (the richest source, and the one most often skipped), then open-access primaries
+via PMC and Europe PMC, then FDA statistical reviews and EMA EPARs, then ClinicalTrials.gov posted
+results. No subscription, no institutional login, no API key.</p>
+
+<p>Three rules do most of the work. Every number carries a <strong>provenance line</strong> naming
+which table it came from, written at the moment you change it. Corrected values go <strong>beside
+the original, never over it</strong>, with a source link &mdash; overwriting destroys the only
+evidence that a correction happened and leaves your reader unable to tell a transcription fix from a
+silent re-analysis. And if you cannot source a number, you <strong>leave the original standing and
+say so</strong>; a documented gap is a contribution, a substituted guess is not.</p>
+
+<p>It also argues for retiring <strong>publication-date exclusions</strong>. A bare &ldquo;published
+after 2010&rdquo; floor is rarely a methodological choice &mdash; open sources reach older trials
+perfectly well, and the filter biases toward recent, better-funded, more-published work, which is
+the same direction as publication bias stacked on top of it. Either state what the cut-off actually
+means or drop it.</p>
 
 <h4>Staying current</h4>
 <p>To pull the latest starter without losing your memory or your own edits, run <code>update-ecosystem.ps1</code> (add <code>-Full</code> to also refresh Sentinel, Overmind, and ProjectIndex). Think of it as the update button for the whole kit.</p>

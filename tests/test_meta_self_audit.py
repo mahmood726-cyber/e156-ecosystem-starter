@@ -452,6 +452,192 @@ def test_mel16_is_inconclusive_without_a_report_date(msa):
     assert run(msa, "d16_search_currency", "<p>Last search run: 2022.</p>").status == msa.INCONCLUSIVE_
 
 
+# ---------------------------------------------------------------- MEL-17
+GOOD_17_SCRIPT = ("var studies = ['ARISTOTLE','ROCKET-AF','RE-LY','ENGAGE'];"
+                  "var estimates = [0.79, 0.88, 0.91, 0.87];")
+
+
+def test_mel17_fires_when_label_and_value_arrays_differ_in_length(msa):
+    scripts = "var studies = ['A-TRIAL','B-TRIAL','C-TRIAL','D-TRIAL']; var estimates = [0.8, 0.9, 1.1];"
+    r = run(msa, "d17_reversed_forest_labels", "<p>Forest plot</p>", scripts)
+    assert r.status == msa.FIRED
+    assert "different lengths" in r.findings[0].title
+
+
+def test_mel17_fires_when_plot_labels_reverse_the_table_order(msa):
+    body = ("<table><tr><th>Study</th><th>Events</th></tr>"
+            "<tr><td>ALPHA</td><td>10/50</td></tr>"
+            "<tr><td>BETA</td><td>12/50</td></tr>"
+            "<tr><td>GAMMA</td><td>14/50</td></tr>"
+            "<tr><td>DELTA</td><td>16/50</td></tr></table>")
+    scripts = "var labels = ['DELTA','GAMMA','BETA','ALPHA'];"
+    r = run(msa, "d17_reversed_forest_labels", body, scripts)
+    assert r.status == msa.FIRED
+    assert "reversal" in r.findings[0].title
+
+
+def test_mel17_fires_when_both_axis_ends_favour_the_same_arm(msa):
+    body = "<p>Favours treatment</p><p>Favours treatment</p>"
+    r = run(msa, "d17_reversed_forest_labels", body)
+    assert r.status == msa.FIRED
+    assert "same arm" in r.findings[0].title
+
+
+def test_mel17_quiet_on_aligned_arrays(msa):
+    assert run(msa, "d17_reversed_forest_labels", "<p>Forest plot</p>",
+               GOOD_17_SCRIPT).status == msa.CLEAN_
+
+
+def test_mel17_quiet_on_a_correctly_labelled_axis(msa):
+    body = "<p>Favours intervention</p><p>Favours control</p>"
+    r = run(msa, "d17_reversed_forest_labels", body)
+    assert r.status != msa.FIRED
+
+
+def test_mel17_is_not_applicable_when_there_is_nothing_machine_readable(msa):
+    """A canvas-drawn plot is unverifiable, and must say so rather than pass."""
+    r = run(msa, "d17_reversed_forest_labels", "<p>See the forest plot image below.</p>")
+    assert r.status == msa.NOT_APPLICABLE
+    assert "canvas" in r.detail
+
+
+def test_mel17_same_order_is_not_a_permutation(msa):
+    body = ("<table><tr><th>Study</th><th>N</th></tr>"
+            "<tr><td>ALPHA</td><td>50</td></tr><tr><td>BETA</td><td>50</td></tr>"
+            "<tr><td>GAMMA</td><td>50</td></tr></table>")
+    scripts = "var labels = ['ALPHA','BETA','GAMMA'];"
+    assert run(msa, "d17_reversed_forest_labels", body, scripts).status != msa.FIRED
+
+
+# ---------------------------------------------------------------- MEL-18
+def test_mel18_fires_on_a_short_nct_number(msa):
+    body = "<p>ARISTOTLE (NCT0041290) reported 2011.</p>"
+    r = run(msa, "d18_registry_identifier", body)
+    assert r.status == msa.FIRED
+    assert "7 digits" in r.findings[0].title
+
+
+def _reg_table(rows: str) -> str:
+    return ("<table><tr><th>Trial</th><th>NCT</th><th>Year</th></tr>" + rows + "</table>")
+
+
+def test_mel18_fires_when_one_nct_carries_two_trial_names(msa):
+    body = _reg_table("<tr><td>ALPHA</td><td>NCT04576988</td><td>2023</td></tr>"
+                      "<tr><td>BRAVO</td><td>NCT04576988</td><td>2024</td></tr>")
+    r = run(msa, "d18_registry_identifier", body)
+    assert r.status == msa.FIRED
+    assert any("more than one trial name" in f.title for f in r.findings)
+
+
+def test_mel18_allows_one_publication_to_report_two_trials(msa):
+    """Real false positive: 'Siegal 2015' covers ANNEXA-A and ANNEXA-R.
+
+    One paper reporting two registered trials is ordinary, so an author-year
+    label spanning two NCTs must not be called a contradiction.
+    """
+    body = _reg_table("<tr><td>Siegal 2015</td><td>NCT02220725</td><td>2015</td></tr>"
+                      "<tr><td>Siegal 2015</td><td>NCT01758432</td><td>2015</td></tr>")
+    assert run(msa, "d18_registry_identifier", body).status == msa.CLEAN_
+
+
+def test_mel18_does_not_split_one_name_across_two_encodings(msa):
+    """Real false positive: 'explorer\\u21224' vs its decoded form read as two trials."""
+    scripts = ('var a=[{"nct":"NCT03196284","name":"explorer\\u21224"}];'
+               'var b={"nct":"NCT03196284","name":"explorer™4"};')
+    r = run(msa, "d18_registry_identifier", "<p>trials</p>", scripts)
+    assert not any("more than one trial name" in f.title for f in r.findings)
+
+
+def test_mel18_ignores_an_undecodable_name_rather_than_calling_it_a_conflict(msa):
+    scripts = ('var a=[{"nct":"NCT03196284","name":"explorer4"}];'
+               'var b=[{"nct":"NCT03196284","name":"explorer�4"}];')
+    r = run(msa, "d18_registry_identifier", "<p>trials</p>", scripts)
+    assert not any("more than one trial name" in f.title for f in r.findings)
+
+
+def test_mel18_tolerates_a_longer_form_of_the_same_name(msa):
+    body = _reg_table("<tr><td>ASTRAEA</td><td>NCT01860976</td><td>2017</td></tr>"
+                      "<tr><td>ASTRAEA trial</td><td>NCT01860976</td><td>2017</td></tr>")
+    assert run(msa, "d18_registry_identifier", body).status == msa.CLEAN_
+
+
+def test_mel18_fires_when_the_id_postdates_the_study_year(msa):
+    """An NCT06 number cannot label a trial that reported in 2005."""
+    body = _reg_table("<tr><td>OLDTRIAL</td><td>NCT06123456</td><td>2005</td></tr>")
+    r = run(msa, "d18_registry_identifier", body)
+    assert r.status == msa.FIRED
+    assert any("before that ID block was issued" in f.title for f in r.findings)
+
+
+def test_mel18_reads_the_year_from_its_column_not_from_a_sample_size(msa):
+    """Real false positive: the N column's '1912' was read as a publication year."""
+    body = ("<table><tr><th>Trial</th><th>NCT</th><th>N</th><th>Year</th></tr>"
+            "<tr><td>ALPHA</td><td>NCT00286455</td><td>1912</td><td>2007</td></tr></table>")
+    r = run(msa, "d18_registry_identifier", body)
+    assert not any("before that ID block" in f.title for f in r.findings)
+
+
+def test_mel18_does_not_manufacture_a_conflict_from_repeated_mentions(msa):
+    """Real false positive: one NCT recurring in prose and JS bound to AUTO/TRIALS/AACT.
+
+    Binding is structural now, so an ID repeated in narrative text and script
+    state cannot disagree with itself.
+    """
+    body = _reg_table("<tr><td>ASTRAEA</td><td>NCT01860976</td><td>2017</td></tr>")
+    scripts = ('var TRIALS=[{"id":"NCT01860976","name":"ASTRAEA"}];'
+               'var AUTO_INCLUDE_TRIAL_IDS=new Set(["NCT01860976"]);'
+               'var src="AACT RANDOMIZED QUADRUPLE NCT01860976";')
+    r = run(msa, "d18_registry_identifier", body, scripts)
+    assert r.status == msa.CLEAN_
+
+
+def test_mel18_fires_on_a_malformed_doi(msa):
+    r = run(msa, "d18_registry_identifier", "<p>NCT04576988. doi: 10.1016</p>")
+    assert r.status == msa.FIRED
+    assert any("Malformed DOI" in f.title for f in r.findings)
+
+
+def test_mel18_fires_on_a_pmid_with_letters(msa):
+    r = run(msa, "d18_registry_identifier", "<p>NCT04576988 PMID: 3950A078</p>")
+    assert r.status == msa.FIRED
+    assert any("Malformed PMID" in f.title for f in r.findings)
+
+
+def test_mel18_quiet_on_well_formed_consistent_identifiers(msa):
+    body = ("<p>ALPHA (NCT04576988), published 2023, PMID: 37256748, "
+            "doi: 10.1056/NEJMoa2213558.</p>"
+            "<p>BRAVO (NCT04811092), published 2025.</p>")
+    assert run(msa, "d18_registry_identifier", body).status == msa.CLEAN_
+
+
+def test_mel18_does_not_fire_on_a_plausible_block_year_pairing(msa):
+    """NCT04 with a 2020 date is ordinary and must stay quiet."""
+    body = "<p>RECENT (NCT04576988), published 2020.</p>"
+    assert run(msa, "d18_registry_identifier", body).status == msa.CLEAN_
+
+
+def test_mel18_does_not_fire_on_adjacent_xml_tag_text(msa):
+    """Real false positive: pages carrying PubMed XML reported PMID 'DataBankList'.
+
+    The old pattern allowed a zero-length separator after 'PMID', so the tag name
+    that followed it in the markup was read as the PMID's value.
+    """
+    body = "<p>NCT04576988 PMID DataBankList DataBankName ClinicalTrials.gov</p>"
+    r = run(msa, "d18_registry_identifier", body)
+    assert not any("Malformed PMID" in f.title for f in r.findings)
+
+
+def test_mel18_does_not_fire_on_the_word_doi_in_prose(msa):
+    body = "<p>NCT04576988. Each record was checked against its doi-based citation.</p>"
+    r = run(msa, "d18_registry_identifier", body)
+    assert not any("Malformed DOI" in f.title for f in r.findings)
+
+
+def test_mel18_is_not_applicable_without_identifiers(msa):
+    r = run(msa, "d18_registry_identifier", "<p>Four trials were pooled.</p>")
+    assert r.status == msa.NOT_APPLICABLE
+
+
 # ---------------------------------------------------------------- verdict algebra
 def test_a_fired_detector_can_never_yield_clean(msa):
     reports = [msa.DetectorReport("MEL-01", "x", msa.CRITICAL, msa.FIRED),

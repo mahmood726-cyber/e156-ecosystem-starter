@@ -1083,6 +1083,396 @@ def d16_search_currency(doc: Dashboard) -> DetectorReport:
     return rep
 
 
+# --------------------------------------------------------------------------
+# MEL-17 / MEL-18 -- the two classes the first release catalogued but did not
+# automate. Both are corpus classes (fix recipe 6 and 12) and both turn out to
+# be checkable offline, from the page's own internal consistency, without a
+# network call or a registry lookup.
+# --------------------------------------------------------------------------
+
+# Array names that plausibly hold row LABELS vs row VALUES in a forest plot.
+_LABEL_ARRAY = re.compile(
+    r"\b(?:study|studies|trial|trials|label|labels|names?|studyLabels|rowLabels)\s*[:=]\s*\[(?P<body>[^\]]{0,4000})\]",
+    re.IGNORECASE,
+)
+_VALUE_ARRAY = re.compile(
+    r"\b(?:estimates?|effects?|yi|values?|points?|means?|ors?|rrs?|hrs?|logor|logrr)\s*[:=]\s*\[(?P<body>[^\]]{0,4000})\]",
+    re.IGNORECASE,
+)
+_STR_ITEM = re.compile(r"""["']([^"']{1,80})["']""")
+
+
+def _string_items(body: str) -> list[str]:
+    return [s.strip() for s in _STR_ITEM.findall(body) if s.strip()]
+
+
+def _numeric_items(body: str) -> list[str]:
+    # Only treat it as a numeric array if it is numbers, not quoted strings.
+    if _STR_ITEM.search(body):
+        return []
+    return [t for t in re.findall(rf"(?<![\w.]){NUM}(?![\w.])", body)]
+
+
+def d17_reversed_forest_labels(doc: Dashboard) -> DetectorReport:
+    """MEL-17 -- forest-plot rows labelled in a different order from their values.
+
+    Fix-recipe class 6. Three internal-consistency checks, all offline:
+
+      (a) a label array and a value array of DIFFERENT length -- then at least
+          one row is certainly mislabelled, whatever the intended order;
+      (b) the label array and the study column of a table holding the SAME set
+          of names in a DIFFERENT order -- a permutation, of which the exact
+          reversal is the common case;
+      (c) both ends of the "favours" axis naming the same arm.
+
+    What it cannot see is a plot drawn into a canvas or rendered server-side
+    with no machine-readable arrays left on the page. That is NOT_APPLICABLE,
+    not CLEAN, and it is listed under the library's blind spots.
+    """
+    rep = DetectorReport("MEL-17", "reversed-or-permuted-forest-labels", CRITICAL, CLEAN_)
+    blob = doc.script_src
+
+    labels = [_string_items(m.group("body")) for m in _LABEL_ARRAY.finditer(blob)]
+    labels = [ls for ls in labels if len(ls) >= 3]
+    values = [_numeric_items(m.group("body")) for m in _VALUE_ARRAY.finditer(blob)]
+    values = [vs for vs in values if len(vs) >= 3]
+
+    # (a) parallel arrays that cannot line up
+    for ls in labels:
+        for vs in values:
+            if len(ls) != len(vs):
+                rep.status = FIRED
+                rep.findings.append(Finding(
+                    "MEL-17", CRITICAL,
+                    f"Forest-plot label and value arrays have different lengths ({len(ls)} vs {len(vs)})",
+                    f"labels[{len(ls)}]: {', '.join(ls[:4])}...; values[{len(vs)}]: {', '.join(vs[:4])}...",
+                    "Parallel arrays of unequal length guarantee at least one row carries another "
+                    "row's number. Build the plot from ONE array of records ({label, est, lo, hi}) "
+                    "so a label cannot drift from its estimate.",
+                ))
+                break
+        if rep.status == FIRED:
+            break
+
+    # (b) same names, different order, between the array and the table
+    table_names: list[str] = []
+    for table in doc.tables:
+        if not table or len(table) < 4:
+            continue
+        header = [c.lower() for c in table[0]]
+        if not any(h.startswith(("study", "trial")) for h in header):
+            continue
+        col = [row[0].strip() for row in table[1:] if row and row[0].strip()]
+        if len(col) >= 3:
+            table_names = col
+            break
+
+    if table_names:
+        for ls in labels:
+            if sorted(x.lower() for x in ls) == sorted(x.lower() for x in table_names) and \
+                    [x.lower() for x in ls] != [x.lower() for x in table_names]:
+                reversed_exactly = [x.lower() for x in ls] == [x.lower() for x in reversed(table_names)]
+                rep.status = FIRED
+                rep.findings.append(Finding(
+                    "MEL-17", CRITICAL,
+                    "Forest-plot labels are a "
+                    + ("reversal" if reversed_exactly else "permutation")
+                    + " of the extraction-table order",
+                    f"plot: {', '.join(ls[:5])}; table: {', '.join(table_names[:5])}",
+                    "The same studies appear in both, in different orders. If the values were taken "
+                    "in table order, every row is now labelled with another trial's result. Sort ONE "
+                    "record list and render both views from it.",
+                ))
+                break
+
+    # (c) both ends of the axis favouring the same arm
+    # No space in the character class: with one, the capture runs straight past
+    # the next "Favours" and the two ends collapse into a single match.
+    fav = [m.group(1).lower()
+           for m in re.finditer(r"\bfavou?rs?\s+([A-Za-z][\w\-]{2,28})\b", doc.text, re.IGNORECASE)]
+    if len(fav) >= 2 and len(set(fav)) == 1:
+        rep.status = FIRED
+        rep.findings.append(Finding(
+            "MEL-17", CRITICAL,
+            "Both ends of the forest-plot axis favour the same arm",
+            f"'favours {fav[0]}' appears on both sides ({len(fav)} occurrences, all identical)",
+            "One side of the null line favours the intervention and the other favours the "
+            "comparator. Identical labels on both ends means the axis was copy-pasted; a reader "
+            "cannot tell which direction helps.",
+        ))
+
+    if rep.status == CLEAN_ and not labels and not table_names:
+        rep.status = NOT_APPLICABLE
+        rep.detail = ("no machine-readable label array or study table found; a canvas-drawn or "
+                      "server-rendered forest plot cannot be checked from the file alone")
+    return rep
+
+
+# Registry identifiers, with the format each registry actually issues.
+_NCT_RE = re.compile(r"\bNCT\s*0*(\d{1,12})\b")
+_NCT_WELLFORMED = re.compile(r"\bNCT\d{8}\b")
+_ISRCTN_RE = re.compile(r"\bISRCTN\s*(\d{1,12})\b", re.IGNORECASE)
+_EUDRACT_RE = re.compile(r"\b(\d{4})-(\d{6})-(\d{2})\b")
+# Both of these require a REAL separator and a value that starts like the thing
+# it claims to be. An earlier `[:\s]*` (zero-or-more) glued "PMID" to whatever
+# word followed it, so every page carrying PubMed XML reported a malformed PMID
+# of 'DataBankList'. Found by running the detector over real corpus dashboards,
+# not by a unit test -- hence test_mel18_does_not_fire_on_adjacent_xml_tag_text.
+_PMID_RE = re.compile(r"\bPMID[:=\s]+([0-9][0-9A-Za-z]{0,12})\b", re.IGNORECASE)
+_DOI_RE = re.compile(r"\bdoi[:=\s]+(10\S{0,80})", re.IGNORECASE)
+
+# ClinicalTrials.gov assigns NCT numbers in rough registration order. These are
+# deliberately CONSERVATIVE floors -- the earliest year each block plausibly
+# began -- so the check only fires on an impossibility, never on a close call.
+_NCT_BLOCK_FLOOR = {0: 1999, 1: 2009, 2: 2013, 3: 2016, 4: 2019, 5: 2021, 6: 2023}
+
+
+def _id_name_year_rows(doc: Dashboard) -> list[tuple[str, str | None, int | None]]:
+    """(NCT, trial name, year) triples read from tables, by column HEADER.
+
+    Structure, not proximity. A column is used only when its header says what it
+    holds, so a sample size is never read as a year and a stray acronym is never
+    read as a trial name. Tables without a usable header contribute nothing --
+    which is a smaller claim than guessing, and the honest one.
+    """
+    out: list[tuple[str, str | None, int | None]] = []
+    for table in doc.tables:
+        if len(table) < 2:
+            continue
+        header = [c.strip().lower() for c in table[0]]
+        id_col = name_col = year_col = None
+        for i, h in enumerate(header):
+            if id_col is None and re.search(r"\bnct\b|registry|registration|trial id|study id", h):
+                id_col = i
+            elif name_col is None and re.fullmatch(r"(trial|study|name|trial name|study name)s?", h):
+                name_col = i
+            elif year_col is None and re.search(r"\byear\b|published", h):
+                year_col = i
+        if id_col is None:
+            continue
+        for row in table[1:]:
+            if id_col >= len(row):
+                continue
+            m = _NCT_WELLFORMED.search(row[id_col])
+            if not m:
+                continue
+            name = None
+            if name_col is not None and name_col < len(row):
+                cand = row[name_col].strip()
+                # A name cell that is itself an ID tells us nothing.
+                if cand and not _NCT_RE.fullmatch(cand):
+                    name = cand.lower()
+            year = None
+            if year_col is not None and year_col < len(row):
+                ym = re.search(r"\b((?:19|20)\d{2})\b", row[year_col])
+                if ym:
+                    year = int(ym.group(1))
+            out.append((m.group(0), name, year))
+
+    # Second structured source: trial records embedded in script state. A
+    # single-file dashboard usually draws its table client-side, so the static
+    # HTML carries no <table> at all and the checks above would never run. These
+    # are still structural -- an object literal that names its own keys -- not
+    # proximity guesses.
+    src = doc.script_src
+    for m in re.finditer(r"\{([^{}]{0,800})\}", src):
+        body = m.group(1)
+        idm = re.search(r"""["']?nct["']?\s*:\s*["'](NCT\d{8})["']""", body, re.IGNORECASE)
+        if not idm:
+            continue
+        out.append((idm.group(1), _rec_name(body), _rec_year(body)))
+    # `NCT01860976:{name:"ASTRAEA", year:2017}` -- the ID is the key.
+    for m in re.finditer(r"\b(NCT\d{8})\s*:\s*\{([^{}]{0,800})\}", src):
+        out.append((m.group(1), _rec_name(m.group(2)), _rec_year(m.group(2))))
+    # `nctAcronyms:{NCT01860976:"ASTRAEA"}` -- the ID maps straight to a name.
+    for m in re.finditer(r"""\b(NCT\d{8})\s*:\s*["']([^"']{1,60})["']""", src):
+        out.append((m.group(1), _clean_name(m.group(2)), None))
+    return out
+
+
+def _clean_name(raw: str) -> str | None:
+    """Normalise a trial-name cell, or None if it is not a name at all.
+
+    A record that labels a trial with its own ID (`NCT00534313: "NCT00534313"`)
+    carries no naming information, and treating it as a name would invent a
+    disagreement with whatever the real label is elsewhere.
+    """
+    cand = raw.strip()
+    if not cand or _NCT_RE.fullmatch(cand):
+        return None
+    # The same name reaches us twice in different encodings: once as a literal
+    # \uXXXX escape out of the script source, once already decoded out of the
+    # rendered text. Comparing those two forms reported "explorer™4" and
+    # "explorer<?>4" as two different trials. Decode the escapes first, and give
+    # up on a name that still carries U+FFFD -- a name we cannot decode is one we
+    # cannot compare, and an undecodable byte is a separate defect (MEL-13),
+    # not evidence that the ID is wrong.
+    try:
+        cand = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), cand)
+    except ValueError:
+        return None
+    if "�" in cand:
+        return None
+    return cand.lower()
+
+
+def _rec_name(body: str) -> str | None:
+    m = re.search(r"""["']?name["']?\s*:\s*["']([^"']{1,60})["']""", body, re.IGNORECASE)
+    return _clean_name(m.group(1)) if m else None
+
+
+def _rec_year(body: str) -> int | None:
+    m = re.search(r"""["']?year["']?\s*:\s*["']?((?:19|20)\d{2})""", body, re.IGNORECASE)
+    return int(m.group(1)) if m else None
+
+
+def d18_registry_identifier(doc: Dashboard) -> DetectorReport:
+    """MEL-18 -- a registry or bibliographic identifier that cannot be right.
+
+    Fix-recipe class 12. Offline, so this does NOT verify that an ID resolves to
+    the trial claimed -- only that the page is internally consistent and that the
+    identifier is well formed. Checks:
+
+      (a) malformed identifiers (NCT that is not 8 digits, EudraCT, PMID, DOI);
+      (b) one NCT bound to two different trial names, or one trial name bound to
+          two NCTs -- a contradiction the page makes against itself;
+      (c) an NCT number issued years after the study year stated beside it.
+
+    (c) uses conservative block floors, so it fires on "NCT06… (2005)" and stays
+    quiet on anything within a few years of the boundary.
+    """
+    rep = DetectorReport("MEL-18", "wrong-or-malformed-registry-identifier", HIGH, CLEAN_)
+    blob = doc.text + "\n" + doc.script_src
+
+    # (a) malformed --------------------------------------------------------
+    for m in re.finditer(r"\bNCT\s*[0-9]+\b", blob):
+        tok = m.group(0)
+        if not _NCT_WELLFORMED.match(tok.replace(" ", "")):
+            digits = re.sub(r"\D", "", tok)
+            rep.status = FIRED
+            rep.findings.append(Finding(
+                "MEL-18", HIGH,
+                f"Malformed ClinicalTrials.gov identifier {tok.strip()!r} ({len(digits)} digits, expected 8)",
+                " ".join(blob[max(0, m.start() - 70): m.end() + 70].split())[:220],
+                "An NCT number is 'NCT' followed by exactly 8 digits. A dropped or extra digit "
+                "usually points at a different real trial, so this is not a cosmetic typo. "
+                "Re-copy it from the registry record you actually read.",
+            ))
+            break
+
+    for m in _EUDRACT_RE.finditer(blob):
+        yr = int(m.group(1))
+        if not (2004 <= yr <= 2030):
+            rep.status = FIRED
+            rep.findings.append(Finding(
+                "MEL-18", HIGH,
+                f"EudraCT number with an impossible year segment: {m.group(0)}",
+                " ".join(blob[max(0, m.start() - 60): m.end() + 60].split())[:200],
+                "A EudraCT number is YYYY-NNNNNN-CC and the register opened in 2004. Check the "
+                "identifier against the EU CTR record.",
+            ))
+            break
+
+    for m in _PMID_RE.finditer(blob):
+        pid = m.group(1)
+        if not pid.isdigit() or len(pid) > 8:
+            rep.status = FIRED
+            rep.findings.append(Finding(
+                "MEL-18", HIGH,
+                f"Malformed PMID {pid!r}",
+                " ".join(blob[max(0, m.start() - 60): m.end() + 60].split())[:200],
+                "A PMID is up to 8 digits, no letters. If this came from a DOI or a PMC ID, label "
+                "it as such -- PMC IDs and PMIDs are different numbers for the same paper.",
+            ))
+            break
+
+    for m in _DOI_RE.finditer(blob):
+        val = m.group(1).rstrip(".,;)")
+        if not val.startswith("10.") or "/" not in val:
+            rep.status = FIRED
+            rep.findings.append(Finding(
+                "MEL-18", HIGH,
+                f"Malformed DOI {val!r}",
+                " ".join(blob[max(0, m.start() - 60): m.end() + 60].split())[:200],
+                "A DOI is '10.<registrant>/<suffix>'. A bare registrant prefix does not resolve.",
+            ))
+            break
+
+    # (b) the page contradicting itself ------------------------------------
+    # Bind IDs to names ONLY from a table row, where the page itself asserts the
+    # pairing. An earlier version bound each ID to the nearest ALL-CAPS token in
+    # the surrounding text. Because one NCT legitimately appears a dozen times in
+    # a real dashboard (extraction table, citation list, JS state), it bound to
+    # the true acronym once and to AUTO / TRIALS / AACT / RANDOMIZED elsewhere,
+    # then reported the disagreement it had itself manufactured -- it fired on 38
+    # of 40 real dashboards. Proximity is the wrong instrument for this; a longer
+    # exclusion list would only have moved the noise around.
+    rows = _id_name_year_rows(doc)
+    by_id: dict[str, set[str]] = {}
+    by_name: dict[str, set[str]] = {}
+    for nct, name, _year in rows:
+        if not name:
+            continue
+        by_id.setdefault(nct, set()).add(name)
+        by_name.setdefault(name, set()).add(nct)
+
+    for nct, names in by_id.items():
+        # One label being a longer form of the other ("ASTRAEA" / "ASTRAEA trial")
+        # is a formatting difference, not a contradiction.
+        names = {n for n in names if not any(n != o and n in o for o in names)}
+        if len(names) > 1:
+            rep.status = FIRED
+            rep.findings.append(Finding(
+                "MEL-18", HIGH,
+                f"One registry ID is attached to more than one trial name: {nct}",
+                f"{nct} appears beside {', '.join(sorted(names))}",
+                "An NCT number identifies exactly one study record. At least one of these rows "
+                "carries the wrong ID -- and an ID copied from the row above is how a whole block "
+                "of extraction rows ends up pointing at one trial.",
+            ))
+            break
+
+    # The mirror check -- one NAME against several IDs -- is deliberately NOT
+    # made. One publication routinely reports two registered trials, so an
+    # author-year label legitimately spans two NCTs: on the corpus, "Siegal 2015"
+    # covers ANNEXA-A and ANNEXA-R, and "Kullberg 2017" behaves the same way.
+    # Firing there would report correct pages as broken, and a reader who learns
+    # to dismiss this detector will dismiss it when it is right.
+
+    # (c) an ID issued after the study it labels ---------------------------
+    # The year comes from a column whose HEADER says year -- never from a 4-digit
+    # number lying near the ID. Free-text scanning read the sample size "1912" as
+    # a publication year and called an ordinary 2006-block NCT impossible.
+    # The block is the first TWO digits: an 8-digit NCT always begins with 0, so
+    # reading one digit puts every trial in block 0 and the check dies silently.
+    for nct, _name, year in rows:
+        if year is None:
+            continue
+        floor = _NCT_BLOCK_FLOOR.get(int(nct[3:5]))
+        if floor is None or year >= floor:
+            continue
+        rep.status = FIRED
+        rep.findings.append(Finding(
+            "MEL-18", HIGH,
+            f"{nct} is listed against the year {year}, before that ID block was "
+            f"issued (not before ~{floor})",
+            f"the table pairs {nct} with {year}",
+            "ClinicalTrials.gov issues NCT numbers in registration order, so a trial cannot "
+            "carry an ID minted years after it reported. Either the ID or the year belongs to "
+            "a different trial -- check both against the registry record.",
+        ))
+        break
+
+    if rep.status == CLEAN_ and not _NCT_RE.search(blob) and not _ISRCTN_RE.search(blob) \
+            and not _PMID_RE.search(blob):
+        rep.status = NOT_APPLICABLE
+        rep.detail = "no registry or bibliographic identifier found on the page"
+    elif rep.status == CLEAN_ and not rows:
+        rep.detail = ("identifier formats are well formed; no table pairing IDs with trial names "
+                      "was found, so the cross-reference checks did not run")
+    return rep
+
+
 DETECTORS = (
     d01_continuous_in_ratio_model,
     d02_measure_vs_data_type,
@@ -1100,6 +1490,8 @@ DETECTORS = (
     d14_prospero_overclaim,
     d15_exclusion_mis_scoping,
     d16_search_currency,
+    d17_reversed_forest_labels,
+    d18_registry_identifier,
 )
 
 

@@ -5,12 +5,22 @@ to publish one. Every class here was found in a real review or a real generated
 dashboard. None of them were invented to make a list look complete.
 
 Most of them are not statistics mistakes. That is the finding worth carrying
-away: in a corpus of 97 generated review dashboards audited one file at a time,
-the three near-universal defects were a **badge that was green because someone
-wrote it green** (97/97), a **provenance claim the artefact was not entitled to
-make** (97/97), and a **pooling engine that would happily combine things that do
-not belong together** (96/97). The pooling arithmetic was almost always right.
-The framing around it almost never was.
+away. In a corpus of **626 generated review dashboards**, each audited and
+repaired one file at a time with a per-number provenance line, the three
+near-universal defects were:
+
+| Defect | Apps repaired | Share |
+|---|---|---|
+| A **pooling engine that would combine things that do not belong together** | 610 | 97.4% |
+| A **provenance claim the artefact was not entitled to make** (a commit timestamp offered as prospective registration) | 540 | 86.3% |
+| A **badge that was green because someone wrote it green** | 532 | 85.0% |
+
+Then a long tail: donor-template text describing the wrong drug (63, 10.1%),
+and everything else in low single figures.
+
+The pooling arithmetic was almost always right. The framing around it almost
+never was. If you take one thing from this document, take that: the defect that
+survives review is rarely in the estimator.
 
 You can check your own dashboard against the automated half of this list:
 
@@ -29,14 +39,20 @@ Three sources, all first-hand:
 
 | Source | What it is | Size |
 |---|---|---|
-| Corpus fix ledger | Generated meta-analysis dashboards audited and repaired one file at a time, each with a commit and a per-number provenance line | 97 dashboards |
+| Corpus fix ledger | Generated meta-analysis dashboards audited and repaired one file at a time, each with a commit and a per-number provenance line | 626 dashboards |
 | Fix recipe | The defect classes those repairs were checked against | 19 classes |
 | Error-reversal registry | Defects found in the **published** literature during a heart-failure network-meta-analysis audit, plus our own errors recorded by the same standard | 19 published-literature records |
 
-Two honest limits on that base:
+Three honest limits on that base:
 
 - **It is one corpus and one clinical area for the published-literature half.**
   Frequencies below describe *these* files. Do not quote them as field-wide rates.
+- **The counts are a point-in-time snapshot** taken on 2026-08-02, from a ledger
+  that was still being written to. They will not reproduce exactly against a
+  later copy, and they describe dashboards produced by one generator — a corpus
+  with a shared ancestor, which is precisely why three defects reach 85%+.
+  A defect that is near-universal *here* may be absent from work built another
+  way.
 - **Worked examples from the published literature are described structurally,
   not attributed.** The numbers and the mechanism are real and reproducible from
   the cited public sources; the review and its authors are not named here,
@@ -213,14 +229,14 @@ Simpson's paradox in a random-effects model.
 
 ## C6 — The badge is green because someone wrote it green
 
-**Detector: `MEL-06`** — **found in 97 of 97 dashboards audited**
+**Detector: `MEL-06`** — **repaired in 532 of 626 dashboards (85%)**
 
 **What it is.** A status badge — "INTERNAL CHECKS PASSED", "VERIFIED", "100%
 integrity" — whose colour is a literal in the HTML rather than a value computed
 from the verdict. It was green before any check ran, and it stays green after
 one starts failing.
 
-**A real example.** Every one of the 97 dashboards in the corpus. The most
+**A real example.** Five hundred and thirty-two dashboards in the corpus. The most
 common shape: a green "checks passed" banner at the top of a page that, further
 down, reported a numerical witness as skipped for a missing baseline. A skipped
 witness is not a pass — but nothing in the page's rendering knew that.
@@ -271,7 +287,7 @@ abstract, not in a supplement.
 ## C8 — Incompatible things pooled into one estimate
 
 **Detector: partly `MEL-02`; needs human judgement — see [What is not
-automated](#what-is-not-automated)** — **96 of 97 dashboards could do this**
+automated](#what-is-not-automated)** — **610 of 626 dashboards (97%) could do this**
 
 **What it is.** Mixed estimands, mixed endpoints or mixed populations combined
 into a single pooled number. A pooling engine that can emit an estimate for an
@@ -284,9 +300,42 @@ things.
 **How to correct it.** Make it structurally impossible rather than merely
 discouraged: the engine should **fail closed** — refuse to emit a pooled
 estimate at all for an incompatible set, rather than emit one with a warning. A
-warning is a thing readers scroll past. In this corpus, 96 of 97 dashboards
-would emit the estimate anyway. That is the fix that mattered most and the one
+warning is a thing readers scroll past. In this corpus, 610 of 626 dashboards
+would emit the estimate anyway — the single most common defect of the whole run. That is the fix that mattered most and the one
 that needed a code change rather than a note.
+
+---
+
+## C9 — Forest-plot rows labelled in a different order from their values
+
+**Detector: `MEL-17`**
+
+**What it is.** The estimates are drawn in one order and the study names in
+another. Every row of the plot then attributes a result to the wrong trial. The
+common special case is an exact reversal — one list sorted ascending, the other
+left in extraction order.
+
+**A real example.** A plot built from two parallel arrays, `labels[]` and
+`estimates[]`, where a trial was later removed from one array and not the other.
+From that row down, every label sat beside its neighbour's number, and the
+totals row — computed from the values, not the labels — stayed correct.
+
+**Why it fools a reader.** The pooled diamond is right. The heterogeneity
+statistic is right. Nothing in the summary row is affected, because the summary
+never reads the labels. The only way to see it is to check an individual study's
+number against its source, which is exactly the check a forest plot is supposed
+to save you from.
+
+**How to detect it.** Pick the two or three trials you know best and read their
+estimates off the plot. `MEL-17` checks it three ways, all from the file's own
+internal consistency: label and value arrays of different lengths; a label array
+that is a permutation (or exact reversal) of the extraction table's order; and
+both ends of the axis carrying the same "favours" label.
+
+**How to correct it.** Do not re-sort one array to match the other — that fixes
+the symptom and leaves the cause. Build the plot from a **single list of
+records** (`{label, estimate, lo, hi}`) and sort that list. A label cannot drift
+from its estimate if they were never in separate containers.
 
 ---
 
@@ -410,11 +459,50 @@ gets into a review that never searched for it.
 
 ---
 
+## H6 — A registry identifier that cannot be right
+
+**Detector: `MEL-18`**
+
+**What it is.** An NCT number, PMID or DOI that is malformed, or that the page
+itself contradicts — the same registry ID attached to two different trials, or
+an ID stated against a year before that ID block existed.
+
+**A real example.** In the corpus, three dashboards were repaired for wrong
+identifiers or denominators. The mechanism worth learning is the cheapest one:
+an ID copied down a column from the row above, so a block of extraction rows all
+point at one trial. Nothing about the resulting table looks wrong.
+
+**Why it fools a reader.** Nobody proofreads an eight-digit number. `NCT0158432`
+and `NCT01584321` are the same string to a skimming eye, but the second is a
+real and different study. Worse, a wrong-but-well-formed ID sends your reader to
+a real trial record that is not the one you analysed — so your provenance chain
+looks *stronger* than an honest gap would.
+
+**How to detect it.** `MEL-18` checks that every identifier is well formed (an
+NCT is `NCT` + exactly 8 digits; a PMID is digits only; a DOI is
+`10.<registrant>/<suffix>`), that no single ID is bound to two different trial
+names, and that no ID is listed against a year before that block was issued —
+ClinicalTrials.gov assigns numbers in registration order, so an `NCT06…` cannot
+label a trial that reported in 2005.
+
+It reads those pairings only from **structure** — a table column whose header
+says what it holds, or a trial record in the page's own script state. An earlier
+version bound each ID to the nearest capitalised word instead and fired on 38 of
+40 real dashboards, because one NCT legitimately appears a dozen times per page
+and picked up `AUTO`, `TRIALS` and `AACT` as trial names.
+
+**How to correct it.** Re-copy the identifier from the registry record you
+actually opened, not from the row above and not from another review's table.
+Offline, no tool can tell you an ID points at the right trial — only that the
+page contradicts itself. That check is yours.
+
+---
+
 # Medium
 
 ## M1 — Template contamination
 
-**Detector: `MEL-13`** — **found in 9 of 97 dashboards**
+**Detector: `MEL-13`** — **repaired in 63 of 626 dashboards (10%)**
 
 **What it is.** Text from the donor template survives generation and describes
 the wrong drug, the wrong disease or the wrong comparator. Or a placeholder
@@ -445,7 +533,7 @@ build. A leak that reached one page reached all of them.
 
 ## M2 — A commit timestamp claimed as prospective registration
 
-**Detector: `MEL-14`** — **found in 97 of 97 dashboards**
+**Detector: `MEL-14`** — **repaired in 540 of 626 dashboards (86%)**
 
 **What it is.** Wording to the effect that a git commit hash plus timestamp
 "constitutes" or "is equivalent to" PROSPERO / ICMJE prospective registration.
@@ -464,7 +552,7 @@ If you want registration, register.
 
 ## M3 — An eligibility filter that quietly narrows the question
 
-**Detector: `MEL-15`** — **flagged in 95 of 97 dashboards**
+**Detector: `MEL-15`**
 
 **What it is.** Two common shapes. A bare publication-date floor ("we excluded
 trials published before 2015") with no methodological reason. And a comparator
@@ -529,8 +617,15 @@ catch is the difference between using it and trusting it.
 from a pool, **flag it, do not add it**. Adding a trial changes the pooled
 estimate, k, the forest plot and every downstream statistic. That is a decision
 for a human with the protocol in front of them, not something to slip in during
-a cleanup pass. This rule is why the corpus audit flagged an eligibility concern
-on 95 of 97 dashboards and changed the pool on none of them.
+a cleanup pass.
+
+The corpus run enforced exactly this. Across 626 dashboards, two landmark trials
+were escalated to a human review queue — both for the same pulmonary-arterial-
+hypertension review — and **neither was added**. Both had a time-to-event or
+median primary endpoint with no 2×2 to extract, and adding them drove the render
+to `NaN`. The pool was left unchanged and the finding was written down instead.
+That is the outcome to copy: a documented gap beats a number you could not
+actually source.
 
 ---
 
@@ -594,7 +689,7 @@ the gate green by pointing it at code the dashboard does not run.
 
 Read this before you trust a `CLEAN`.
 
-- **`CLEAN` means "no detector fired", not "correct".** Sixteen detectors cannot
+- **`CLEAN` means "no detector fired", not "correct".** Eighteen detectors cannot
   cover the failure modes in [What is not automated](#what-is-not-automated),
   and those include the most serious class on the list — a number that is simply
   wrong at the source, in a table that is internally consistent.
@@ -625,9 +720,32 @@ Read this before you trust a `CLEAN`.
 - **No detector here checks your arithmetic** unless you pass `--metamorphic`,
   and even then it checks invariants, not correctness. Nothing in this layer
   recomputes your pooled estimate from your raw data.
-- **False positives happen, and two are already documented above.** When one
-  fires that you believe is wrong, the right response is to write down why —
-  that reasoning is what the next version of the detector is made of.
+- **`MEL-17` cannot see a picture.** It reads label and value arrays and table
+  order. A forest plot drawn into a `<canvas>`, rendered server-side, or shipped
+  as an image is reported `NOT_APPLICABLE` — which is honest, and is not a
+  check. It also cannot tell you the order is *wrong* when labels and values
+  were mis-paired at extraction time and have been consistently mis-paired ever
+  since; it only sees two views of the file disagreeing with each other.
+- **`MEL-18` cannot check an identifier against the registry.** It is offline.
+  It knows an NCT is well formed, that the page does not contradict itself, and
+  that an ID is not older than its own block. A perfectly well-formed NCT that
+  belongs to a different trial passes. Confirming an ID points at the study you
+  analysed requires opening the registry record, and no offline tool substitutes
+  for that.
+- **`MEL-18` deliberately does not flag one trial name against several IDs.**
+  One publication routinely reports two registered trials — in this corpus
+  "Siegal 2015" covers ANNEXA-A and ANNEXA-R. Checking it would report correct
+  pages as broken.
+- **Quiet on a corpus is not the same as sensitive.** These two detectors were
+  run across 431 real dashboards and fired on none of them, after three rounds
+  of false positives were traced and removed. That measures *specificity* on
+  already-repaired files. Their ability to catch a real defect is evidenced by
+  the known-bad fixtures in the test suite, not by that scan.
+- **False positives happen, and several are documented above.** Every one of
+  them was found by running the detectors over real files, never by a unit test
+  — a suite written by the same person who wrote the detector shares its blind
+  spots. When one fires that you believe is wrong, the right response is to
+  write down why; that reasoning is what the next version is made of.
 
 ---
 
@@ -638,6 +756,8 @@ Read this before you trust a `CLEAN`.
 | C1, C2 | **Cochrane Handbook ch.6** — choosing the effect measure for the data type |
 | C3 | Cochrane Handbook ch.23 — multi-arm and multi-report studies (unit-of-analysis) |
 | C7, C8 | **GRADE** indirectness; the **transitivity** assumption for indirect comparisons |
+| C9 | **PRISMA 2020** item 20b — results of individual studies must be presented so each can be identified |
+| H6 | **PRISMA 2020** item 13a / **AMSTAR-2** item 8 — studies described, and identified, in adequate detail |
 | H1 | **Cochrane Handbook §10.4.3.1** — do not test funnel-plot asymmetry below k=10 |
 | H2 | **PRISMA 2020** item 16 / flow diagram |
 | H4 | PRISMA 2020 item 13; **GRADE** — harms are part of certainty, not an appendix |
@@ -648,6 +768,41 @@ Read this before you trust a `CLEAN`.
 
 The mapping above is a self-assessment scaffold. Check the exact wording of any
 standard before you cite it in a submission — including this table.
+
+---
+
+# Method notes
+
+Three things we learned building this that generalise beyond it. They are method
+notes, not results — offered because they changed how we work, not because we
+have measured them.
+
+**An error library is an instrument, not a checklist.** This document started as
+a list of things to avoid and turned into something that finds things. Once a
+class is written down precisely enough to have a worked example, it usually
+becomes precise enough to automate — and once automated, it runs over every file
+instead of the ones you remembered to check. Nine of the classes here resisted
+that and are honestly filed under [what is not automated](#what-is-not-automated).
+The direction of travel matters more than the current count: every class you
+write down properly is a candidate detector, and the library gets sharper as you
+use it rather than staler.
+
+**Audit yourself before you trust yourself.** The registry these classes came
+from records our *own* errors by the same standard it applies to anyone else —
+37 content-changing errors, about two-thirds of which ran in the direction that
+flattered us. That ratio is the whole argument for this document. An error
+distribution centred on zero is noise; one skewed toward the author's interest
+is a bias, and it is the one you are least equipped to see in your own work.
+Apply the detectors to your own dashboard before you apply the reasoning to
+anyone else's.
+
+**Tests written by the detector's author share its blind spots.** Every false
+positive in these detectors was found by running them over real files, and none
+by the unit tests — the proximity rule that fired on 38 of 40 dashboards, the
+sample size read as a year, the trial name split across two encodings. The unit
+tests were all passing throughout. Write the tests, keep them in both
+directions, and then go run the thing on real data anyway, because the failure
+you cannot imagine is exactly the one you did not write a test for.
 
 ---
 
