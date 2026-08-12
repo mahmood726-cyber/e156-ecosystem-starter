@@ -68,6 +68,66 @@ least able to see in your own work.
 
 ---
 
+## A claim of ours that the evidence revised
+
+We started from the position that published syntheses fail on **two** counts:
+they do not search widely enough, and they do not check what they find. It is a
+natural pairing and we believed both halves equally.
+
+Six syntheses have now been adjudicated in depth. **Three are erroneous. All
+three failed at checking. None failed at breadth.**
+
+| Failure mode | Confirmed |
+|---|---|
+| **Search breadth** — a trial that exists and was never found | **0** |
+| **Checking** — a trial found, then entered wrongly | **3** |
+
+And all three checking failures are the *same species*: one trial counted as
+several, or characterised as something it is not. Two are the duplicate-identity
+case in [C3](#c3--the-same-trial-counted-twice). The third recorded a trial's
+comparator as the wrong drug and pooled it into a comparison it does not belong
+to. The common root is **matching on the citation string instead of on trial
+identity**.
+
+The single most informative case cuts directly against our original claim: the
+**worst** of the three had a *broader* search than several of the reviews that
+got the right answer — multiple databases, preprints, no date or language
+filter, and explicit translation of non-English text — and still produced a badly
+wrong pooled result, because it counted the same patients three times. **Breadth
+and checking are dissociable, and searching harder would not have caught either
+of the errors we found.**
+
+That matters for where anyone spends their effort. The remedies are different:
+
+- Breadth failure → add national indexes, registries beyond ClinicalTrials.gov,
+  preprints, non-English sources.
+- Checking failure → de-duplicate by **registry identifier**, not by citation
+  string; verify comparator and outcome definition at the primary source for
+  every included row.
+
+The second is what would have caught all three.
+
+**What this does not license.** Zero confirmed breadth failures means *not yet
+caught*, not *absent* — and the sample was selected on triage signals precisely
+to find checking problems, so it is biased toward finding them. There is also a
+real breadth limitation sitting in plain sight in the same audit: a
+Chinese-language trial was invisible to a MEDLINE-only search, because its
+journal is not indexed there. It simply did not cause an error in any of the six
+— one review found it anyway, another excluded it deliberately and said why.
+Breadth remains a plausible failure mode this sample has not caught in the act.
+
+*Denominator: six syntheses, two clinical areas, selected because they looked
+worth checking. `3 of 6` is a count, not a field rate, and must never be quoted
+as one.*
+
+We are recording this because a claim that survives contact with evidence is
+worth more than one that was never tested, and a claim that was revised is worth
+recording *as revised*. The registry behind this document applies that rule to
+our own errors too — see the note above about which direction our own mistakes
+ran in.
+
+---
+
 ## How to read a class
 
 Each entry has the same five parts:
@@ -170,11 +230,61 @@ problem. "US Carvedilol Program", "MOCHA", "PRECISE" read as four distinct
 studies to anyone who does not already know they are the same programme. The
 included-studies table is internally consistent. Nothing is misspelled.
 
+**A second example, from a different field and a different decade.** A
+cardio-renal review entered five rows for what are in fact two trials plus their
+own pooled analysis. Read as arm splits rather than names:
+
+| Row label | Intervention / control | What it is |
+|---|---|---|
+| first author, 2020 | 2833 / 2841 | trial A |
+| a co-author's *forename*, 2021 | 3686 / 3666 | trial B |
+| a different co-author, 2021 | 2833 / 2841 | **trial A again** |
+| another author, 2022 | 6519 / 6507 | **the pooled analysis of A and B** |
+| the same forename, 2022 | 3686 / 3666 | **trial B again** |
+
+The pooled row reconciles against its own neighbours **on both arms
+independently**: 2833 + 3686 = 6519, and 2841 + 3666 = 6507. Two exact hits on
+the same subset is not coincidence. A second review in the same area repeats the
+pattern, and there the duplicate hid behind a one-letter misspelling of the first
+author's surname — enough that two rows for one trial sat side by side
+undetected.
+
+Both reviews show the same pair of consequences, and the second is the serious
+one:
+
+1. Participant total inflated by roughly **half again to four-fifths** over the
+   number ever randomised for the question.
+2. **Every pooled interval falsely narrow**, because the same events enter the
+   variance calculation repeatedly. Both reported I² near 0 across most outcomes
+   — which is what pooling data against itself produces.
+
+That conjunction — **N inflated well past the trial universe, together with
+I² ≈ 0** — is a cheap screen anyone can run before reading a single method
+section. Low heterogeneity *alone* is not suspicious; consistent trials produce
+it legitimately. It is the co-occurrence that is diagnostic.
+
 **How to detect it.** Ignore the names and look at the denominators. For every
 row, ask whether its n equals the sum of some other rows' n. That is precisely
 what `MEL-03` does: subset-sum over the participant-count column, keyed on
 denominators, sizes 2–5, up to 60 rows. Bigger tables return `INCONCLUSIVE`
 rather than a false all-clear.
+
+For a review you did **not** write — a published paper's Table 1, typed into a
+CSV — use the companion screen, which adds arm-level reconciliation,
+near-duplicate matching under a transcription tolerance, and the I² co-signature:
+
+```bash
+python scripts/trial-identity-screen.py templates/trial-identity/finerenone_table1_example.csv \
+    --universe 22000 --i2 0
+python scripts/trial-identity-screen.py --selftest
+```
+
+The tolerance is not optional decoration: the second review above printed the
+same trial's arms as 2840/2833 in one row and 2830/2839 in another, against a
+registered split of 2833/2841. Exact matching finds neither. A tolerance buys
+that sensitivity at the cost of precision — two genuinely distinct trials of
+similar size will collide — so every hit is a prompt to check the registry
+identifier, never a verdict.
 
 **How to correct it.** Keep one row — the most complete report of that
 population — and re-pool. Also check dose-ranging trials: a trial contributing

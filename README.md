@@ -33,6 +33,8 @@ verifier, and ProjectIndex registry.
 | **AACT kit** *(library)* | **v0.1.0** | `scripts/install-aact-kit.ps1` clones [aact-kit](https://github.com/mahmood726-cyber/aact-kit) at a pinned commit and persists `AACT_KIT_PATH`. The shared **library** other CT.gov projects import: one API to resolve / load / validate / aggregate AACT across five local backends (Postgres, SQLite, ZIP, pipe-delimited TSV dir, CSV dir). Only hard dep is `pandas` (`psycopg2` optional); install is opt-in `-WithDeps`/`--with-deps`. Zero-setup path: read `src/aact_kit/` + `README.md`. **Distinct from the AACT cockpit** above (which is a DuckDB analysis app). |
 | **Pairwise70 workbench** | **v0.6.0** | `scripts/install-pairwise70.ps1` clones [pairwise70-workbench](https://github.com/mahmood726-cyber/pairwise70-workbench) at a pinned commit and persists `PAIRWISE70_PATH`. An offline gallery hub that shows + reproduces every Pairwise70-family analysis; **static HTML, stats run offline in the browser, no Python deps, no tokens** — just open `index.html`. |
 | **Meta self-audit + error library** | **v0.2.0** | `python scripts/meta-self-audit.py MY_REVIEW.html` runs 18 deterministic detectors over a single-file meta-analysis dashboard — **stdlib-only, offline, zero deps, no LLM**. Mined from a 626-dashboard corpus audit plus a published-literature error registry; every class is documented with a real worked example in [`docs/META-ERROR-LIBRARY.md`](docs/META-ERROR-LIBRARY.md), and [`docs/SOURCING-METHOD.md`](docs/SOURCING-METHOD.md) sets out where to source a replacement number from open data (supplements → PMC → FDA/EMA → ClinicalTrials.gov), with provenance lines and corrections recorded *beside* the original rather than over it. Fail-closed: verdicts are `CLEAN` / `DEFECTS-FOUND` / `INCONCLUSIVE` — there is deliberately **no verdict called "passed"**, and an unestablishable check exits non-zero. Optional `--metamorphic` reuses Overmind's `MetamorphicWitness` for pooling invariants. Blind spots documented alongside the detectors. |
+| **Count-recovery harness** | **v1.0.0** | `python templates/count-recovery/rapidmeta_count_harness.py --selftest` runs 14 pre-condition checks for per-arm 2×2 event-count extraction against **11 negative controls** — **stdlib-only, offline, zero deps, no LLM**. Every check exists because the mistake it catches was actually made on real data. Fail-closed: exit 1 on any BLOCK, and a BLOCKed extraction does not go downstream. Ships a runnable `example_extraction.json` + its committed report. The method it enforces is in [`COUNT_RECOVERY_PROCEDURE.md`](templates/count-recovery/COUNT_RECOVERY_PROCEDURE.md); the findings worth reading on their own — the registry adverse-events trap, and why a count that reproduces the published hazard ratio proves nothing — are in [`docs/REGISTRY-EXTRACTION-TRAPS.md`](docs/REGISTRY-EXTRACTION-TRAPS.md). |
+| **Trial-identity screen** | **v1.0.0** | `python scripts/trial-identity-screen.py table.csv --universe N --i2 X` screens an included-studies table for **one trial entered more than once** — **stdlib-only, offline, zero deps, no LLM**. Arm-level and total subset-sum, near-duplicate arm matching under a transcription tolerance, transposed-column detection, and the **N-inflation + I² ≈ 0 co-signature**. Takes a CSV typed out of a published paper, so it works on reviews you did *not* write (complementing `meta-self-audit.py`'s `MEL-03`, which reads your own dashboard). Verdicts `CLEAN` / `DEFECTS-FOUND` / `INCONCLUSIVE`; oversized tables fail closed rather than returning a false all-clear. |
 | **E156 capsule + chart-kit** | **v0.6.0** | `scripts/install-e156-capsules.ps1` copies the **bundled** `templates/e156-capsule/` (no clone, **zero network**) and persists `E156_CAPSULES_PATH`. The E156 7-sentence capsule contract + a ~120-line **stdlib-only SVG chart-kit** (forest plot, no numpy/matplotlib) + a **pre-baked sample** capsule and chart you can read with **zero tokens**. The lowest-footprint layer in the ecosystem. |
 
 > **The five layers above let students recreate Mahmood's meta-analysis tooling end-to-end.** Each defaults to an **offline / low-token** path and keeps heavy deps opt-in — see [`STUDENT-TOKEN-BUDGET.md`](STUDENT-TOKEN-BUDGET.md) for where tokens are (and aren't) spent.
@@ -231,6 +233,57 @@ Wire it into a pre-push hook alongside Sentinel if you want it enforced:
 ```bash
 python scripts/meta-self-audit.py MY_REVIEW.html || exit 1
 ```
+
+### Recovering per-arm event counts (v1.0.0)
+
+To pool a trial yourself instead of inheriting somebody else's pooled number, you
+need per-arm 2×2 counts. This is the machinery for getting them safely.
+
+```bash
+python templates/count-recovery/rapidmeta_count_harness.py --selftest   # 14 checks, 11 negative controls
+python templates/count-recovery/rapidmeta_count_harness.py --chain      # retrieval fallback order
+python templates/count-recovery/rapidmeta_count_harness.py example_extraction.json
+```
+
+Standard library only, offline, no API key, no model call. Exit code 1 means at least
+one BLOCK, and a BLOCKed extraction does not go downstream.
+
+Four rules sit under the fourteen checks: **read the number, never compute it**; **a
+blocked fetch is a blocked fetch, never an absence**; **identifiers by lookup, never
+recall**; **fail closed**.
+
+Two findings on [`docs/REGISTRY-EXTRACTION-TRAPS.md`](docs/REGISTRY-EXTRACTION-TRAPS.md)
+are worth reading even if you never run the tool:
+
+- ClinicalTrials.gov's **adverse-events module posts an integer death count even when
+  the efficacy outcomes are percentage-only**, which makes it look like a universal
+  key. Across six trials it was identical twice, and out by more than 2× once.
+- The obvious defence — check your counts against the published hazard ratio — **does
+  not work**. For ODYSSEY OUTCOMES the adverse-events pair (RR 0.856) and the efficacy
+  pair (RR 0.852) both reproduce the published 0.85 while differing by ~100 events per
+  arm. **Agreement authenticates nothing; only disagreement is informative.**
+
+### Screening a review for a trial counted twice (v1.0.0)
+
+```bash
+python scripts/trial-identity-screen.py --selftest
+python scripts/trial-identity-screen.py templates/trial-identity/finerenone_table1_example.csv \
+    --universe 22000 --i2 0
+```
+
+Of six published syntheses adjudicated in this programme, **three were erroneous, and
+all three were the same species**: one trial counted as several, or characterised as
+something it is not. The root cause is matching on the **citation string** rather than
+on **trial identity**. It leaves a computable signature — participant total inflated
+well past the number ever randomised, together with **I² ≈ 0**, which is what pooling
+data against itself produces.
+
+The screen takes a CSV you can type out of a published paper, so it works on reviews
+you did not write. It reconciles arms as well as totals, matches near-duplicates under
+a transcription tolerance, and catches transposed arm columns. **Low heterogeneity on
+its own is not flagged** — consistent trials produce it legitimately; it is the
+co-occurrence that is diagnostic. Every hit is a prompt to check the registry
+identifier, not a verdict.
 
 ### Offline agent helpers — don't pay tokens for what you already have
 

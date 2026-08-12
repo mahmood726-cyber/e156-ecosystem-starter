@@ -570,6 +570,114 @@ perfectly well, and the filter biases toward recent, better-funded, more-publish
 the same direction as publication bias stacked on top of it. Either state what the cut-off actually
 means or drop it.</p>
 
+<h4>Recover the event counts yourself &mdash; and the registry trap that looks like a shortcut</h4>
+
+<p>To pool a trial yourself rather than inheriting somebody else's pooled number, you need the
+per-arm counts: events and denominator, for each arm. The new
+<strong><a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/tree/main/templates/count-recovery">count-recovery
+harness</a></strong> is the machinery for getting them safely &mdash; <strong>14 checks,
+standard-library only, offline, no API key, no AI call</strong>. Run
+<code>python rapidmeta_count_harness.py --selftest</code> and it puts its own checks through
+<strong>11 negative controls</strong>: each trap is deliberately introduced and the check must
+catch it. A check that has never been shown to fail is not a check.</p>
+
+<p>One finding on that page is worth reading even if you never run the tool.
+<strong>ClinicalTrials.gov requires an all-cause death count in the adverse-events module</strong>,
+so for any trial with posted results it is there as a clean integer &mdash; <em>even when the
+trial's efficacy outcomes are posted only as percentages</em>. It looks like a universal key. It
+answers a different question: the safety population over the adverse-event collection window, not
+the efficacy analysis set over the efficacy follow-up. Across six trials it was <strong>identical
+twice</strong> (SPRINT, DECLARE-TIMI 58), close twice, out by about <strong>100 events per
+arm</strong> once (ODYSSEY OUTCOMES), and out by <strong>more than double</strong> once
+(EMPA-KIDNEY: 314/353 against 148/167). Nothing on the page tells you which case you are in.</p>
+
+<p>And here is the part that generalises well beyond registries. The obvious defence is to check
+your recovered counts against the trial's published hazard ratio. For ODYSSEY OUTCOMES the
+<em>wrong</em> counts reproduce it: the adverse-events pair gives a risk ratio of 0.856, the
+efficacy pair 0.852, against a published 0.85. <strong>Both pass.</strong> A ratio is insensitive
+to anything that scales both arms together, which is exactly what swapping one population for
+another usually does. So the rule the harness encodes &mdash;
+<strong>agreement authenticates nothing; only disagreement is informative</strong> &mdash; is why
+that check warns on mismatch and stays silent on a match, and never passes a cell on its own.
+Before you rely on any consistency check, ask what it would look like if the data were wrong; if
+the answer is &ldquo;the same&rdquo;, it is decoration. Full write-up:
+<a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/REGISTRY-EXTRACTION-TRAPS.md">registry
+extraction traps</a>.</p>
+
+<p class="note" style="font-size:0.93em; color:#555;">Six trials, chosen because they were the ones
+being extracted, not sampled. Treat the pattern as real and the proportions as nothing.</p>
+
+<h4>Screen a published review for one trial counted twice</h4>
+
+<p>Of six published syntheses adjudicated in depth, <strong>three were erroneous, and all three
+were the same species of error</strong>: one trial counted as several, or characterised as
+something it is not. In two of them a pooled analysis of two trials sat in the included-studies
+table <em>alongside the two trials it pools</em>, and each of those trials also appeared twice
+under different author names &mdash; in one case behind a one-letter misspelling of the first
+author's surname, which was enough to keep two rows for one trial side by side undetected. The root
+cause is matching on the <strong>citation string</strong> instead of on <strong>trial
+identity</strong>.</p>
+
+<p>It leaves a cheap, computable signature: <strong>participant total inflated well past the number
+ever randomised for the question, together with I&sup2; near zero</strong> &mdash; which is what
+pooling data against itself produces, because duplicated rows agree with themselves perfectly and
+drive the between-study variance down. Every pooled interval comes out falsely narrow.
+<code>scripts/trial-identity-screen.py</code> takes a CSV of the included-studies table &mdash;
+typed out of a published paper, no access required &mdash; and looks for it:</p>
+
+<pre><code>python scripts/trial-identity-screen.py my_table.csv --universe 22000 --i2 0</code></pre>
+
+<p>It reconciles arms as well as totals (the strongest signal: in the confirmed case the pooled
+row's arms matched its two components <em>exactly and independently</em> &mdash; 2833+3686=6519 and
+2841+3666=6507), matches near-duplicate arm splits under a transcription tolerance, catches
+transposed arm columns, and reports the I&sup2; conjunction. A worked example table ships with it,
+along with a clean one so you can see it stay quiet. Low heterogeneity <em>on its own</em> is not
+suspicious and the tool will not say it is &mdash; consistent trials produce it legitimately. It is
+the co-occurrence that is diagnostic.</p>
+
+<p class="note" style="font-size:0.93em; color:#555;">A screen, not a verdict. The tolerance that
+catches real transcription noise will also collide two genuinely distinct trials of similar size,
+so every hit is a prompt to check the registry identifier. And it never looks at comparator,
+population, or outcome definition &mdash; the other way a review mis-characterises a trial it did
+find.</p>
+
+<h4>A claim of ours the evidence revised</h4>
+
+<p>We started from the position that published reviews fail on <strong>two</strong> counts: they do
+not search widely enough, <em>and</em> they do not check what they find. Six syntheses in, there are
+<strong>three confirmed checking failures and zero confirmed breadth failures</strong>. The most
+informative case cuts straight against us: the worst of the three had a <em>broader</em> search than
+several reviews that got the right answer &mdash; multiple databases, preprints, no date or language
+filter, and explicit translation of non-English text &mdash; and still produced a badly wrong result,
+because it counted the same patients three times. <strong>Searching harder would not have caught
+either error we found.</strong> That does not mean breadth failures do not exist; it means this
+sample has not caught one in the act, and the sample was chosen to find checking problems. We are
+publishing the row that does not flatter the original claim because the rest is only worth reading
+if we do.</p>
+
+<h4>What actually blocks access &mdash; measured, not assumed</h4>
+
+<p>If you work without institutional subscriptions, the usual warning is that paywalls will limit
+you. In one audit that logged every retrieval failure by type: of eight targets, <strong>six
+presented a barrier &mdash; five were our own tooling</strong> (bot-blocks, JavaScript-rendered
+pages, a tool silently stripping content) <strong>and one was a genuine paywall</strong>. All five
+tooling barriers eventually yielded; the paywall did not, after four routes. Two lessons are worth
+more than the rates: <strong>a failed fetch is never a data absence</strong> &mdash; record what
+stopped you, because &ldquo;403&rdquo; is a fact about your access and &ldquo;not reported&rdquo; is
+a fact about the trial &mdash; and <strong>&ldquo;not found&rdquo; often means &ldquo;not
+named&rdquo;</strong>: a Chinese-language trial stayed invisible to a PubMed search because its
+journal is not indexed in MEDLINE, while being free to read the whole time. A PubMed-only search
+measures indexing, not existence.</p>
+
+<p>The layer that genuinely cannot be recovered is not the paywalled one &mdash; it is the
+<strong>unpublished</strong> one. The clean example: a trial's appendix prints thirty-five subgroup
+estimates and <strong>no interaction p-values anywhere</strong>, while the main text asserts the
+subgroups are consistent. That number is not behind a wall. It was never computed, or never
+reported. Open access does not touch that layer.
+<a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/ACCESS-LEDGER.md">The
+full ledger</a>, including a correction to our own first summary of it, and the caveat that the
+paywall finding rests on a denominator of <strong>one</strong>.</p>
+
 <h4>Staying current</h4>
 <p>To pull the latest starter without losing your memory or your own edits, run <code>update-ecosystem.ps1</code> (add <code>-Full</code> to also refresh Sentinel, Overmind, and ProjectIndex). Think of it as the update button for the whole kit.</p>
 

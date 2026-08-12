@@ -1,0 +1,642 @@
+{
+  "cells": [
+    {
+      "trial": "PARADIGM-HF",
+      "nct": "NCT01035255",
+      "arm": "sacubitril/valsartan",
+      "outcome": "composite_cvdeath_or_first_hfhosp",
+      "events": 914,
+      "analysed": 4187,
+      "randomised": 4209,
+      "population_label": "FAS",
+      "denominator_reason": "37 at GCP-closed sites + 6 mis-randomised (trial-wide)",
+      "printed_percent": 21.8,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "NEJM 2014;371:993-1004 Results text",
+          "url": "https://doi.org/10.1056/NEJMoa1409077"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT01035255 results, Outcome 1",
+          "url": "https://clinicaltrials.gov/study/NCT01035255"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants"
+    },
+    {
+      "trial": "PARADIGM-HF",
+      "nct": "NCT01035255",
+      "arm": "enalapril",
+      "outcome": "composite_cvdeath_or_first_hfhosp",
+      "events": 1117,
+      "analysed": 4212,
+      "randomised": 4233,
+      "population_label": "FAS",
+      "denominator_reason": "37 at GCP-closed sites + 6 mis-randomised (trial-wide)",
+      "printed_percent": 26.5,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "NEJM 2014;371:993-1004 Results text",
+          "url": "https://doi.org/10.1056/NEJMoa1409077"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT01035255 results, Outcome 1",
+          "url": "https://clinicaltrials.gov/study/NCT01035255"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants"
+    },
+    {
+      "trial": "PARADIGM-HF",
+      "nct": "NCT01035255",
+      "arm": "sacubitril/valsartan",
+      "outcome": "cv_death",
+      "events": 558,
+      "analysed": 4187,
+      "randomised": 4209,
+      "population_label": "FAS",
+      "denominator_reason": "as above",
+      "printed_percent": 13.3,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "NEJM 2014;371:993-1004 Results text",
+          "url": "https://doi.org/10.1056/NEJMoa1409077"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT01035255 results, Outcome 1",
+          "url": "https://clinicaltrials.gov/study/NCT01035255"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARADIGM-HF",
+      "nct": "NCT01035255",
+      "arm": "enalapril",
+      "outcome": "cv_death",
+      "events": 693,
+      "analysed": 4212,
+      "randomised": 4233,
+      "population_label": "FAS",
+      "denominator_reason": "as above",
+      "printed_percent": 16.5,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "NEJM 2014;371:993-1004 Results text",
+          "url": "https://doi.org/10.1056/NEJMoa1409077"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT01035255 results, Outcome 1",
+          "url": "https://clinicaltrials.gov/study/NCT01035255"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARADIGM-HF",
+      "nct": "NCT01035255",
+      "arm": "sacubitril/valsartan",
+      "outcome": "first_hf_hosp",
+      "events": 537,
+      "analysed": 4187,
+      "randomised": 4209,
+      "population_label": "FAS",
+      "denominator_reason": "as above",
+      "printed_percent": 12.8,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "NEJM 2014;371:993-1004 Results text",
+          "url": "https://doi.org/10.1056/NEJMoa1409077"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT01035255 results, Outcome 1",
+          "url": "https://clinicaltrials.gov/study/NCT01035255"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARADIGM-HF",
+      "nct": "NCT01035255",
+      "arm": "enalapril",
+      "outcome": "first_hf_hosp",
+      "events": 658,
+      "analysed": 4212,
+      "randomised": 4233,
+      "population_label": "FAS",
+      "denominator_reason": "as above",
+      "printed_percent": 15.6,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "NEJM 2014;371:993-1004 Results text",
+          "url": "https://doi.org/10.1056/NEJMoa1409077"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT01035255 results, Outcome 1",
+          "url": "https://clinicaltrials.gov/study/NCT01035255"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARADIGM-HF",
+      "nct": "NCT01035255",
+      "arm": "sacubitril/valsartan",
+      "outcome": "all_cause_death",
+      "events": 711,
+      "analysed": 4187,
+      "randomised": 4209,
+      "population_label": "FAS",
+      "selected": true,
+      "denominator_reason": "as above",
+      "printed_percent": 17.0,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "NEJM 2014;371:993-1004 Results text",
+          "url": "https://doi.org/10.1056/NEJMoa1409077"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT01035255 results, Outcome 2 (all-cause mortality)",
+          "url": "https://clinicaltrials.gov/study/NCT01035255"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "notes": "FAS population; matches NEJM Results text"
+    },
+    {
+      "trial": "PARADIGM-HF",
+      "nct": "NCT01035255",
+      "arm": "enalapril",
+      "outcome": "all_cause_death",
+      "events": 835,
+      "analysed": 4212,
+      "randomised": 4233,
+      "population_label": "FAS",
+      "selected": true,
+      "denominator_reason": "as above",
+      "printed_percent": 19.8,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "NEJM 2014;371:993-1004 Results text",
+          "url": "https://doi.org/10.1056/NEJMoa1409077"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT01035255 results, Outcome 2 (all-cause mortality)",
+          "url": "https://clinicaltrials.gov/study/NCT01035255"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "notes": "FAS population; matches NEJM Results text"
+    },
+    {
+      "trial": "PARADIGM-HF",
+      "nct": "NCT01035255",
+      "arm": "sacubitril/valsartan",
+      "outcome": "all_cause_death",
+      "events": 714,
+      "analysed": 4209,
+      "randomised": 4209,
+      "population_label": "randomised",
+      "selected": false,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT01035255 results, Outcome 3 (adjudicated causes of death)",
+          "url": "https://clinicaltrials.gov/study/NCT01035255"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "notes": "alternate population, recorded so the duplicate is visible"
+    },
+    {
+      "trial": "PARADIGM-HF",
+      "nct": "NCT01035255",
+      "arm": "enalapril",
+      "outcome": "all_cause_death",
+      "events": 837,
+      "analysed": 4233,
+      "randomised": 4233,
+      "population_label": "randomised",
+      "selected": false,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT01035255 results, Outcome 3 (adjudicated causes of death)",
+          "url": "https://clinicaltrials.gov/study/NCT01035255"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "notes": "alternate population, recorded so the duplicate is visible"
+    },
+    {
+      "trial": "PARACHUTE-HF",
+      "nct": "NCT04023227",
+      "arm": "sacubitril/valsartan",
+      "outcome": "composite_cvdeath_or_first_hfhosp",
+      "events": 155,
+      "analysed": 462,
+      "randomised": 462,
+      "population_label": "FAS",
+      "printed_percent": 33.5,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "JAMA 2026;335(1):49-59 Table 2",
+          "url": "https://doi.org/10.1001/jama.2025.19808"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT04023227 results (percentage-only)",
+          "url": "https://clinicaltrials.gov/study/NCT04023227"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "percentage of participants"
+    },
+    {
+      "trial": "PARACHUTE-HF",
+      "nct": "NCT04023227",
+      "arm": "sacubitril/valsartan",
+      "outcome": "cv_death",
+      "events": 110,
+      "analysed": 462,
+      "randomised": 462,
+      "population_label": "FAS",
+      "printed_percent": 23.8,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "JAMA 2026;335(1):49-59 Table 2",
+          "url": "https://doi.org/10.1001/jama.2025.19808"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT04023227 results (percentage-only)",
+          "url": "https://clinicaltrials.gov/study/NCT04023227"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "percentage of participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARACHUTE-HF",
+      "nct": "NCT04023227",
+      "arm": "sacubitril/valsartan",
+      "outcome": "first_hf_hosp",
+      "events": 102,
+      "analysed": 462,
+      "randomised": 462,
+      "population_label": "FAS",
+      "printed_percent": 22.1,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "JAMA 2026;335(1):49-59 Table 2",
+          "url": "https://doi.org/10.1001/jama.2025.19808"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT04023227 results (percentage-only)",
+          "url": "https://clinicaltrials.gov/study/NCT04023227"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "percentage of participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARACHUTE-HF",
+      "nct": "NCT04023227",
+      "arm": "enalapril",
+      "outcome": "composite_cvdeath_or_first_hfhosp",
+      "events": 169,
+      "analysed": 460,
+      "randomised": 460,
+      "population_label": "FAS",
+      "printed_percent": 36.7,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "JAMA 2026;335(1):49-59 Table 2",
+          "url": "https://doi.org/10.1001/jama.2025.19808"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT04023227 results (percentage-only)",
+          "url": "https://clinicaltrials.gov/study/NCT04023227"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "percentage of participants"
+    },
+    {
+      "trial": "PARACHUTE-HF",
+      "nct": "NCT04023227",
+      "arm": "enalapril",
+      "outcome": "cv_death",
+      "events": 117,
+      "analysed": 460,
+      "randomised": 460,
+      "population_label": "FAS",
+      "printed_percent": 25.4,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "JAMA 2026;335(1):49-59 Table 2",
+          "url": "https://doi.org/10.1001/jama.2025.19808"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT04023227 results (percentage-only)",
+          "url": "https://clinicaltrials.gov/study/NCT04023227"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "percentage of participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARACHUTE-HF",
+      "nct": "NCT04023227",
+      "arm": "enalapril",
+      "outcome": "first_hf_hosp",
+      "events": 111,
+      "analysed": 460,
+      "randomised": 460,
+      "population_label": "FAS",
+      "printed_percent": 24.1,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "JAMA 2026;335(1):49-59 Table 2",
+          "url": "https://doi.org/10.1001/jama.2025.19808"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT04023227 results (percentage-only)",
+          "url": "https://clinicaltrials.gov/study/NCT04023227"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "percentage of participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARALLEL-HF",
+      "nct": "NCT02468232",
+      "arm": "sacubitril/valsartan",
+      "outcome": "composite_cvdeath_or_first_hfhosp",
+      "events": 30,
+      "analysed": 111,
+      "randomised": 112,
+      "population_label": "FAS",
+      "denominator_reason": "1 mis-randomised per arm",
+      "printed_percent": 27.0,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "Circ J 2021;85(5):584-594 Table 2",
+          "url": "https://doi.org/10.1253/circj.CJ-20-0854"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT02468232 results, Outcome 10",
+          "url": "https://clinicaltrials.gov/study/NCT02468232"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants"
+    },
+    {
+      "trial": "PARALLEL-HF",
+      "nct": "NCT02468232",
+      "arm": "sacubitril/valsartan",
+      "outcome": "cv_death",
+      "events": 13,
+      "analysed": 111,
+      "randomised": 112,
+      "population_label": "FAS",
+      "denominator_reason": "1 mis-randomised per arm",
+      "printed_percent": 11.7,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "Circ J 2021;85(5):584-594 Table 2",
+          "url": "https://doi.org/10.1253/circj.CJ-20-0854"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT02468232 results, Outcome 10",
+          "url": "https://clinicaltrials.gov/study/NCT02468232"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARALLEL-HF",
+      "nct": "NCT02468232",
+      "arm": "sacubitril/valsartan",
+      "outcome": "first_hf_hosp",
+      "events": 25,
+      "analysed": 111,
+      "randomised": 112,
+      "population_label": "FAS",
+      "denominator_reason": "1 mis-randomised per arm",
+      "printed_percent": 22.5,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "Circ J 2021;85(5):584-594 Table 2",
+          "url": "https://doi.org/10.1253/circj.CJ-20-0854"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT02468232 results, Outcome 10",
+          "url": "https://clinicaltrials.gov/study/NCT02468232"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARALLEL-HF",
+      "nct": "NCT02468232",
+      "arm": "sacubitril/valsartan",
+      "outcome": "all_cause_death",
+      "events": 19,
+      "analysed": 111,
+      "randomised": 112,
+      "population_label": "FAS",
+      "denominator_reason": "1 mis-randomised per arm",
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT02468232 results, Outcome 10",
+          "url": "https://clinicaltrials.gov/study/NCT02468232"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "notes": "registry-only; Circ J Table 2 does not report all-cause mortality"
+    },
+    {
+      "trial": "PARALLEL-HF",
+      "nct": "NCT02468232",
+      "arm": "enalapril",
+      "outcome": "composite_cvdeath_or_first_hfhosp",
+      "events": 28,
+      "analysed": 112,
+      "randomised": 113,
+      "population_label": "FAS",
+      "denominator_reason": "1 mis-randomised per arm",
+      "printed_percent": 25.0,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "Circ J 2021;85(5):584-594 Table 2",
+          "url": "https://doi.org/10.1253/circj.CJ-20-0854"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT02468232 results, Outcome 10",
+          "url": "https://clinicaltrials.gov/study/NCT02468232"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants"
+    },
+    {
+      "trial": "PARALLEL-HF",
+      "nct": "NCT02468232",
+      "arm": "enalapril",
+      "outcome": "cv_death",
+      "events": 11,
+      "analysed": 112,
+      "randomised": 113,
+      "population_label": "FAS",
+      "denominator_reason": "1 mis-randomised per arm",
+      "printed_percent": 9.8,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "Circ J 2021;85(5):584-594 Table 2",
+          "url": "https://doi.org/10.1253/circj.CJ-20-0854"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT02468232 results, Outcome 10",
+          "url": "https://clinicaltrials.gov/study/NCT02468232"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARALLEL-HF",
+      "nct": "NCT02468232",
+      "arm": "enalapril",
+      "outcome": "first_hf_hosp",
+      "events": 20,
+      "analysed": 112,
+      "randomised": 113,
+      "population_label": "FAS",
+      "denominator_reason": "1 mis-randomised per arm",
+      "printed_percent": 17.9,
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T1",
+          "pointer": "Circ J 2021;85(5):584-594 Table 2",
+          "url": "https://doi.org/10.1253/circj.CJ-20-0854"
+        },
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT02468232 results, Outcome 10",
+          "url": "https://clinicaltrials.gov/study/NCT02468232"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "is_component_of": "composite_cvdeath_or_first_hfhosp"
+    },
+    {
+      "trial": "PARALLEL-HF",
+      "nct": "NCT02468232",
+      "arm": "enalapril",
+      "outcome": "all_cause_death",
+      "events": 16,
+      "analysed": 112,
+      "randomised": 113,
+      "population_label": "FAS",
+      "denominator_reason": "1 mis-randomised per arm",
+      "provenance": "read",
+      "sources": [
+        {
+          "tier": "T2",
+          "pointer": "CT.gov NCT02468232 results, Outcome 10",
+          "url": "https://clinicaltrials.gov/study/NCT02468232"
+        }
+      ],
+      "identifier_provenance": "lookup",
+      "registry_units": "participants",
+      "notes": "registry-only; Circ J Table 2 does not report all-cause mortality"
+    }
+  ]
+}
