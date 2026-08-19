@@ -598,10 +598,37 @@ is the difference between an error and a defensible different choice.</p>
 <p class="note" style="font-size:0.93em; color:#555;">One corpus, 135 topic objects, audited by its
 own maintainers on 2026-08-19, and <strong>enriched by construction</strong> &mdash; a corpus under
 active repair, whose instruments were under deliberate scrutiny that day. These are counts in one
-corpus, not rates for anything. <strong>All five new classes have no detector</strong> in this kit
-&mdash; they were found by hand or by a one-off sweep, and <code>meta-self-audit.py</code> does not
-look for any of them. They are published anyway, because a class you can name and cannot yet catch
-is worth more to a reader than a silence.</p>
+corpus, not rates for anything. <strong>Three of the five new classes have no detector</strong>
+&mdash; they were found by hand or by a one-off sweep, and they are published anyway, because a
+class you can name and cannot yet catch is worth more to a reader than a silence. The other two
+ship a standalone check each (below). <strong><code>meta-self-audit.py</code> looks for none of the
+five</strong>, so a <code>CLEAN</code> from it says nothing about any of them.</p>
+
+<p>The two that do have one. <strong><a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/SEARCH-COMPLETENESS.md">Proving
+a search finished</a></strong> is the runnable half of the pagination class:
+<code>python scripts/search-record-reconcile.py --selftest</code> asserts 10 of 10, including that
+the real failing record &mdash; 203 returned against a reported 430 &mdash; is refused
+<em>and names the shortfall of 227</em>, and that the honest record beside it, 137 against 137
+with an equally empty cursor, <strong>does not fire</strong>. A check that cannot stay quiet is not
+a check either. Two real records ship with it, one of each kind. The same page carries the
+<strong>recall</strong> measured beside those searches &mdash; <strong>3 of 3, 2 of 4, 3 of 4</strong>
+against three reviews' own included sets &mdash; and every miss turned out to be worth more than
+the score: one was a <em>mechanical heart valve</em> trial a venous-thromboembolism filter was
+right to exclude, which is a question about the review and not about the search. Two of the
+trials in another review are registered on a national registry rather than ClinicalTrials.gov, so
+<strong>that search cannot surface them at any recall</strong> &mdash; a recall figure is against a
+database, not against the literature.</p>
+
+<p>And <code>python scripts/pooled-point-achievable.py --selftest</code> asks whether a served
+headline is <strong>reachable at all</strong> from the trials a forest plot shows. It does not
+search estimators &mdash; an enumeration that finds nothing proves nothing about the estimator it
+did not try &mdash; it <strong>bounds</strong> them: every fixed weighting is a convex combination
+of the per-trial effects, and inside that hull the random-effects family runs from the
+fixed-effect weights to equal weights and nowhere else. On its worked case the hull
+<em>does not convict</em> and the narrower bound does, and <strong>the output always says which
+limb it used</strong>. Its own limit is on the tin: it bounds arithmetic, not provenance &mdash; a
+reachable number can still have come from somewhere else entirely, which is exactly what that
+case turned out to be.</p>
 
 <h4>Where to get the number &mdash; a sourcing method you can follow</h4>
 
@@ -752,6 +779,8 @@ paywall finding rests on a denominator of <strong>one</strong>.</p>
   <tr><td>ProjectIndex (optional)</td><td>Portfolio tracker + fail-closed reconcile script that catches registry drift.</td></tr>
   <tr><td>Meta self-audit (optional)</td><td>16 offline, deterministic detectors you point at your own meta-analysis dashboard (<code>python scripts/meta-self-audit.py MY_REVIEW.html</code>). Standard library only, no API key. Fail-closed: no verdict called "passed"; an unestablishable check returns <code>INCONCLUSIVE</code> and exits non-zero. Paired with the <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/META-ERROR-LIBRARY.md">meta-analysis error library</a>, which explains each class it looks for and the classes it cannot catch.</td></tr>
   <tr><td>Gate-can-fail check</td><td>A file named <code>*_gate.py</code> must contain a reachable non-zero exit &mdash; the name is a promise (<code>python scripts/gate-can-fail.py --selftest</code>, then point it at a directory). Standard library only. Prints its denominator and names every exclusion on each run; an unparsable file returns <code>INCONCLUSIVE</code>, and a <code>CLEAN</code> over zero files says so in as many words rather than reading as a pass. Its own limit is on the tin: reachability is judged syntactically, so <code>if False: sys.exit(1)</code> passes it. See <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/DETECTOR-VERIFICATION.md">proving a detector can fail</a>.</td></tr>
+  <tr><td>Search-record reconcile</td><td>Proves a paginated search actually finished: <code>len(list) == len(set(list)) == sum of per-page returned == the reported total</code> (<code>python scripts/search-record-reconcile.py --selftest</code>, then point it at a record or a directory). Standard library only. An empty pagination cursor is corroboration, never the proof &mdash; and an <em>absent</em> token field is not an empty one, so a record that never wrote down what the cursor said is not convicted of a proof it never offered. A record naming no identifiers returns <code>NOT_ASSESSABLE</code>, counted separately and never a pass. Ships two real records, one of each kind, in <code>templates/search-record/</code>. See <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/SEARCH-COMPLETENESS.md">proving a search finished</a>.</td></tr>
+  <tr><td>Pooled-point achievable range</td><td>Given a forest plot's per-trial effects and intervals, bounds what any estimator could have produced and asks whether the served headline is inside it (<code>python scripts/pooled-point-achievable.py --selftest</code>). Standard library only. Two limbs &mdash; the convex hull of the per-trial effects, and the &tau;&sup2;-path of the random-effects family &mdash; and the output names which one it used, because they are not equally strong. Bounds arithmetic, not provenance: <code>ACHIEVABLE</code> does not mean the number is right or that it came from these trials. <code>INCONCLUSIVE</code> below k=2.</td></tr>
   <tr><td>long-term-plan (optional)</td><td>Weekly-refreshed deterministic backlog reranker. No LLM in the loop. Clones <a href="https://github.com/mahmood726-cyber/long-term-plan">mahmood726-cyber/long-term-plan</a> as a reference; you replace its ideas with your own.</td></tr>
 </table>
 

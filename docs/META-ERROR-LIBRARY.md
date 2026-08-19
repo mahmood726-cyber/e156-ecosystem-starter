@@ -706,6 +706,41 @@ thereby innocent** — reconciling is a fact about arithmetic, not about
 attribution. An honest declaration that a value comes from elsewhere is not a
 defect at all; it is the fix.
 
+**And there is a runnable check for the arithmetic half**, which is the half that
+does not need access to anybody's records:
+
+```bash
+python scripts/pooled-point-achievable.py --selftest
+```
+
+Given the per-trial effects and intervals from a forest plot, it asks whether the
+served headline is **reachable at all** from those trials. It does not search
+estimators — an enumeration that finds nothing proves nothing about the estimator
+it did not try. It **bounds** them, on two limbs:
+
+- **The hull.** Every inverse-variance, Mantel-Haenszel, Peto and fixed-weighting
+  pool is a **convex combination** of the per-trial log-effects, so a point
+  outside `[min, max]` cannot be produced by any estimator that has ever been
+  written.
+- **The tau-path.** Inside the hull, the random-effects family bounds itself: as
+  τ² runs from 0 to ∞ the weights run from the fixed-effect weights to **equal**
+  weights and nowhere else. Scanning that one parameter gives the whole range the
+  family can reach, whatever estimator of τ² was used.
+
+On the worked case in its selftest — a headline of `HR 0.75 (0.61–0.91)` over two
+trials — the hull is `0.6900` to `0.7700` and **does not convict**; the tau-path
+is `0.7215` to `0.7289` and **does**. The less precise trial carries 40.7% of the
+weight at τ²=0 and can never exceed 50%; reaching the served point would require
+it to carry about seventy per cent. **The output always names which limb it
+used**, because the two are not equally strong.
+
+**What a clean verdict here does not mean.** `ACHIEVABLE` means the point is
+reachable. It does **not** mean it is right, and it does **not** mean it was
+computed from these trials. **This bounds arithmetic, not provenance** — and
+provenance is what the class is actually about. The instance above was convicted
+on the arithmetic and *explained* only by finding the external record it came
+from.
+
 ---
 
 # High
@@ -934,6 +969,25 @@ down. The durable fix is not chasing key names: **a not-assessable verdict now
 prints the keys the record actually has beside the keys it looked for.** An
 unassessable verdict that does not say what it looked at is not refutable. See
 [`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md).
+
+**Run it on your own search.**
+
+```bash
+python scripts/search-record-reconcile.py --selftest              # 10/10, exit 0
+python scripts/search-record-reconcile.py my_search_record.json
+```
+
+Standard library only, offline, exit 1 on any refusal. It ships with **two real
+records, one of each kind** — the 203-against-430 case above as the known-bad it
+is proved to fire on, and a reconciling 137-against-137 record it must stay quiet
+on. Pointed at the working evidence directory of the corpus this class came from
+it reads 7 files and returns 2 reconciling, 1 refused, **4 not assessable** —
+records that state a count and name none of the identifiers behind it.
+
+The recall figures measured beside these searches — **3 of 3, 2 of 4 and 3 of 4**
+against three reviews' own included sets, and why every miss was worth more than
+the score — are in [`SEARCH-COMPLETENESS.md`](SEARCH-COMPLETENESS.md), together
+with the reason **a reconciling search is still not a count of studies**.
 
 ---
 
@@ -1300,11 +1354,14 @@ Read this before you trust a `CLEAN`.
   of false positives were traced and removed. That measures *specificity* on
   already-repaired files. Their ability to catch a real defect is evidenced by
   the known-bad fixtures in the test suite, not by that scan.
-- **C10, C11, H7, H8 and M5 have no detector in this kit.** They were found by
-  hand or by a one-off sweep in the corpus they came from. They are in this
-  document because a class you can name and cannot yet catch is worth more to a
-  reader than a silence — but nothing in `meta-self-audit.py` looks for them, and
-  a `CLEAN` says nothing about any of the five.
+- **C10, H8 and M5 have no detector in this kit.** They were found by hand or by
+  a one-off sweep in the corpus they came from. They are in this document because
+  a class you can name and cannot yet catch is worth more to a reader than a
+  silence. **H7 and C11 each ship a standalone check** —
+  `scripts/search-record-reconcile.py` and `scripts/pooled-point-achievable.py`,
+  both proved to fire on a stored known-bad and to stay quiet on a known-good.
+  **Neither is part of `meta-self-audit.py`**, which looks for none of the five,
+  so a `CLEAN` from *that* tool still says nothing about any of them.
 - **These detectors read one file, so they cannot see C10 at all.** An aggregate
   surface serving a value its review has withdrawn is a defect in the *relation
   between two artefacts*. Every single-file check reads the summary, finds it

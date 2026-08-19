@@ -1,0 +1,51 @@
+{
+  "_what_this_is": "A REAL search record that the detector REFUSES. Run `python scripts/search-record-reconcile.py templates/search-record/example_cursor_lied.json` and it returns CURSOR_SAID_DONE_BUT_THE_SUM_DOES_NOT_RECONCILE, exit 1. This is the known-bad input the detector is proved to fire on.",
+  "_provenance": "ClinicalTrials.gov API v2, executed 2026-08-19 for an acute-coronary-syndrome antiplatelet review. The cursor returned null after 203 records against a reported total of 430. 227 records the pagination never returned, while reporting the search complete.",
+  "topic": "acs-antiplatelet-review",
+  "executed_utc": "2026-08-19",
+  "database": "ClinicalTrials.gov API v2",
+  "query_as_executed": "intervention=\"ticagrelor OR prasugrel OR clopidogrel\"; condition=\"acute coronary syndrome OR myocardial infarction OR unstable angina\"; study_type=INTERVENTIONAL; page_size=100; count_total=true",
+  "pages": [
+    {
+      "page": 1,
+      "returned": 100,
+      "total_reported": 430,
+      "next_page_token": "PRESENT"
+    },
+    {
+      "page": 2,
+      "returned": 100,
+      "total_reported": null,
+      "next_page_token": "PRESENT"
+    },
+    {
+      "page": 3,
+      "returned": 3,
+      "total_reported": null,
+      "next_page_token": "null -- the cursor is exhausted"
+    }
+  ],
+  "records_returned_total": 203,
+  "total_reported": 430,
+  "THE_FINDING": {
+    "what_happened": "The cursor returned null after 203 records against a reported totalCount of 430. THE SHORTFALL IS 227 RECORDS THE PAGINATION NEVER RETURNED.",
+    "why_this_matters_more_than_this_topic": "DEFECT-REGISTRY class 20 -- cursor abandonment -- established that a LIVE next_page_token means the search is incomplete. Every search this session has then relied on the CONVERSE: that a NULL token means it is complete. THAT CONVERSE IS FALSE AND THIS IS THE CASE THAT SHOWS IT. On colchicine, 100 + 37 = 137 == totalCount and the cursor was null, so both proofs agreed and the search really was complete. Here they disagree, and only one of them is right.",
+    "the_proof_that_actually_holds": "THE SUM ACROSS PAGES RECONCILED AGAINST totalCount. A null cursor is corroboration, never the proof. `scripts/lint_search_pagination_declared.py` already demands a declared shortfall where returned < total, and this row declares one -- 227 RECORDS ARE UNEXAMINED, NOT EXCLUDED.",
+    "what_is_NOT_claimed": "This does not diagnose WHY the API stopped early. It may be a server-side cap, a differently-scoped totalCount, or something else. The discrepancy is RECORDED, not explained, because guessing at a cause and writing it down would be worse than naming the gap.",
+    "and_it_is_P16_fourth_clause_again": "The reconciliation check existed and had never had an opportunity to fail, because until now every search agreed with its own total. A guard whose triggering condition has never arisen is unproven however green it reads. This is its first live firing."
+  },
+  "AND_THE_RECALL_MISS_FOUND_BESIDE_IT": {
+    "recall_against_the_object_s_included_set": "3/4",
+    "surfaced": {
+      "NCT00097591": "TRITON-TIMI 38 -- page 1",
+      "NCT01944800": "ISAR-REACT 5 -- page 1",
+      "NCT00391872": "PLATO -- PAGE 2, and a screen stopped at page 1 would have missed it"
+    },
+    "NOT_SURFACED": {
+      "NCT02270242": "TWILIGHT"
+    },
+    "why_TWILIGHT_was_missed_AND_IT_IS_NOT_AN_API_FAULT": "Its coded conditions are ['Cardiovascular Disease', 'Interventional Cardiology']. NEITHER IS 'acute coronary syndrome', 'myocardial infarction' OR 'unstable angina', so the condition filter excluded it correctly on the field it read. Its intervention field DOES name ticagrelor. The trial is titled 'Ticagrelor With Aspirin or Alone in High-Risk Patients After Coronary Intervention'.",
+    "the_class_this_belongs_to": "P42 -- A CODED FIELD CAN BE CORRECT AND STILL NOT ANSWER THE QUESTION ASKED OF IT. `Cardiovascular Disease` is TRUE of TWILIGHT and says nothing about whether the population is an acute coronary syndrome one. This is the third instance of that shape in this session, after azilsartan's `conditions: ['Safety']` and the sickle-cell trials coded `Pulmonary Hypertension`.",
+    "RECORDED_NOT_REPLACED": "P23. The query is NOT rewritten to recover TWILIGHT. A query widened until it returns the answer already held cannot discover anything, and the miss is more informative than the recovery: it says that a condition-filtered search over this literature will systematically miss post-PCI antiplatelet trials whose coded condition names the disease family rather than the presentation."
+  }
+}
