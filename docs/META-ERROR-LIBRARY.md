@@ -42,6 +42,7 @@ Three sources, all first-hand:
 | Corpus fix ledger | Generated meta-analysis dashboards audited and repaired one file at a time, each with a commit and a per-number provenance line | 626 dashboards |
 | Fix recipe | The defect classes those repairs were checked against | 19 classes |
 | Error-reversal registry | Defects found in the **published** literature during a heart-failure network-meta-analysis audit, plus our own errors recorded by the same standard | 19 published-literature records |
+| Working-corpus defect registry | Classes found while building and repairing a live corpus of topic objects and their delivered pages — the source of C10, C11, H7, H8 and M5, and of everything in [`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md). **Mostly defects in our own surfaces and our own checking machinery** | 135 topic objects, audited 2026-08-19 |
 
 Three honest limits on that base:
 
@@ -125,6 +126,119 @@ worth more than one that was never tested, and a claim that was revised is worth
 recording *as revised*. The registry behind this document applies that rule to
 our own errors too — see the note above about which direction our own mistakes
 ran in.
+
+---
+
+## Five errors of ours, found on 2026-08-19
+
+These are in the same document, at the same size, as everyone else's. Four of the
+five are defects in **our own published surfaces or our own checking machinery**,
+and one is a claim from this programme's own reporting that we withdrew the same
+day it was made.
+
+The headline is a confirmation, and it needs to come first because it changes how
+the rest reads. Across that day's audit of one working corpus of **135 topic
+objects**, the **stored quantities held**: six pooled figures survived
+independent recomputation, six recorded limitations survived independent test,
+and **0 of 47** search records were found resting on a completeness proof that
+does not hold. Every substantive correction below is to a *reason*, an
+*attribution*, or a *check* — **never to a stored number**.
+
+> **The objects kept being right and the instruments kept being wrong.**
+
+| # | What was wrong | Measured | Now |
+|---|---|---|---|
+| 1 | A dashboard served pooled estimates the reviews had **withdrawn** | **92** of the 109 checkable rows | fixed by projection; a gate refuses the class |
+| 2 | Index cards served an **external benchmark as the review's own result** | 5 of 522 cards; **3 live and unknown** | corrected from their own objects; re-sweep returns 0 |
+| 3 | Summing per-topic trial counts **double-counted 19.2%** of the corpus | **68** of 354 summed trials | 53 of 339 after merging; distinct registrations unchanged at 286 |
+| 4 | A **case-sensitive lookup** made our own check report a clean result | 1 instance, then 2 more the same day | **open, no detector** |
+| 5 | This programme's own claim "**37 of 144** topics carry a templated question" | wrong denominator, one of three forms counted | **withdrawn**; corrected to 80 of 135 |
+
+### 1. A dashboard served 92 estimates the reviews had withdrawn
+
+Surfaced by a cross-family model seat running a different task, and verified here
+before being recorded — an outside seat's finding is a lead, not a result.
+
+The dashboard rendered a *Pooled OR (95% CI)* column from a snapshot generated
+three months earlier. Of its **711 rows carrying a numeric value**:
+
+| | |
+|---:|---|
+| **602** | **no underlying object at all — not checkable, so every count below is a floor** |
+| 17 | the object has a live pooled estimate (this check does not compare the values) |
+| **83** | the object has **withdrawn** its estimate |
+| **8** | the review **no longer exists** — retired into another topic |
+| 1 | the object carries no pooled value at all |
+| **92** | **served where the object does not support it**, of 109 checkable |
+
+> **A withdrawal is the strongest statement a review in this corpus can make.**
+> It is what a review says when its trials do not share an endpoint, when its
+> comparator is wrong, or when its headline cannot be reproduced from its own
+> trials. **Serving the number anyway undoes every one of those decisions at
+> once**, for every reader who never opens the page — and the aggregate surface
+> is the one most readers actually look at.
+
+**Fixed by projection, not by regenerating the snapshot.** A regenerated snapshot
+is correct for a day and wrong again the next time a review withdraws something,
+silently and with no symptom. Each row now carries the review's state; a
+not-live value is **moved** to a superseded field rather than deleted; and the
+snapshot is stamped with a **fingerprint over the underlying states, not a
+timestamp** — because a timestamp answers *when was this made*, which is not the
+question. *Do the sources still say what this was built from* is the question,
+and **a regenerated snapshot with a fresh timestamp and a stale withdrawal passes
+a date check and fails a fingerprint check.** A pre-commit gate now refuses on
+either half. Exit 1 before, exit 0 after, proven on the case that shipped.
+
+**And an absence must name its own cause.** The empty cell rendered every blank
+as `— (k<2 / continuous?)`. **A reader told "k<2" about a withdrawal has been
+told something false.** It now renders the real state.
+
+**What this does not do:** it does not compare the *live* rows' numbers against
+their objects. A row left live may still be stale by value. See
+[C10](#c10--an-aggregate-surface-serving-estimates-the-reviews-withdrew).
+
+### 2. Three live index cards served somebody else's number as their own
+
+See [C11](#c11--an-external-benchmark-served-as-the-reviews-own-result) for the
+class and the worked numbers. Two instances had been found by hand; **two found
+by hand is not a measurement**, so the shape was swept mechanically over 522
+cards. Five instances, three of them live and previously unknown, all three
+corrected from their own objects. **The re-run after correction returns zero.**
+
+### 3. Summing per-topic trial counts double-counted 19.2% of the corpus
+
+See [H8](#h8--summing-k-across-reviews-counts-the-same-trial-many-times).
+
+### 4. A case-sensitive lookup that returned nothing looked exactly like a clean result
+
+The verification pass written to *check* the cross-family seat's dashboard
+finding — rather than believe it — returned zero. The lookup was `pooled_or`;
+**the field is `pooled_OR`**. Every row was skipped and the empty tally read
+exactly like a clean corpus, while 92 rows were in fact serving withdrawn values.
+
+> **An outside seat handed over a true finding and our own check said it was
+> false.** Had that zero been believed, the finding would have been recorded as
+> *"the other seat was wrong"* — the most expensive possible outcome of a correct
+> delegation.
+
+It reproduced **twice more the same day**, in the selftests of two instruments
+written *after* it was written down, by the author who wrote it down. **Status:
+open, no detector.** Full account and the remedies that do work, in
+[`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md).
+
+### 5. A claim of ours withdrawn the same day it was made
+
+This programme's own session reporting stated that **"37 of 144"** topics carried
+a templated question. That number used a denominator including retired
+tombstones, and counted only one of the three ways a question field can fail to
+state a question. **It is withdrawn.** The measured replacement is **80 of 135
+live topics state a question** — 34 templated, 20 an echo of their own title, 1
+absent. See [M5](#m5--a-review-question-that-is-a-template).
+
+*Denominator and selection for all five: one corpus, 135 topic objects, audited
+by its own maintainers on 2026-08-19. It is **enriched by construction** — this
+is a corpus under active repair, so its instruments were under deliberate
+scrutiny that day. These are counts in one corpus, not rates for anything.*
 
 ---
 
@@ -449,6 +563,151 @@ from its estimate if they were never in separate containers.
 
 ---
 
+## C10 — An aggregate surface serving estimates the reviews withdrew
+
+**No detector in this kit. Found by a cross-family model seat; verified by hand.**
+
+**What it is.** A summary table, index, dashboard or portfolio page is built from
+a snapshot of your reviews. A review then withdraws its pooled estimate — because
+its trials do not share an endpoint, because its comparator was wrong, because
+the headline could not be reproduced. **The summary keeps serving the old
+number**, and nothing about the summary looks stale.
+
+**A real example.** Ours, on 2026-08-19. A dashboard rendering *Pooled OR (95%
+CI)* from a snapshot generated three months earlier. Of **711 rows carrying a
+numeric value**, 602 had no underlying object and were not checkable; of the
+**109 that were**, **92 were serving a value the review does not support** — 83
+withdrawn, 8 belonging to reviews that no longer exist, 1 with no pooled value at
+all. The uncheckable 602 make 92 a floor, not a total.
+
+**Why it fools a reader.** The withdrawal is *on the review page*, which most
+readers never open. The aggregate surface is the one they actually read, and it
+is internally consistent: a number, an interval, a k. Nothing about it announces
+that it is a copy. **A stale copy of a live value and a live copy of a withdrawn
+value look identical.**
+
+And the empty cells lie in the other direction. That dashboard rendered every
+blank as `— (k<2 / continuous?)`. **A reader told "k<2" about a withdrawal has
+been told something false**, and told it by a tooltip that sounds like a reason.
+
+**How to detect it.** Project, do not regenerate. Regenerating is correct for a
+day and wrong again the next time a review withdraws something, silently and with
+no symptom:
+
+- Carry each row's **source state** (`live` / `withdrawn` / `retired` /
+  `no pool`) into the summary as data, not as formatting.
+- **Move** a not-live value to a `superseded` field rather than deleting it. The
+  reader can then see that a number was withdrawn, which is more informative than
+  a blank.
+- Stamp the snapshot with a **fingerprint over the underlying states, not a
+  timestamp.** A timestamp answers *when was this made*, which is not the
+  question. The question is *do the sources still say what this was built from* —
+  and a regenerated snapshot with a fresh timestamp and a stale withdrawal
+  **passes a date check and fails a fingerprint check.**
+- Wire a gate that refuses on either half: a fingerprint that no longer matches
+  *or is absent* (absent is not fresh), or any row serving a value its source
+  withdrew.
+- Make every empty cell **name its own cause**.
+
+**How to correct it.** Re-derive every row from the current state of the review
+it names, and keep the withdrawn value visible beside its withdrawal rather than
+blanking it — the same *add beside, never overwrite* rule as everywhere else in
+this kit. Then check the fix by **re-running the detector to zero**, not by
+reading the diff.
+
+**What this does not cover.** It answers only *does the summary show an estimate
+where the review says there is none*. It does **not** compare the live rows'
+numbers against their reviews. A row left live may still be stale by value, and
+that is a second check.
+
+---
+
+## C11 — An external benchmark served as the review's own result
+
+**No detector in this kit.** Swept mechanically in the source corpus; the sweep
+is described below because the shape is reproducible, and its limits are real.
+
+**What it is.** Your review cites a published estimate from someone else's
+meta-analysis as a benchmark — a legitimate and useful thing to do. That number
+then appears on your index, your summary card or your abstract **in the slot
+where your own pooled result goes**, with no marker that it came from elsewhere.
+The number is real. It belongs to somebody else.
+
+**A real example.** Ours. Two instances had been found by hand, and **two found
+by hand is not a measurement**, so the shape was swept over **522 index cards, 77
+benchmark records and 116 page-map entries**. Five instances, **three of them
+live and previously unknown**:
+
+| Card served | The review's own pool |
+|---|---|
+| `RR 0.07 (0.01–0.32), k=2` | **withdrawn, k=0** |
+| `HR 0.22 (0.11–0.45), k=2` | `RR 0.2081 (0.0715–0.6057), k=2` |
+| `RR 0.21 (0.13–0.33), k=3` | `RR 0.2605 (0.1766–0.3845), **k=2**` |
+
+**The first is the worst and it is a different degree, not a different kind.**
+The review has withdrawn its estimate — `k=0` — and the card serves a confident
+external `RR 0.07 (0.01–0.32)` at `k=2`. **The review says it cannot answer and
+the index says it answered decisively.** The second carries a measure mismatch on
+top: the card says `HR`, the review says `RR`. The third claims `k=3` where its
+review pools `k=2` — the card is wrong about how many trials the review holds.
+
+**Why it fools a reader.** On *your* index — a list of *your* reviews — a reader
+has no reason to suspect that one row means *somebody else computed this*. The
+number is correctly transcribed and correctly attributed **in the source record**;
+it is the *rendering* that drops the attribution. Every check downstream reads the
+card as the review's own output and finds it internally consistent.
+
+**The structural finding is larger than the five.** **42 of the cards were
+authored in a `Published:` register** rather than as a projected result of the
+review, and a reader cannot tell the two apart. Of those 42, **3** were comparable
+against a review at all, **34 had no underlying review object**, and 5 had no
+benchmark record. **Thirty-four of forty-two cannot be checked by anything in the
+corpus** — which is why "three instances" is a floor, not a count.
+
+**How to detect it.** Project every displayed value from the review object it
+belongs to, and let a benchmark appear only in a slot that is *labelled* a
+benchmark. Then sweep for the class: for each card, ask whether the value it
+shows equals the review's own pooled value, and classify — not into
+found/clean, but into `card is the review's`, `card is the benchmark`, `card
+withdrawn`, `no review`, `no card`, `no benchmark`.
+
+**One measured caution about that sweep, because it is the more useful half.**
+A third limb asked, independently of any card, whether each benchmark reconciles
+with the review's own trials. **It first returned eight, and two of the eight
+were the instrument's own defect**: it compared a hazard-ratio benchmark against
+a **mean difference in a symptom score**, and against a **rate ratio over
+recurrent events** — two quantities compared by their **slot** rather than by
+their **definition**, with the arithmetic completing without complaint.
+
+> With measure-matching and scope-matching enforced, **all eight collapsed to
+> zero.** Done correctly that limb convicts nobody, **and that is the honest
+> answer rather than a disappointing one.**
+
+**But read what that zero is over.** The limb returned zero convictions and it
+also **assessed zero**: all 172 rows came back `NOT_ASSESSABLE` — 150 with no
+benchmark record or no review object, 16 measure mismatches, 3 ambiguous
+outcomes, 2 scope differences, 1 with too few intervals. *"Convicts nobody"* and
+*"checked everybody and found nothing"* are different statements and only the
+first is true. **A large not-assessable folded into one line reads as "nothing to
+see here"**, which is why it is broken out here and in the tool's own output.
+
+It also **cannot convict the one case we know is real**: that benchmark is `k=2`
+against a review holding three trials, so the limb correctly refuses it as *scope
+differs*. That conviction came from testing the benchmark against **its own
+declared source** — two named trials with their PMIDs. **A benchmark record
+generally does not name the trials it pooled, so that test is not generally
+available. That is the gap this sweep measures and does not close.**
+
+**How to correct it.** Re-derive the card from the review. If the review has
+withdrawn its estimate, the card says so — it does not fall back to the nearest
+available number. Keep the benchmark, in a row that says whose it is. **A
+benchmark that reconciles is not thereby correct, and a page serving it is not
+thereby innocent** — reconciling is a fact about arithmetic, not about
+attribution. An honest declaration that a value comes from elsewhere is not a
+defect at all; it is the fix.
+
+---
+
 # High
 
 ## H1 — Small-study machinery run below the k it needs
@@ -608,6 +867,136 @@ page contradicts itself. That check is yours.
 
 ---
 
+## H7 — A paginated search treated as complete because the cursor came back empty
+
+**What it is.** Your search returns results in pages. You follow the pagination
+token until it comes back null, and you record the search as complete. **The null
+token is not the proof.** The proof is the sum of records actually returned,
+reconciled against the total the API itself reported.
+
+**A real example.** Ours, 2026-08-19. One direction of this had already been
+established and enforced: **a live token means the search is incomplete**, and a
+gate refused any search record that showed one. The corpus then assumed the
+converse for free — **a null token means complete** — and **that half was never
+tested**, because on every search until then both proofs agreed. On one topic
+they finally disagreed:
+
+> **`100 + 100 + 3 = 203` records returned, with the pagination cursor null,
+> against a reported total of `430`.**
+>
+> **227 records the pagination never returned, while the cursor said it was
+> done.**
+
+*Why* the API stopped early is **not diagnosed** — a server-side cap, a
+differently-scoped total, something else. The discrepancy is recorded rather than
+explained, **because writing down a guessed cause is worse than naming the gap.**
+
+**Why it fools a reader.** It fools the *author*, which is worse. The search log
+looks complete, the record count is large, and there is no error. The reconciling
+check had existed for months and **had never had an opportunity to fail** —
+every search before this one reconciled, so the weaker proof always had the
+stronger one standing behind it. A guard whose triggering condition has never
+arisen is unproven however green it reads.
+
+**How to detect it.**
+
+- **Reconcile the sum across pages against the reported total.** That is the
+  proof. The null cursor is corroboration and never the proof.
+- **An absent token field is not a null one.** Reading a *missing*
+  `next_page_token` as *"the cursor said done"* convicts a record of a proof it
+  never offered. Silence is not a claim.
+- Make the verdict its own state: `cursor said done but the sum does not
+  reconcile`. It runs even when a record lists no identifiers — page counts and a
+  total are enough.
+
+**How to correct it.** Before building anything new on it, **bound the damage on
+what already exists.** Ours re-checked every search record in the corpus — **47
+rows across 18 objects** — asking which evidence each one actually rests on:
+
+| State | Rows |
+|---|---:|
+| **Reconciles** — returned equals total, so the proof holds regardless of the cursor | **31** |
+| Shortfall declared — legitimate, and already flagged | 8 |
+| Not executed — a database the record says was not searched | 6 |
+| Not assessable — states neither count | 2 |
+| **Resting on a null cursor alone** | **0** |
+| **Undeclared shortfall** | **0** |
+| **Topics with a delivered page resting on an unproven record** | **0** |
+
+**No delivered page rested on a null cursor alone.** The exposure was confined to
+the one topic, which had declared its shortfall and on which nothing had been
+built. *Then* the search was re-run by another route.
+
+**And the audit's own first run was wrong, which is the transferable part.** It
+reported **five** not-assessable rows. **All five were the audit failing to
+look** — two records spell the fields differently, three nest them one level
+down. The durable fix is not chasing key names: **a not-assessable verdict now
+prints the keys the record actually has beside the keys it looked for.** An
+unassessable verdict that does not say what it looked at is not refutable. See
+[`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md).
+
+---
+
+## H8 — Summing k across reviews counts the same trial many times
+
+**What it is.** You have several reviews. You report the size of your evidence
+base by adding up their trial counts. **Trials that appear in more than one
+review are counted once per review**, and the total describes no set of patients
+that exists.
+
+This is [C3](#c3--the-same-trial-counted-twice) one level up. C3 is a trial
+counted twice *inside* one pool, where it inflates the estimate and narrows the
+interval. H8 does not touch any estimate — it inflates the **claim about how much
+evidence you have**, which is the number that goes in the abstract.
+
+**A real example.** Ours, 2026-08-19, on a corpus of 135 topics. Summing per-topic
+trial counts across the **140 topics with a readable trial list** gave **354**.
+The **distinct registrations were 286**. **68 of 354 summed trials — 19.2% —
+were double counting**, and the corpus had been describing itself with the larger
+number.
+
+After merging nine clusters of reviews that turned out to be asking one question:
+
+| | Before | After |
+|---|---:|---:|
+| Sum of per-topic trial counts | 354 | **339** |
+| **Distinct registrations** | **286** | **286** |
+| Double-counted by summing | 68 | 53 |
+| Topics with a readable trial list | 140 | 131 |
+
+**The distinct count did not move. The merges removed double counting and no
+evidence** — which is the check that the merge was a bookkeeping change rather
+than a loss. 53 of 339 remain double-counted, and that is not a residual defect:
+some of it is legitimate, for the reason below.
+
+**Why it fools a reader.** It is arithmetic on numbers that are each individually
+correct. Every review's k is right. Nothing in any single review is wrong, and no
+estimate anywhere changes — which is exactly why nobody checks it.
+
+**How to detect it.** De-duplicate on **registry identifier**, never on citation
+string or title, and report the distinct count beside the sum whenever you
+describe your evidence base. Two lines, always:
+
+```
+summed across reviews : 354
+distinct registrations: 286   <- the one that describes patients
+```
+
+**How to correct it — and the caution matters more than the fix.** **An identical
+trial set between two reviews is a question to ask, never a verdict.** Two reviews
+holding the same registrations are not necessarily one review: two of ours share
+no trial *by construction* because one asks about treatment and the other about
+prevention, and two reviews may legitimately hold one trial for different
+questions. What an identical set *does* establish is that somebody must look.
+
+**And the remedies are not symmetric.** Splitting one review that asks several
+questions **recovers** evidence from readings that would otherwise be lost.
+Merging **discards** a review. So a split is a routine build and **a merge is a
+decision for a human**, made once, recorded, and reversible. Measure and
+recommend; do not let the de-duplicator change anything by itself.
+
+---
+
 # Medium
 
 ## M1 — Template contamination
@@ -702,6 +1091,66 @@ in the methods. Readers date the evidence by the former.
 publication. Re-run it, or state the gap in the abstract and drop the currency
 claim. If your review is "living", the interval between refreshes is part of the
 method and belongs next to the result.
+
+---
+
+## M5 — A review question that is a template
+
+**What it is.** The review has a question field. It is filled in. What it
+contains is the title with a stock clause appended, or the title repeated, or
+nothing. **The field is present and it carries no content**, and every check that
+reads it reports as though the question had been examined.
+
+**A real example.** Ours, and we did not go looking for it. A third-party model
+family was given twelve clusters of our reviews to read **blind** — no topic
+names, no verdicts, no hint that a decision depended on the answer — and asked
+whether the reviews in each cluster ask the same question. It returned **UNCLEAR
+on ten of the twelve**, and its stated reason every time was that the question
+field is auto-generated boilerplate. **The UNCLEARs were the finding.** We then
+measured it:
+
+| State | Topics | |
+|---|---:|---:|
+| **States a question** | **80** | 59.3% |
+| Templated — the title plus a stock clause | 34 | 25.2% |
+| An echo of its own title | 20 | 14.8% |
+| Absent | 1 | 0.7% |
+
+*135 live topics. Ten retired tombstones excluded from the denominator.*
+
+> **A templated question is not a bad question. It is an ABSENT one wearing the
+> shape of a present one.**
+
+**Why it fools a reader — and every check you own.** It fools *machinery* first.
+A comparison of two templated questions returns "these do not differ" —
+**correct as logic, and it reports as though the axis had been checked when it
+had not been.** A check that splits a review whose question is ambiguous cannot
+find an ambiguity in a title. Any claim you make on the basis of question text
+carries this denominator, whether or not you state it.
+
+So the honest consequence was stated plainly rather than left implicit: **the
+nine merges we executed rest on identical trial sets, a richer surviving review,
+a proven union and reversibility — NOT on a comparison of questions.** For ten of
+the twelve clusters there was no question to compare. That is a stronger position
+honestly stated than a weaker one asserted.
+
+**How to detect it.** Classify the field rather than testing whether it is
+non-empty: does it *state a question*, is it *the title plus a stock clause*, is
+it *an echo of the title*, is it *absent*. Four states, not two. Then report the
+proportion **beside every claim that reads that field**.
+
+**How to correct it.** Write the question. For a review that has absorbed
+another, this is not cosmetic — a review that has taken in a second review and
+cannot say what it asks has a real problem, and the template is hiding it.
+
+**What this does not claim.** **Not** that the templated reviews are wrong, and
+**not** that their trials or estimates are affected. It claims only that their
+question field carries no content a check can read.
+
+**And a correction of ours belongs here.** This programme's own reporting first
+stated this as **"37 of 144"**. That denominator included retired tombstones, and
+it counted only one of the three ways the field fails. **It is withdrawn**, and
+the table above replaces it.
 
 ---
 
@@ -851,6 +1300,29 @@ Read this before you trust a `CLEAN`.
   of false positives were traced and removed. That measures *specificity* on
   already-repaired files. Their ability to catch a real defect is evidenced by
   the known-bad fixtures in the test suite, not by that scan.
+- **C10, C11, H7, H8 and M5 have no detector in this kit.** They were found by
+  hand or by a one-off sweep in the corpus they came from. They are in this
+  document because a class you can name and cannot yet catch is worth more to a
+  reader than a silence — but nothing in `meta-self-audit.py` looks for them, and
+  a `CLEAN` says nothing about any of the five.
+- **These detectors read one file, so they cannot see C10 at all.** An aggregate
+  surface serving a value its review has withdrawn is a defect in the *relation
+  between two artefacts*. Every single-file check reads the summary, finds it
+  internally consistent, and is right about that.
+- **An empty result and a check that never ran are indistinguishable in the
+  output unless you make them distinguishable.** This is the failure mode that
+  produced most of the 2026-08-19 findings, including one where our own check
+  contradicted a true finding from an outside seat because a key was spelled
+  `pooled_or` and the field is `pooled_OR`. The remedies —
+  print the denominator, break out `NOT_ASSESSABLE` by reason, print the keys you
+  looked at, test in both directions — are in
+  [`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md), with the measurements.
+- **A file named a gate that cannot fail is a trap, not necessarily a defect.**
+  Four such files in the source corpus turned out to be correctly-built *advisory*
+  tools wearing the wrong name; all four were renamed rather than made to block.
+  `scripts/gate-can-fail.py --selftest` ships that check, and its own limit is
+  named on the tin: reachability is judged syntactically, so `if False:
+  sys.exit(1)` passes it.
 - **False positives happen, and several are documented above.** Every one of
   them was found by running the detectors over real files, never by a unit test
   — a suite written by the same person who wrote the detector shares its blind
@@ -874,7 +1346,16 @@ Read this before you trust a `CLEAN`.
 | H5, M4 | **AMSTAR-2** item 4 — search currency and comprehensiveness |
 | M2 | **PROSPERO** / ICMJE prospective-registration expectations |
 | M3 | PRISMA 2020 items 5–6 — eligibility criteria and their justification |
+| H8 | Cochrane Handbook ch.23 — unit of analysis, applied across reviews rather than within one |
 | whole layer | **RAISE (2025)** — see [`RAISE-alignment.md`](RAISE-alignment.md) for how the ecosystem maps to the responsible-AI-in-evidence-synthesis principle areas, and where it does not |
+
+**C10, C11, H7 and M5 are deliberately absent from that table.** They are defects
+in delivery surfaces, in attribution between artefacts, in search-completeness
+proofs and in a metadata field — and the reporting standards do not address any
+of them. Claiming a mapping we cannot support would be [C6](#c6--the-badge-is-green-because-someone-wrote-it-green)
+committed in a table about standards. H7 is adjacent to AMSTAR-2 item 4 on search
+comprehensiveness, but item 4 is about *where* you searched, not about whether
+your pagination returned what it said it did.
 
 The mapping above is a self-assessment scaffold. Check the exact wording of any
 standard before you cite it in a submission — including this table.
@@ -924,5 +1405,10 @@ has actually hit is a hypothesis, not a lesson. If it is deterministic, add a
 detector to `scripts/meta-self-audit.py` with a test in **both** directions — a
 known-bad that fires and a known-good that does not. A detector with only a
 positive test passes CI while matching everything.
+
+And before you trust the detector you just wrote, read
+[`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md). The most common way a new
+check fails is not by missing a defect. It is by **reporting clean because it
+never looked** — which is indistinguishable, in the output, from working.
 
 MIT-licensed, like the rest of the kit.

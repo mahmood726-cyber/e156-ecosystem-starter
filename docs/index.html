@@ -547,6 +547,62 @@ can additionally reuse Overmind's metamorphic witness to test your pooling code 
 any correct implementation must satisfy. The detectors' own blind spots are listed above under
 <a href="#limits">what this toolkit cannot do</a>, and in more detail in the library.</p>
 
+<h4>Five classes added 2026-08-19 &mdash; and five errors of ours</h4>
+
+<p>The library gained five classes, and the day that produced them produced a result worth leading
+with. Auditing a working corpus of <strong>135 topic objects</strong>, the <strong>stored numbers
+held</strong>: six pooled figures survived independent recomputation, six recorded limitations
+survived independent test, and <strong>0 of 47</strong> search records were found resting on a
+completeness proof that does not hold. Every substantive correction was to a <em>reason</em>, an
+<em>attribution</em>, or a <em>check</em> &mdash; never to a stored quantity. <strong>The reviews
+kept being right and the instruments kept being wrong.</strong></p>
+
+<p>Four of the five new classes are defects in our own published surfaces, and they are written up
+in the same tables, at the same size, as everyone else's. A dashboard of ours was serving
+<strong>92</strong> pooled estimates the reviews themselves had withdrawn &mdash; of
+<strong>109</strong> rows that could be checked at all, with 602 more uncheckable, so 92 is a floor.
+<strong>Five of 522</strong> index cards were serving an external benchmark in the slot where the
+review's own result goes, three of them live and previously unknown; the worst served a confident
+<code>RR&nbsp;0.07&nbsp;(0.01&ndash;0.32)</code> for a review that had withdrawn its estimate
+entirely, so the review said it could not answer while the index said it answered decisively.
+Summing trial counts across our own reviews double-counted <strong>68 of 354</strong> trials
+(19.2%), against <strong>286</strong> distinct registrations &mdash; after merging nine clusters
+that turned out to ask one question, 53 of 339, with the distinct count unmoved at 286, which is
+the check that the merge removed double counting and no evidence.</p>
+
+<p>The fourth is the one we would least like to publish. A check we wrote to
+<em>verify</em> an outside model seat's report of the dashboard problem returned <strong>zero</strong>
+&mdash; because it looked up <code>pooled_or</code> and the field is <code>pooled_OR</code>. Every
+row was skipped and the empty tally read exactly like a clean corpus. <strong>An outside seat
+handed over a true finding and our own check said it was false</strong>, and had that zero been
+believed the finding would have been filed as "the other seat was wrong". It is
+<strong>open, with no detector</strong>, and it reproduced twice more the same day in the selftests
+of instruments written after it was written down. And a claim from our own reporting &mdash;
+"37 of 144 topics carry a templated question" &mdash; was <strong>withdrawn</strong> the same day
+for a bad denominator; the measured replacement is <strong>80 of 135</strong> live topics that
+state a question at all.</p>
+
+<p>That failure mode has its own page:
+<strong><a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/DETECTOR-VERIFICATION.md">proving
+a detector can fail</a></strong> &mdash; four forms of a check that reports clean because it never
+looked, the delivery check that fetched the build directory from itself and so passed for
+<strong>96 commits</strong> while the pages a reader opens were stale, and the four remedies that
+are mechanical rather than a matter of remembering. It ships with a runnable check,
+<code>python scripts/gate-can-fail.py --selftest</code>: a file named a <em>gate</em> must contain
+a reachable failing exit, because a gate that cannot fail is a trap for whoever wires it in next.
+Measured on the corpus that motivated it, <strong>39 of 39</strong> files named a gate can now
+fail; the sweep found four that could not, and <strong>all four turned out to be correctly-built
+advisory tools wearing the wrong name</strong> &mdash; they were renamed, not made to block, which
+is the difference between an error and a defensible different choice.</p>
+
+<p class="note" style="font-size:0.93em; color:#555;">One corpus, 135 topic objects, audited by its
+own maintainers on 2026-08-19, and <strong>enriched by construction</strong> &mdash; a corpus under
+active repair, whose instruments were under deliberate scrutiny that day. These are counts in one
+corpus, not rates for anything. <strong>All five new classes have no detector</strong> in this kit
+&mdash; they were found by hand or by a one-off sweep, and <code>meta-self-audit.py</code> does not
+look for any of them. They are published anyway, because a class you can name and cannot yet catch
+is worth more to a reader than a silence.</p>
+
 <h4>Where to get the number &mdash; a sourcing method you can follow</h4>
 
 <p>The library tells you what is wrong; the new
@@ -695,6 +751,7 @@ paywall finding rests on a denominator of <strong>one</strong>.</p>
   <tr><td>Overmind + TruthCert (optional)</td><td>On-demand verifier that runs tests + smoke + numerical baselines and emits HMAC-signed certification bundles for submissions.</td></tr>
   <tr><td>ProjectIndex (optional)</td><td>Portfolio tracker + fail-closed reconcile script that catches registry drift.</td></tr>
   <tr><td>Meta self-audit (optional)</td><td>16 offline, deterministic detectors you point at your own meta-analysis dashboard (<code>python scripts/meta-self-audit.py MY_REVIEW.html</code>). Standard library only, no API key. Fail-closed: no verdict called "passed"; an unestablishable check returns <code>INCONCLUSIVE</code> and exits non-zero. Paired with the <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/META-ERROR-LIBRARY.md">meta-analysis error library</a>, which explains each class it looks for and the classes it cannot catch.</td></tr>
+  <tr><td>Gate-can-fail check</td><td>A file named <code>*_gate.py</code> must contain a reachable non-zero exit &mdash; the name is a promise (<code>python scripts/gate-can-fail.py --selftest</code>, then point it at a directory). Standard library only. Prints its denominator and names every exclusion on each run; an unparsable file returns <code>INCONCLUSIVE</code>, and a <code>CLEAN</code> over zero files says so in as many words rather than reading as a pass. Its own limit is on the tin: reachability is judged syntactically, so <code>if False: sys.exit(1)</code> passes it. See <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/DETECTOR-VERIFICATION.md">proving a detector can fail</a>.</td></tr>
   <tr><td>long-term-plan (optional)</td><td>Weekly-refreshed deterministic backlog reranker. No LLM in the loop. Clones <a href="https://github.com/mahmood726-cyber/long-term-plan">mahmood726-cyber/long-term-plan</a> as a reference; you replace its ideas with your own.</td></tr>
 </table>
 
