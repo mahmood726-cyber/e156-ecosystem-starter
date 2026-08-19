@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-rapidmeta_count_harness.py — pre-condition checks for per-arm 2x2 event-count extraction.
+count_recovery_harness.py — pre-condition checks for per-arm 2x2 event-count extraction.
 
 Purpose
 -------
@@ -22,9 +22,9 @@ Design rules
 
 Usage
 -----
-    python rapidmeta_count_harness.py --selftest
-    python rapidmeta_count_harness.py extraction.json
-    python rapidmeta_count_harness.py extraction.json --report report.md --json result.json
+    python count_recovery_harness.py --selftest
+    python count_recovery_harness.py extraction.json
+    python count_recovery_harness.py extraction.json --report report.md --json result.json
 
 Exit codes: 0 = no BLOCKs, 1 = one or more BLOCKs, 2 = usage/parse error.
 """
@@ -895,7 +895,7 @@ def _selftest_cells() -> list[Cell]:
 
 
 def _selftest() -> int:
-    print(f"rapidmeta_count_harness v{__version__} — self-test on the ARNI/HFrEF round\n")
+    print(f"count_recovery_harness v{__version__} — self-test on the ARNI/HFrEF round\n")
     cells = _selftest_cells()
     findings = run_checks(cells)
     summary = summarise(cells, findings)

@@ -13,7 +13,7 @@ to *edit* a near-final draft rather than generate from scratch.
 
 | Step | Tool | Token cost |
 |---|---|---|
-| Build a RapidMeta dashboard from a config | `rapidmeta-kit/clone.py` | **Free** (stdlib Python) |
+| Build a dashboard from a config | `rapidmeta-kit/clone.py` | **Free** (stdlib Python) |
 | Render an E156 capsule chart (forest plot) | `e156-capsule/chartkit.py` | **Free** (stdlib SVG) |
 | Run a Pairwise70 analysis | `pairwise70-workbench/index.html` | **Free** (browser, offline) |
 | Build an AACT warehouse + capsule | `aact-cockpit/scripts/*.py` | **Free** to run (needs duckdb+numpy+data, no LLM) |
@@ -24,7 +24,7 @@ to *edit* a near-final draft rather than generate from scratch.
 
 ## The four research layers — the low-token path for each
 
-- **RapidMeta** (`install-rapidmeta`): entirely token-free. `bash run_example.sh`
+- **Dashboard kit** (`install-rapidmeta`): entirely token-free. `bash run_example.sh`
   builds a real dashboard from the bundled config. Write your own config by hand
   (copy a file in `configs/`) — no agent needed.
 - **Pairwise70** (`install-pairwise70`): token-free. Open `index.html`, pick a

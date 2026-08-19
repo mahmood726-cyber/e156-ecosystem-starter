@@ -282,7 +282,7 @@ EFFICACY_SIGNALS = ("primary outcome", "primary endpoint", "efficacy", "pooled e
                     "forest plot", "pooled effect")
 
 # Strings that only ever appear in a generated dashboard because a donor
-# template leaked through. Sourced from the RapidMeta corpus fix log: every one
+# template leaked through. Sourced from the corpus fix log: every one
 # of these was found in a shipped file describing the wrong drug or disease.
 TEMPLATE_CONTAMINATION = (
     "non-steroidal mra", "across ckd trials", "finerenone", "colchicine",

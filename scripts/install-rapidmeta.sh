@@ -3,7 +3,7 @@
 #
 # Installs rapidmeta-kit -- the offline, STDLIB-ONLY meta-analysis dashboard
 # generator. Its clone.py turns a small JSON config into a self-contained
-# RapidMeta HTML dashboard with NO numpy/scipy and NO network. Clones the repo at
+# self-contained HTML dashboard with NO numpy/scipy and NO network. Clones the repo at
 # a pinned commit into a target dir and exports RAPIDMETA_KIT_PATH.
 #
 # Low-token by construction: the whole config -> dashboard path is deterministic

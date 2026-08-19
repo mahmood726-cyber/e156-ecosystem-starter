@@ -476,7 +476,7 @@ runnable on a weak laptop with no API key and no paywalled source. Not the parts
 <h4>Rebuild the whole meta-analysis toolkit &mdash; offline</h4>
 <p>Five optional layers now let you recreate the full workflow end-to-end without spending tokens, each with a zero-cost path you can just open and read:</p>
 <ul>
-  <li><strong>RapidMeta kit</strong> &mdash; turns a small JSON config into a self-contained meta-analysis dashboard (standard-library only, offline).</li>
+  <li><strong>Dashboard kit</strong> &mdash; turns a small JSON config into a self-contained meta-analysis dashboard (standard-library only, offline).</li>
   <li><strong>AACT cockpit</strong> &amp; <strong>AACT kit</strong> &mdash; analyse ClinicalTrials.gov / AACT data on your own machine, or just read the worked examples.</li>
   <li><strong>Pairwise70 workbench</strong> &mdash; a static gallery that reproduces each analysis in your browser, no Python needed.</li>
   <li><strong>E156 capsule + chart-kit</strong> &mdash; the 7-sentence paper contract plus a ~120-line pure-SVG forest-plot kit and a pre-baked sample. The lowest-footprint layer in the ecosystem.</li>
@@ -660,7 +660,7 @@ per-arm counts: events and denominator, for each arm. The new
 <strong><a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/tree/main/templates/count-recovery">count-recovery
 harness</a></strong> is the machinery for getting them safely &mdash; <strong>14 checks,
 standard-library only, offline, no API key, no AI call</strong>. Run
-<code>python rapidmeta_count_harness.py --selftest</code> and it puts its own checks through
+<code>python count_recovery_harness.py --selftest</code> and it puts its own checks through
 <strong>11 negative controls</strong>: each trap is deliberately introduced and the check must
 catch it. A check that has never been shown to fail is not a check.</p>
 

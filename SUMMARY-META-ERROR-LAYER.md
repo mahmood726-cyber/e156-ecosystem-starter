@@ -140,7 +140,7 @@ k² alongside effects.
 - **Both directions per detector.** Every one has a known-bad that fires and a
   known-good that doesn't. Plus an end-to-end test that the shipped clean
   example returns `CLEAN` and exit 0 — a suite that can only fire is not a check.
-- **Run against real corpus dashboards** (read-only; no RapidMeta app was
+- **Run against real corpus dashboards** (read-only; no dashboard app was
   touched). On `COPD_TRIPLE_REVIEW.html` it independently found the finerenone
   template bleed-through in a COPD review, Egger at k=3, gate bugs at `k>=2`/
   `k>=3`, the PROSPERO equivalence claim, and the false-green badge. On

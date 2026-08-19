@@ -473,7 +473,7 @@ P0-W1 first (academic-integrity, blocks educator use of teaching materials) → 
 **Why a seventh**: passes 1–6 (2026-04-21 → 04-28) reviewed the install machinery, i18n,
 teaching materials, and the user-POV flow. Since then **55 commits** landed
 (`v0.8.0..HEAD`) adding entirely new, never-reviewed surfaces: the **17-specialty RCT
-extractor** layer, **four research layers** (RapidMeta / AACT cockpit / AACT kit /
+extractor** layer, **four research layers** (dashboard kit / AACT cockpit / AACT kit /
 Pairwise70 / E156 capsules), the **author-side pin-bumper** (`refresh-ecosystem-pins.py`),
 **offline BM25 memory recall** (`recall.py`), and the **offline reuse index** (`reuse.py`).
 This pass focuses there, through the four personas the maintainer requested.

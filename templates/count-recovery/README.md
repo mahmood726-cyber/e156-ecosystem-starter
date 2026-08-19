@@ -9,16 +9,16 @@ pool a trial yourself instead of inheriting somebody else's pooled estimate.
 
 ```bash
 # 14 checks against 11 negative controls -- proves the checks can actually fail
-python rapidmeta_count_harness.py --selftest
+python count_recovery_harness.py --selftest
 
 # the retrieval fallback chain, in order
-python rapidmeta_count_harness.py --chain
+python count_recovery_harness.py --chain
 
 # a complete worked extraction (24 rows, three real trials)
-python rapidmeta_count_harness.py example_extraction.json
+python count_recovery_harness.py example_extraction.json
 
 # your own
-python rapidmeta_count_harness.py my_extraction.json --report r.md --json r.json
+python count_recovery_harness.py my_extraction.json --report r.md --json r.json
 ```
 
 Exit code `1` means at least one **BLOCK**. A BLOCKed extraction does not go
@@ -29,7 +29,7 @@ would rather read the result than run it.
 
 | File | What it is |
 |---|---|
-| `rapidmeta_count_harness.py` | The harness. 14 checks, each one traceable to a mistake actually made on real data. |
+| `count_recovery_harness.py` | The harness. 14 checks, each one traceable to a mistake actually made on real data. |
 | `COUNT_RECOVERY_PROCEDURE.md` | The method the harness enforces — source tiers, retrieval order, cell schema, and the standing order for the next extraction round. |
 | `example_extraction.json` | A runnable input: three trials, including the duplicate-population trap and a percentage-only registry posting. |
 | `example_report.md` | What the example prints. |

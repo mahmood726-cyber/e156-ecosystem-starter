@@ -8,9 +8,9 @@ wall, and the specific ways that recovery goes wrong.
 Everything here is enforced by a runnable script:
 
 ```bash
-python templates/count-recovery/rapidmeta_count_harness.py --selftest
-python templates/count-recovery/rapidmeta_count_harness.py --chain
-python templates/count-recovery/rapidmeta_count_harness.py my_extraction.json --report r.md
+python templates/count-recovery/count_recovery_harness.py --selftest
+python templates/count-recovery/count_recovery_harness.py --chain
+python templates/count-recovery/count_recovery_harness.py my_extraction.json --report r.md
 ```
 
 Standard library only. No install, no network, no API key, no model call. Exit code 1

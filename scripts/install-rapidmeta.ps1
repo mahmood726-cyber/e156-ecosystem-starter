@@ -2,7 +2,7 @@
 # install-rapidmeta.ps1 - install rapidmeta-kit (offline, stdlib-only MA dashboards).
 #
 # rapidmeta-kit's clone.py turns a small JSON config into a self-contained
-# RapidMeta HTML dashboard with NO numpy/scipy and NO network. Clones the repo at
+# self-contained HTML dashboard with NO numpy/scipy and NO network. Clones the repo at
 # a pinned commit and persists RAPIDMETA_KIT_PATH. Low-token by construction: the
 # whole config -> dashboard path is deterministic Python, no LLM in the loop.
 #

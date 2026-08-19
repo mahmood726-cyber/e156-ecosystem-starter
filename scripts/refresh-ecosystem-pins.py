@@ -2,7 +2,7 @@
 """refresh-ecosystem-pins.py -- keep the starter's install-layer pins current.
 
 The ecosystem-starter installs each system (extractor, Sentinel, Overmind,
-RapidMeta, Pairwise70, AACT cockpit, AACT kit) by cloning / pip-installing the
+dashboard kit, Pairwise70, AACT cockpit, AACT kit) by cloning / pip-installing the
 source repo at a PINNED 40-hex commit SHA, for reproducible supply-chain-safe
 installs. When Mahmood pushes new work to one of those repos, the pin goes stale.
 

@@ -1,11 +1,11 @@
 # Per-arm event-count recovery — procedure
 
-**Companion to** `rapidmeta_count_harness.py` (v1.0.0). Run the harness; do not re-derive its rules by hand.
+**Companion to** `count_recovery_harness.py` (v1.0.0). Run the harness; do not re-derive its rules by hand.
 
 ```
-python rapidmeta_count_harness.py --selftest        # 14 checks, 11 negative controls
-python rapidmeta_count_harness.py --chain           # print the retrieval fallback chain
-python rapidmeta_count_harness.py extraction.json --report r.md --json r.json
+python count_recovery_harness.py --selftest        # 14 checks, 11 negative controls
+python count_recovery_harness.py --chain           # print the retrieval fallback chain
+python count_recovery_harness.py extraction.json --report r.md --json r.json
 ```
 
 Exit code 1 means at least one BLOCK. A BLOCKed extraction does not go downstream.
