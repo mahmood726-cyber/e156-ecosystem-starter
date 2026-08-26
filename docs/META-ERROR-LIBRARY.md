@@ -1294,6 +1294,92 @@ subset-as-census error this document already documents.
 
 ---
 
+## C15 — Auditing the survivors and never the condemned
+
+**No detector. The check is to read the drop list, and almost nobody does.**
+
+**What it is.** Any operation that partitions a set into *kept* and *removed* — a
+screening pass, an eligibility filter, a de-duplication, a corpus prune — is
+audited on one side only. The kept set gets counted, sampled, cross-checked and
+reported. **The removed set gets a number.** Every classifier anyone builds
+interrogates the survivors, because the survivors are what the output is made of.
+
+**A real example, and it is a deletion rather than a synthesis, which is the
+point.** A prune designed to remove superseded pages from a corpus classified by
+asking *"does this file carry the current-generation review marker?"* and dropping
+everything that did not. The marker is a reproducibility table whose first row
+reads `Canonical object`.
+
+**The homepage has no reproducibility table.** The rule condemned `index.html` —
+the site's front door — because a marker written for review pages was evaluated
+over every file in the root. Re-derived at the current tree: **1,510 root HTML
+files, and `index.html` does not contain the signature.** Under the first rule it
+was in the drop set.
+
+> **A drop list is exactly as dangerous as a retain list, and only one of them was
+> audited.** Nothing about the retain side would have caught this. The retained
+> pages were all real review pages, every assertion about them held, and the count
+> was right. The defect was entirely on the side nobody read.
+
+**Why this is a synthesis class and not just an ops story.** Screening a corpus and
+screening a literature are the same operation. A systematic review audits its
+**included** studies — checks their identifiers, re-extracts their outcomes, reads
+them at the source — and hardly ever re-reads its **exclusions**. The 1,200 records
+dropped at title-and-abstract are a number in a flow diagram. That is where a
+wrongly-excluded trial lives, and it is invisible by construction: **an excluded
+trial produces the same downstream output as a trial that does not exist.**
+
+This document's own [revised claim](#a-claim-of-ours-that-the-evidence-revised)
+reports zero confirmed breadth failures out of six syntheses. Read that against
+this class: breadth failures are the ones the method is least able to find, because
+finding one means auditing the condemned.
+
+**Why it fools a reader.** The report is *true*. Coverage, counts and assertions
+about the kept set all hold. There is no failing check, no anomaly, and no
+representation anywhere in the output for the thing that was wrongly removed.
+
+**How to detect it.** Three things, and the first is most of the value.
+
+1. **Sample the drop list and read the items.** Not the count — the items. Twenty
+   at random, read properly. This is the entire remedy and it is an afternoon.
+2. **Invert the rule and see what it catches.** If you dropped on "lacks marker X",
+   run "has marker X" and look at what falls in neither bucket. A rule phrased as a
+   negative always has a third category it does not name.
+3. **Ask what the rule was written for, then check what it was applied to.** Here:
+   a marker written for review pages, evaluated over every file in a directory.
+   That mismatch — right rule, wrong population — is the mechanism in one line.
+
+**How to correct it. Drop only what you can positively identify, and keep the
+rest.** The repaired classifier retains anything it cannot name, and the numbers
+say what that costs: **259 kept, 1,251 positively identified for removal, and 99 of
+the kept retained purely because the classifier could not tell what they are.**
+
+Those 99 are **listed by name in a committed register**, headed *"Not a judgement
+that they belong — a record that nobody has decided."*
+
+> **Dropping on uncertainty is the flattering default wearing new clothes.** It
+> makes the operation look decisive and puts the cost somewhere invisible: an
+> unknown retained costs bytes, an unknown dropped may be a page — or a trial —
+> someone needs, and nobody finds out until a reader does.
+
+The register also records why the drop rule is weaker than it looks: files are
+dropped by **template vintage, not by content**, and *24 of 43 genuine network
+pages in that corpus are not named NMA* — so a page dropped as a legacy network
+page may still hold a network worth keeping. Stating the rule's basis is what makes
+that inference available to whoever reads the register next.
+
+**And the price of keeping has to be visible rather than discovered.** The same run
+reported **106 retained pages with no index card** — the real cost of
+keep-on-uncertainty, printed as a number rather than found later by someone
+wondering why a page is unreachable.
+
+*Denominators: one corpus, 1,510 root HTML files, classified 2026-08-26 and
+re-derived here against the same tree. The prune was executed end to end, declined
+to certify its own result, and was not committed — 1,254 files moved, then moved
+back, 0 lost.*
+
+---
+
 ---
 
 # High
@@ -1893,6 +1979,7 @@ catch is the difference between using it and trusting it.
 | **Included trials missing from the reference list** | A 32-trial review citing about 10 of its own trials — not reproducible from its own article of record. | Set-difference the included-studies table against the reference list. Automatable, not yet automated here. |
 | **A rank that its own analysis does not support** | A treatment ranked #2 by P-score while being absent from the same paper's list of regimens significant in the primary analysis, with the top three P-scores within 0.04 of each other. | Never rank by SUCRA/P-score alone. Show the credible intervals of the relative effects next to the ranking. |
 | **A denominator that disagrees with the regulator** | An included trial entered at n=6,200 where the FDA label reconciles to 6,632 analysed. | Reconcile each trial's n against the registry entry or regulatory document. |
+| **Auditing the survivors and never the condemned** ([C15](#c15--auditing-the-survivors-and-never-the-condemned)) | The report is true. Coverage, counts and every assertion about the kept set hold, and there is no representation anywhere in the output for a thing wrongly removed. | Sample the drop list and read the ITEMS, not the count — twenty at random. Then invert the rule and see what falls in neither bucket. And ask what the rule was written for against what it was applied to. |
 | **Searching for what you were shown** ([the search-design error](#searching-for-what-you-were-shown)) | It produces a clean audit over a real population. Nothing fails and nothing is skipped — the report is honest about what it examined and silent about what it never looked for. | Enumerate what READS a field rather than what displays it, and enumerate surfaces before instances. Treat "I found this by accident" as evidence that the search scope was wrong, not just the instance. |
 | **A badge whose measure is narrower than its label** ([C14](#c14--a-quality-badge-whose-measure-is-narrower-than-its-label)) | There is nothing false to detect. The formula is correct, the computation is real, the threshold is documented — the gap is between the measure and the English word beside it. | Print the score's component list next to its label and read them together. Then check the badge's coverage (here 83 of 532 cards) and whether it contradicts the artefact it sits on (here 28 of 80). |
 | **A page that denies holding evidence it holds** ([H9](#h9--a-page-that-denies-holding-the-evidence-it-holds)) | Every detector in this kit tests for over-claiming. A false confession is under-claiming, and it passes them all — while reading to a human as candour. | Read the object, not the page. For every negative claim a template can emit, enumerate the objects it could have been built from and ask each whether it holds the thing being denied. Report *denies-while-holding*, *denies-over-a-shell* and *no-such-key* as three numbers, never one. |

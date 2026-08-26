@@ -240,12 +240,17 @@ the expected set, and using it as one converts every missing section into a pass
 the replacement derives the expected set from the object — which sections it
 *earns*, given what it holds — and asks both surfaces for it.
 
-**Form 2 is the one row here with no worked instance.** It was named while
-classifying a set of green results, and no specific file has been identified and
-read for it. It is listed because a form you can name and have not yet caught is
-worth more to a reader than a silence — and it is flagged as the weakest row on
-this page, the way the case-sensitive-lookup class was flagged as the weakest on
-the last one.
+**Form 2 was the one row with no worked instance, and it has one now.** It was
+named while classifying a set of green results, with no specific file identified.
+Later the same day a corpus-prune script was written whose own docstring opens:
+*"ONE-SHOT MIGRATION CHECK, NOT A GATE. DO NOT LEAVE THIS IN A HOOK CHAIN. Its
+assertions compare a POST-deletion tree against a PRE-prune retain-list. Once it
+has run, that comparison can never fail again — it is a check that can only fail
+once, which is indistinguishable in a log from a check that can never fail."* That
+is the form, named by its author, with the remedy applied in advance: **run it,
+read it, then leave it as a record rather than as a check.** A one-shot check is
+not a defect while it is labelled one; it becomes form 2 the moment somebody wires
+it into a chain that runs it again.
 
 **A control must be synthetic, or pinned to an immutable version.** That rule is
 form 3 in one sentence, and it is now written into the instruments here: their
@@ -483,6 +488,130 @@ signature. Where the token genuinely must appear, the guard needs to exclude
 comments explicitly and say in its own output that it does, so that the exclusion
 is a decision on the record rather than a silent hole someone can later hide a
 real claim in.
+
+---
+
+## A check that never ran, and a check that read the wrong bytes
+
+Two ways an instrument returns something other than a verdict while looking like it
+returned one. Both found on 2026-08-26.
+
+### A fetch that fails is an unrun check, not a failed one
+
+A delivery verifier fetches each page from its public URL and compares the hash of
+what came back against the file it was built from. The comparison is the check.
+
+**When the fetch returns 404 there are no bytes, so the comparison never executes.**
+Reading the control flow settles it: on an HTTP error the verifier records a verdict
+and moves to the next page — the hash comparison sits below that branch and is
+never reached.
+
+> **A 404 is worse than a wrong answer, because the check that would have caught
+> the wrong answer never runs.** A stale page that is *served* gets hashed and
+> convicted. A page that is not there at all skips the instrument entirely.
+
+The distinction that matters is what a harness does with that outcome. Three
+possibilities, and only the first is honest:
+
+| Outcome recorded | What it means |
+|---|---|
+| **`FAIL` / `NOT_ASSESSABLE`, non-zero exit** | correct — the page is not deliverable, and no hash claim is made about it |
+| silently skipped | the coverage number shrinks and the run still reports success |
+| counted as a pass | a page that does not exist becomes a page that matches |
+
+The verifier here does the first, and separates the two cases: **404 is `FAIL`**
+(the page genuinely is not there), **any other HTTP error is `NOT_ASSESSABLE`** (we
+could not tell). That split is worth copying — "absent" and "unreachable" are
+different findings and only one of them is about the artefact.
+
+**The general rule.** Every check has a precondition — bytes fetched, a file
+parsed, a record found, a key present. **A precondition failure is not a result.**
+Report it as its own state, break it out by reason, and never let it reduce the
+denominator quietly. This is the same lesson as the four forms above, arriving at
+the one place people assume is safe: the *input* to the check rather than the check.
+
+### A client-side change cannot be confirmed or refuted by grepping the bytes that carry it
+
+This one **retroactively qualifies a whole evening of sweeps**, which is why it is
+here rather than in a footnote.
+
+The page-versus-build distinction elsewhere on this page is *source checked in place
+of served*. This is that inverted: **served source checked in place of rendered
+DOM.**
+
+A set of per-card indicators was reported missing from a live homepage on the
+strength of a byte check. Nothing was missing. Measured in a browser on the served
+page: **532 cards, 532 indicator rows, 2,128 chips, zero console errors.**
+
+**The fingerprint is exact and worth memorising.** Re-derived against
+`origin/main:index.html`:
+
+| | |
+|---:|---|
+| `a.card` elements in the source | **532** |
+| occurrences of `not measured` | **4** — 2 of them inside `<script>` |
+| occurrences of `not assessed` | **3** — 2 inside `<script>` |
+| occurrences of `readiness` | **6** |
+
+**Single-digit phrase counts across a 532-card index are not a partial render.**
+They are the string literals *inside the script that will populate every card*,
+counted as though they were output. A sparse-looking result and an unrun script are
+the same bytes.
+
+**What this qualifies, stated as broadly as it actually applies:** every
+deployed-page check run over that index is valid for server-rendered content and
+**silently invalid for anything injected at runtime**. The old badge, the claim
+chips and the new indicators are all runtime-injected. **Any past sweep over them
+told us nothing — including the ones that reported success.**
+
+The remedy is not subtle: **for runtime-injected content, a browser is the
+instrument.** Count rendered nodes, read the console, and say in the output that
+the count came from a DOM and not from a file. A byte check over such a page should
+refuse rather than answer — the same fail-closed discipline as the delivery
+verifier above, applied to the question *can this instrument see this class of
+content at all*.
+
+---
+
+## Pin exact bytes only where the byte is the claim
+
+A guard written to stop registration work being lost across a merge pinned an exact
+git blob hash on **every file the work touched**. Within three hours it fired
+**twice, both times on a legitimate change, once from each of two lanes** — a
+script improved by its own author, and a JSON object reserialised identical
+key-for-key.
+
+Neither was a loss. Both were the guard working exactly as written and being wrong
+about what mattered.
+
+> **A falsifier that cries wolf is one people start reading past**, and its entire
+> value that night was that a lane refused to publish past it. The second false
+> alarm is not an annoyance; it is the beginning of the guard's uselessness.
+
+**The split, and the criterion is not tidiness.**
+
+| Pin | Where | Why |
+|---|---|---|
+| **Exact bytes** | the anchored artefacts and the public signing key | **the byte IS the claim.** A transparency-log entry is a statement about specific bytes and nothing else: if they change, the published verification recipe stops working for a stranger. And those hashes are not values anyone chose — they are the values in the public log, which is why they may be demanded exactly. **The anchor is its own pin.** |
+| **Content properties** | everything else | those files are *meant* to improve. A recipe document must still carry its recipe, its stated limitation, and the note that the recipe was run — and it was legitimately improved the same night it was pinned. |
+
+**The property check does work a hash could never do.** Three JSON files
+legitimately change on both sides of a merge, so a blob pin on them is useless —
+and a merge taking the branch's side would **silently restore a false claim while
+looking like a clean merge.** The check that catches that is phrase-absence, not
+identity.
+
+**It caught its own author while he wrote it, and the fault was the checker.** A
+property asserting that a document *states its limitation* failed against a document
+that states it perfectly well: the sentence is one line to a reader and **two lines
+on disk**, and the raw-source regex could not match across the break. Property
+matching now normalises whitespace first — **verify against normalised text, never
+raw source**, arriving inside the verifier written to enforce that rule.
+
+**Proven in both directions, and re-run here.** Against the current published
+branch: **32 properties, all pass, exit 0.** Against the merge base where none of
+the work exists: **exit 1**, with every kind of check firing — commits missing,
+anchors broken, properties absent, and the false claim present `1x + 2x + 2x`.
 
 ---
 

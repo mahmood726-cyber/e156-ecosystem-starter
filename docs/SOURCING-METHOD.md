@@ -170,6 +170,64 @@ active-comparator trial.
 
 ---
 
+## A registry title is not an outcome definition
+
+The cheapest way to dispose of a search result is to read its title. It is also the
+way to record an exclusion you cannot support.
+
+**A worked case from 2026-08-26.** A prospectively registered search returned five
+phase-3 trials of the right drug against the right comparator that the review did
+not hold. Each was given a provisional exclusion axis **read from the registry
+title returned by the search** — and the record said so, in those words, calling
+them *five candidates with provisional axes, not five exclusions.*
+
+Resolved afterwards against each trial's **registered primary outcome measure**,
+all five were excluded — and **one axis changed on inspection, the one that
+mattered**:
+
+| Trial | Axis from the title | Axis from the registered outcome |
+|---|---|---|
+| EMPULSE | measure — a win ratio is not a hazard ratio | measure — win ratio over a hierarchical composite |
+| EMPERIAL-Reduced / -Preserved | outcome — "exercise ability and symptoms" | outcome — 6-minute walk distance |
+| EMPA-VISION | outcome — a mechanistic imaging study | outcome — PCr/ATP ratio by cardiac MRS |
+| **EMPACT-MI** | **population** — acute myocardial infarction | **population AND outcome** — its composite is HF hospitalisation or **all-cause** mortality, where the review's is **cardiovascular** death or HF hospitalisation |
+
+The title showed one difference. The outcome module showed a second the title could
+not reveal. **Either alone excludes it — but a record citing only the population
+axis would have been supportable by less evidence than it appeared to carry**, and
+would have been quietly wrong about *why*.
+
+**And one trial had to be recorded as assessed rather than dropped.** EMPULSE does
+report the review's outcome concept — first occurrence of CV death or heart-failure
+event — but as a **secondary** endpoint and as an **incidence rate per 100
+patient-years**, not as a hazard ratio. That is an exclusion on the measure, and it
+has to be written down that way so a reader sees the trial was assessed rather than
+overlooked. **A silent exclusion and a considered one look identical in a flow
+diagram.**
+
+**The rules.**
+
+- **Never let a title carry an exclusion into a published record.** Resolve every
+  candidate against the registered outcome measure, the registered population and
+  the registered comparator, and name which field decided it.
+- **Mark provisional axes as provisional, in the record, before you resolve them.**
+  The value of doing so is that the one axis that changed is visible as a change
+  rather than absorbed.
+- **Say what the exclusion was decided *on*.** "Excluded: population" is not
+  auditable. "Excluded: registered primary outcome is a win ratio over a
+  hierarchical composite" is.
+
+**What it buys.** After resolution the review's two-trial included set is not a
+convenience sample: it is a set that has been searched for and, on these sources,
+cannot be improved on. That is a different and defensible claim — and it is only
+available because the exclusions were resolved at the source rather than at the
+title.
+
+*One topic, five candidates, one search, verified against the registered outcome
+modules on 2026-08-26. The mechanism is general; the count is five.*
+
+---
+
 ## Anchoring a protocol so the ordering is not your own word
 
 Everything else in this document is about where a *number* comes from. This section is about
