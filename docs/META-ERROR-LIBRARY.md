@@ -434,6 +434,87 @@ Severity means *how much of the paper the defect takes with it*:
 - **High** — a reported claim carries more confidence than its evidence supports.
 - **Medium** — the framing misleads; the number may survive.
 
+## Searching for what you were shown
+
+This is not a defect in a synthesis. It is a defect in the **search you run when
+you go looking for one**, and it belongs at the front of this document because it
+is the reason the classes below survive audits that were looking directly at them.
+
+**The shape.** You are handed an instance — a reviewer's finding, a screenshot, a
+failing page. You investigate *it*, find the mechanism that produces *it*, fix
+*it*, and stop. The search was scoped to the artefact you were shown. Everything
+else that makes the same claim, one layer away, is untouched — and now looks
+audited, because an audit ran.
+
+**Four instances in one corpus in one day, each exactly one layer from the last.**
+All four are ours; all four were found by someone else or by accident, never by the
+search that had just been run.
+
+| # | Searched for | The instance that survived | One layer away in |
+|---|---|---|---|
+| 1 | renderers of a judgement | a **count derived from** the judgements — *"records selection of the reported result on 3 result(s)"* | derivation |
+| 2 | the **prose** field justifying a GRADE domain | the **sibling key** carrying the number — *"2 of 2 results are HIGH overall, all of them on domain 5"* | schema |
+| 3 | one assessor's judgements, stored inline | the other assessor, stored as a **flat verbatim field** rather than in the same structure | representation |
+| 4 | the mechanism behind a reported **dot** | a **banner above it**, in visible prose, with a different denominator | surface |
+
+**Instance 1, in the author's own words**, because the diagnosis is more useful than
+the fix: *"I searched twice for places that publish one assessor's judgements as the
+review's finding, fixed the panel and the manuscript, and called the class closed.
+The third instance rendered a count derived from those judgements, and my search
+could not see it, because I had searched for renderers of judgements rather than for
+consumers of them."*
+
+**Instance 2 is the same error inside a check written to catch it.** A verification
+asked whether GRADE's rationales cited the risk-of-bias assessors, read
+`grade.domains.risk_of_bias.basis_in_sources`, and reported **11 of 11
+independent**. True of that field. Silent on `grade.risk_of_bias.now_supported_by`
+one step away, which carries the assessor-derived count the rating actually rests
+on. The prose argues independently because a later pass rewrote it; the rating it
+justifies was set by reading one assessor and never revisited. **Both halves true,
+and the half that got reported was the flattering one.**
+
+**Instance 4 was found while reading the block being replaced** — not by any
+search. A badge audit found a worse badge by accident, which says how many surfaces
+carry claims nobody has enumerated.
+
+### Why it is invisible
+
+Every one of these produces a **clean audit over a real population**. Nothing
+fails. Nothing is skipped. The report is honest about what it examined and simply
+does not mention the thing it never looked for — and an absence has no
+representation in a result. It reads exactly like a class that has been closed.
+
+It is also **self-reinforcing**: once "the judgement renderers were audited" is on
+the record, nobody re-searches that area, so the derived count is now protected by
+the audit that missed it.
+
+### The rules, and they are all about the search rather than the fix
+
+- **Enumerate what READS a field, not what DISPLAYS it.** Renderers are a subset of
+  consumers. Counts, summaries, badges, exports, gates and sibling records all
+  consume, and none of them displays the field you searched for.
+- **Search for the CLAIM, not for the artefact.** "Where does a page assert a
+  risk-of-bias judgement" is a different question from "where is this sentence
+  rendered", and only the first has a chance of being complete.
+- **Enumerate surfaces before you enumerate instances.** Tooltip, visible prose,
+  linked table, changelog, export, feed. Instance 4 sat one surface up from the one
+  reported, on the same page.
+- **When you fix a reader, ask what its siblings are.** A field with five readers
+  fixed in one place is a fix with a half-life. Name all of them and say which are
+  readers and which are writers.
+- **A count derived from a thing inherits the thing's problems.** If publishing a
+  judgement was wrong, publishing a tally of those judgements is the same error with
+  arithmetic in front of it.
+- **Treat "I found this by accident" as a measurement.** It is evidence that the
+  search which *should* have found it was scoped wrongly, and the scope is the thing
+  to fix — not just the instance.
+
+*Denominator and selection: four instances, one corpus, one day, all self-reported
+by the lane that committed them and each verified here against the repository. This
+is a shape worth recognising, not a rate.*
+
+---
+
 ---
 
 # Critical
@@ -1129,6 +1210,79 @@ clean"* is honest, useful, and cannot be mistaken for a synthesis verdict. Then:
 - **State what the score does not cover, in the tooltip, not in a methods file.**
   The classes it cannot see are the ones a reader most needs to know about.
 
+### The banner was worse than the dot, and it was found by accident
+
+The dot above puts its claim in a **tooltip**. Directly beneath the masthead, in
+**visible rendered prose**, the same index carried this — first thing on the page,
+before a single card:
+
+> 🛡 **Data-integrity audit complete** — **823** trustworthy · 86 low concern ·
+> 27 manual review · 8 quarantined
+
+Read at commit `ce8f59db0`, with scripts and tags stripped, so it is what a reader
+sees and not what the source contains.
+
+**823 + 86 + 27 + 8 = 944** — every record in the audit file. **The page it sat on
+shows 532 cards, of which 83 have a record at all and 80 are green.** A headline
+number four times the size of the thing it heads, in the one place on the page
+nobody has to hover to read.
+
+**And the same function computes both.** The counters are incremented over every
+record in the file as it is indexed, before anything is matched to a card; the dots
+are then applied only to cards that match. **One function, two populations, and the
+larger one is the headline.** Neither half is a bug on its own — the dot count is
+right about cards, the banner count is right about the file — and nothing in the
+code marks the moment the denominator changes.
+
+**The claim was on more than one surface.** At the same commit, `audit_table.html`
+carries **`742` Trustworthy** as a hardcoded literal, and `what_changed.html`
+carries several further figures under the same word. So *trustworthy* was
+simultaneously **823**, **742** and others across linked pages, none of them the
+532 cards or the 80 dots. Correcting the homepage alone would have left the claim
+one click away.
+
+**The record that makes the label indefensible is in the file, not on the index.**
+`PROSTATE_RADIOLIGAND_BROAD_REVIEW` — **5 of its 10 trials carrying a null PMID** —
+scores **0.297**, classifies **OK**, and was therefore labelled *multi-source audit
+passed*. Nine records have that 10-trials/5-null-PMIDs shape; **five of the nine
+classify OK.**
+
+> **State which population every count is over, in the same breath.** *823* is true
+> of the audit file. *80* is true of the index. *5 of 10* is true of a record in the
+> file and of no rendered dot. Writing about this defect while getting that
+> distinction wrong is easy enough that it happened during the drafting of this
+> entry.
+
+**What replaced it, and the three properties worth copying.**
+
+- **One badge became three separately-earned indicators, never combined.**
+  `checks` names the identifier audit as what it is and carries its own measurement
+  date; `validity` reads **NOT ASSESSED on all 532** with the reason stated —
+  never computed and never absent, because deriving it from identifier hygiene is
+  the conflation being removed; `readiness` is the page's own banner and nothing
+  else.
+- **Absent became a state.** **449 of 532** cards have no record in the audit file
+  and previously showed *nothing* — a blank beside a green dot, which a reader
+  resolves in the flattering direction. They now carry a hatched chip reading
+  **"Not measured is not a pass"**.
+- **A true indicator is outweighed, never suppressed.** A retired review whose two
+  trials have clean identifiers legitimately passes the identifier limb. Its green
+  chip stays, and a solid-red RETIRED chip is ordered first. Hiding a true
+  indicator because another is red would rebuild the composite the change
+  dismantles.
+
+Run independently over the delivered index while writing this: **532 cards —
+internal `NOT_MEASURED` 449, `CHECKS_PASSED` 80, `SOME_FLAGS` 3; validity
+`NOT_ASSESSED` 532; readiness `NOT_STATED` 409, `NOT_READY` 108, `RETIRED` 14,
+`NOT_YET_DETERMINED` 1, `READY` 0; adjudicated 0.**
+
+**The headline "zero cards say READY" is only a finding if the parser can return
+READY.** Otherwise the identical output comes from a regex that never matches, and
+the claim is about a pattern rather than about the corpus. A synthetic page saying
+READY must parse as READY; one saying NOT READY must not. Both controls hold, and
+they are synthetic rather than pinned to a live page, so no rebuild retires them.
+
+
 **A denominator trap inside this one, worth stating because we fell into it.** The
 score file holds **944 records** and the index shows **532 cards**; only **83**
 intersect. A true and tempting sentence — *"128 pages score a perfect 0.000, and
@@ -1739,6 +1893,7 @@ catch is the difference between using it and trusting it.
 | **Included trials missing from the reference list** | A 32-trial review citing about 10 of its own trials — not reproducible from its own article of record. | Set-difference the included-studies table against the reference list. Automatable, not yet automated here. |
 | **A rank that its own analysis does not support** | A treatment ranked #2 by P-score while being absent from the same paper's list of regimens significant in the primary analysis, with the top three P-scores within 0.04 of each other. | Never rank by SUCRA/P-score alone. Show the credible intervals of the relative effects next to the ranking. |
 | **A denominator that disagrees with the regulator** | An included trial entered at n=6,200 where the FDA label reconciles to 6,632 analysed. | Reconcile each trial's n against the registry entry or regulatory document. |
+| **Searching for what you were shown** ([the search-design error](#searching-for-what-you-were-shown)) | It produces a clean audit over a real population. Nothing fails and nothing is skipped — the report is honest about what it examined and silent about what it never looked for. | Enumerate what READS a field rather than what displays it, and enumerate surfaces before instances. Treat "I found this by accident" as evidence that the search scope was wrong, not just the instance. |
 | **A badge whose measure is narrower than its label** ([C14](#c14--a-quality-badge-whose-measure-is-narrower-than-its-label)) | There is nothing false to detect. The formula is correct, the computation is real, the threshold is documented — the gap is between the measure and the English word beside it. | Print the score's component list next to its label and read them together. Then check the badge's coverage (here 83 of 532 cards) and whether it contradicts the artefact it sits on (here 28 of 80). |
 | **A page that denies holding evidence it holds** ([H9](#h9--a-page-that-denies-holding-the-evidence-it-holds)) | Every detector in this kit tests for over-claiming. A false confession is under-claiming, and it passes them all — while reading to a human as candour. | Read the object, not the page. For every negative claim a template can emit, enumerate the objects it could have been built from and ask each whether it holds the thing being denied. Report *denies-while-holding*, *denies-over-a-shell* and *no-such-key* as three numbers, never one. |
 | **An inter-rater rate that measures the blinding** ([C12](#c12--an-inter-rater-agreement-figure-that-measures-the-blinding)) | The defect is in what the blinded prompt did *not* carry, which is by definition not in the artefact. No page-reading check can see an absence in an input it never saw. | Print the prompt as sent. Ask which things the first assessor used are missing from it. Then read the *shape* of the disagreement: concentrated along a rule boundary means convention, spread across domains means judgement. |
