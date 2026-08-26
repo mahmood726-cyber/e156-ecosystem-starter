@@ -236,6 +236,57 @@ exists. Confusing the two is
 [H6](META-ERROR-LIBRARY.md#h6--a-registry-identifier-that-cannot-be-right) territory, and the
 honest disposition for all 29 is *not found by this route*, never *no publication*.
 
+### A second instance, and it settles the class: the service edits your query and hands the edit back as the record
+
+The same evening, a different query, the same shape — and this one is worse, because the
+field it corrupts is the field you publish.
+
+A registered PubMed string contained `"kidney disease"[MeSH Terms]`. *Kidney Disease* is not
+a MeSH heading. Re-executed live on 2026-08-26, exactly as registered:
+
+| | |
+|---|---|
+| status | **HTTP 200** |
+| `count` | **334** |
+| the term in the string sent | **present** |
+| the term in the returned `querytranslation` | **absent — removed without trace** |
+| `warninglist.quotedphrasesnotfound` | **`["\"kidney disease\"[MeSH Terms]\"]`** |
+
+**Read the last two rows together.** `querytranslation` is the field a careful searcher
+copies into a PRISMA appendix as *the query as run*. It is the one place a reader would look
+to find out what actually executed — and it is precisely the field with the evidence removed.
+It is neither the string you sent nor a record of the difference. The difference is reported,
+in a **different field**, which nobody parses.
+
+Two instances now, in two response fields, in one day:
+
+| Case | What was dropped | Where the API reports it |
+|---|---|---|
+| Registration identifiers (§6) | 29 of 40 NCTs yielding nothing | `errorlist.phrasesnotfound` |
+| A non-heading MeSH term | one clause of an `OR` group | `warninglist.quotedphrasesnotfound` |
+
+**So the class is not "the database drops things silently".** It is:
+
+> **The database reports the omission in a field nobody reads, and hands back a "query as
+> run" with the omission already erased.**
+
+That is a sharper statement and it has a mechanical remedy, which "silently drops" does not:
+
+1. **Diff what you sent against `querytranslation`, term by term.** Any clause present in one
+   and absent from the other is a departure, and it must be recorded as a departure rather
+   than reconciled away. **Do not edit the registered string afterwards to match what ran** —
+   that converts a finding about the search into a tidier appendix.
+2. **Parse `errorlist` and `warninglist` on every request**, and reconcile their contents
+   against what you sent. Both fields exist; neither is in the happy path.
+3. **Never treat `querytranslation` as the record of what you asked for.** It is the record
+   of what the service decided to run, which is a different document and is the one that
+   omits the interesting part.
+
+A search that finds nothing and a search that could not look produce the same integer. The
+only thing separating them is a field beside the integer.
+
+---
+
 ### Summing per-identifier hit counts double-counts, and by how much depends on the trials
 
 Run the same 40 identifiers individually and add up the counts, and you get **15**. The union
@@ -267,6 +318,68 @@ same fix — deduplicate on identity, never on the string you searched with.
 
 ---
 
+## 7. What a corpus actually has — two denominators, kept apart on purpose
+
+Everything above is about proving one search finished. This is the first measurement of
+how many searches there are to prove anything about, and it is not flattering.
+
+Measured over one corpus at commit `29d61df0a`, re-derived independently of the gate that
+reports it. **The population is 155 topic stores** — `ssot/` holds 157 directories, of which
+2 are not stores at all.
+
+| | of 155 |
+|---|---:|
+| stores with **no protocol commit** to order a search against | **154** |
+| stores holding **no executed search at all** | **137** |
+| stores with **neither** | **137** |
+| stores holding a search | 18 |
+| stores holding a protocol commit | **1** |
+
+**These are two questions, not one, and collapsing them overstates one and hides the
+other.** *No protocol* is about registration; *no executed search* is about whether a search
+happened at all. A store can in principle be in one, both or neither — and here the sets turn
+out to be nested: **every store without a search is also without a protocol**, so 18 have a
+search, 1 of those 18 has a protocol, and 137 have nothing.
+
+The 154 is not a limitation of the instrument. Until the gate that produced it existed,
+**nothing in this corpus compared a search against the protocol registering it**, so the
+number could not have been known. A measurement that first becomes possible at 154/155 is
+what a missing check looks like from the inside.
+
+### The best-registered search in the corpus is invisible to the gate that measures search quality
+
+Found while re-deriving the table above, and it is the sharpest thing on this page.
+
+`finerenone-cv` is the one topic here with a protocol committed *and publicly anchored*
+before its first query ran, its search executed and recorded, and both ends verifiable by a
+stranger (see [`SOURCING-METHOD.md`](SOURCING-METHOD.md#anchoring-a-protocol-so-the-ordering-is-not-your-own-word)).
+
+The gate counts it as **no protocol commit** and **no executed search**.
+
+The protocol is in `ssot/finerenone-cv/PROTOCOL.md`; the search is in
+`ssot/finerenone-cv/SEARCH-RECORD.json`. **The gate reads `ssot/<name>/<name>.json` and
+nothing else**, and that file carries neither a `registration` nor a `search` key. Both
+verified at `29d61df0a`.
+
+> **A reader keyed to one filename, and the best artefact in the corpus written to another.**
+> This is the same class as the risk-of-bias key schism published this morning
+> ([H9](META-ERROR-LIBRARY.md#h9--a-page-that-denies-holding-the-evidence-it-holds)) and the
+> layer mismatch published alongside it
+> ([form 6](DETECTOR-VERIFICATION.md#a-gate-that-reads-a-different-layer-from-the-one-its-defect-lives-on)),
+> recurring in the same repository within hours of both, in an instrument written the same day.
+
+Two things follow, and only the first is about this gate.
+
+- **The 154 and the 137 are floors.** They count stores that do not record these things *in
+  the file the gate reads*. A store recording them elsewhere is counted as not having them.
+  The direction of that error is not flattering, which is why the figures are still worth
+  publishing — but "floor" is the honest word and it is used here rather than implied.
+- **Writing the artefact is not the same as registering it where the checker looks.** If a
+  new artefact does not move the number that measures it, either the number or the artefact
+  is in the wrong place. Check that on the day you write it, not a week later.
+
+---
+
 ## Blind spots
 
 - **It compares a record against itself.** A record whose stated numbers are both untrue passes.
@@ -281,6 +394,9 @@ same fix — deduplicate on identity, never on the string you searched with.
 - **`n = 47` records, `n = 3` recall topics, one programme, mostly cardiovascular, and enriched
   by construction** — this is a corpus under active repair, so its own instruments were under
   deliberate scrutiny. The mechanism generalises. The numbers do not.
+- **§7's 154 and 137 are FLOORS**, not counts: they count stores that do not record a
+  protocol or a search *in the file the gate reads*. At least one store records both
+  elsewhere and is counted as having neither.
 - **The identifier findings in §6 are one database, one field, 40 identifiers, one day.** Another database may behave differently, and the 45.7% inflation figure is a property of those four trials, not a constant.
 - **Absence from an identifier index is not absence of a publication.** The 29 zero-yield identifiers are *not found by this route* and nothing more.
 - **Nothing here checks whether the query was well aimed.** A perfectly reconciling search of

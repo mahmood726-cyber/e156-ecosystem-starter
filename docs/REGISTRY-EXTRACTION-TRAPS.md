@@ -228,6 +228,54 @@ entirely about the registry.
 
 ---
 
+## 8. Two trials of the same drug can index their disease differently
+
+§6 says "not found" often means "not named". This is the sharpest instance of it we have, and
+it is worth its own section because the trial in question is not obscure — it is one of the two
+pivotal trials a review exists to pool.
+
+Verified live against ClinicalTrials.gov on 2026-08-26:
+
+| Trial | NCT | Registered `conditions` |
+|---|---|---|
+| **FIDELIO-DKD** | `NCT02540993` | `["Chronic Kidney Disease"]` |
+| **FIGARO-DKD** | `NCT02545049` | `["Diabetic Kidney Disease"]` |
+
+Same drug. Same sponsor. Sibling trials in one programme, designed together and reported
+together. **Different condition string, and only one of them.**
+
+A registered condition query naming the disease the way the *review* frames it —
+`query.cond=chronic kidney disease AND type 2 diabetes` — returned **16 trials including
+FIDELIO-DKD and not FIGARO-DKD**. Every number downstream of that search would have been
+computed over one of the two pivotal trials, and nothing in the search output says so: 16 hits
+is a healthy-looking yield.
+
+**Why this is not a screening problem.** The trial was never returned, so it was never
+screened, never excluded and never appears in any flow diagram. The PRISMA numbers would
+reconcile perfectly. **A search that cannot reach a trial produces the same output as a search
+in which the trial does not exist**, which is the whole difficulty with breadth: absence has no
+representation.
+
+**What to do.**
+
+- **Never let a condition query be the only limb for a drug you can name.** An intervention
+  query (`query.intr=finerenone OR "BAY 94-8862" OR Kerendia`) reaches both trials, because a
+  sponsor who splits the disease label does not usually split the drug name.
+- **Check the coded conditions of the trials you already know about**, before you trust a
+  condition query to find the ones you do not. If your own included set is not fully returned
+  by your own query, that is a measured recall failure and you have it for free.
+- **Record the miss rather than repairing the string.** The query above was not edited
+  afterwards to make the yield look complete. A search that misses something is evidence about
+  the search, and rewriting it retroactively destroys the only measurement you had.
+- **Two trials of one programme are the cheapest recall test in existence.** If a query
+  returns one sibling and not the other, the field it keys on is not stable enough to be a
+  sole limb — and you have learned that from two records rather than an audit.
+
+*One programme, two trials, verified directly against the live registry on 2026-08-26. The
+mechanism is general and common; the count is two.*
+
+---
+
 ## Blind spots
 
 - The harness checks **structure and provenance**, not truth. It cannot tell you that
@@ -235,6 +283,8 @@ entirely about the registry.
 - `CHK001` only works if you captured the printed percentage. Most of its value comes
   from having bothered to record both numbers.
 - The divergence table in §1 is six trials, chosen by what was being extracted.
+- §8 is **one programme, two trials**. The mechanism is common; the count is two, and
+  nothing here measures how often sibling trials disagree on their condition label.
 - §7 is **one trial, verified directly against the live registry**. The mechanism is
   general; the number is one trial's, and the acronym figure is approximate and drawn
   from one corpus's cache.

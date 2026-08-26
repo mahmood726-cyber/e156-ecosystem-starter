@@ -43,7 +43,7 @@ Three sources, all first-hand:
 | Fix recipe | The defect classes those repairs were checked against | 19 classes |
 | Error-reversal registry | Defects found in the **published** literature during a heart-failure network-meta-analysis audit, plus our own errors recorded by the same standard | 19 published-literature records |
 | Working-corpus defect registry | Classes found while building and repairing a live corpus of topic objects and their delivered pages — the source of C10, C11, H7, H8 and M5, and of everything in [`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md). **Mostly defects in our own surfaces and our own checking machinery** | 135 topic objects, audited 2026-08-19 |
-| Risk-of-bias delivery audit | One day's audit of how a stored risk-of-bias assessment reaches a page — the source of C12, C13 and H9, and of the second half of [`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md). **Every entry is a defect of ours** | 156 topic objects and 163 delivered pages, audited 2026-08-26 |
+| Risk-of-bias delivery audit | One day's audit of how a stored risk-of-bias assessment reaches a page — the source of C12, C13 and H9, and of the second half of [`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md). **Every entry is a defect of ours** | 155 topic stores and 163 delivered pages, audited 2026-08-26 |
 
 Three honest limits on that base:
 
@@ -249,7 +249,7 @@ Same document, same size, same standard as everyone else's. **All four are
 defects in our own delivered surfaces or our own instruments**, and one of them
 is a sentence in *this* document that today's evidence revised.
 
-The day's audit ran over one working corpus of **156 topic objects** and the
+The day's audit ran over one working corpus of **155 topic stores** and the
 **163 pages** they are delivered as. As on 2026-08-19, the stored quantities
 held: not one correction below is to a pooled estimate, an interval, or a trial
 count. Three of the four are the *same* failure wearing different clothes — a
@@ -266,7 +266,7 @@ in the corpus that did not need it.
 ### 1. Twenty-three pages confessed to holding nothing, over an assessment they held
 
 Three readers ask "was risk of bias assessed here". Two spellings exist in the
-corpus. **`rob2` is present on 1 object of 156. `risk_of_bias` is present on 31**
+corpus. **`rob2` is present on 1 store of 155. `risk_of_bias` is present on 31**
 — 24 with a populated assessment, 7 empty shells. Every reader, and the gate
 written to prevent exactly this class, was keyed to `rob2`.
 
@@ -398,7 +398,19 @@ the committer date are supplied by whoever makes the commit; a signature attests
 who made it, not when. Demonstrated rather than argued — the command and its
 output are in M2. The class survives; the sentence did not.
 
-*Denominator and selection for all four: one corpus, 156 topic objects and 163
+> **A correction to this section's own denominator, made hours after publishing
+> it.** The four entries above were first published saying **156 topic objects**.
+> The population is **155**. `ssot/` holds 157 directories: 155 topic stores
+> (`<name>/<name>.json`), and 2 that are not stores at all. The 156 came from
+> globbing `ssot/*/*.json`, which additionally caught
+> `arni-hfref/manuscript_docmodel.json` — a second file inside a store directory,
+> not a store. **The kinds of item in the population were never enumerated, so the
+> denominator was assumed** — which is the rule this document states, broken in
+> the act of stating it. Corrected throughout: `rob2` is present on **1 of 155**,
+> `risk_of_bias` on **31 of 155**. Nothing else moves; the page counts were always
+> over `PAGE_MAP` and are unaffected.
+
+*Denominator and selection for all four: one corpus, 155 topic stores and 163
 delivered pages, audited by its own maintainers on 2026-08-26 and measured at the
 named commits. It is **enriched by construction** — the risk-of-bias delivery
 path was under deliberate scrutiny that day, which is why four findings landed on
@@ -616,6 +628,11 @@ Simpson's paradox in a random-effects model.
 ---
 
 ## C6 — The badge is green because someone wrote it green
+
+> Its sibling, and the harder one, is
+> [C14](#c14--a-quality-badge-whose-measure-is-narrower-than-its-label): a badge that is
+> computed honestly from real data, over something much narrower than the word it prints.
+> C6 dies the moment you read the source. C14 survives it.
 
 **Detector: `MEL-06`** — **repaired in 532 of 626 dashboards (85%)**
 
@@ -1013,6 +1030,116 @@ of 11 dual-assessed topics and cites the unadjudicated overall judgements on non
 
 ---
 
+## C14 — A quality badge whose measure is narrower than its label
+
+**No detector. The check is to read the badge's own inputs, and it takes a minute.**
+
+**What it is.** A portfolio, index or dashboard puts a coloured verdict beside each
+review. The verdict is computed — honestly, deterministically, from real data — and
+the thing it computes is **much narrower than the word it prints**. Readers take
+the word. Nobody reads the formula.
+
+This is [C6](#c6--the-badge-is-green-because-someone-wrote-it-green)'s more
+dangerous sibling. C6 is a badge coloured by a hardcoded string, and it dies the
+moment anyone looks at the source. **This badge is honest all the way down and
+still misleads**, because the gap is between the measure and the *label*, not
+between the label and the code.
+
+**A real example.** Ours, measured on the delivered index at commit `29d61df0a`.
+
+A green dot renders with the tooltip **"TRUSTWORTHY (score <0.30) — multi-source
+audit passed"**. The score behind it has eight components, and here is all of them:
+
+| component | what it counts |
+|---|---|
+| `E_no_evidence` | trials with no evidence link |
+| `P_null_pmid` | trials with a null PMID |
+| `N_nulled_nct` | trials whose registry ID was nulled |
+| `A_agent_flag_density` | density of agent-raised flags |
+| `C_cross_review` | cross-review flags |
+| `V_residual_single_arm` | single-arm rows carrying a hazard ratio |
+| `X_generic_name` | trials named by drug class rather than trial |
+| `M_unverifiable_published` | published claims that cannot be verified |
+
+**Every one is identifier and provenance hygiene.** Not one touches the search,
+the pooling model, heterogeneity, risk of bias, certainty, or whether the trials
+belong in the same analysis. A page can have no search record, no protocol, an
+unadjudicated risk-of-bias assessment and a pooled estimate over incommensurable
+outcomes, and still print *TRUSTWORTHY — multi-source audit passed*, correctly,
+by its own formula.
+
+Three measurements, all at the same commit:
+
+| | |
+|---:|---|
+| cards on the delivered index | **532** |
+| cards receiving any dot | **83** — 15.6% |
+| cards receiving **no dot at all** | **449** |
+| of the 83, green **TRUSTWORTHY** | **80** |
+| of the 80 green pages, ones whose own page asserts it is ready | **0** |
+| of the 80, pages carrying at least one trial with a **null PMID** | **16** |
+| worst: `JAK_RA_REVIEW` | **8 of its 12 trials** have a null PMID — score 0.213, green |
+| green pages where **every** trial has a null PMID | **3** (2 of 2, 3 of 3, 3 of 3) |
+
+**Read the last two rows against the badge's own definition.** `P_null_pmid` is a
+component *of this score*. Three pages score green while **100% of their trials
+fail the very check the badge is made of**, because it is one of eight components,
+each capped, and the threshold is 0.30.
+
+**And what the pages themselves say.** Of the 80 green pages, **28 state
+"Submission readiness: NOT READY"**, one states "NOT YET DETERMINED", and **51
+make no readiness statement at all**. **Zero assert readiness.** So on 28 pages
+the index and the page contradict each other, and on 51 the badge is the only
+verdict a reader gets.
+
+**Why it fools a reader — and this is the part that generalises.** The error runs
+**one way**. A narrow measure with a broad label cannot produce a page that looks
+worse than it is; every gap between measure and label is a gap in the flattering
+direction. That asymmetry is the signature of this class, and it is what
+distinguishes it from a merely imprecise metric.
+
+It is also protected by being *true*. Challenge the badge and the answer is a
+correct formula, a real computation and a documented threshold. Nothing in that
+defence is false, and none of it is about trustworthiness.
+
+**How to detect it.** Three questions, in this order:
+
+1. **What does the score actually read?** Print the component list beside the
+   label. If the components are all one narrow family and the label is a general
+   virtue — *trustworthy*, *validated*, *quality*, *verified* — you have this.
+2. **What fraction of the population does the badge cover?** Here, **83 of 532**.
+   A verdict rendered on 15.6% of an index reads, to someone scrolling it, as a
+   verdict on the index. This is the scope rule from
+   [`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md#a-verdict-without-its-scope-is-not-readable-evidence)
+   applied to a label rather than a check.
+3. **Does the badge disagree with the artefact it sits on?** Compare the index's
+   verdict against the page's own statement about itself. Twenty-eight
+   disagreements is not a rendering bug; it is two components answering the same
+   question from different evidence.
+
+**How to correct it.** **Rename the badge to its measure.** *"Identifier hygiene:
+clean"* is honest, useful, and cannot be mistaken for a synthesis verdict. Then:
+
+- **Print the denominator on the badge legend** — how many cards carry a verdict,
+  out of how many exist. A dot that is absent must not read like a dot that is
+  green.
+- **Never let an index-level label contradict the artefact.** If the page says NOT
+  READY, the card must not say TRUSTWORTHY. Where they disagree, the page wins,
+  because it is the thing being judged.
+- **State what the score does not cover, in the tooltip, not in a methods file.**
+  The classes it cannot see are the ones a reader most needs to know about.
+
+**A denominator trap inside this one, worth stating because we fell into it.** The
+score file holds **944 records** and the index shows **532 cards**; only **83**
+intersect. A true and tempting sentence — *"128 pages score a perfect 0.000, and
+**54 of those are single-trial reviews**, where one clean identifier scores
+perfectly"* — is a fact about the **944**, not about the index. Among the 80 green
+badges actually rendered, **0 are single-trial**. Both numbers are real, they
+answer different questions, and quoting the first while showing the second is the
+subset-as-census error this document already documents.
+
+---
+
 ---
 
 # High
@@ -1336,7 +1463,7 @@ implicit. **23 pages** in a corpus of 163 printed *"Risk-of-bias traffic light �
 not computable. No per-domain RoB-2 assessment is stored in this object"* over
 objects holding a full per-result RoB 2 assessment with two independent
 assessors. The cause was one key name: the readers asked for `rob2`, present on
-**1 object of 156**; the assessments are stored under `risk_of_bias`, present on
+**1 store of 155**; the assessments are stored under `risk_of_bias`, present on
 **31**. The single object using the key the readers wanted was the single object
 that rendered. Measured at `c3af11ce2`: 23 pages denying an assessment they hold,
 8 correctly denying over an empty shell, 117 correctly denying with no
@@ -1385,7 +1512,7 @@ Folding 2 and 3 into 1 is how our own first count came out at 29 instead of 23.
   plausible-looking number.** A template reading two missing operands rendered
   *"Overall: of ."* on every page on the affected path.
 - **A column with no data is not a column with empty values.** One field existed
-  on 1 object of 156, so 30 pages rendered a column of blanks, which reads as
+  on 1 store of 155, so 30 pages rendered a column of blanks, which reads as
   "nothing was carried" rather than "this review does not record a carry". Header
   and cells both conditional.
 - **Sweep for siblings before you call it fixed.** The same field had five
@@ -1612,6 +1739,7 @@ catch is the difference between using it and trusting it.
 | **Included trials missing from the reference list** | A 32-trial review citing about 10 of its own trials — not reproducible from its own article of record. | Set-difference the included-studies table against the reference list. Automatable, not yet automated here. |
 | **A rank that its own analysis does not support** | A treatment ranked #2 by P-score while being absent from the same paper's list of regimens significant in the primary analysis, with the top three P-scores within 0.04 of each other. | Never rank by SUCRA/P-score alone. Show the credible intervals of the relative effects next to the ranking. |
 | **A denominator that disagrees with the regulator** | An included trial entered at n=6,200 where the FDA label reconciles to 6,632 analysed. | Reconcile each trial's n against the registry entry or regulatory document. |
+| **A badge whose measure is narrower than its label** ([C14](#c14--a-quality-badge-whose-measure-is-narrower-than-its-label)) | There is nothing false to detect. The formula is correct, the computation is real, the threshold is documented — the gap is between the measure and the English word beside it. | Print the score's component list next to its label and read them together. Then check the badge's coverage (here 83 of 532 cards) and whether it contradicts the artefact it sits on (here 28 of 80). |
 | **A page that denies holding evidence it holds** ([H9](#h9--a-page-that-denies-holding-the-evidence-it-holds)) | Every detector in this kit tests for over-claiming. A false confession is under-claiming, and it passes them all — while reading to a human as candour. | Read the object, not the page. For every negative claim a template can emit, enumerate the objects it could have been built from and ask each whether it holds the thing being denied. Report *denies-while-holding*, *denies-over-a-shell* and *no-such-key* as three numbers, never one. |
 | **An inter-rater rate that measures the blinding** ([C12](#c12--an-inter-rater-agreement-figure-that-measures-the-blinding)) | The defect is in what the blinded prompt did *not* carry, which is by definition not in the artefact. No page-reading check can see an absence in an input it never saw. | Print the prompt as sent. Ask which things the first assessor used are missing from it. Then read the *shape* of the disagreement: concentrated along a rule boundary means convention, spread across domains means judgement. |
 | **One assessor's tally as the review's finding** ([C13](#c13--one-assessors-tally-published-as-the-reviews-judgement)) | The sentence is arithmetically true of the data it was generated from, so every consistency check passes. It is also exactly what an honest single-assessor review would print. | A two-field comparison: if two sets of judgements exist, one prose summary, and no adjudication record, check whether the summary reproduces one set exactly. Automatable; not automated here. |

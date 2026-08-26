@@ -342,6 +342,17 @@ Swept mechanically across the whole instrument layer:
 | 138 | read the PAGE only |
 | **59** | **claim a page-or-reader defect and read only the object** |
 
+> **It recurred the same evening, in an instrument written that day.** A gate built to
+> measure search quality reports that **154 of 155 stores have no protocol commit and 137 of
+> 155 hold no executed search**. The one topic in the corpus with a protocol committed *and
+> publicly anchored before its first query*, its search executed and recorded, and both ends
+> independently verifiable, is counted by that gate as having **neither** — because the gate
+> reads `ssot/<name>/<name>.json` and those artefacts were written to `PROTOCOL.md` and
+> `SEARCH-RECORD.json` beside it. Verified at `29d61df0a`. **Writing the artefact and
+> registering it where the checker looks are two jobs**, and if a new artefact does not move
+> the number that measures it, one of the two is in the wrong place. Detail in
+> [`SEARCH-COMPLETENESS.md` §7](SEARCH-COMPLETENESS.md#the-best-registered-search-in-the-corpus-is-invisible-to-the-gate-that-measures-search-quality).
+
 **The 59 is a floor and each row is a candidate for reading, not a verdict.** The
 claim-layer is inferred from each module's own docstring and exit messages, which
 is a weak instrument, and the sweep says so in its own header before it prints a

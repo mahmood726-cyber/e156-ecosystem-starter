@@ -170,6 +170,102 @@ active-comparator trial.
 
 ---
 
+## Anchoring a protocol so the ordering is not your own word
+
+Everything else in this document is about where a *number* comes from. This section is about
+where a *time* comes from, because the claim "we wrote the protocol before we ran the search"
+is sourced exactly as loosely as any number, and usually worse.
+
+**The problem, stated at full strength.** A protocol committed to a public repository before
+its search is a real registration mechanism — the commit hash binds the text, and anyone can
+read it. But **the timestamp is author-supplied and forgeable.** Git author and committer
+dates are set by whoever makes the commit; an unsigned commit attests nothing further; and a
+host stores and displays what it is given. Demonstrated rather than argued in
+[`META-ERROR-LIBRARY.md` M2](META-ERROR-LIBRARY.md#m2--a-commit-timestamp-claimed-as-prospective-registration),
+where a commit made in 2026 reports both dates as `2019-01-01T00:00:00Z`.
+
+Push history does not rescue it either: a host's public event feed is capped by **count**, not
+by time. Measured twice on one repository on 2026-08-26, hours apart: **300 events — the API
+cap — spanning 6.50 days, then 6.47 days.** The window is a function of your own push rate, so
+it shrinks exactly when you are working hardest.
+
+**The fix is one third-party time at each end.** A public transparency log
+([Rekor](https://rekor.sigstore.dev), part of Sigstore) will record a signature over a digest
+and stamp it with an `integratedTime` set by the log, not by you.
+
+### The worked example, verified here from the public log
+
+One topic, `finerenone-cv`, anchored on 2026-08-26. Every line below was re-fetched from
+Rekor and re-hashed from the committed bytes while writing this section — not copied from the
+record that asserts it.
+
+```
+protocol commit       3872817c06c92bad152cc4d076ea23b2f611012c
+protocol path         ssot/finerenone-cv/PROTOCOL.md         (17,534 bytes)
+sha256 recomputed     7220ad588145ee338f936a6799fea6766d4b467f04994dd2198f2ea759fb2633
+Rekor logIndex        2604694652   integratedTime 2026-08-26T17:59:41Z
+                      logged sha256 MATCHES the recomputed sha256
+
+  first query ATTEMPT      2026-08-26T18:00:30.227Z
+  first query executed     2026-08-26T18:00:48.163Z
+  second query executed    2026-08-26T18:01:14.013Z
+
+search record commit  fe926bf4f25e4c72a6535bdabc0eab75d4373119
+search record path    ssot/finerenone-cv/SEARCH-RECORD.json
+sha256 recomputed     ec452d245ebf2a79602d14de321a77be1c6fefd2d58af0ef0f41579520ed9d9e
+Rekor logIndex        2604754261   integratedTime 2026-08-26T18:04:45Z
+                      logged sha256 MATCHES the recomputed sha256
+```
+
+**The bracket: `17:59:41Z < every query time < 18:04:45Z`, both bounds set by the log.**
+
+The ordering test uses the earliest time the record *admits to* — a query **attempt** that
+returned nothing at 18:00:30, not the first success at 18:00:48. Using the success would move
+the first-query time 18 seconds later and flatter the claim. Always publish the attempt.
+
+### Say exactly what it establishes, and exactly what it does not
+
+This is the part that makes it usable by a referee, and the part most likely to be dropped.
+
+**It establishes.** The protocol text existed **no later than** 17:59:41Z, and the search
+record existed no later than 18:04:45Z — both times set by a third party, on an append-only
+publicly auditable log. And that whoever holds the signing key signed exactly those bytes.
+
+**It does not establish.** Not when the commit was made. Not that no earlier or parallel
+version of the protocol existed elsewhere. Not that the data had not already been seen. Not
+anything about the independence of the people who wrote it.
+
+> **The log time is independent of us. The key custody is not.** A stranger can verify the
+> text existed by the log time and that we signed it. A stranger cannot verify we did not
+> hold an earlier version of the same text. That is weaker than a notary and considerably
+> stronger than a git timestamp, and the difference belongs in the same sentence as the claim.
+
+### The recipe, which needs nothing from us
+
+1. **Fetch the log entry:** `curl -s https://rekor.sigstore.dev/api/v1/log/entries/<uuid>`.
+   Read `integratedTime` (Unix seconds — the third-party time) and base64-decode `body` for
+   `spec.data.hash.value`.
+2. **Hash the file at the commit named in the record** — not at `main`, because `main` moves:
+   `git show <commit>:<path> | sha256sum`.
+3. **Compare.** Identical, or the claim fails.
+4. **Check the ordering.** Every query time must fall after the protocol's `integratedTime`
+   and before the search record's.
+
+**A recipe nobody has run is a plausible recipe.** Run it against your own anchor before you
+publish it, and say in the document that you did.
+
+**Two caveats worth carrying.** Anchoring proves nothing about search *quality* — the same
+anchored search is the one whose registry query
+[missed a pivotal trial](REGISTRY-EXTRACTION-TRAPS.md#8-two-trials-of-the-same-drug-can-index-their-disease-differently)
+and whose PubMed string was
+[edited by the service](SEARCH-COMPLETENESS.md#a-second-instance-and-it-settles-the-class-the-service-edits-your-query-and-hands-the-edit-back-as-the-record).
+Both are recorded in the anchored record rather than corrected out of it, which is the only
+thing that makes anchoring worth doing: **it fixes what a bad result cannot later be quietly
+replaced with.** And it is one topic, out of
+[155](SEARCH-COMPLETENESS.md#7-what-a-corpus-actually-has--two-denominators-kept-apart-on-purpose).
+
+---
+
 ## Where this connects
 
 - [`META-ERROR-LIBRARY.md`](META-ERROR-LIBRARY.md) — the defect classes these
@@ -180,5 +276,9 @@ active-comparator trial.
 - **AMSTAR-2 item 4** on search comprehensiveness, and **PRISMA 2020 items 5–6**
   on eligibility criteria and their justification, are the standards a reviewer
   will hold this part of your method against.
+- [`SEARCH-COMPLETENESS.md`](SEARCH-COMPLETENESS.md) — proving a search finished, and
+  what a corpus actually holds once you count.
+- [`REGISTRY-EXTRACTION-TRAPS.md`](REGISTRY-EXTRACTION-TRAPS.md) — the registry fields
+  that answer a different question from the one you asked.
 
 MIT-licensed, like the rest of the kit.
