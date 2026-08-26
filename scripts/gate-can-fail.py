@@ -39,9 +39,31 @@ fail**. Before the renames it found 4. Both directions are exercised by
 `--selftest`, which builds a known-bad and a known-good fixture for every rule
 below and asserts the verdict on each.
 
+THE DEFAULT SCOPE IS A NAME, AND THAT IS THIS TOOL'S LARGEST LIMITATION. Read
+this before trusting a CLEAN. A rule whose population is a filename convention
+RETIRES ITSELF as the convention drifts, silently and in the flattering
+direction. Measured on that same corpus a week later, on 2026-08-26: every
+instrument written since the rule was introduced had been named `lint_*` or
+`audit_*`, so none of them was in scope. **43 files named `*_gate.py`: 0 that
+cannot fail. 230 files that RETURN A VERDICT (`lint_`, `audit_`, `check_`,
+`verify_`, `prove_`, `*_gate.py`, `*_check.py`): 42 that cannot fail -- and not
+one of the 42 was named `*_gate.py`.** The published zero was true and had
+stopped containing the interesting cases.
+
+So run this over the names YOUR instruments actually use, not only the one this
+tool defaults to:
+
+    for s in _gate.py _check.py _lint.py; do python scripts/gate-can-fail.py --suffix "$s"; done
+
+And note that a file which cannot fail is not automatically a defect under a
+wider scope: some are triage BY DESIGN and say so in their own output. Those need
+naming, with the reason written down, rather than counting as breaches.
+See docs/DETECTOR-VERIFICATION.md#the-rule-was-scoped-to-a-name-and-the-names-moved.
+
 USAGE
     python scripts/gate-can-fail.py                 # check the current directory
     python scripts/gate-can-fail.py path/to/repo    # check somewhere else
+    python scripts/gate-can-fail.py --suffix _check.py   # a different naming convention
     python scripts/gate-can-fail.py --json          # machine-readable
     python scripts/gate-can-fail.py --selftest      # prove it fires, and does not
 

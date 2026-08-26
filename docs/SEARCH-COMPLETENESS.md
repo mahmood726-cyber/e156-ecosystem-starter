@@ -188,9 +188,82 @@ now **prints the keys it actually saw** beside every NOT_ASSESSABLE.
 
 That is the general remedy, and it is the same one that has worked every other time this shape
 has appeared here: **make the instrument report what it looked at, not only what it found.** A
-count printed beside its denominator is refutable. A count alone is not. The four forms of a
+count printed beside its denominator is refutable. A count alone is not. The seven forms of a
 check that finds nothing because it never looked are catalogued in
 [`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md).
+
+---
+
+## 6. Searching by identifier — two traps, and a claim of ours that did not survive
+
+Looking up a list of registration identifiers in a bibliographic database is the most
+mechanical search anyone in evidence synthesis runs. It has two failure modes that a normal
+client cannot see, and we got one of them wrong before checking it.
+
+Measured against PubMed's E-utilities on **2026-08-26**, using the `[si]` (secondary source
+identifier) field, on **40 distinct NCT identifiers taken in file order from this corpus**.
+
+### The claim we withdrew
+
+We were about to publish that **PubMed silently drops an unindexed identifier from a boolean
+query rather than erroring**. Executed, it is wrong, and the correct version is more useful.
+
+**29 of the 40** identifiers return zero records. Queried as one `OR` chain, PubMed returns
+**HTTP 200** and a count of **15** — and **names all 29** in a field of the response:
+
+```json
+"errorlist": { "phrasesnotfound": ["NCT06833138", "NCT03062241", ... ], "fieldsnotfound": [] }
+```
+
+Every one of the 29 zero-yield identifiers appears there, exactly. **The API reports the
+omission in full.** What it does not do is put it anywhere a client is looking: the status is
+success, `esearchresult.count` is a plain integer, and reading `count` is what essentially
+every script does.
+
+> **The drop is not silent. It is loud in a field nobody reads.** That distinction matters,
+> because the remedy is different: there is nothing to work around, only a field to read. Parse
+> `errorlist.phrasesnotfound` on every identifier query and reconcile it against the list you
+> sent. If the two do not account for each other, stop.
+
+It is also the same shape as everything else on this page. A count came back, the count was
+correct, and it was about a smaller set than the one asked for — and only the *scope*, printed
+beside the verdict, tells you which.
+
+**What this does and does not measure.** One database, one field, 40 identifiers from one
+corpus on one day. It says nothing about how many of those 29 trials have a publication:
+absence from `[si]` means the record is not indexed against that identifier, not that no paper
+exists. Confusing the two is
+[H6](META-ERROR-LIBRARY.md#h6--a-registry-identifier-that-cannot-be-right) territory, and the
+honest disposition for all 29 is *not found by this route*, never *no publication*.
+
+### Summing per-identifier hit counts double-counts, and by how much depends on the trials
+
+Run the same 40 identifiers individually and add up the counts, and you get **15**. The union
+is also **15**, and the boolean `OR` returns a set exactly equal to the union. **0% inflation.**
+
+Now run four large, heavily-published cardiovascular trials the same way:
+
+| | |
+|---:|---|
+| sum of the four per-identifier counts | **67** |
+| distinct records in the union | **46** |
+| boolean `OR` count | **46** — set-identical to the union |
+| **records indexed against more than one of the four** | **21 of 46** |
+| inflation from summing | **45.7%** |
+
+**Same procedure, same database, same day: 0% on one set and 45.7% on the other.** The
+difference is entirely a property of the trials — pooled reports, programme-wide analyses and
+secondary papers are indexed against every trial they cover, so a set of trials that share
+publications inflates and a set that does not, does not.
+
+Which means **you cannot carry an inflation factor between searches**, and a yield reported as a
+sum of per-identifier counts is not a number at all. **Take the union, and report the union.**
+
+This is [C3](META-ERROR-LIBRARY.md#c3--the-same-trial-counted-twice) and
+[H8](META-ERROR-LIBRARY.md#h8--summing-k-across-reviews-counts-the-same-trial-many-times) one
+more level up: not one trial counted twice in a pool, and not one trial counted twice across
+reviews, but **one paper counted once per trial it reports**. Every level of this stack has the
+same fix — deduplicate on identity, never on the string you searched with.
 
 ---
 
@@ -208,6 +281,8 @@ check that finds nothing because it never looked are catalogued in
 - **`n = 47` records, `n = 3` recall topics, one programme, mostly cardiovascular, and enriched
   by construction** — this is a corpus under active repair, so its own instruments were under
   deliberate scrutiny. The mechanism generalises. The numbers do not.
+- **The identifier findings in §6 are one database, one field, 40 identifiers, one day.** Another database may behave differently, and the 45.7% inflation figure is a property of those four trials, not a constant.
+- **Absence from an identifier index is not absence of a publication.** The 29 zero-yield identifiers are *not found by this route* and nothing more.
 - **Nothing here checks whether the query was well aimed.** A perfectly reconciling search of
   the wrong condition is clean by every measure on this page.
 
@@ -216,7 +291,7 @@ check that finds nothing because it never looked are catalogued in
 - [`META-ERROR-LIBRARY.md`](META-ERROR-LIBRARY.md) — the defect classes in finished syntheses,
   including the ones this programme has committed
 - [`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md) — proving a detector can fail, and the
-  four ways a check reports clean because it never looked
+  seven ways a check reports clean because it never looked
 - [`SOURCING-METHOD.md`](SOURCING-METHOD.md) — where to source a replacement number once the
   search is trustworthy
 - [`REGISTRY-EXTRACTION-TRAPS.md`](REGISTRY-EXTRACTION-TRAPS.md) — recovering counts from the

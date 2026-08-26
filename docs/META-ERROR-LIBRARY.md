@@ -43,6 +43,7 @@ Three sources, all first-hand:
 | Fix recipe | The defect classes those repairs were checked against | 19 classes |
 | Error-reversal registry | Defects found in the **published** literature during a heart-failure network-meta-analysis audit, plus our own errors recorded by the same standard | 19 published-literature records |
 | Working-corpus defect registry | Classes found while building and repairing a live corpus of topic objects and their delivered pages — the source of C10, C11, H7, H8 and M5, and of everything in [`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md). **Mostly defects in our own surfaces and our own checking machinery** | 135 topic objects, audited 2026-08-19 |
+| Risk-of-bias delivery audit | One day's audit of how a stored risk-of-bias assessment reaches a page — the source of C12, C13 and H9, and of the second half of [`DETECTOR-VERIFICATION.md`](DETECTOR-VERIFICATION.md). **Every entry is a defect of ours** | 156 topic objects and 163 delivered pages, audited 2026-08-26 |
 
 Three honest limits on that base:
 
@@ -239,6 +240,169 @@ absent. See [M5](#m5--a-review-question-that-is-a-template).
 by its own maintainers on 2026-08-19. It is **enriched by construction** — this
 is a corpus under active repair, so its instruments were under deliberate
 scrutiny that day. These are counts in one corpus, not rates for anything.*
+
+---
+
+## Four errors of ours, found on 2026-08-26
+
+Same document, same size, same standard as everyone else's. **All four are
+defects in our own delivered surfaces or our own instruments**, and one of them
+is a sentence in *this* document that today's evidence revised.
+
+The day's audit ran over one working corpus of **156 topic objects** and the
+**163 pages** they are delivered as. As on 2026-08-19, the stored quantities
+held: not one correction below is to a pooled estimate, an interval, or a trial
+count. Three of the four are the *same* failure wearing different clothes — a
+**reader keyed to a name**, where the name it was keyed to was the one spelling
+in the corpus that did not need it.
+
+| # | What was wrong | Measured, and where | Now |
+|---|---|---|---|
+| 1 | Pages printed **"No per-domain RoB-2 assessment is stored in this object"** over objects that held one | **23 pages / 22 objects** at `c3af11ce2` | **0 of 163** at `0be050e90` |
+| 2 | A published **inter-rater disagreement rate** measured a blinding rule the second reader could not receive | **23 of 24** dual-assessed objects carry one; pooled **243 of 450 (54.0%)** | rate **withheld on the page**, with its reason printed |
+| 3 | **One assessor's tally** published as the review's judgement | every dual-assessed topic; **0 of 24** carry an adjudication | prose names both tallies and picks neither |
+| 4 | **M2 in this document** said a signed commit is evidence a protocol existed on a date | demonstrated false in one command | corrected in [M2](#m2--a-commit-timestamp-claimed-as-prospective-registration) |
+
+### 1. Twenty-three pages confessed to holding nothing, over an assessment they held
+
+Three readers ask "was risk of bias assessed here". Two spellings exist in the
+corpus. **`rob2` is present on 1 object of 156. `risk_of_bias` is present on 31**
+— 24 with a populated assessment, 7 empty shells. Every reader, and the gate
+written to prevent exactly this class, was keyed to `rob2`.
+
+The one object spelling it `rob2` is the one object that rendered correctly. That
+coincidence is what identified the cause instead of guessing it, and it is why
+that object was left structurally alone as the control.
+
+Measured at the first commit of the day and again at the last, over `PAGE_MAP`:
+
+| | at `c3af11ce2` | at `0be050e90` |
+|---:|---:|---:|
+| pages in scope | 163 | 163 |
+| **denies while the object holds an assessment** | **23** | **0** |
+| denies over an empty shell — *the denial is correct* | 8 | 8 |
+| no risk-of-bias key at all — *correct* | 117 | 117 |
+
+> **Reconciling 23 with 22.** The lane that found this reported **22**; this
+> re-derivation gives **23**; both are right. One object is served by two pages
+> (`bococizumab-lipid-review`). **23 pages, 22 objects** — and neither number is
+> wrong once you say which kind of thing you counted. An earlier count of **29**
+> was wrong, because it folded in the 7 shells, where the denial is true.
+
+**Why no guard caught it.** Every severity rung in this document, and every
+detector in the kit, is built to catch a page claiming *more* than its evidence
+supports. This page claimed **less**. A false confession passes an over-claim
+detector exactly the way an honest one does — and it is worse than a silence, because
+a reader who is told "no assessment is stored" concludes that none was made.
+
+It also travelled with its own inverse on the same page. The Methods section
+asserted *"risk of bias was assessed with RoB 2"* — composed by the projector
+from the `risk_of_bias` spelling — while the panel below it denied any assessment
+existed, reading `rob2`. **One page, two readers, opposite answers, both
+sincere.** See [H9](#h9--a-page-that-denies-holding-the-evidence-it-holds).
+
+### 2. A disagreement rate that measured the blinding
+
+Every dual assessment in this corpus is blind: the second assessor is sent an
+allow-list of registry facts and never the first assessment. The guard enforcing
+that **refuses to send any assembled text containing a RoB 2 verdict word** —
+`LOW`, `HIGH`, `SOME_CONCERNS`, `NO_INFORMATION`. That guard is correct and it is
+the right shape: positive allow-list, not a deny-list.
+
+The review's own decision rule is written in those words. Verbatim, from the
+object:
+
+> *"A domain that cannot be judged from the registration and the published report
+> is NO_INFORMATION, never SOME_CONCERNS."*
+
+**Ten of the eleven objects that state a decision rule state it in words the
+blinding guard refuses.** The rule therefore cannot be put on the allow-list
+without the prompt refusing itself, so the two assessors answered under
+*different rules* rather than reading the same evidence differently — and the
+number that came out was published as though they had.
+
+On one topic that number is **11 of 24 judgements, 45.8%**, and its shape gives
+the mechanism away:
+
+| domain | assessors disagree |
+|---|---|
+| D1 randomisation | 0 of 4 |
+| D2 deviations | 0 of 4 |
+| D3 missing outcome data | 0 of 4 |
+| **D4 measurement of the outcome** | **4 of 4** |
+| **D5 selection of the reported result** | **3 of 4** |
+| **overall** | **4 of 4** |
+
+**Perfect agreement on three domains and near-total disagreement on three others
+is not how two readers disagree about evidence.** It is how two readers disagree
+about a convention.
+
+Corpus-wide: **23 of 24** objects holding an assessment carry a blind second
+assessor; pooled disagreement **243 of 450 judgements (54.0%)**; per-topic range
+**16.7% to 100.0%**. Every one of those rates was produced under the same
+construction. The pooled figure is a sum of numerators over a sum of
+denominators, not a mean of topic rates, and the two are not interchangeable.
+
+A second, separate defect in the same rate, worth naming because it is the more
+common one: the prompt is assembled from 14 allow-listed fact fields, and on the
+topic above **only 8 of the 14 were present on the records**. The absent ones
+include the registered analysis population and the rank the pooled result holds
+— the facts a D5 judgement turns on. **A blind assessor given fewer facts is not
+a disagreeing assessor; it is an assessment of less evidence.** Widening that
+list from 9 fields to 14 earlier in the month halved one topic's disagreement and
+left two others unmoved, which is why the field list is now printed beside the
+rate the way a denominator is.
+
+**The remedy is not a better rule.** It is to publish the rate only beside an
+adjudication, and otherwise to publish the withholding *and its reason*. The page
+now says the assessment is dual, that the rate is withheld pending adjudication,
+and why. Showing the rate without the adjudication is the worst of the two.
+
+### 3. One reader's tally, printed as the review's finding
+
+The manuscript sentence read *"Across the 4 results assessed: 3 at high risk of
+bias, 1 at some concerns."* That is assessor 1's tally exactly. Assessor 2
+recorded 2 at some concerns and 2 at no information. **The two agree on 0 of 4**,
+and **0 of the 24 objects holding an assessment carry any adjudication record**.
+
+So the page published one reader's opinion as the review's judgement about
+somebody else's trials — on a page that simultaneously stated no adjudication
+existed.
+
+**The fix must not pick a winner** — not assessor 2, not an average, and not an
+implicit adjudication by choosing. The wording now states that two assessors read
+independently, how many results they differ on, that no adjudication has been
+performed, and that the review therefore holds no final risk-of-bias judgement
+for those results. Both tallies are shown; neither is the finding.
+
+Two things fell out of doing it, and both generalise:
+
+- **A rhetorical flourish is an assertion.** The sentence *"No result escaped
+  that judgement"* is now suppressed on unadjudicated pairs, because emphasis
+  reasserts a single reader's verdict after the sentence has declined to assert
+  it.
+- **The fix contradicted the table above it** within four hours, saying assessor
+  2's judgements were "held pending adjudication" while the table rendered them.
+  Assert-and-deny, produced by the repair for assert-and-deny.
+
+One thing checked rather than assumed: GRADE does **not** inherit this. Its
+risk-of-bias domain rests on independent trial-level grounds on 11 of 11
+dual-assessed topics, and cites the unadjudicated overall judgements on none.
+
+### 4. A sentence in this document, corrected
+
+[M2](#m2--a-commit-timestamp-claimed-as-prospective-registration) said a signed
+commit *is* tamper-evident evidence that a protocol existed on a date. **A commit
+binds content to a hash. It does not bind either to a time.** Both the author and
+the committer date are supplied by whoever makes the commit; a signature attests
+who made it, not when. Demonstrated rather than argued — the command and its
+output are in M2. The class survives; the sentence did not.
+
+*Denominator and selection for all four: one corpus, 156 topic objects and 163
+delivered pages, audited by its own maintainers on 2026-08-26 and measured at the
+named commits. It is **enriched by construction** — the risk-of-bias delivery
+path was under deliberate scrutiny that day, which is why four findings landed on
+it. These are counts in one corpus. They are not rates for anything.*
 
 ---
 
@@ -741,6 +905,114 @@ provenance is what the class is actually about. The instance above was convicted
 on the arithmetic and *explained* only by finding the external record it came
 from.
 
+## C12 — An inter-rater agreement figure that measures the blinding
+
+**No detector. The check is a reading, and it is described below.**
+
+**What it is.** A review reports that two assessors read independently and quotes
+an agreement or disagreement rate. The blinding that made them independent also
+withheld something they both needed — the review's own decision rule, its
+convention for an undecidable domain, or a fact one of them used and the other
+never saw. The rate that comes out is a property of the harness. It is published
+as a property of the readers.
+
+**A real example.** Ours. The blinding guard refuses to send any assembled text
+containing a RoB 2 verdict word — `LOW`, `HIGH`, `SOME_CONCERNS`,
+`NO_INFORMATION` — which is the right shape for a blinding guard. The review's
+own decision rule is *"a domain that cannot be judged … is NO_INFORMATION, never
+SOME_CONCERNS"*, written in exactly those words, so it **could not reach the
+second assessor by construction**. Across the corpus, **10 of the 11 objects that
+state a decision rule state it in words the guard refuses.** On one topic the
+published figure was **11 of 24 judgements, 45.8%**, distributed as **0 of 4 on
+each of D1, D2 and D3** and **4 of 4, 3 of 4 and 4 of 4** on D4, D5 and the
+overall. Corpus-wide the pooled rate is **243 of 450 judgements (54.0%)** over 23
+dual-assessed topics, range 16.7% to 100.0%.
+
+**Why it fools a reader.** An agreement rate is one of the few numbers in a
+methods section that looks like a measurement rather than a claim, and a *low*
+agreement reads as candour — nobody suspects a flattering motive behind admitting
+your assessors disagreed. It also has the texture of a real result: it varies by
+topic, it has a plausible spread, and it is reported to one decimal place.
+
+**How to detect it.** Two readings, both cheap.
+
+- **Read the blinded prompt as it was actually sent, not as it was designed.**
+  Print it. Then ask which of the things the first assessor used are missing from
+  it. If the review states a convention anywhere, check whether that convention
+  is in the prompt; if the blinding is enforced by a word filter, check whether
+  the convention is written in the filtered words.
+- **Look at the shape, not the total.** Disagreement concentrated in some domains
+  and absent from others, with the split falling along a rule boundary, is a
+  convention difference. Disagreement spread across domains is a judgement
+  difference. The first is about your instrument.
+
+A related trap in the same figure: count how many of the fact fields you intended
+to send were actually **present** on the records. On the topic above, **8 of 14**.
+A blind assessor given fewer facts is not a disagreeing assessor; it is an
+assessment of less evidence, and a rate computed over one is measuring the
+prompt.
+
+**How to correct it.** Do not repair the rate — **withhold it, and print why**.
+An inter-rater figure is only readable beside an adjudication, because without
+one there is no answer to *disagreed about what*. State that the assessment is
+dual, that no adjudication has been performed, and that the rate is therefore not
+published. If you want the rate, adjudicate first. And state the allow-list the
+rate is conditional on next to the rate itself, the way you would state a
+denominator.
+
+---
+
+## C13 — One assessor's tally published as the review's judgement
+
+**No detector. See "how to detect it" — it is a two-field comparison.**
+
+**What it is.** Two people, or two model families, assess independently. The prose
+summarising the assessment is generated from one of them. Nothing on the page
+says which, and often nothing on the page says there were two.
+
+**A real example.** Ours. A manuscript sentence read *"Across the 4 results
+assessed: 3 at high risk of bias, 1 at some concerns."* That is assessor 1's tally
+exactly. Assessor 2 recorded 2 at some concerns and 2 at no information — **the
+two agree on 0 of 4**. The same page stated that no adjudication existed. Present
+on every dual-assessed topic in the corpus; **0 of the 24 objects holding an
+assessment carry any adjudication record.**
+
+**Why it fools a reader.** The sentence is arithmetically true of the data it was
+generated from, so every internal consistency check passes. It is also the
+sentence a single-assessor review would legitimately print, which means the
+defect is invisible unless you already know the assessment was dual — and the
+page that carries the defect is exactly the page that has stopped saying so.
+
+**How to detect it.** Find the stored assessments. If there are two sets of
+judgements and one prose summary, check whether the summary reproduces one of the
+sets exactly. If it does, and no adjudication record exists, you have this. It is
+a two-field comparison and it takes a minute.
+
+**How to correct it.** **The fix must not pick a winner.** Not the second
+assessor, not the average, not the stricter one — choosing *is* an adjudication,
+performed silently by whoever wrote the code. State that two assessors read
+independently, give both tallies, say how many results they differ on, say that
+no adjudication has been performed, and say that the review therefore holds no
+final judgement for those results.
+
+Two traps inside the fix, both of which we walked into:
+
+- **Emphasis is assertion.** A flourish like *"No result escaped that
+  judgement"* reasserts a single reader's verdict rhetorically, immediately after
+  the sentence above it declined to assert one. Suppress it on unadjudicated
+  pairs.
+- **Check the surrounding page agrees with the new wording.** Our first repair
+  said the second assessor's judgements were "held pending adjudication" while
+  the table directly above rendered them — assert-and-deny, created by the fix
+  for assert-and-deny, four hours later.
+
+And check what else reads those judgements before you assume the fix is
+contained. We checked whether GRADE inherited the defect rather than assuming it
+did not: its risk-of-bias domain rests on independent trial-level grounds on 11
+of 11 dual-assessed topics and cites the unadjudicated overall judgements on none.
+
+---
+
 ---
 
 # High
@@ -1049,6 +1321,78 @@ Merging **discards** a review. So a split is a routine build and **a merge is a
 decision for a human**, made once, recorded, and reversible. Measure and
 recommend; do not let the de-duplicator change anything by itself.
 
+## H9 — A page that denies holding the evidence it holds
+
+**No detector. The check is `holds(object) != claims(page)`, and it is described below.**
+
+**What it is.** A page prints a message to the effect that some piece of evidence
+was not assessed, not computed, or not stored — over an object that holds it. The
+reader is told the review did less than it did. Frequently the same page asserts,
+somewhere else, that the work *was* done, because a different reader with a
+different key composed that sentence.
+
+**A real example.** Ours, and it is the reason this class is here rather than
+implicit. **23 pages** in a corpus of 163 printed *"Risk-of-bias traffic light —
+not computable. No per-domain RoB-2 assessment is stored in this object"* over
+objects holding a full per-result RoB 2 assessment with two independent
+assessors. The cause was one key name: the readers asked for `rob2`, present on
+**1 object of 156**; the assessments are stored under `risk_of_bias`, present on
+**31**. The single object using the key the readers wanted was the single object
+that rendered. Measured at `c3af11ce2`: 23 pages denying an assessment they hold,
+8 correctly denying over an empty shell, 117 correctly denying with no
+risk-of-bias key at all. At `0be050e90`: **0, 8, 117**.
+
+The compound form, on the same pages: the Methods section asserted *"risk of bias
+was assessed with RoB 2"*, composed at render time from the `risk_of_bias`
+spelling, while the panel below denied any assessment existed. **One page, two
+readers, opposite answers, both sincere.**
+
+**Why it fools a reader — and every check you have.** Every detector in this kit,
+and every severity rung above, is built to catch a page claiming **more** than
+its evidence supports. This page claims **less**. A false confession passes an
+over-claim detector exactly the way an honest statement does. Worse, it reads as
+*rigour*: a page that admits a gap is the page a careful reader trusts, so the
+defect is protected by the thing that would otherwise expose it.
+
+Nor is it a silence. A blank panel invites the question "why is this empty?". A
+sentence saying "no assessment is stored" answers that question, wrongly, and
+closes it.
+
+**How to detect it.** Do not read the page. **Read the object, then diff.** For
+every negative claim a template can emit — *not computed*, *not assessed*, *not
+stored*, *not available*, *none recorded* — enumerate the objects the page could
+have been built from and ask each one whether it holds the thing being denied.
+Three buckets, and they must be reported separately:
+
+1. **denies while the object holds it** — this class,
+2. **denies over an empty shell** — the denial is correct, and a shell is not an
+   assessment,
+3. **no such key at all** — also correct.
+
+Folding 2 and 3 into 1 is how our own first count came out at 29 instead of 23.
+
+**How to correct it.** Fix the reader, not the key — and read the object
+**whichever schema it uses**, returning a normalised structure. Then:
+
+- **A reader keyed to a lab, a vendor, or an assessor name will render a
+  *partial* panel when the name is wrong, which is harder to notice than a blank
+  one.** Return assessors as an ordered list so no name is ever a key.
+- **Never pad a missing second reader with the first.** A panel showing one
+  reader's verdicts twice is a false claim of independent agreement, and it is
+  worse than a blank. One object here holds a single assessor; the panel now
+  draws one column and says so.
+- **An absent value becomes an omitted line or a labelled derivation — never a
+  plausible-looking number.** A template reading two missing operands rendered
+  *"Overall: of ."* on every page on the affected path.
+- **A column with no data is not a column with empty values.** One field existed
+  on 1 object of 156, so 30 pages rendered a column of blanks, which reads as
+  "nothing was carried" rather than "this review does not record a carry". Header
+  and cells both conditional.
+- **Sweep for siblings before you call it fixed.** The same field had five
+  readers here. Fixing one and not the others is a fix with a half-life; naming
+  all five, and saying which are readers and which are writers, is what closes
+  the class rather than the instance.
+
 ---
 
 # Medium
@@ -1091,15 +1435,60 @@ build. A leak that reached one page reached all of them.
 **What it is.** Wording to the effect that a git commit hash plus timestamp
 "constitutes" or "is equivalent to" PROSPERO / ICMJE prospective registration.
 
-**Why it fools a reader.** The underlying fact is true and genuinely valuable —
-a signed commit *is* tamper-evident evidence that a protocol existed on a date.
-The overclaim rides on that truth. What a commit in your own repository does not
-give you is **third-party custody** or **public discoverability**: you can
-rewrite the history, and nobody searching PROSPERO will find you.
+**Why it fools a reader.** The underlying fact is *partly* true and genuinely
+valuable — a commit hash is tamper-evident evidence that a particular text
+existed in a particular form. The overclaim rides on that truth. What a commit in
+your own repository does not give you is **third-party custody** or **public
+discoverability**: you can rewrite the history, and nobody searching PROSPERO
+will find you.
 
-**How to correct it.** Keep the timestamp. Describe it accurately —
-"tamper-evident local record of the protocol date" — and drop the equivalence.
-If you want registration, register.
+> **Correction to this entry, 2026-08-26.** An earlier version of the paragraph
+> above said a signed commit *is* tamper-evident evidence that a protocol existed
+> **on a date**. That is false and we published it. **A commit binds content to a
+> hash. It binds neither to a time.** Both the author date and the committer date
+> are supplied by whoever makes the commit; a signature attests *who* made it,
+> not *when*. Demonstrated rather than argued:
+>
+> ```console
+> $ GIT_AUTHOR_DATE="2019-01-01T00:00:00Z" GIT_COMMITTER_DATE="2019-01-01T00:00:00Z" \
+>     git commit -m "protocol registered"
+> $ git log -1 --format='author=%aI committer=%cI'
+> author=2019-01-01T00:00:00Z committer=2019-01-01T00:00:00Z
+> ```
+>
+> Run on 2026-08-26 at 17:19:17Z. Both dates are seven years earlier than the
+> moment the commit was made, and a host displays what it is given.
+>
+> The same false claim was found in a live protocol document of ours, saying the
+> commit timestamp is *"set by the repository and not by the authors"*. It was
+> corrected **by amendment, recorded in the document**, rather than edited out — a
+> registration instrument that silently revises its own claims is not a
+> registration instrument. The amendment changed no eligibility criterion,
+> estimand, search string or analysis choice, and that too is stated in it.
+
+**What the mechanism does support, and no more.** This text is bound to this
+hash; the repository is public, so anyone can read the text at that hash; and
+**where a public transparency log holds an entry for the commit, that log's
+inclusion time is an upper bound on when the text existed** — set by a third
+party rather than by you. That last clause is the only part of the sequence that
+is not your own clock, and it has to be placed deliberately; it does not appear
+because you pushed.
+
+**Push history is not that anchor, and we measured why.** A host's public event
+feed looks like a third-party record of when your commit appeared. It is capped
+by **count**, not by time. Measured against the repository these notes came from
+on 2026-08-26: the events API returned **300 events — its cap — spanning
+2026-08-20T04:37:29Z to 2026-08-26T16:37:55Z, 6.50 days**. The window is a
+function of your own push rate, so it shortens exactly when you are working
+hardest, and a busy fortnight can put a commit from last week outside it. Treat
+it as a convenience, never as evidence.
+
+**How to correct it.** Keep the timestamp. Describe it accurately — "a
+tamper-evident record that this protocol text existed in this form", with no
+claim about the date unless a third party timestamped it — and drop the
+equivalence. If you want a defensible time, put the commit in a public
+transparency log and cite the inclusion time. If you want registration, register.
+
 
 ---
 
@@ -1223,6 +1612,9 @@ catch is the difference between using it and trusting it.
 | **Included trials missing from the reference list** | A 32-trial review citing about 10 of its own trials — not reproducible from its own article of record. | Set-difference the included-studies table against the reference list. Automatable, not yet automated here. |
 | **A rank that its own analysis does not support** | A treatment ranked #2 by P-score while being absent from the same paper's list of regimens significant in the primary analysis, with the top three P-scores within 0.04 of each other. | Never rank by SUCRA/P-score alone. Show the credible intervals of the relative effects next to the ranking. |
 | **A denominator that disagrees with the regulator** | An included trial entered at n=6,200 where the FDA label reconciles to 6,632 analysed. | Reconcile each trial's n against the registry entry or regulatory document. |
+| **A page that denies holding evidence it holds** ([H9](#h9--a-page-that-denies-holding-the-evidence-it-holds)) | Every detector in this kit tests for over-claiming. A false confession is under-claiming, and it passes them all — while reading to a human as candour. | Read the object, not the page. For every negative claim a template can emit, enumerate the objects it could have been built from and ask each whether it holds the thing being denied. Report *denies-while-holding*, *denies-over-a-shell* and *no-such-key* as three numbers, never one. |
+| **An inter-rater rate that measures the blinding** ([C12](#c12--an-inter-rater-agreement-figure-that-measures-the-blinding)) | The defect is in what the blinded prompt did *not* carry, which is by definition not in the artefact. No page-reading check can see an absence in an input it never saw. | Print the prompt as sent. Ask which things the first assessor used are missing from it. Then read the *shape* of the disagreement: concentrated along a rule boundary means convention, spread across domains means judgement. |
+| **One assessor's tally as the review's finding** ([C13](#c13--one-assessors-tally-published-as-the-reviews-judgement)) | The sentence is arithmetically true of the data it was generated from, so every consistency check passes. It is also exactly what an honest single-assessor review would print. | A two-field comparison: if two sets of judgements exist, one prose summary, and no adjudication record, check whether the summary reproduces one set exactly. Automatable; not automated here. |
 | **A search strand querying the wrong population** | A CENTRAL strand contributing a quarter of all records to a reduced-ejection-fraction review, built on *preserved*-EF search terms — and in PubMed syntax that CENTRAL does not use. | Read the executed search string, not the one in the appendix. Diff them. |
 | **A flagship review that does not exist** | A frequently-cited "Cochrane review" that never progressed past protocol stage: the record reads "This is the protocol for a review and there is no abstract." | Open every citation you lean on. Distinguish *structurally absent* from *blocked* from *unreachable* — and never let a shortfall be recorded as a zero. |
 

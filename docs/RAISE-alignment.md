@@ -17,7 +17,7 @@ Legend: ✅ covered · 🟡 partial · ⬜ gap
 | RAISE principle area | Ecosystem mechanism | Status |
 |---|---|---|
 | **Transparency & reporting of AI use** | `AGENTS.md` declares agent roles; TruthCert bundles record method + inputs + `source_hash`; `overmind assess` emits an evidence snapshot; git history + signed bundles are the audit trail | 🟡 — strong provenance, but **no standardized per-output "AI-use disclosure" report** (PRISMA-AI style) |
-| **Human oversight & accountability** | Fail-closed defaults; **"memory ≠ evidence"** non-negotiable; Sentinel WARN-vs-BLOCK keeps humans in the loop; review gate before completion; `#4` multi-reviewer signed consensus adds adjudication | 🟡 — designed for oversight; historically **solo workflow** (multi-reviewer layer is new) |
+| **Human oversight & accountability** | Fail-closed defaults; **"memory ≠ evidence"** non-negotiable; Sentinel WARN-vs-BLOCK keeps humans in the loop; review gate before completion; `#4` multi-reviewer signed consensus adds adjudication | 🟡 — designed for oversight; historically **solo workflow** (multi-reviewer layer is new). **Measured, and it is worse than 🟡 flatters:** in one corpus on 2026-08-26, **23 of 24** objects holding a risk-of-bias assessment carried a blind second assessor and **0 of 24 carried any adjudication record** — so dual assessment was in place and the step that makes it accountable was not. See [C13](META-ERROR-LIBRARY.md#c13--one-assessors-tally-published-as-the-reviews-judgement) |
 | **Validation & performance evaluation** | `overmind eval-ecosystem` scorecard; `overmind ma-verify` (validated on 850 real Cochrane MAs); Sentinel 17-incident regression corpus + `overmind rule-effectiveness`; meta-verify canary | 🟡 — strong internal validation; **no peer-reviewed external validation yet** (the #1 credibility gap) |
 | **Methodological rigor** | `rules/advanced-stats.md` (pooling, heterogeneity, pub-bias, NMA, DTA, Bayesian, survival); `cochrane_v65_invariants` rule (RevMan-2025); `ma-verify` statistical invariants; `rules/e156.md` format contract | ✅ — gold-standard methods encoded as machine-checkable rules |
 | **Reproducibility & provenance** | TruthCert **HMAC/Ed25519-signed** certification bundles; numerical-continuity witness; deterministic-by-design; `source_hash`; local-first/offline; cross-machine sync with signed memory | ✅ — **ahead of the field** (no SaaS competitor cryptographically signs outputs) |
@@ -35,6 +35,13 @@ Legend: ✅ covered · 🟡 partial · ⬜ gap
 1. **Peer-reviewed external validation** of Sentinel/Overmind (sensitivity/specificity vs manual review + statcheck/GRIM) — converts "validation" 🟡→✅ and is the top credibility lever.
 2. **Standardized AI-use disclosure report** per synthesis output (which agent/model/version did what; PRISMA-AI-aligned) — closes "transparency" 🟡→✅.
 3. **Human-oversight workflow** — the multi-reviewer signed-consensus layer (with per-reviewer attestations + adjudication of conflicts) — closes "accountability" 🟡→✅.
+   **Adjudication is the binding half, not the second reviewer.** Two measured failures
+   without it: one reader's tally published as the review's judgement
+   ([C13](META-ERROR-LIBRARY.md#c13--one-assessors-tally-published-as-the-reviews-judgement)),
+   and an inter-rater rate that turned out to measure the blinding rather than the readers
+   ([C12](META-ERROR-LIBRARY.md#c12--an-inter-rater-agreement-figure-that-measures-the-blinding)).
+   Until adjudication exists, the honest output is to **withhold the agreement figure and
+   print why**, not to publish it.
 4. **Equity/representativeness audit** of the evidence base (geography, population, funding/COI) — closes "bias/fairness" 🟡→✅.
 5. **Map to the exact published RAISE items** and produce a line-by-line conformance table for submission to a methods venue (e.g. *Research Synthesis Methods* / Cochrane Methods).
 

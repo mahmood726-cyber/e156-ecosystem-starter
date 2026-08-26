@@ -39,6 +39,13 @@ for anything.*
 All four produce an empty result. None of them is distinguishable from a genuine
 all-clear by reading the output.
 
+> **Three more forms were observed on 2026-08-26** — a check that can only fail
+> once, one whose control expires with its own success, and one that reads a
+> different layer from the one its defect lives on. The full seven-row taxonomy,
+> with a distinct remedy for each, is
+> [below](#the-fifth-form-arrived-and-so-did-the-sixth-and-seventh). This section
+> is left at four because that is what had been observed when it was written.
+
 | Form | What it looks like | Seen in |
 |---|---|---|
 | An over-escaped `\\b` in a raw string | Valid code that matches nothing, and **reports clean** | a text detector |
@@ -160,7 +167,14 @@ python scripts/gate-can-fail.py --selftest      # prove it fires, and that it do
 
 **Measured, on the corpus that motivated it, after the four renames: 39 files
 named `*_gate.py` checked, 3 excluded by verb prefix, 0 that cannot fail.**
-Before the renames it found 4. Verdicts are the same three the self-audit
+Before the renames it found 4.
+
+> **That measurement was correct and had stopped meaning anything.** Every
+> instrument written after it was named `lint_*` or `audit_*`, so none of them
+> was in the population. Rescoped from the name to the role and re-run on
+> 2026-08-26: **230 files that return a verdict, 42 that cannot ever fail, and
+> not one of the 42 named `*_gate.py`.** See
+> [The rule was scoped to a NAME](#the-rule-was-scoped-to-a-name-and-the-names-moved). Verdicts are the same three the self-audit
 uses — `CLEAN` (0), `DEFECTS-FOUND` (1), `INCONCLUSIVE` (2) — and an unparsable
 file returns `INCONCLUSIVE`, never `CLEAN`.
 
@@ -191,7 +205,199 @@ words rather than printing a reassuring zero.
 
 ---
 
+## The fifth form arrived, and so did the sixth and seventh
+
+This page's closing note predicted that four forms would not be all of them. On
+**2026-08-26**, auditing the same corpus — now **156 topic objects** and the
+**163 pages** they are delivered as — three more turned up in one day. They are
+set out below with the original four, because the taxonomy is only useful as a
+whole: **each form has a different remedy, and only one of them is "fix the
+check".**
+
+| Form | What it looks like | Remedy |
+|---|---|---|
+| **1. Cannot fail** | No reachable non-zero exit. Green forever. | **Rewrite** — or rename it, if it was always a report |
+| **2. Can only fail once** | A one-shot migration check left wired in after the migration. Passes because the condition it tested is now permanently absent. | **Remove it.** The check is finished, not broken |
+| **3. Its control expires with its own success** | The control is pinned to a live artefact carrying the defect. The moment the defect is fixed, the control either fails and looks like a regression, or passes for a reason that no longer holds. | **Re-pin the control** to a synthetic fixture or an immutable version. The check itself is fine |
+| **4. Its triggering condition never occurred** | Green, and unproven. Nothing has ever put it in a position to refuse. | **Known-answer test** against a stored known-bad |
+| **5. A case-sensitive key lookup on a field spelled differently** | An empty tally, indistinguishable from a clean one | **Print the keys you looked for beside the keys the record has** |
+| **6. It reads a different layer from the one the defect lives on** | A confident PASS over a large population, about a layer where the defect does not exist. Not weak — **incapable** | **Move the check to the layer that carries the claim** |
+| **7. It compares only the intersection of two surfaces** | Anything present in one and absent from the other is *out of scope* rather than a divergence. It can never detect absence | **Derive the expected set from the source, not from the overlap** |
+
+Forms 2 and 3 are the ones that look healthiest, because both were once correct
+and both still run clean. Form 3 is the more dangerous, because *it will fail one
+day for the wrong reason* and whoever sees that failure will be looking at a
+green fix.
+
+**What backs each row, stated plainly, because a taxonomy is easy to pad.** Forms
+1, 4 and 5 are worked above with counts. Form 6 has its own section below, with a
+sweep. Form 7's instance is a gate that compared a Word manuscript against an HTML
+page **on the sections both surfaces emit**: anything present in one and absent
+from the other was therefore *out of scope* rather than a divergence, and an
+extraction-provenance table was missing from **every Word manuscript this
+programme ever produced** with nothing able to report it. The intersection is not
+the expected set, and using it as one converts every missing section into a pass;
+the replacement derives the expected set from the object — which sections it
+*earns*, given what it holds — and asks both surfaces for it.
+
+**Form 2 is the one row here with no worked instance.** It was named while
+classifying a set of green results, and no specific file has been identified and
+read for it. It is listed because a form you can name and have not yet caught is
+worth more to a reader than a silence — and it is flagged as the weakest row on
+this page, the way the case-sensitive-lookup class was flagged as the weakest on
+the last one.
+
+**A control must be synthetic, or pinned to an immutable version.** That rule is
+form 3 in one sentence, and it is now written into the instruments here: their
+controls are synthesised into a temporary directory on each run and deleted
+afterwards, or read at a pinned commit with `git show <sha>:<path>`, and if git
+cannot supply the pinned bytes the gate raises rather than proceeding. Only their
+*baselines* track corpus state, and a baseline is a ratchet meant to fall — which
+is a different thing from a control, and the output has to say which one it is
+printing.
+
+---
+
+## The rule was scoped to a NAME, and the names moved
+
+This is the most uncomfortable result on the page, because it is a correction to
+a confirmation printed further down it.
+
+The check above — *a file named a gate must be able to fail* — was written on
+2026-08-19 and reported **0 of 39 files named `*_gate.py` that cannot fail**.
+That number was true then and it is true now. **It was also, by then, measuring
+almost nothing.**
+
+Every instrument written since that day is named `lint_*`, `audit_*`, `check_*`,
+`verify_*` or `*_check.py`. None of them ends in `_gate.py`, so none of them was
+ever subject to the rule. **Nobody evaded it. The rule was scoped to a filename
+and the filenames moved**, and a rule that narrows silently as a codebase grows
+is worse than no rule, because it keeps printing a clean result over a shrinking
+population.
+
+Rescoped from the **name** to the **role** — a file that returns a verdict — and
+re-run on 2026-08-26:
+
+| Population | Checked | Cannot ever fail |
+|---|---:|---:|
+| Files named `*_gate.py` | **43** | **0** |
+| Files that **return a verdict** (`lint_`, `audit_`, `check_`, `verify_`, `prove_`, `*_gate.py`, `*_check.py`) | **230** | **42** |
+
+**Not one of the 42 is named `*_gate.py`.** The published zero was not wrong; it
+was complete over a population that had stopped containing the interesting cases.
+
+Two details that make the wider count honest rather than merely bigger:
+
+- **A file that cannot fail is not automatically a defect under the wider
+  scope.** Some are triage by design and say so in their own closing lines. Those
+  are listed in a `KNOWN_TRIAGE` map with the reason written out, so "it is only
+  a report" has to be argued rather than assumed.
+- **The verb exclusions are counted and named on every run.** `test_`, `add_`,
+  `extend_`, `fix_`, `make_`, `regenerate_` put *gate* in the object position —
+  the file acts *on* a gate rather than being one. Three files are excluded that
+  way today, and all three are printed. If that list starts growing it is being
+  used as a hiding place, and the fix then is to rename the file rather than
+  extend the tuple.
+
+**The generalisation is not about filenames.** Any rule whose population is
+defined by a convention will retire itself as the convention drifts, and it will
+do so silently and in the flattering direction. Ask of every standing check: *what
+defines the set it runs over, and could that set shrink without anyone deciding
+it should?*
+
+---
+
+## A gate that reads a different layer from the one its defect lives on
+
+A lint in this corpus exists to catch a method claim asserted without a field to
+back it. Run on 2026-08-26 it printed, for every object including the two whose
+pages carry the defect:
+
+```
+sotagliflozin-hf                         asserts 0 claim(s), 0 unbacked
+sglt2-hf                                 asserts 0 claim(s), 0 unbacked
+...
+PASS, measured on 141 object(s) carrying manuscript prose
+```
+
+Exit 0. Meanwhile the delivered pages were asserting *"risk of bias was assessed
+with RoB 2"* over a panel denying any assessment existed — **23 pages, 22
+objects**, counted independently at that morning's commit and reported in
+[H9](META-ERROR-LIBRARY.md#h9--a-page-that-denies-holding-the-evidence-it-holds).
+
+**The lint reads the object. The sentence does not exist in the object** — the
+projector composes it at render time. A gate that inspects the source cannot see
+a claim created downstream of it, and its green says nothing at all about that
+class. Not weak, not flaky: **structurally incapable**, and confident.
+
+> *True of a level it never touched. Blind to the level it was written for.*
+
+Swept mechanically across the whole instrument layer:
+
+| | |
+|---:|---|
+| **584** | modules in `scripts/` that can exit non-zero, i.e. can gate |
+| 166 | read the OBJECT only |
+| 191 | read the OBJECT and the PAGE |
+| 138 | read the PAGE only |
+| **59** | **claim a page-or-reader defect and read only the object** |
+
+**The 59 is a floor and each row is a candidate for reading, not a verdict.** The
+claim-layer is inferred from each module's own docstring and exit messages, which
+is a weak instrument, and the sweep says so in its own header before it prints a
+number. An object-reading gate is not wrong — plenty of defects genuinely live on
+the object. The finding is only ever a **mismatch between what is read and what
+is claimed**.
+
+One more thing, small and worth keeping because it is the same disease: the lint
+above closes its PASS with a caveat that *"this says nothing about the 140
+objects with no prose"*. It read 155 objects and found 141 carrying prose. **The
+number is 14.** The honesty note had a stale denominator in it.
+
+---
+
+## A verdict without its scope is not readable evidence
+
+The single most portable rule of that day, and it cost the least to learn.
+
+A manuscript guard passed **25 of 25**. It examined **1,266 characters of a
+553,676-byte page — 0.23% of it**. It could not have caught any of the five
+rendering defects shipped that morning, because all five were in a panel it does
+not read. **A real check, working correctly, of something else.**
+
+Nothing about that output is false. It is simply unreadable as evidence, because
+the reader has no way to know how much of the artefact the verdict is about.
+
+> **Every gate should print the fraction of the artefact it examined, beside its
+> verdict.**
+
+The instruments written here fail this too, and are named rather than exempted: a
+split guard prints `10 (baseline 10)` and never says it walked 156 objects to get
+there. And the same omission spoiled a measurement in the other direction — a
+defect was reported as *25 instances corpus-wide* when a single page carried 39,
+because the count was scoped to one tab and published as a corpus figure.
+
+Two neighbouring rules from the same day, both cheap:
+
+- **Predict a deploy's effect from what the BUILD touches, not from the commit
+  list.** A generator change has no commit-list footprint on the pages it alters.
+  One page predicted unchanged moved by 880 KB, and the mechanism was confirmed
+  after the fact rather than the surprise being accepted: embedded rasters 24 →
+  21, 3,973 KB → 3,113 KB, exactly one figure at three view sizes.
+- **A count is not a finding until you know which sentence it appears in.** A
+  phrase appearing 61 times looked like a fix that had not landed. It was 61
+  occurrences across 54 distinct contexts of the *new* wording — the fix working,
+  counted as the fix failing.
+
+---
+
 ## The remedies — all four are mechanical
+
+These four are the remedies for the four forms above. The three forms found later
+have their own, in [the taxonomy
+table](#the-fifth-form-arrived-and-so-did-the-sixth-and-seventh) — and the point
+of separating them is that **only one of the seven is fixed by fixing the
+check**.
 
 Understanding these classes does not prevent them. Each one below was broken by
 someone who had written the rule down, in one case inside the instrument that
@@ -232,9 +438,17 @@ instrument checks that came back clean:
 |---|---|---|
 | Search records resting on an unproven completeness proof | **0** | 47 search rows across 18 objects |
 | Topics with a **delivered page** resting on such a record | **0** | the same 47 rows, traced to their pages |
-| Files named a gate that cannot fail, after the renames | **0** | 39 files named `*_gate.py`, 3 more excluded by verb prefix |
+| Files named a gate that cannot fail, after the renames | **0** | 39 files named `*_gate.py`, 3 more excluded by verb prefix — **and see the note below: this row's denominator had stopped containing the interesting cases** |
 | Delivered pages whose bytes match what they were built from | **16 OK, 1 not assessable** | 17 delivered pages, fetched from the public host |
 | Cross-family blind re-read disagreeing with our merge decisions | **0 different** | 12 clusters read blind by a third-party model family |
+
+> **A confirmation in this table decayed, and the decay was invisible.** The
+> gate row was measured over files matching a *name*. Every instrument written
+> after it was named something else, so by 2026-08-26 the row was a true zero
+> over a population that no longer held the cases worth checking. Rescoped to
+> the *role*: **42 of 230**. The row is left as published, with this note beside
+> it, because deleting it would hide the very failure the page is about. See
+> [The rule was scoped to a NAME](#the-rule-was-scoped-to-a-name-and-the-names-moved).
 
 The last row deserves a qualifier. The blind reader returned **UNCLEAR on ten of
 the twelve** clusters, and its stated reason every time was that the field it was
@@ -279,8 +493,15 @@ statements, and only the first is true here.
 - **It is one corpus, one team, one day.** The counts describe those instruments.
   They are not rates for detectors in general, and the sample is enriched by
   construction.
-- **It does not claim these are all the forms.** Four are listed because four
-  were observed. A fifth is likelier than not.
+- **It does not claim these are all the forms.** The first version of this page
+  listed four and said a fifth was likelier than not. **Three more arrived on one
+  day**, bringing it to seven. That prediction resolving does not make the new
+  number final; it makes an eighth likelier than not.
+- **A confirmation on this page can decay without anyone touching it.** One did:
+  a zero measured over a population defined by a naming convention, which
+  stopped containing new instruments as the convention drifted. Re-ask of every
+  standing check *what defines the set it runs over*, not only *what did it
+  return*.
 - **A detector that passes everything here can still be wrong.** Everything on
   this page is about whether a check is *capable of failing*. Whether it fails on
   the *right* inputs is a separate question, and the answer to it is a

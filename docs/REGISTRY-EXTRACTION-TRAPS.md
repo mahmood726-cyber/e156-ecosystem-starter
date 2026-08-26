@@ -174,6 +174,60 @@ the regions this toolkit is built for.
 
 ---
 
+## 7. Registered enrolment is not a randomised N, and it is the field everyone reaches for
+
+`EnrollmentCount` is a single integer sitting at the top of every registration. It is the
+obvious thing to reconcile a trial's N against, and it is the wrong thing.
+
+**It counts what the registration counts**, which routinely includes people who were never
+randomised into the comparison you are pooling: screened participants, roll-in cohorts, and —
+the case that bites hardest — **separate registered arms that are not part of the randomised
+trial at all.**
+
+Verified live against the registry on 2026-08-26, `NCT01626079` (COAPT):
+
+| | |
+|---|---|
+| `enrollmentInfo.count` | **776**, type `ACTUAL` |
+| registered arm groups | **three** — `MitraClip System` (experimental), `Control Group` (no intervention), and a third, `COAPT CAS Group` (experimental) |
+
+The third group is a continued-access cohort, registered under the same identifier as the
+randomised comparison. Anyone reconciling a pooled randomised total against 776 finds a
+mismatch, concludes the extraction is wrong, and starts fixing something that was right.
+
+**The trap is not that the field is inaccurate.** It is accurate about a population you did not
+ask for, and it is a bare integer with no unit attached, so nothing in the response tells you
+which population it counted.
+
+**What to do.**
+
+- **Never build a weight, a denominator, or an automated mismatch test on
+  `EnrollmentCount`.** A test that flags every trial whose registered enrolment differs from its
+  randomised N will flag correct extractions, and the flags will look like findings.
+- **Read the registered arm list before you read the count.** A third arm, a roll-in group or a
+  continued-access cohort is visible there and explains the difference without opening the paper.
+- **It is still worth caching**, as context for a human reading a mismatch. Cache it and label
+  it. What it must not do is decide anything.
+
+The general form, which is the reason this is here rather than in a footnote: **a registry field
+answers the question the registry was built to answer, not the one your synthesis is asking.**
+Same shape as §1 — an all-cause death count that is real, integer, universally present, and
+about the safety population.
+
+*One trial, verified directly against the live registry. The mechanism is general; the number
+is one trial's.*
+
+### And a quarter of records carry no acronym, which is not a defect
+
+Related, and worth stating because it manufactures fake defect rates. Roughly a quarter of the
+registration records in this corpus's cache carry no acronym field at all. **A record with no
+acronym is UNVERIFIABLE BY ACRONYM. It is never WRONG.** Any check that matches a review's trial
+name against the registry must separate *disagrees* from *cannot be checked*, or it will report
+registry sparseness as an extraction defect rate — and that number will be large, plausible, and
+entirely about the registry.
+
+---
+
 ## Blind spots
 
 - The harness checks **structure and provenance**, not truth. It cannot tell you that
@@ -181,6 +235,9 @@ the regions this toolkit is built for.
 - `CHK001` only works if you captured the printed percentage. Most of its value comes
   from having bothered to record both numbers.
 - The divergence table in §1 is six trials, chosen by what was being extracted.
+- §7 is **one trial, verified directly against the live registry**. The mechanism is
+  general; the number is one trial's, and the acronym figure is approximate and drawn
+  from one corpus's cache.
 - Nothing here recovers a number that was never published. See
   [ACCESS-LEDGER.md](ACCESS-LEDGER.md) for why that layer, not the paywalled one, is
   the genuinely irrecoverable one.
