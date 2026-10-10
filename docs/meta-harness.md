@@ -13,7 +13,7 @@ and `scripts/install-meta-harness.{sh,ps1}` can fetch and verify that release fo
 
 | what | where |
 |---|---|
-| Release **v1.0.0** (source archive + `SHA256SUMS`) | https://github.com/mahmood726-cyber/meta-harness/releases/tag/v1.0.0 |
+| Release **v1.0.0** (`meta-harness-v1.0.0.zip` + `SHA256SUMS`; the repository at commit `cdd81860a29f`; **DOI pending, v1.0.1**) | https://github.com/mahmood726-cyber/meta-harness/releases/tag/v1.0.0 |
 | Fetch and verify it from this starter | `bash scripts/install-meta-harness.sh` (Windows: `.\scripts\install-meta-harness.ps1`) |
 | Repository (clone, full history) | https://github.com/mahmood726-cyber/meta-harness |
 
