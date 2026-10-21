@@ -1,0 +1,47 @@
+#!/bin/sh
+# OPT-IN pre-commit hook: runs the ONE local standard, scripts/verify-local.py --
+# the same checks CI runs (.github/workflows/test.yml), one limb per CI step.
+#
+# Opt in (per clone):   git config core.hooksPath .githooks
+# Opt out:              git config --unset core.hooksPath
+#
+# Fail-closed: a check that cannot run (tool missing) REFUSES the commit. If you
+# accept that a tool is missing on this machine, name it -- per limb, visibly:
+#   git config e156.verifyAllowMissing "shellcheck link-check"
+# (or E156_VERIFY_ALLOW_MISSING="shellcheck link-check" in the environment).
+# Those limbs print as NOT RUN; CI still runs them. Never --no-verify.
+#
+# Setting core.hooksPath makes git stop reading .git/hooks/. So an existing
+# .git/hooks/pre-commit is chained here and run FIRST, unchanged (and
+# .githooks/pre-push chains .git/hooks/pre-push, e.g. Sentinel), so opting in
+# removes no hook you already had.
+set -u
+ROOT="$(git rev-parse --show-toplevel)" || { echo "VERIFY-LOCAL hook: not in a repo - refusing"; exit 1; }
+cd "$ROOT" || { echo "VERIFY-LOCAL hook: cannot cd to repo root - refusing"; exit 1; }
+
+COMMON="$(git rev-parse --git-common-dir)"
+if [ -x "$COMMON/hooks/pre-commit" ]; then
+  "$COMMON/hooks/pre-commit" "$@" || exit $?
+fi
+
+PY=""
+for c in python3 python; do
+  # the version probe rejects the Windows Store 'python3' alias, which exists but cannot run
+  if command -v "$c" >/dev/null 2>&1 && "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; then
+    PY="$c"; break
+  fi
+done
+[ -n "$PY" ] || { echo "VERIFY-LOCAL hook: no working Python 3.8+ found - refusing (fail closed)"; exit 1; }
+[ -f scripts/verify-local.py ] || { echo "VERIFY-LOCAL hook: scripts/verify-local.py missing - refusing (fail closed)"; exit 1; }
+
+ALLOW="${E156_VERIFY_ALLOW_MISSING:-$(git config --get e156.verifyAllowMissing || true)}"
+set --
+for limb in $ALLOW; do set -- "$@" --allow-missing "$limb"; done
+
+"$PY" scripts/verify-local.py "$@"
+rc=$?
+if [ "$rc" -ne 0 ]; then
+  echo "VERIFY-LOCAL hook: commit REFUSED (exit $rc). Fix the code, never the gate. (never --no-verify)"
+  exit "$rc"
+fi
+exit 0

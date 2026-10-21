@@ -1,0 +1,2 @@
+# git runs these with sh; a CRLF checkout (core.autocrlf=true on Windows) breaks them.
+* text eol=lf

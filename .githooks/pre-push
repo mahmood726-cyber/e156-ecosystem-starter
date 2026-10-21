@@ -1,0 +1,12 @@
+#!/bin/sh
+# Part of the OPT-IN .githooks/ directory (git config core.hooksPath .githooks).
+# This hook adds no check of its own. Setting core.hooksPath makes git stop
+# reading .git/hooks/, which would silently switch off a pre-push hook you
+# already had (the Sentinel pre-push hook lives there). So this chains it,
+# unchanged, with the same arguments and stdin.
+set -u
+COMMON="$(git rev-parse --git-common-dir)" || exit 1
+if [ -x "$COMMON/hooks/pre-push" ]; then
+  exec "$COMMON/hooks/pre-push" "$@"
+fi
+exit 0
