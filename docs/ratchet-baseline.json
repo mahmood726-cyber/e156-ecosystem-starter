@@ -19,6 +19,7 @@
   "pytest:scripts/test_recall.py": 16,
   "pytest:scripts/test_refresh_pins.py": 8,
   "pytest:tests/test_blank_and_rerun.py": 10,
+  "pytest:tests/test_ci_lock.py": 10,
   "pytest:tests/test_find_related_repos.py": 10,
   "pytest:tests/test_gate_can_fail.py": 15,
   "pytest:tests/test_honest_ratchet.py": 21,
@@ -341,6 +342,18 @@
    "test_one_untested_function_is_enough_to_fail_the_claim",
    "test_selftest_passes",
    "test_the_original_file_is_never_modified"
+  ],
+  "pytest-names:tests/test_ci_lock.py": [
+   "test_empty_lock_is_refused",
+   "test_good_temp_copy_passes",
+   "test_lock_pins_pytest_and_its_runtime_deps",
+   "test_lock_version_matches_port_version",
+   "test_planted_bad_lock_line_is_refused",
+   "test_planted_extra_step_is_refused",
+   "test_planted_unpinned_install_is_refused",
+   "test_python_tests_job_uses_ci_lock",
+   "test_real_lock_is_hash_pinned",
+   "test_real_workflow_installs_only_from_hashed_lock"
   ],
   "pytest-names:tests/test_find_related_repos.py": [
    "test_case_insensitive_matching",
