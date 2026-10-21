@@ -106,12 +106,23 @@
   <strong>جديد في مجموعة أدواتك:</strong> تطوّر الـ starter مع بقائه <strong>يعمل دون اتصال وموفّراً للحصة المجانية</strong>. أبرز الجديد: أدوات دون اتصال (<code>reuse.py</code>، <code>recall.py</code>) تجنّبك إنفاق الرموز لإعادة إنتاج ما تحتويه المجموعة أصلاً؛ ومستخرِج التجارب السريرية بات يغطّي <strong>17 مجالاً مرضياً</strong> (الإيدز، الملاريا، التيفوئيد، فقر الدم المنجلي، السل…)؛ وخمس طبقات لأدوات التحليل البَعْدي تعمل دون اتصال؛ وأداة التحقق Overmind (v1.0.0) تفحص حسابات تحليلك البَعْدي مقابل تقديرات منشورة. التفاصيل الكاملة في <a href="../#whats-new">قسم "What's new" في الصفحة الإنجليزية</a>.
 </div>
 
-<h2>التثبيت — Windows</h2>
-<p>افتح <strong>PowerShell</strong> (وليس Command Prompt). اضغط Win+R، اكتب <code>powershell</code>، ثم Enter. الصق:</p>
-<pre><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex</code></pre>
+<h2>التثبيت</h2>
+<p><strong>الطريقة الموصى بها — نزّل المثبّت، واقرأه، ثم شغّله.</strong> أنت على وشك تشغيل سكربت يكتب ملفات في مجلدك الشخصي، لذا فإن العادة الأكثر أمانًا (خاصة إن لم تستخدم الطرفية من قبل) هي الحصول على الشيفرة المصدرية أولًا، والاطلاع عليها، ثم تشغيلها من القرص — بدلًا من تمرير عنوان ويب مباشرة إلى الصدفة (shell).</p>
+<p>على Windows استخدم <strong>PowerShell</strong> (وليس Command Prompt): اضغط Win+R، اكتب <code>powershell</code>، ثم Enter.</p>
+<pre><code>git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
+cd e156-ecosystem-starter
+# open and skim install/install.ps1 (Windows) or install/install.sh (macOS/Linux/WSL)
+# -- both are short and commented -- then run the one for your system:
+.\install\install.ps1        # Windows PowerShell
+bash install/install.sh      # macOS / Linux / WSL</code></pre>
 
-<h2>التثبيت — macOS / Linux / WSL</h2>
-<pre><code>curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash</code></pre>
+<details style="margin: 20px 0 8px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">التثبيت بسطر واحد (أسرع، لكنه يمرّر سكربتًا بعيدًا مباشرة إلى الصدفة)</summary>
+  <p style="margin:10px 0 0;">إذا كنت تفهم المقايضة — أي أنك تشغّل شيفرة من الويب مباشرة قبل قراءتها — فهذه هي الأوامر:</p>
+  <pre style="margin:8px 0;"><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex   # Windows PowerShell
+curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash   # macOS / Linux / WSL</code></pre>
+  <p style="margin:8px 0 0;">يبقى مسار «النسخ ثم القراءة» أعلاه هو المفضّل، خاصة لمن يستخدم الطرفية لأول مرة. الشيفرة مفتوحة وقابلة للتدقيق: <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/bootstrap.ps1">bootstrap.ps1</a>, <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/install/install.sh">install.sh</a>.</p>
+</details>
 
 <h2>التحقق من التثبيت</h2>
 <pre><code># Windows PowerShell
@@ -128,10 +139,16 @@ ls ~/.claude/rules</code></pre>
 <h2>المتطلبات الأساسية</h2>
 <ul>
   <li><strong>Python 3.11+</strong> من <a href="https://www.python.org/downloads/">python.org/downloads</a> (مع تحديد "Add python.exe to PATH").</li>
-  <li><strong>R 4.5+</strong> من <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org</a>.</li>
   <li><strong>Node.js 20+</strong> من <a href="https://nodejs.org/en/download">nodejs.org</a>.</li>
   <li>واجهة سطر أوامر لوكيل ذكاء اصطناعي: <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a> (مجاني)، <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> (مدفوع)، أو <a href="https://github.com/openai/codex">OpenAI Codex</a>.</li>
 </ul>
+
+<details id="prereq-r" style="margin: 16px 0 28px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">R 4.5+ (اختياري — فقط للتحقق المتقاطع مع metafor)</summary>
+  <p style="margin:10px 0 0;">يُستخدم R للتحقق من نتائج التحليل التلوي لديك بمقارنتها مع الحزمة المرجعية <code>metafor</code>. <strong>وهو اختياري تمامًا</strong> — إن تخطّيته فسيعرض المثبّت تحذيرًا فقط ويتابع؛ تبقى لوحاتك تعمل، لكنها لن تُجري التحقق المتقاطع الإضافي عبر R. يمكنك إضافته لاحقًا.</p>
+  <div class="step" style="margin-top:12px;"><strong>1.</strong> نزّله من <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org/bin/windows/base/</a> وشغّل المثبّت (الإعدادات الافتراضية مناسبة).</div>
+  <div class="step"><strong>2.</strong> أضف R إلى PATH وثبّت <code>metafor</code> — خطوات الطرفية موجودة في قسم <a href="../#advanced">Advanced</a> في الصفحة الإنجليزية، لأنها تتطلب تعديل PATH يدويًا.</div>
+</details>
 
 <h2>في حالة المشاكل</h2>
 <ul>

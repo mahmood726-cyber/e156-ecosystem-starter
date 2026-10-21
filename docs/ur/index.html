@@ -102,12 +102,23 @@
   <strong>آپ کے ٹول کٹ میں نیا:</strong> starter آگے بڑھا ہے، اور اب بھی <strong>آف لائن اور مفت پلان کے لیے کفایتی</strong> ہے۔ نمایاں: آف لائن مددگار (<code>reuse.py</code>، <code>recall.py</code>) جو اُس چیز کو دوبارہ بنانے پر ٹوکن خرچ کرنے سے بچاتے ہیں جو کٹ میں پہلے سے موجود ہے؛ RCT ایکسٹریکٹر اب <strong>17 امراض کے شعبے</strong> (ایچ آئی وی، ملیریا، ٹائیفائیڈ، سکل سیل، ٹی بی…) پہچانتا ہے؛ آف لائن چلانے کے لیے میٹا اینالیسس ٹولنگ کی پانچ پرتیں؛ اور Overmind تصدیق کار (v1.0.0) آپ کے میٹا اینالیسس کے حساب کو شائع شدہ تخمینوں سے جانچتا ہے۔ مکمل تفصیلات <a href="../#whats-new">انگریزی صفحے کے "What's new" حصے</a> میں ہیں۔
 </div>
 
-<h2>انسٹالیشن — Windows</h2>
-<p><strong>PowerShell</strong> کھولیں (Command Prompt نہیں)۔ Win+R دبائیں، <code>powershell</code> ٹائپ کریں، Enter دبائیں۔ یہ پیسٹ کریں:</p>
-<pre><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex</code></pre>
+<h2>انسٹالیشن</h2>
+<p><strong>تجویز کردہ — انسٹالر ڈاؤن لوڈ کریں، اسے پڑھیں، پھر چلائیں۔</strong> آپ ایک ایسا اسکرپٹ چلانے والے ہیں جو آپ کے ہوم فولڈر میں فائلیں لکھتا ہے، اس لیے سب سے محفوظ عادت (خاص طور پر اگر آپ نے پہلے کبھی ٹرمینل استعمال نہیں کیا) یہ ہے کہ پہلے سورس کوڈ حاصل کریں، اس پر نظر ڈالیں، اور پھر اسے ڈسک سے چلائیں — بجائے اس کے کہ کوئی ویب ایڈریس سیدھا اپنے shell میں بھیج دیں۔</p>
+<p>Windows پر <strong>PowerShell</strong> استعمال کریں (Command Prompt نہیں): Win+R دبائیں، <code>powershell</code> ٹائپ کریں، Enter دبائیں۔</p>
+<pre><code>git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
+cd e156-ecosystem-starter
+# open and skim install/install.ps1 (Windows) or install/install.sh (macOS/Linux/WSL)
+# -- both are short and commented -- then run the one for your system:
+.\install\install.ps1        # Windows PowerShell
+bash install/install.sh      # macOS / Linux / WSL</code></pre>
 
-<h2>انسٹالیشن — macOS / Linux / WSL</h2>
-<pre><code>curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash</code></pre>
+<details style="margin: 20px 0 8px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">ایک لائن میں انسٹال (تیز، لیکن ریموٹ اسکرپٹ سیدھا آپ کے shell میں چلاتا ہے)</summary>
+  <p style="margin:10px 0 0;">اگر آپ یہ سودا سمجھتے ہیں — یعنی آپ ویب سے آیا ہوا کوڈ پڑھے بغیر چلا رہے ہیں — تو ایک لائن والی کمانڈز یہ ہیں:</p>
+  <pre style="margin:8px 0;"><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex   # Windows PowerShell
+curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash   # macOS / Linux / WSL</code></pre>
+  <p style="margin:8px 0 0;">اوپر والا «clone کریں اور پڑھیں» طریقہ ہی بہتر ہے، خاص طور پر پہلی بار ٹرمینل استعمال کرنے والوں کے لیے۔ سورس کھلا اور قابلِ جانچ ہے: <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/bootstrap.ps1">bootstrap.ps1</a>, <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/install/install.sh">install.sh</a>.</p>
+</details>
 
 <h2>انسٹالیشن کی تصدیق</h2>
 <pre><code># Windows PowerShell
@@ -124,10 +135,16 @@ ls ~/.claude/rules</code></pre>
 <h2>پیشگی شرائط</h2>
 <ul>
   <li><strong>Python 3.11+</strong> از <a href="https://www.python.org/downloads/">python.org/downloads</a> ("Add python.exe to PATH" کو ٹک کریں)۔</li>
-  <li><strong>R 4.5+</strong> از <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org</a>۔</li>
   <li><strong>Node.js 20+</strong> از <a href="https://nodejs.org/en/download">nodejs.org</a>۔</li>
   <li>ایک AI ایجنٹ CLI: <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a> (مفت)، <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> (ادائیگی کے ساتھ)، یا <a href="https://github.com/openai/codex">OpenAI Codex</a>۔</li>
 </ul>
+
+<details id="prereq-r" style="margin: 16px 0 28px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">R 4.5+ (اختیاری — صرف metafor کے ساتھ کراس چیک کے لیے)</summary>
+  <p style="margin:10px 0 0;">R آپ کے میٹا اینالیسس کے نتائج کو معیاری پیکیج <code>metafor</code> کے مقابلے میں جانچنے کے لیے استعمال ہوتا ہے۔ <strong>یہ مکمل طور پر اختیاری ہے</strong> — اگر آپ اسے چھوڑ دیں تو انسٹالر صرف ایک انتباہ دکھا کر آگے بڑھ جاتا ہے؛ آپ کے ڈیش بورڈز پھر بھی کام کرتے ہیں، بس R والا اضافی کراس چیک نہیں چلتا۔ آپ اسے بعد میں شامل کر سکتے ہیں۔</p>
+  <div class="step" style="margin-top:12px;"><strong>1.</strong> <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org/bin/windows/base/</a> سے ڈاؤن لوڈ کریں اور انسٹالر چلائیں (ڈیفالٹ سیٹنگز ٹھیک ہیں)۔</div>
+  <div class="step"><strong>2.</strong> R کو PATH میں شامل کریں اور <code>metafor</code> انسٹال کریں — ٹرمینل کے مراحل انگریزی صفحے کے <a href="../#advanced">Advanced</a> حصے میں ہیں، کیونکہ ان میں PATH کو ہاتھ سے بدلنا پڑتا ہے۔</div>
+</details>
 
 <h2>مسائل کی صورت میں</h2>
 <ul>

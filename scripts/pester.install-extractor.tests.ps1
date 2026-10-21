@@ -44,7 +44,15 @@ Describe "Get-ExtractorDefaultRef pins the supply chain (P0)" {
     It "defaults to an immutable ref (a version tag or commit SHA, not bare main)" {
         # Same pinning discipline as Sentinel/Overmind: reject a mutable default
         # like 'main'. Accept a version tag (v1.2.3) or a 7-40 char hex SHA.
-        Get-ExtractorDefaultRef | Should -Match '^(v\d|[0-9a-f]{7,40})$'
+        Get-ExtractorDefaultRef | Should -Match '^(v\d+(\.\d+){0,2}|[0-9a-f]{7,40})$'
+    }
+    It "the pin pattern itself rejects mutable refs (guards the guard)" {
+        foreach ($mutable in 'main', 'master', 'HEAD', 'latest', 'dev', 'v1.0.0-rc', 'v1.x') {
+            $mutable | Should -Not -Match '^(v\d+(\.\d+){0,2}|[0-9a-f]{7,40})$'
+        }
+        foreach ($pinned in 'v1', 'v1.0', 'v1.0.0', '89b8474', '3f35954bf51c9f3e8c7215dc018ed9e66984b650') {
+            $pinned | Should -Match '^(v\d+(\.\d+){0,2}|[0-9a-f]{7,40})$'
+        }
     }
     It "honours RCT_EXTRACTOR_REF override (rollback / bleeding-edge)" {
         $env:RCT_EXTRACTOR_REF = 'main'

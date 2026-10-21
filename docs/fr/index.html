@@ -102,12 +102,23 @@
   <strong>Nouveautés de la boîte à outils :</strong> le starter a évolué, en restant <strong>hors-ligne et économe en quota gratuit</strong>. Au programme : des aides hors-ligne (<code>reuse.py</code>, <code>recall.py</code>) qui évitent de dépenser des jetons à régénérer ce que le kit contient déjà ; l'extracteur d'ECR couvre désormais <strong>17 domaines de maladies</strong> (VIH, paludisme, typhoïde, drépanocytose, tuberculose…) ; cinq couches d'outils de méta-analyse à exécuter hors-ligne ; et le vérificateur Overmind (v1.0.0) contrôle vos calculs de méta-analyse par rapport à des estimations publiées. Détails complets dans la <a href="../#whats-new">section « What's new » de la page anglaise</a>.
 </div>
 
-<h2>Installation — Windows</h2>
-<p>Ouvrez <strong>PowerShell</strong> (pas Command Prompt). Tapez Win+R, écrivez <code>powershell</code>, puis Entrée. Collez :</p>
-<pre><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex</code></pre>
+<h2>Installation</h2>
+<p><strong>Recommandé — téléchargez l'installateur, lisez-le, puis exécutez-le.</strong> Vous allez exécuter un script qui écrit des fichiers dans votre dossier personnel ; l'habitude la plus sûre (surtout si vous n'avez jamais utilisé de terminal) est de récupérer d'abord le code source, de le parcourir, puis de l'exécuter depuis le disque — plutôt que d'envoyer une adresse web directement dans votre shell.</p>
+<p>Sous Windows, utilisez <strong>PowerShell</strong> (pas Command Prompt) : tapez Win+R, écrivez <code>powershell</code>, puis Entrée.</p>
+<pre><code>git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
+cd e156-ecosystem-starter
+# open and skim install/install.ps1 (Windows) or install/install.sh (macOS/Linux/WSL)
+# -- both are short and commented -- then run the one for your system:
+.\install\install.ps1        # Windows PowerShell
+bash install/install.sh      # macOS / Linux / WSL</code></pre>
 
-<h2>Installation — macOS / Linux / WSL</h2>
-<pre><code>curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash</code></pre>
+<details style="margin: 20px 0 8px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">Installation en une ligne (plus rapide, mais exécute directement un script distant dans votre shell)</summary>
+  <p style="margin:10px 0 0;">Si vous comprenez le compromis — vous exécutez du code venu directement du web avant de l'avoir lu — les commandes en une ligne sont :</p>
+  <pre style="margin:8px 0;"><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex   # Windows PowerShell
+curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash   # macOS / Linux / WSL</code></pre>
+  <p style="margin:8px 0 0;">Le parcours « cloner puis lire » ci-dessus reste préférable, surtout pour une première utilisation du terminal. Le code est ouvert et vérifiable : <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/docs/bootstrap.ps1">bootstrap.ps1</a>, <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/install/install.sh">install.sh</a>.</p>
+</details>
 
 <h2>Vérifier l'installation</h2>
 <pre><code># Windows PowerShell
@@ -124,10 +135,16 @@ ls ~/.claude/rules</code></pre>
 <h2>Prérequis</h2>
 <ul>
   <li><strong>Python 3.11+</strong> depuis <a href="https://www.python.org/downloads/">python.org/downloads</a> (cocher « Add python.exe to PATH »).</li>
-  <li><strong>R 4.5+</strong> depuis <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org</a>.</li>
   <li><strong>Node.js 20+</strong> depuis <a href="https://nodejs.org/en/download">nodejs.org</a>.</li>
   <li>Une CLI d'agent IA : <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a> (gratuit), <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> (payant), ou <a href="https://github.com/openai/codex">OpenAI Codex</a>.</li>
 </ul>
+
+<details id="prereq-r" style="margin: 16px 0 28px; padding: 12px 16px; background:#f6f8fa; border-radius:6px; font-size:0.95em;">
+  <summary style="cursor:pointer; font-weight:600;">R 4.5+ (facultatif — uniquement pour la vérification croisée avec metafor)</summary>
+  <p style="margin:10px 0 0;">R sert à valider vos méta-analyses par comparaison avec le package de référence <code>metafor</code>. <strong>Il est entièrement facultatif</strong> — si vous l'omettez, l'installateur affiche simplement un avertissement et continue ; vos tableaux de bord fonctionnent toujours, sans la vérification croisée R supplémentaire. Vous pourrez l'ajouter plus tard.</p>
+  <div class="step" style="margin-top:12px;"><strong>1.</strong> Téléchargez-le depuis <a href="https://cran.r-project.org/bin/windows/base/">cran.r-project.org/bin/windows/base/</a> et lancez l'installateur (les options par défaut conviennent).</div>
+  <div class="step"><strong>2.</strong> Ajoutez R au PATH et installez <code>metafor</code> — les étapes en terminal sont dans la section <a href="../#advanced">Advanced</a> de la page anglaise, car elles demandent de modifier le PATH à la main.</div>
+</details>
 
 <h2>En cas de problème</h2>
 <ul>
