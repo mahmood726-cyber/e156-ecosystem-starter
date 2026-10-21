@@ -367,6 +367,10 @@ Two small checks for when an AI agent writes or fixes code that has tests. Neith
 
 Plain-language guide and install snippet: [docs/AGENT-TEST-INTEGRITY.md](docs/AGENT-TEST-INTEGRITY.md).
 
+## Run what CI runs, locally (opt-in, v1.0.0)
+
+`python scripts/verify-local.py` runs every CI check that can run on your machine (pytest, bash suites, HASH check, i18n parity, Pester, ShellCheck, PSScriptAnalyzer, lychee), one named limb per CI step. A missing tool is `COULD-NOT-EXECUTE` (exit 2), never a silent skip; excuse it by name with `--allow-missing <limb>` and it prints as `NOT RUN`. Opt in to running it before every commit with `git config core.hooksPath .githooks`. A test fails CI if a CI step has no matching limb. Guide: [docs/VERIFY-LOCAL.md](docs/VERIFY-LOCAL.md).
+
 ## Staying current
 
 The ecosystem moves. Two updaters keep a fresh install and the starter itself in
