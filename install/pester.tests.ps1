@@ -42,15 +42,19 @@ Describe "Render-Template substitutes placeholders" {
 }
 
 Describe "Copy-RulesToAgent copies all .md files" {
-    It "copies 4 rules files into an empty target" {
+    It "copies the 4 rules .md files plus the _index.yaml routing table into an empty target" {
         $target = Join-Path $tmpRoot 'agent1\rules'
         $r = Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target
-        $r.Copied.Count | Should -Be 4
+        # 4 rule .md files + rules/_index.yaml (the JIT routing table the installer copies
+        # since 7f04858). Each one is named below, so a missing OR an extra file fails.
+        $r.Copied.Count | Should -Be 5
+        $r.Copied       | Should -Contain '_index.yaml'
         $r.Backed.Count | Should -Be 0
         Test-Path (Join-Path $target 'rules.md')          | Should -BeTrue
         Test-Path (Join-Path $target 'e156.md')           | Should -BeTrue
         Test-Path (Join-Path $target 'advanced-stats.md') | Should -BeTrue
         Test-Path (Join-Path $target 'lessons.md')        | Should -BeTrue
+        Test-Path (Join-Path $target '_index.yaml')       | Should -BeTrue
     }
 
     It "renders template vars when -Vars is passed" {
@@ -139,7 +143,8 @@ Describe "Rollback: manifest-driven undo" {
         $m = New-RollbackManifest
         $null = Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target -Manifest $m
         $m.CreatedDirs.Count  | Should -BeGreaterOrEqual 1
-        $m.CreatedFiles.Count | Should -Be 4
+        $m.CreatedFiles.Count | Should -Be 5   # 4 rule .md files + _index.yaml
+        @($m.CreatedFiles | Where-Object { $_ -like '*_index.yaml' }).Count | Should -Be 1
         $m.BackedUp.Count     | Should -Be 0
     }
 

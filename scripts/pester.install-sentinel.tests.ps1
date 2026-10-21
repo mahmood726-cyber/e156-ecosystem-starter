@@ -96,7 +96,15 @@ Describe "Get-SentinelDefaultSource pins the supply chain (P0)" {
         # The guard rejects a mutable default like 'main'; both a version tag
         # (v1.2.3) and a 7-40 char hex SHA are accepted.
         $src = Get-SentinelDefaultSource
-        $src | Should -Match '^git\+https://github\.com/mahmood726-cyber/Sentinel\.git@(v\d|[0-9a-f]{7,40})$'
+        $src | Should -Match '^git\+https://github\.com/mahmood726-cyber/Sentinel\.git@(v\d+(\.\d+){0,2}|[0-9a-f]{7,40})$'
+    }
+    It "the pin pattern itself rejects mutable refs (guards the guard)" {
+        foreach ($mutable in 'main', 'master', 'HEAD', 'latest', 'dev', 'v1.0.0-rc', 'v1.x') {
+            $mutable | Should -Not -Match '^(v\d+(\.\d+){0,2}|[0-9a-f]{7,40})$'
+        }
+        foreach ($pinned in 'v1', 'v1.0', 'v1.0.0', '89b8474', '3f35954bf51c9f3e8c7215dc018ed9e66984b650') {
+            $pinned | Should -Match '^(v\d+(\.\d+){0,2}|[0-9a-f]{7,40})$'
+        }
     }
 
     It "honours SENTINEL_REF override (rollback / bleeding-edge)" {
