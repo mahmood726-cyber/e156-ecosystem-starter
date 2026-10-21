@@ -358,6 +358,15 @@ Flags:
 - `-Force` — re-run on an existing clone (otherwise idempotent)
 - `-Import` — dot-source helpers only (used by Pester tests)
 
+## Agent test integrity (opt-in, v1.0.0)
+
+Two small checks for when an AI agent writes or fixes code that has tests. Neither is switched on by the installer.
+
+- `scripts/protect-test-config.py`: a Claude Code hook that blocks the agent from editing test setup/config (`conftest.py`, `pytest.ini`, `tox.ini`, coverage and JS test config, R testthat setup) and tells it to report the problem instead.
+- `scripts/blank-and-rerun.py`: blanks a function in a throwaway copy and re-runs your tests. If they still pass, they do not test it, and a "matches R" claim resting on them fails.
+
+Plain-language guide and install snippet: [docs/AGENT-TEST-INTEGRITY.md](docs/AGENT-TEST-INTEGRITY.md).
+
 ## Staying current
 
 The ecosystem moves. Two updaters keep a fresh install and the starter itself in
