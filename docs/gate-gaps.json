@@ -1,0 +1,304 @@
+{
+  "schema": "e156-gate-gaps-v1",
+  "port_version": "1.0.0",
+  "gates": [
+    {
+      "id": ".github/workflows/test.yml#jobs.pester",
+      "kind": "ci-job",
+      "name": "Pester (Windows)",
+      "stops": "A failing assertion in any of the 11 Pester suites named in the job's $files list (installer helpers, redaction, supply-chain pinning, SHA gate), run under pwsh on windows-latest.",
+      "would_not_stop": [
+        "A Pester suite that exists but is not in the hard-coded $files list: a new scripts/pester.*.tests.ps1 is silently never run.",
+        "Behaviour that differs under Windows PowerShell 5.1, which many students run: the job uses pwsh 7.",
+        "Real installs over the network: the suites test wrapper logic, not that Sentinel / Overmind / the extractor actually install.",
+        "Any behaviour no suite asserts."
+      ],
+      "source": ".github/workflows/test.yml header comment and the job's $files list.",
+      "seal": {
+        ".github/workflows/test.yml#jobs.pester": "890466c0ab813436912330e6769f79451a8d10677753a009b3fad1289a9ad26d"
+      }
+    },
+    {
+      "id": ".github/workflows/test.yml#jobs.bash-tests",
+      "kind": "ci-job",
+      "name": "Bash tests (Ubuntu)",
+      "stops": "A failing case in tests/test-install-sh.bash or tests/test-handoff-locale.bash (install.sh helpers, redaction, pinning, dot-source hygiene).",
+      "would_not_stop": [
+        "tests/test-new-layers.bash: it is in tests/ but no CI step runs it.",
+        "macOS bash 3.2 incompatibilities: the job runs Ubuntu's bash only.",
+        "A broken real install of Sentinel or Overmind: per the workflow header, they are deliberately not pip-installed in CI; only wrapper logic is tested."
+      ],
+      "source": ".github/workflows/test.yml header comment; tests/ listing.",
+      "seal": {
+        ".github/workflows/test.yml#jobs.bash-tests": "fca438b2ce88689e51640eb7d5e4a7e0a18f81b465b2aa33fb02715707d9c19f"
+      }
+    },
+    {
+      "id": ".github/workflows/test.yml#jobs.python-tests",
+      "kind": "ci-job",
+      "name": "Python tests (Ubuntu)",
+      "stops": "A failing pytest test anywhere under tests/, on Python 3.11 on Ubuntu -- including tests/test_gate_gaps.py, which is what enforces this registry.",
+      "would_not_stop": [
+        "scripts/test_recall.py and scripts/test_refresh_pins.py: they live outside tests/ and `pytest tests/` does not collect them.",
+        "Windows-only path or encoding behaviour, and any other Python version.",
+        "A test that is skipped or xfailed: pytest reports those without failing the job.",
+        "A weak test that passes whatever the code does (that is scripts/blank-and-rerun.py's question)."
+      ],
+      "source": ".github/workflows/test.yml python-tests job; scripts/ listing.",
+      "seal": {
+        ".github/workflows/test.yml#jobs.python-tests": "e8ee021f4fe7c3821c26827e01af40519aad3cc945d94b66e6b4e633cfc2eb40"
+      }
+    },
+    {
+      "id": ".github/workflows/test.yml#jobs.hash-check",
+      "kind": "ci-job",
+      "name": "HASH files in sync with install scripts",
+      "stops": "A PR where install/install.ps1 or install/install.sh no longer matches the SHA-256 recorded in docs/HASH.txt / docs/HASH-linux.txt (a stale hash breaks every fresh install's self-check).",
+      "would_not_stop": [
+        "A malicious or broken installer committed together with its regenerated hash: the check proves the two files agree, not that the installer is safe.",
+        "Drift in any other downloadable file (bootstrap/e156-setup.*, docs/e156-setup.*, docs/bootstrap.ps1): only the two install scripts are hashed.",
+        "The copy actually served from GitHub Pages differing from the repo copy."
+      ],
+      "source": "scripts/regen-hashes.sh header; .github/workflows/test.yml hash-check job.",
+      "seal": {
+        ".github/workflows/test.yml#jobs.hash-check": "9c0dbdbd2c8fc352bbf350084c22e46885ddfe37d68e5ceadba565efe78aa8f2",
+        "scripts/regen-hashes.sh": "b1125b2ed6edf33a0b098fc04cceac5e139e9a29bf181154665bc2c29209f693"
+      }
+    },
+    {
+      "id": ".github/workflows/test.yml#jobs.i18n-parity",
+      "kind": "ci-job",
+      "name": "i18n landing pages match English structure",
+      "stops": "An English docs/index.html whose count of <details> blocks differs from docs/fr, pt, ar or ur index.html (the 2026-04-27 regression where non-English students lost four sections).",
+      "would_not_stop": [
+        "docs/sw/index.html: Swahili is not in the checked language list (it has 0 <details> blocks against English's 5 at the time of sealing, and passes).",
+        "Translation quality or content: equal counts of different or untranslated sections pass.",
+        "Any i18n page other than index.html."
+      ],
+      "source": "scripts/check-i18n-parity.sh header ('We don't validate translation quality') and its langs=(fr pt ar ur) list.",
+      "seal": {
+        ".github/workflows/test.yml#jobs.i18n-parity": "ce6b56c3a14b541b396993fdb965af3576b22b0f88a56064e00914f3200c7476",
+        "scripts/check-i18n-parity.sh": "ef1e3ff1cd12dee383e868036cc74e73ee9abc55292270ad3716cb1cbb72e8ca"
+      }
+    },
+    {
+      "id": ".github/workflows/test.yml#jobs.link-check",
+      "kind": "ci-job",
+      "name": "Pages link-check (lychee)",
+      "stops": "A dead link or broken #fragment anchor in docs/**/*.html before it reaches the Pages surface.",
+      "would_not_stop": [
+        "Broken links in README.md or any other Markdown: the scope is docs/**/*.html only, by design.",
+        "A dead site answering 403 or 429: both are in the --accept list and count as alive.",
+        "A link that resolves to the wrong or changed content."
+      ],
+      "source": ".github/workflows/test.yml link-check job comments and args.",
+      "seal": {
+        ".github/workflows/test.yml#jobs.link-check": "011866fddf3ab550c5ec417fb8ad1fa29e0feeb8267caf4e8d2ed2209b3151a2"
+      }
+    },
+    {
+      "id": ".github/workflows/test.yml#jobs.lint",
+      "kind": "ci-job",
+      "name": "Static analysis (ShellCheck + PSScriptAnalyzer)",
+      "stops": "An error-severity ShellCheck finding in the 9 listed .sh files, or an Error-severity PSScriptAnalyzer finding in install/, scripts/, bootstrap/, docs/.",
+      "would_not_stop": [
+        "Warning- or style-level findings (e.g. SC2034, SC2155): --severity=error by design.",
+        ".sh files not in the explicit list, e.g. scripts/install-aact*.sh, install-pairwise70.sh, install-rapidmeta.sh, install-e156-capsules.sh, regen-hashes.sh, check-i18n-parity.sh, and all tests/*.bash.",
+        "PSAvoidUsingWriteHost and PSUseShouldProcessForStateChangingFunctions: excluded.",
+        "Logic bugs a linter cannot see."
+      ],
+      "source": ".github/workflows/test.yml lint job comments and file list.",
+      "seal": {
+        ".github/workflows/test.yml#jobs.lint": "d16c9f291ff1fa959557f5d9c2b64917930820d27adf43a892536ce3d2cbcc5b"
+      }
+    },
+    {
+      "id": ".github/workflows/test.yml#jobs.sentinel-rule-list-drift",
+      "kind": "declared-gap",
+      "name": "Teaching 1-pager Sentinel list matches Sentinel repo (DISABLED: if: false)",
+      "stops": "Nothing. The job is `if: false`: it never runs, on any push or PR. It exists to make the dependency visible.",
+      "would_not_stop": [
+        "Drift between the auto-generated Sentinel rule list in docs/teaching/intro-1pager.md and the real Sentinel repo -- the exact error (fabricated rule IDs) the generator was written to prevent -- unless a maintainer runs `bash scripts/regen-sentinel-rule-list.sh --check` locally before the PR.",
+        "Anything at all: a green CI run says nothing about this check."
+      ],
+      "source": ".github/workflows/test.yml comment above `if: false`; scripts/regen-sentinel-rule-list.sh header.",
+      "seal": {
+        ".github/workflows/test.yml#jobs.sentinel-rule-list-drift": "9bbbf051c818775aeec6c722573ff2f2fb98cbe37f6ba033c0256db6656bfd13"
+      }
+    },
+    {
+      "id": "scripts/protect-test-config.py",
+      "kind": "hook",
+      "name": "protect-test-config (opt-in PreToolUse hook)",
+      "stops": "An agent editing test setup/config (conftest.py, pytest.ini, tox.ini, noxfile.py, .coveragerc, jest/vitest/karma/mocha config, phpunit.xml, testthat setup/helper files) through Edit/Write/MultiEdit/NotebookEdit or a write-shaped Bash command -- only where a user has installed the hook.",
+      "would_not_stop": [
+        "Anything, unless the user opted in: nothing in the starter installs it.",
+        "A Bash command that builds the file name at runtime (python -c \"open(...)\"): Bash detection is a heuristic on name + write-shaped operator.",
+        "Edits to the TEST FILES themselves (test_*.py); agents legitimately add tests, so review test diffs.",
+        "What a human commits; pair it with code review.",
+        "pyproject.toml / setup.cfg test settings unless E156_PROTECT_PYPROJECT=1.",
+        "Malformed hook input: exit 1 is fail-OPEN by design (Claude Code does not block)."
+      ],
+      "source": "scripts/protect-test-config.py docstring 'WHAT IT DOES NOT CHECK', 'OPTIONAL WIDER SCOPE' and 'EXIT CODES'.",
+      "seal": {
+        "scripts/protect-test-config.py": "c3c0a74abcab93d2b1b7f0f59d6ab6b2e73710503588d171d5f274bddf535ff2"
+      }
+    },
+    {
+      "id": "scripts/blank-and-rerun.py",
+      "kind": "script",
+      "name": "blank-and-rerun",
+      "stops": "A claim that the tests cover function X when replacing X's body with `raise NotImplementedError` leaves them green (CLAIM-FAILS, exit 1); a suite that fails before blanking is INCONCLUSIVE (exit 2), never a pass.",
+      "would_not_stop": [
+        "Wrong numbers: TESTS-BITE means the tests notice the function is gone, not that its output is right. Pair with a known-answer test against R.",
+        "R functions: Python only; blank R by hand and rerun testthat.",
+        "An installed (pip / editable) copy shadowing the blanked one: every function then 'survives' -- errs toward CLAIM-FAILS, never a false pass.",
+        "An absolute path in --cmd that points back at the real files.",
+        "Anything, unless someone runs it: no CI job or hook calls it."
+      ],
+      "source": "scripts/blank-and-rerun.py docstring 'WHAT IT DOES NOT CHECK'.",
+      "seal": {
+        "scripts/blank-and-rerun.py": "fec7173debd64c383a8de7c33893c0201ecf156b8b9dfff3f3553bef60c0cf79"
+      }
+    },
+    {
+      "id": "scripts/check-i18n-parity.sh",
+      "kind": "script",
+      "name": "check-i18n-parity",
+      "stops": "A <details>-count mismatch between docs/index.html and docs/{fr,pt,ar,ur}/index.html (exit 1), or a missing English page (exit 2).",
+      "would_not_stop": [
+        "docs/sw/index.html, which is not in langs=(fr pt ar ur).",
+        "Translation quality: structural parity only, stated in its own header.",
+        "Equal counts of different sections."
+      ],
+      "source": "scripts/check-i18n-parity.sh header 'What it checks'.",
+      "seal": {
+        "scripts/check-i18n-parity.sh": "ef1e3ff1cd12dee383e868036cc74e73ee9abc55292270ad3716cb1cbb72e8ca"
+      }
+    },
+    {
+      "id": "scripts/gate-can-fail.py",
+      "kind": "script",
+      "name": "gate-can-fail",
+      "stops": "A file named *_gate.py (or another --suffix) with no reachable non-zero exit -- a 'gate' that can only pass (DEFECTS-FOUND, exit 1).",
+      "would_not_stop": [
+        "A gate whose failing exit is syntactically present but unreachable (`if False: sys.exit(1)`): reachability is judged syntactically.",
+        "Whether any real input reaches the failing exit -- that is a known-answer test, a different instrument.",
+        "Files outside the naming convention: the default scope is a NAME, and a name-scoped rule retires itself as names drift (230 verdict-returning files, 42 unable to fail, none named *_gate.py).",
+        "Anything, unless someone runs it: no CI job or hook calls it."
+      ],
+      "source": "scripts/gate-can-fail.py docstring 'WHAT IT DOES NOT CHECK' and 'THE DEFAULT SCOPE IS A NAME'.",
+      "seal": {
+        "scripts/gate-can-fail.py": "631c7238364f4330a3cf388a4008854de6836e6876c44661d77fe02edaa4c075"
+      }
+    },
+    {
+      "id": "scripts/pooled-point-achievable.py",
+      "kind": "script",
+      "name": "pooled-point-achievable",
+      "stops": "A served pooled point outside the hull of the per-trial effects (no estimator can produce it), or -- when an inverse-variance method is declared via --method -- outside the random-effects tau-path (DEFECTS-FOUND, exit 1).",
+      "would_not_stop": [
+        "A reachable but wrong number: ACHIEVABLE bounds arithmetic, not provenance; it does not mean the point was computed from these trials.",
+        "Mantel-Haenszel, Peto or bespoke fixed weightings inside the hull: limb 2 does not exclude them, and without --method it does not set the exit code.",
+        "Transcription errors in the per-trial effects you typed in.",
+        "Anything, unless someone runs it: no CI job or hook calls it."
+      ],
+      "source": "scripts/pooled-point-achievable.py docstring 'What a CLEAN verdict here does and does not mean'.",
+      "seal": {
+        "scripts/pooled-point-achievable.py": "d16908e848894a27234dbd02b339a4d5fda588be6cc16c1efe8e2b4172f5ed58"
+      }
+    },
+    {
+      "id": "scripts/refresh-ecosystem-pins.py",
+      "kind": "script",
+      "name": "refresh-ecosystem-pins --check",
+      "stops": "A 40-hex install-layer pin that lags its source repo's remote HEAD, or a layer whose ls-remote failed (exit 1 in --check).",
+      "would_not_stop": [
+        "Tag-pinned layers: they are skipped. As of 2026-06-08 every layer is tag-pinned, so --check reports all [skip] and passes by construction.",
+        "Whether the remote commit it would move to is trustworthy: it moves pins forward, it does not review them.",
+        "Anything in CI: it needs the network and no CI job runs it."
+      ],
+      "source": "scripts/refresh-ecosystem-pins.py docstring 'Design guarantees'.",
+      "seal": {
+        "scripts/refresh-ecosystem-pins.py": "ab426c33f31691f1c032939860a9364113f68c08062f084bc72e7a03cbf46247"
+      }
+    },
+    {
+      "id": "scripts/regen-hashes.sh",
+      "kind": "script",
+      "name": "regen-hashes --check",
+      "stops": "docs/HASH.txt or docs/HASH-linux.txt differing from the SHA-256 of install/install.ps1 / install/install.sh (exit 1 in --check).",
+      "would_not_stop": [
+        "A bad installer committed with its regenerated hash (write mode makes the two agree by definition).",
+        "Any downloadable file other than the two install scripts."
+      ],
+      "source": "scripts/regen-hashes.sh header.",
+      "seal": {
+        "scripts/regen-hashes.sh": "b1125b2ed6edf33a0b098fc04cceac5e139e9a29bf181154665bc2c29209f693"
+      }
+    },
+    {
+      "id": "scripts/regen-sentinel-rule-list.sh",
+      "kind": "script",
+      "name": "regen-sentinel-rule-list --check",
+      "stops": "The Sentinel rule list in docs/teaching/intro-1pager.md drifting from a local Sentinel checkout (exit 1 in --check).",
+      "would_not_stop": [
+        "Drift when no Sentinel checkout is found: exit 2, and the only CI job that would run it is `if: false` (see the declared gap above).",
+        "A stale local Sentinel checkout: it compares against whatever copy it finds first, not the published repo."
+      ],
+      "source": "scripts/regen-sentinel-rule-list.sh header 'Source of truth' and 'Exit codes'.",
+      "seal": {
+        "scripts/regen-sentinel-rule-list.sh": "abfa15daaaf9f999e48bd97434cb7181cfbfa88300a7359771930fa7a972aa5e"
+      }
+    },
+    {
+      "id": "scripts/render-gate-gaps.py",
+      "kind": "script",
+      "name": "render-gate-gaps --check (this registry)",
+      "stops": "A workflow job or check script with no entry here, an orphan entry, a kind contradicting the code (e.g. an `if: false` job registered as a gate), a seal that no longer matches the gate's bytes, or a stale docs/GATE_GAPS.md (exit 1). Enforced in CI by tests/test_gate_gaps.py.",
+      "would_not_stop": [
+        "Untrue or incomplete gap lists: the seal proves someone re-sealed after the last change, not that they re-read anything.",
+        "Gates outside its enumeration: PowerShell scripts, install/ and bootstrap/, scripts/ subfolders, and git hooks installed by other tools (Sentinel pre-push).",
+        "A checker script with no --check/--selftest mode, no hook payload, and no direct CI invocation.",
+        "Whether a gate CAN fail: it runs no gate."
+      ],
+      "source": "scripts/render-gate-gaps.py docstring 'WHAT IT DOES NOT CHECK'.",
+      "seal": {
+        "scripts/render-gate-gaps.py": "a876502fb737a0b1de37b210b16eb057ba61f38ed8b22d6f0b8db8dfbee8e2e8"
+      }
+    },
+    {
+      "id": "scripts/search-record-reconcile.py",
+      "kind": "script",
+      "name": "search-record-reconcile",
+      "stops": "A search record whose identifier list, distinct identifiers, per-page sum and reported total do not all agree -- an unexhausted cursor, a page transcribed short or twice, or a duplicated identifier (exit 1).",
+      "would_not_stop": [
+        "Wrong identifiers or a badly aimed query: it compares a record against itself, so a record whose stated numbers are both untrue passes.",
+        "Records that name no identifiers: NOT_ASSESSABLE, counted separately, never a pass -- but never a refusal either.",
+        "Low recall: whether the search found the trials that exist is a different measurement (docs/SEARCH-COMPLETENESS.md).",
+        "Anything, unless someone runs it: no CI job or hook calls it."
+      ],
+      "source": "scripts/search-record-reconcile.py docstring 'WHAT THIS DOES NOT ESTABLISH'.",
+      "seal": {
+        "scripts/search-record-reconcile.py": "803daefe1a0239b10da6d53f431e6132d6a08fb9fe675b66b5c6a259a9d2aed8"
+      }
+    },
+    {
+      "id": "scripts/trial-identity-screen.py",
+      "kind": "script",
+      "name": "trial-identity-screen",
+      "stops": "An included-studies table where one trial appears more than once, detected from denominators (arm-level and total subset-sums, near-duplicates within a transcription tolerance, the I-squared co-signature) -- DEFECTS-FOUND, exit 1.",
+      "would_not_stop": [
+        "Trials of similar size that collide by coincidence: it is a screen, not a verdict; every hit needs reading.",
+        "Denominator inflation, unless you supply --universe: the screen cannot know it.",
+        "Tables beyond the subset-sum bounds (40 rows, subsets of 4): those are INCONCLUSIVE, not checked.",
+        "A duplicate entered with different denominators (e.g. a later follow-up): names and citation strings are ignored by design.",
+        "Anything, unless someone runs it: no CI job or hook calls it."
+      ],
+      "source": "scripts/trial-identity-screen.py docstring and constants MAX_ROWS_FOR_SUBSET_SUM / MAX_SUBSET_SIZE.",
+      "seal": {
+        "scripts/trial-identity-screen.py": "7aed82050ffc2f8ec1030bc8fa63a95e81c01af7d39af5b6fd6b189c84cc49e9"
+      }
+    }
+  ]
+}
