@@ -1,0 +1,4 @@
+{
+ "_doc": "Named acknowledgements for scripts/honest-ratchet.py. A decrease or removal in the kit's protective state (tests per suite, test names, rules/ files, protect-test-config patterns, guard/check scripts, CI jobs) passes --check ONLY under an entry here that names it exactly. Count item: {\"item\": \"pytest:tests/test_x.py\", \"base\": <old>, \"new\": <new>, \"reason\": \"...\", \"date\": \"YYYY-MM-DD\"} -- BOTH counts exact. Member item: {\"item\": \"<set>::<member>\", \"reason\": \"...\", \"date\": \"YYYY-MM-DD\"}. An entry missing reason or an ISO date is ignored. Written by a human reviewer who read the loss, never by the agent that caused it.",
+ "acknowledgements": []
+}
