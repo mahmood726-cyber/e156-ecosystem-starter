@@ -25,6 +25,24 @@ pwsh -c "Invoke-Pester -Path install\pester.tests.ps1 -Output Minimal"   # Power
 
 Both must be green before opening a PR. CI runs the same suites on every push.
 
+### Hash-pinned pytest (optional locally, enforced in CI)
+
+The `python-tests` CI job installs pytest from `requirements-ci.lock`
+(`LOCK_VERSION 1.0.0`): every package pinned with `==` and a sha256 hash,
+so a tampered or republished wheel fails the install. To use the same
+pinned set locally, opt in with:
+
+```bash
+python -m pip install --require-hashes -r requirements-ci.lock
+python -m pytest tests/ -q
+```
+
+`tests/test_ci_lock.py` fails if any `pip install` in
+`.github/workflows/test.yml` is not `--require-hashes -r <lock>`. To bump a
+version, re-download the wheel (`pip download <pkg>==<ver> --no-deps
+--only-binary=:all: -d <dir>`), `sha256sum` it, and update the lock.
+Never type a hash in by hand.
+
 ## CI gates
 
 Three jobs must pass in `.github/workflows/test.yml`:
