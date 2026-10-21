@@ -176,3 +176,16 @@
 ### GitHub Pages
 - `index.html` in root or `/docs`. Fully offline — no external CDN.
 - Include Open Graph meta tags. Test deployed version.
+
+---
+
+## Delegated lanes (opt-in, kit v1.0.0)
+
+Applies only when you hand a task to a second agent CLI (`codex exec`, `agy --print`) with `scripts/delegate-lane.py`. Nothing in the starter does this for you; if you never run the kit, nothing here changes.
+
+- **One task, one fresh clone.** `python scripts/delegate-lane.py --task <name> --brief <brief.md> --vendor codex|agy [--base <sha>]`. It refuses an existing lane directory (never reuse a lane), refuses with < 3 GB free, and refuses a brief that still has FILL markers or lacks the verbatim rules block. Lanes go to `--lanes-dir`, else `$E156_LANES_DIR`, else `<repo>/../<repo-name>-lanes`.
+- **Write the brief from `templates/LANE-BRIEF.md`.** Goal, base, scope, non-goals, acceptance commands, the verbatim anti-hard-coding + abort block, and the `LANE_REPORT.json` schema. Do not paraphrase the rules block.
+- **Lanes never commit or push.** The clone gets a lane-local pre-commit hook that refuses commits and a dead push URL; your own repo's hooks are untouched. The integrator reviews the uncommitted diff and lands it.
+- **stdin is closed** on every launched lane. A CLI left reading stdin can exit 0 having done nothing.
+- **Verify by artefact, never by exit code.** `python scripts/lane-status.py --lanes-dir <dir>` reads the report, the pid and log growth: RUNNING / STALE / ENDED-REPORTED / ENDED-NO-REPORT / DIED, and appends terminal states to `harvest-ledger.jsonl`. Only ENDED-REPORTED means there is a result. Investigate a STALE lane; do not silently replace it.
+- **Second-vendor review before landing.** `python scripts/cross-vendor-review.py --base <sha> --head <sha> --vendor codex|agy` sends the diff to the other vendor and records findings in a JSONL. A finding without a concrete failing input is recorded as REJECTED-NO-REPRO; the rest are PROPOSED, never applied. Reproduce a proposal yourself before acting on it.
