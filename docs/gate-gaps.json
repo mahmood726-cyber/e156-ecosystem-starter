@@ -164,6 +164,23 @@
       }
     },
     {
+      "id": "scripts/pass-to-pass.py",
+      "kind": "script",
+      "name": "pass-to-pass",
+      "stops": "A change after which a pytest test that passed in the BEFORE snapshot now fails, errors, is skipped at run time, or no longer runs (REGRESSED, exit 1); no result file, no tests run, nothing passing before, or a timeout is INCONCLUSIVE (exit 2), never a pass.",
+      "would_not_stop": [
+        "A test edited to assert less: outcomes are compared, not test contents (read test diffs; pair with scripts/blank-and-rerun.py).",
+        "A regression in code no test covers.",
+        "Non-pytest suites (anything that cannot write JUnit XML through --junitxml).",
+        "A regression hidden by running a different --cmd for the BEFORE snapshot: the snapshot is only as wide as the command that made it.",
+        "Anything, unless someone runs it: no CI job or hook calls it."
+      ],
+      "source": "scripts/pass-to-pass.py docstring 'WHAT IT DOES NOT CHECK'; docs/AGENT-TEST-INTEGRITY.md section 3.",
+      "seal": {
+        "scripts/pass-to-pass.py": "504f27d2509b1d7874b4ced2a50639442e791a265f6a13d25cb0f47280fff543"
+      }
+    },
+    {
       "id": "scripts/check-i18n-parity.sh",
       "kind": "script",
       "name": "check-i18n-parity",
