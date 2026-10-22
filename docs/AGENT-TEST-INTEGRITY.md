@@ -1,4 +1,4 @@
-# Agent test integrity: two opt-in checks (v1.0.0, 2026-10-21)
+# Agent test integrity: three opt-in checks (2026-10-21, check 3 added 2026-10-22)
 
 **Who this is for.** Anyone who lets an AI coding agent (Claude Code, Codex,
 Gemini) write or fix code that has tests. You do not need to be a software
@@ -17,7 +17,7 @@ This is measured, not hypothetical:
 | CATCH, [arXiv:2609.39533](https://arxiv.org/abs/2609.39533) | Test-file modification is one of the main loopholes in coding-agent training; a reasoning monitor helped at first, then was fooled. |
 | Lee et al., [arXiv:2610.22779](https://arxiv.org/abs/2610.22779) | An agent that could see its own checker kept what passed the checker while real faithfulness fell, invisibly to in-loop metrics. |
 
-Both checks below are **opt-in**: installing the starter does not switch them on.
+All three checks below are **opt-in**: installing the starter does not switch them on.
 
 ---
 
@@ -91,6 +91,45 @@ tests may import the installed copy; then everything "survives" and you get
 
 ---
 
-*Both tools: standard library only, offline, no API key. Approved by Mahmood
-Ahmad on 2026-10-20 (P1, P2); research log in the meta-harness repo,
-`docs/ai-coding-research-log.md`.*
+## 3. `pass-to-pass.py` (v1.0.0): did the change break a test that used to pass?
+
+**The problem.** An agent fixes the bug you asked about and quietly breaks
+something next to it. Then a test fails, gets skipped "for now", or disappears,
+and the run still looks green.
+
+| Source | What it found |
+|---|---|
+| TDAD, [arXiv:2603.17973](https://arxiv.org/abs/2603.17973) | On SWE-bench Verified, showing the agent *which* existing tests its change touches cut regressions by 70% (6.08% to 1.82%). Telling it to "do TDD" without that list made things worse (9.94%). |
+| hacktrace, [arXiv:2610.03055](https://arxiv.org/abs/2610.03055) | Deleting the test that exposes a bug is one of the shortcuts agents take to get a passing grade. |
+
+**What it does.** Runs your pytest suite before the change and records which
+tests pass. Runs it again afterwards and lists every test that used to pass and
+now fails, errors, is skipped, or is missing.
+
+- Nothing lost -> `KEPT` (exit 0). New tests are fine.
+- Any test lost -> `REGRESSED` (exit 1), with the list.
+- Could not tell (no tests ran, not a pytest command, timeout) ->
+  `INCONCLUSIVE` (exit 2), never a pass.
+
+**Run it.**
+
+```bash
+python scripts/pass-to-pass.py snapshot --cmd "python -m pytest -q" --out before.json
+# ... let the agent make its change ...
+python scripts/pass-to-pass.py compare --before before.json --cmd "python -m pytest -q"
+```
+
+Use the **same** command both times. Give the agent the `REGRESSED` list, not
+a lecture: the list is what worked in the TDAD study.
+
+**Limits.** It compares outcomes, not test contents: a test edited to assert
+less still passes (read test diffs; use check 2). pytest only. A flaky test
+shows up as a regression; re-run it and say so in the PR, never drop it. The
+kit's `honest-ratchet.py` catches tests deleted or marked skip in the *source*;
+this catches the ones that still exist but stop passing *when run*.
+
+---
+
+*All three tools: standard library only, offline, no API key. Approved by
+Mahmood Ahmad on 2026-10-20 (P1, P2); check 3 added from the 2026-10-22 entry of
+the research log in the meta-harness repo, `docs/ai-coding-research-log.md`.*
