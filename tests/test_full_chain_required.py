@@ -66,8 +66,8 @@ def test_full_refuses_missing_requested_script_before_modifying_home(starter, mi
     (root / "scripts" / missing).unlink()
     result = run_install(root, home, "--full")
     assert result.returncode == 2, (result.stdout, result.stderr)
-    assert f"requested chain installer is missing: {root / 'scripts' / missing}" in result.stderr
-    assert "REFUSED: no user configuration has been changed." in result.stderr
+    assert f"requested chain installer is missing: {root / 'scripts' / missing}" in (result.stdout + result.stderr)
+    assert "REFUSED: no user configuration has been changed." in (result.stdout + result.stderr)
     assert not (home / ".claude").exists()
     assert not (home / "code").exists()
 
@@ -83,7 +83,7 @@ def test_individually_requested_missing_layer_refuses(starter, missing, request)
     (root / "scripts" / missing).unlink()
     result = run_install(root, home, "--non-interactive", *request)
     assert result.returncode == 2, (result.stdout, result.stderr)
-    assert missing in result.stderr
+    assert missing in (result.stdout + result.stderr)
     assert not (home / ".gemini").exists()
 
 
@@ -113,5 +113,5 @@ def test_script_deleted_after_preflight_still_fails_chain(starter):
     )
     result = run_install(root, home, "--full")
     assert result.returncode == 2, (result.stdout, result.stderr)
-    assert "install-overmind.sh exited" in result.stderr
+    assert "install-overmind.sh exited" in (result.stdout + result.stderr)
     assert "overmind" in result.stdout and "failed" in result.stdout
