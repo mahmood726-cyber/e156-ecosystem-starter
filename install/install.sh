@@ -368,6 +368,30 @@ fi
 
 # --------------------------- real install flow ---------------------------
 
+# Requested integration layers must not silently degrade to "skipped".
+# Check before touching a student's rules, memory or repository, then still
+# execute each requested script unconditionally (so a later deletion fails).
+require_chain_script() {
+    local script_name="$1"
+    if [[ ! -f "$STARTER_ROOT/scripts/$script_name" ]]; then
+        printf 'ERROR: requested chain installer is missing: %s\n' "$STARTER_ROOT/scripts/$script_name" >&2
+        printf 'REFUSED: no user configuration has been changed.\n' >&2
+        exit 2
+    fi
+}
+if [[ "$FULL" -eq 1 || -n "$INSTALL_SENTINEL" ]]; then
+    require_chain_script install-sentinel.sh
+fi
+if [[ "$FULL" -eq 1 || "$INSTALL_OVERMIND" -eq 1 ]]; then
+    require_chain_script install-overmind.sh
+fi
+if [[ "$FULL" -eq 1 || -n "$PROJECT_INDEX_ROOT" ]]; then
+    require_chain_script install-projectindex.sh
+fi
+if [[ "$FULL" -eq 1 || "$INSTALL_EXTRACTOR" -eq 1 ]]; then
+    require_chain_script install-extractor.sh
+fi
+
 echo
 echo "e156-ecosystem-starter bootstrap"
 echo "Installing quality-dev environment to ${HOME}"
@@ -441,7 +465,7 @@ elif can_prompt; then
     fi
 fi
 chain_sentinel="skipped"; chain_sentinel_detail=""
-if [[ "$do_sentinel" -eq 1 && -f "$SCRIPTS_DIR/install-sentinel.sh" ]]; then
+if [[ "$do_sentinel" -eq 1 ]]; then
     # Make sure the target dir exists and is a git repo (Sentinel hook needs .git/).
     if [[ ! -d "$sentinel_repo" ]]; then
         mkdir -p "$sentinel_repo" 2>/dev/null \
@@ -477,7 +501,7 @@ elif can_prompt; then
     prompt_yn "Install Overmind + TruthCert now?" 1 && do_overmind=1 || true
 fi
 chain_overmind="skipped"; chain_overmind_detail=""
-if [[ "$do_overmind" -eq 1 && -f "$SCRIPTS_DIR/install-overmind.sh" ]]; then
+if [[ "$do_overmind" -eq 1 ]]; then
     log_step "Chaining: install-overmind.sh"
     if bash "$SCRIPTS_DIR/install-overmind.sh"; then
         chain_overmind="ok"
@@ -508,7 +532,7 @@ elif can_prompt; then
     fi
 fi
 chain_pi="skipped"; chain_pi_detail=""
-if [[ "$do_pi" -eq 1 && -f "$SCRIPTS_DIR/install-projectindex.sh" ]]; then
+if [[ "$do_pi" -eq 1 ]]; then
     log_step "Chaining: install-projectindex.sh --root $pi_root"
     if bash "$SCRIPTS_DIR/install-projectindex.sh" --root "$pi_root"; then
         chain_pi="ok"
@@ -539,7 +563,7 @@ elif can_prompt; then
     fi
 fi
 chain_extractor="skipped"; chain_extractor_detail=""
-if [[ "$do_extractor" -eq 1 && -f "$SCRIPTS_DIR/install-extractor.sh" ]]; then
+if [[ "$do_extractor" -eq 1 ]]; then
     log_step "Chaining: install-extractor.sh --target $extractor_target"
     if bash "$SCRIPTS_DIR/install-extractor.sh" --target "$extractor_target"; then
         chain_extractor="ok"
