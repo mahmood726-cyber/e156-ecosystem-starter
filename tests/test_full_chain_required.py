@@ -72,16 +72,16 @@ def test_full_refuses_missing_requested_script_before_modifying_home(starter, mi
     assert not (home / "code").exists()
 
 
-@pytest.mark.parametrize(("missing", "request"), [
+@pytest.mark.parametrize(("missing", "requested_flags"), [
     ("install-sentinel.sh", ("--install-sentinel", "test-repo")),
     ("install-overmind.sh", ("--install-overmind",)),
     ("install-projectindex.sh", ("--project-index-root", "test-index")),
     ("install-extractor.sh", ("--install-extractor",)),
 ])
-def test_individually_requested_missing_layer_refuses(starter, missing, request):
+def test_individually_requested_missing_layer_refuses(starter, missing, requested_flags):
     root, home = starter
     (root / "scripts" / missing).unlink()
-    result = run_install(root, home, "--non-interactive", *request)
+    result = run_install(root, home, "--non-interactive", *requested_flags)
     assert result.returncode == 2, (result.stdout, result.stderr)
     assert missing in (result.stdout + result.stderr)
     assert not (home / ".gemini").exists()
