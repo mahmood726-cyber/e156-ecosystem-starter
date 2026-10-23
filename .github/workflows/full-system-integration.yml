@@ -1,0 +1,56 @@
+name: Full-system installer integration
+
+# This job exercises the REAL --full Linux install chain on a disposable
+# GitHub-hosted runner. Unit tests in test.yml deliberately do not do that.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "install/**"
+      - "scripts/install-sentinel.sh"
+      - "scripts/install-overmind.sh"
+      - "scripts/install-extractor.sh"
+      - "scripts/install-projectindex.sh"
+      - "scripts/verify-full-install.py"
+      - "tests/test_full_install_verifier.py"
+      - "docs/HASH-linux.txt"
+      - ".github/workflows/full-system-integration.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "23 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  full-linux-install:
+    name: Linux full-chain installation and live canaries
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Create isolated Python environment on disposable runner
+        run: |
+          python -m venv "$RUNNER_TEMP/e156-integration-venv"
+          echo "$RUNNER_TEMP/e156-integration-venv/bin" >> "$GITHUB_PATH"
+
+      - name: Run verifier negative controls
+        run: |
+          python -m pip install pytest
+          python -m pytest tests/test_full_install_verifier.py -q
+
+      - name: Verify installer SHA before running
+        run: bash install/install.sh --dry-run
+
+      - name: Run real Linux full installation
+        timeout-minutes: 20
+        run: bash install/install.sh --full --github-user e156-integration-ci
+
+      - name: Check installed layers and invoke real integration canaries
+        timeout-minutes: 8
+        run: python scripts/verify-full-install.py
