@@ -115,6 +115,23 @@
       }
     },
     {
+      "id": ".github/workflows/full-system-integration.yml#jobs.full-linux-install",
+      "kind": "ci-job",
+      "name": "Linux full-chain installation and live canaries",
+      "stops": "A broken fresh Linux `install/install.sh --full` chain: any failing Sentinel install/scan, Overmind numerical canary, key check, ProjectIndex reconciliation, extractor import or agent rules file check makes the job red.",
+      "would_not_stop": [
+        "Windows PowerShell and macOS differences: the job runs only Ubuntu 24.04, Python 3.13.",
+        "Optional Meta-Harness, RapidMeta, AACT, Pairwise70, browser, cloud authentication or clinical study execution: they are not part of the default --full install chain.",
+        "Errors the selected smoke inputs do not exercise, including scientific validity, hidden numerical errors and fabricated source data.",
+        "Reproducibility of every transitive dependency: the installer uses mutable upstream tags and pip resolution rather than a complete hash-locked environment."
+      ],
+      "source": ".github/workflows/full-system-integration.yml and scripts/verify-full-install.py; reviewed against the first real CI failures on Python 3.12 and the old extractor import path (23 Oct 2026).",
+      "seal": {
+        ".github/workflows/full-system-integration.yml#jobs.full-linux-install": "59a04036279ae0628a5d752a9ebe114a4937608fe2263ec0e422c7376ecfbc31",
+        "scripts/verify-full-install.py": "b85b5d0d4d552623a3de32b35e79c0655a9f2449ac5e804c0791377e05a97b30"
+      }
+    },
+    {
       "id": ".github/workflows/test.yml#jobs.sentinel-rule-list-drift",
       "kind": "declared-gap",
       "name": "Teaching 1-pager Sentinel list matches Sentinel repo (DISABLED: if: false)",
@@ -351,6 +368,22 @@
       "source": "scripts/verify-local.py docstring; docs/VERIFY-LOCAL.md; port S-A report.",
       "seal": {
         "scripts/verify-local.py": "0e84f25270001a58129538d20ed7fbfe3ac4f5118fb6c5589631f5ba88b81aff"
+      }
+    },
+    {
+      "id": "scripts/verify-full-install.py",
+      "kind": "script",
+      "name": "verify-full-install",
+      "stops": "A missing or malformed file in the three agent configurations, absent Sentinel hook, invalid or insecure TruthCert key, missing ProjectIndex/extractor or nonzero live Sentinel, Overmind, ProjectIndex and extractor canary (exit 1).",
+      "would_not_stop": [
+        "A numerical or clinical interpretation error when Overmind's selected canary passes; this script is not independent scientific adjudication.",
+        "A wrong study record or missed trial: it does not run a concept search or evaluate extraction recall against an external reference.",
+        "Components outside the Linux default --full chain, including optional Meta-Harness and browser dashboards.",
+        "Windows/macOS install behavior, upstream tag immutability or transitive Python dependency drift."
+      ],
+      "source": "scripts/verify-full-install.py docstring and named checks; tests/test_full_install_verifier.py negative controls.",
+      "seal": {
+        "scripts/verify-full-install.py": "b85b5d0d4d552623a3de32b35e79c0655a9f2449ac5e804c0791377e05a97b30"
       }
     }
   ]
