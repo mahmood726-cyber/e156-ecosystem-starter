@@ -93,25 +93,58 @@ fetch_url() {
 unpack_meta_harness() {
     local zip="$1" target="$2"
     "$PYTHON" - "$zip" "$target" <<'PY'
-import sys, zipfile, pathlib, shutil, tempfile
+import pathlib, re, shutil, stat, sys, tempfile, zipfile
+
 zp, target = sys.argv[1], pathlib.Path(sys.argv[2])
-if target.exists() and any(target.iterdir()):
-    sys.exit(f"REFUSED: {target} exists and is not empty")
-with zipfile.ZipFile(zp) as z:
-    names = z.namelist()
-    tops = {n.split("/", 1)[0] for n in names}
-    for n in names:
-        if n.startswith("/") or ".." in pathlib.PurePosixPath(n).parts:
-            sys.exit(f"REFUSED: unsafe path in archive: {n}")
-    target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = pathlib.Path(tempfile.mkdtemp(dir=target.parent))
-    z.extractall(tmp)
-src = tmp / tops.pop() if len(tops) == 1 else tmp
-target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
-    target.rmdir()
-shutil.move(str(src), str(target))
-shutil.rmtree(tmp, ignore_errors=True)
+    if not target.is_dir() or any(target.iterdir()):
+        sys.exit(f"REFUSED: {target} exists and is not empty")
+
+# Validate the entire manifest before writing any extraction bytes. ZipFile's
+# built-in path sanitisation is platform-dependent and can hide collisions.
+with zipfile.ZipFile(zp) as z:
+    infos = z.infolist()
+    if not infos:
+        sys.exit("REFUSED: empty meta-harness archive")
+    seen = set()
+    for info in infos:
+        name = info.filename
+        parts = name.rstrip("/").split("/")
+        unsafe = (
+            not name or name.startswith("/") or "\\" in name
+            or any(not part or part in (".", "..") or ":" in part
+                   or part.endswith((" ", ".")) for part in parts)
+        )
+        if unsafe:
+            sys.exit(f"REFUSED: unsafe path in archive: {name}")
+        folded = name.rstrip("/").casefold()
+        if folded in seen:
+            sys.exit(f"REFUSED: duplicate archive path (case-insensitive): {name}")
+        seen.add(folded)
+        kind = stat.S_IFMT(info.external_attr >> 16)
+        if kind not in (0, stat.S_IFREG, stat.S_IFDIR):
+            sys.exit(f"REFUSED: unsupported archive entry type: {name}")
+
+    tops = {info.filename.split("/", 1)[0] for info in infos}
+    root = next(iter(tops)) + "/" if len(tops) == 1 else ""
+    entry = root + "scripts/replay_offline.py"
+    if not any(i.filename == entry and not i.is_dir() for i in infos):
+        sys.exit("REFUSED: scripts/replay_offline.py is missing from archive")
+
+    # Extraction and entrypoint inspection take place in a private staging
+    # directory on the same filesystem. Never publish a partial installation.
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix=".meta-harness-stage-", dir=target.parent))
+    try:
+        z.extractall(tmp)
+        src = tmp / root if root else tmp
+        if not (src / "scripts" / "replay_offline.py").is_file():
+            sys.exit("REFUSED: extracted scripts/replay_offline.py is missing")
+        if target.exists():
+            target.rmdir()  # empty target only; refuse concurrent modifications
+        src.rename(target)  # atomic publication when on the same filesystem
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 PY
 }
 
