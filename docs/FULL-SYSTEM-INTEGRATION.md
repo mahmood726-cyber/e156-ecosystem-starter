@@ -7,8 +7,8 @@ wrappers without downloading the dependency repositories.
 
 **Run:** [Full-system installer integration workflow](../.github/workflows/full-system-integration.yml)
 on pull requests affecting installer contracts, manual dispatch, and Mondays.
-The workflow runs on a disposable Ubuntu 24.04 GitHub runner, creates a Python
-virtual environment, checks the installer SHA, runs the full installer without
+The workflow runs on a disposable Ubuntu 24.04 GitHub runner, creates a Python **3.13** virtual environment (required by Sentinel v1.0.0),
+checks the installer SHA, runs the full installer without
 interactive prompts, then invokes a fail-closed verifier.
 
 **Real components exercised**
