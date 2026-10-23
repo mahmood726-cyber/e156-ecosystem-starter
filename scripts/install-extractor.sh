@@ -146,7 +146,8 @@ verify_core_import() {
 import sys
 sys.path.insert(0, sys.argv[1])
 import scripts.build_metakit_config  # noqa: F401  (the bridge entrypoint)
-from src.specialties.registry import detect_specialty
+from rct_extractor import SPECIALTIES, detect_specialty
+assert len(SPECIALTIES) == 17
 assert detect_specialty("viral suppression with dolutegravir")[0] == "hiv"
 # prove this is the 17-specialty build, not the old cardio+malaria+HIV one
 assert detect_specialty("empagliflozin in type 2 diabetes lowered HbA1c")[0] == "diabetes"
