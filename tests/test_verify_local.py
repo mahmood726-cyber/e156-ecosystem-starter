@@ -111,6 +111,23 @@ def test_planted_renamed_ci_step_leaves_limb_stale(vl, workflow_text):
     assert any("limb 'pytest' claims CI step python-tests / 'Run pytest'" in p for p in drift), drift
 
 
+def test_planted_enabling_disabled_job_demands_a_limb(vl, workflow_text):
+    """Preserve the historical guard: an enabled CI check must gain a limb.
+
+    Start from a synthetic disabled job, enable it without mapping its step,
+    and insist that local/CI parity refuses. The separate test below verifies
+    that disabling an actively mapped gate is also refused.
+    """
+    disabled = workflow_text.replace("  sentinel-rule-list-drift:\n",
+                                     "  sentinel-rule-list-drift:\n    if: false\n")
+    assert disabled != workflow_text
+    enabled = disabled.replace("    if: false\n", "")
+    unmapped = tuple(l for l in vl.LIMBS if l.name != "sentinel-rule-list-drift")
+    drift = vl.find_drift(enabled, limbs=unmapped)
+    assert any("sentinel-rule-list-drift" in item and "no verify-local limb" in item
+               for item in drift), drift
+
+
 def test_planted_disabling_active_sentinel_gate_is_refused(vl, workflow_text):
     """A previously green mapped job may not silently become skipped."""
     planted = workflow_text.replace("  sentinel-rule-list-drift:\n",
@@ -157,7 +174,7 @@ def test_planted_pester_file_added_in_ci_only_is_refused(vl, workflow_text):
 
 
 def test_planted_shellcheck_file_dropped_in_ci_is_refused(vl, workflow_text):
-    planted = workflow_text.replace("            scripts/install-overmind.sh \\\n", "")
+    planted = workflow_text.replace("            scripts/install-overmind.sh \\n", "")
     assert planted != workflow_text
     drift = vl.find_drift(planted)
     assert any(p.startswith("ShellCheck file lists differ") for p in drift), drift
