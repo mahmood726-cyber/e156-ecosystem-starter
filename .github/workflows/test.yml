@@ -125,19 +125,19 @@ jobs:
   sentinel-rule-list-drift:
     name: Teaching 1-pager Sentinel list matches Sentinel repo
     runs-on: ubuntu-latest
-    # Skip in CI when SENTINEL_REPO is unavailable (which it always is on
-    # GitHub-hosted runners — we don't clone the Sentinel repo here).
-    # The check is meaningful when run locally; the CI step exists only
-    # to make the dependency visible. Maintainers should run the check
-    # before opening a PR that touches docs/teaching/intro-1pager.md.
-    if: false
+    # Fetch the exact reviewed Sentinel revision; never skip this drift gate.
+    # Update the SHA deliberately alongside the generated teaching page.
     steps:
       - uses: actions/checkout@v4
       - name: Verify auto-generated Sentinel list matches source
         env:
           SENTINEL_REPO: ${{ github.workspace }}/Sentinel
         run: |
-          git clone --depth 1 https://github.com/mahmood726-cyber/Sentinel.git "$SENTINEL_REPO"
+          git init "$SENTINEL_REPO"
+          git -C "$SENTINEL_REPO" remote add origin https://github.com/mahmood726-cyber/Sentinel.git
+          git -C "$SENTINEL_REPO" fetch --depth 1 origin 97273997db160aee99d89af94fcc18bf621b3cb9
+          git -C "$SENTINEL_REPO" checkout --detach FETCH_HEAD
+          test "$(git -C "$SENTINEL_REPO" rev-parse HEAD)" = 97273997db160aee99d89af94fcc18bf621b3cb9
           bash scripts/regen-sentinel-rule-list.sh --check
 
   link-check:
