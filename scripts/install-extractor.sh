@@ -214,10 +214,11 @@ log_step "Persisting RCT_EXTRACTOR_PATH"
 persist_extractor_path_env "$TARGET"
 
 log_step "Verifying the core (text -> config) path imports"
-if verify_core_import "$TARGET" >/dev/null 2>&1; then
+if verify_core_import "$TARGET"; then
     log_ok "core import OK (stdlib-only path verified)"
 else
-    echo "    WARNING: core import check did not return ok (Python missing? see above)." >&2
+    echo "ERROR: extractor core import failed; installation is not usable." >&2
+    exit 1
 fi
 
 if [[ "$WITH_PDF_DEPS" -eq 1 ]]; then
