@@ -96,7 +96,7 @@ def verify(home: Path, *, run_canaries: bool = True) -> list[tuple[str, str, str
         if entry.is_file():
             probe = (
                 "import sys; sys.path.insert(0, sys.argv[1]); "
-                "from src.specialties.registry import detect_specialty; "
+                "from rct_extractor import SPECIALTIES, detect_specialty; assert len(SPECIALTIES) == 17; "
                 "assert detect_specialty('viral suppression with dolutegravir')[0] == 'hiv'; "
                 "assert detect_specialty('empagliflozin type 2 diabetes HbA1c')[0] == 'diabetes'"
             )
