@@ -350,7 +350,7 @@
       ],
       "source": "scripts/verify-local.py docstring; docs/VERIFY-LOCAL.md; port S-A report.",
       "seal": {
-        "scripts/verify-local.py": "0e84f25270001a58129538d20ed7fbfe3ac4f5118fb6c5589631f5ba88b81aff"
+        "scripts/verify-local.py": "6ac0b18e19ee599c7d67e1a446e1e9b791693e91bbe50a5a5ce2076a960a8743"
       }
     },
     {
