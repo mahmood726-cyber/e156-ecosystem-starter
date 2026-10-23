@@ -111,19 +111,27 @@ def test_planted_renamed_ci_step_leaves_limb_stale(vl, workflow_text):
     assert any("limb 'pytest' claims CI step python-tests / 'Run pytest'" in p for p in drift), drift
 
 
-def test_planted_enabling_disabled_job_demands_a_limb(vl, workflow_text):
-    """sentinel-rule-list-drift is CI-only ONLY because CI has it at `if: false`."""
-    planted = workflow_text.replace("    if: false\n", "")
+def test_planted_disabling_active_sentinel_gate_is_refused(vl, workflow_text):
+    """A previously green mapped job may not silently become skipped."""
+    planted = workflow_text.replace("  sentinel-rule-list-drift:\n",
+                                    "  sentinel-rule-list-drift:\n    if: false\n")
     assert planted != workflow_text
     drift = vl.find_drift(planted)
-    assert any("sentinel-rule-list-drift" in p and "add a limb" in p for p in drift), drift
+    assert any("sentinel-rule-list-drift" in p and "disabled in CI" in p for p in drift), drift
 
 
-@pytest.mark.parametrize("dropped", range(9))
+def test_planted_sentinel_checkout_pin_drift_is_refused(vl, workflow_text):
+    planted = workflow_text.replace(vl.SENTINEL_PIN, "0" * 40)
+    assert planted != workflow_text
+    drift = vl.find_drift(planted)
+    assert any("Sentinel CI checkout pin differs" in p for p in drift), drift
+
+
+@pytest.mark.parametrize("dropped", range(10))
 def test_planted_missing_limb_is_refused(vl, workflow_text, dropped):
     """Delete any one limb from verify-local: the CI step it mirrored is now
     unmatched, and parity must say so."""
-    assert len(vl.LIMBS) == 9
+    assert len(vl.LIMBS) == 10
     limbs = [l for i, l in enumerate(vl.LIMBS) if i != dropped]
     drift = vl.find_drift(workflow_text, limbs=limbs)
     job, step = vl.LIMBS[dropped].ci_steps[0]
@@ -384,3 +392,42 @@ def test_hook_refuses_when_verify_local_is_absent(vl, tmp_path):
     p = _run_hook(vl, repo)
     assert p.returncode != 0
     assert "fail closed" in p.stdout
+
+
+def test_sentinel_limb_refuses_missing_clone(vl, tmp_path):
+    limb = next(x for x in vl.LIMBS if x.name == "sentinel-rule-list-drift")
+    with pytest.raises(vl.ToolMissing, match="SENTINEL_REPO"):
+        limb.fn(vl.Context(tmp_path, env={}))
+
+
+def test_sentinel_limb_refuses_wrong_commit(vl, tmp_path):
+    root = tmp_path / "Sentinel"
+    (root / "sentinel" / "rules").mkdir(parents=True)
+    ctx = vl.Context(tmp_path, env={"SENTINEL_REPO": str(root)},
+                     which=lambda _: "/usr/bin/git")
+    calls = []
+    def runner(cmd, timeout=1800):
+        calls.append(cmd)
+        return 0, "0" * 40 + "\n"
+    ctx.run = runner
+    verdict, detail = vl.limb_sentinel_rule_list(ctx)
+    assert verdict == vl.REFUSED and vl.SENTINEL_PIN in detail
+    assert len(calls) == 1  # do not run source-drift check against wrong revision
+
+
+def test_sentinel_limb_checks_documentation_after_exact_pin(vl, tmp_path):
+    root = tmp_path / "Sentinel"
+    (root / "sentinel" / "rules").mkdir(parents=True)
+    ctx = vl.Context(tmp_path, env={"SENTINEL_REPO": str(root)},
+                     which=lambda n: "/usr/bin/" + n)
+    calls = []
+    def runner(cmd, timeout=1800):
+        calls.append(cmd)
+        if "rev-parse" in cmd:
+            return 0, vl.SENTINEL_PIN + "\n"
+        return 1, "FAIL: generated documentation drift"
+    ctx.run = runner
+    verdict, detail = vl.limb_sentinel_rule_list(ctx)
+    assert verdict == vl.REFUSED
+    assert "documentation drift" in detail
+    assert len(calls) == 2  # exact SHA is necessary, but never sufficient
