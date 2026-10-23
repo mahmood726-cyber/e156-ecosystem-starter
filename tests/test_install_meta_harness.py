@@ -105,6 +105,9 @@ def test_an_archive_without_the_entry_point_is_refused(tmp_path):
     rel = _release(tmp_path / "rel", {f"meta-harness-{TAG}/README.md": b"# not the harness\n"})
     p = _run(rel, tmp_path / "out" / "mh")
     assert p.returncode != 0 and "replay_offline.py is missing" in p.stderr
+    assert not (tmp_path / "out" / "mh").exists(), "invalid archive must not leave a partial install"
+    assert not list((tmp_path / "out").glob(".meta-harness-stage-*")), "staging directory leaked"
+
 
 
 def test_default_pin_is_the_published_release_tag():
@@ -112,3 +115,30 @@ def test_default_pin_is_the_published_release_tag():
     assert 'META_HARNESS_DEFAULT_REF="v1.0.0"' in src
     assert "$script:MetaHarnessDefaultRef = 'v1.0.0'" in (ROOT / "scripts" / "install-meta-harness.ps1").read_text(
         encoding="utf-8")
+
+
+def test_missing_entrypoint_preserves_an_existing_empty_target(tmp_path):
+    rel = _release(tmp_path / "rel", {f"meta-harness-{TAG}/README.md": b"# incomplete\\n"})
+    target = tmp_path / "out" / "mh"
+    target.mkdir(parents=True)
+    p = _run(rel, target)
+    assert p.returncode != 0 and "replay_offline.py is missing" in p.stderr
+    assert target.is_dir() and not list(target.iterdir())
+    assert not list(target.parent.glob(".meta-harness-stage-*"))
+
+
+def test_windows_style_zip_path_is_rejected_on_all_platforms(tmp_path):
+    rel = _release(tmp_path / "rel", {**GOOD, f"meta-harness-{TAG}\\\\scripts\\\\escape.py": b"x"})
+    target = tmp_path / "out" / "mh"
+    p = _run(rel, target)
+    assert p.returncode != 0 and "unsafe path" in (p.stdout + p.stderr)
+    assert not target.exists()
+
+
+def test_case_colliding_zip_members_are_rejected_before_extraction(tmp_path):
+    rel = _release(tmp_path / "rel", {**GOOD,
+                   f"meta-harness-{TAG}/scripts/Replay_Offline.py": b"print('different')\\n"})
+    target = tmp_path / "out" / "mh"
+    p = _run(rel, target)
+    assert p.returncode != 0 and "duplicate archive path" in (p.stdout + p.stderr)
+    assert not target.exists()
