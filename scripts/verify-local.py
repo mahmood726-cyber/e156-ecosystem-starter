@@ -117,6 +117,8 @@ CI_ONLY_STEPS = {
     ("bash-tests", "Show bash version"): "diagnostic print only; checks nothing",
     ("python-tests", "uses:actions/setup-python"): "runner set-up: provides Python 3.11; locally you run this with your own Python",
     ("python-tests", "Install pytest"): "runner set-up (pip install); verify-local never installs, a missing pytest is COULD-NOT-EXECUTE",
+    ("meta-harness-unpack-windows", "uses:actions/setup-python"): "Windows runner set-up; locally the installed Python is used",
+    ("meta-harness-unpack-windows", "Install locked test dependencies"): "Windows runner set-up using requirements-ci.lock; local pytest limb checks importability",
 }
 # Whole CI jobs with no limb. Only allowed while the job is disabled in CI
 # (`if: false`); the parity test refuses the entry the moment CI enables it.
@@ -263,7 +265,10 @@ class Limb:
 
 
 LIMBS = (
-    Limb("pytest", "pytest tests/", (("python-tests", "Run pytest"),), limb_pytest),
+    Limb("pytest", "pytest tests/",
+         (("python-tests", "Run pytest"),
+          ("meta-harness-unpack-windows", "Run actual Bash installer and negative release cases")),
+         limb_pytest),
     Limb("bash-install-sh", "bash tests/test-install-sh.bash", (("bash-tests", "Run bash test suite"),), limb_bash_install_sh),
     Limb("bash-handoff-locale", "bash tests/test-handoff-locale.bash",
          (("bash-tests", "Run handoff-locale bash tests"),), limb_bash_handoff_locale),
