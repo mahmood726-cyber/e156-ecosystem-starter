@@ -81,7 +81,7 @@ gen_section() {
     yaml_count="$(find "$sentinel/sentinel/rules/yaml" -maxdepth 1 -name '*.yaml' 2>/dev/null | wc -l | tr -d ' ')"
     plugin_count="$(find "$sentinel/sentinel/rules/plugins" -maxdepth 1 -name '*.py' -not -name '__init__.py' 2>/dev/null | wc -l | tr -d ' ')"
     total="$((yaml_count + plugin_count))"
-    printf '_Total: %s rule source files (%s YAML pattern matchers + %s Python plugins). This is a source-file census, not proof that the rules successfully register or execute; run `python -m sentinel list-rules` and a known-failing Sentinel scan to verify the runtime. Every rule should document the incident it prevents._\\n' "$total" "$yaml_count" "$plugin_count"
+    printf '_Total: %s rule source files (%s YAML pattern matchers + %s Python plugins). This is a source-file census, not proof that the rules successfully register or execute; run `python -m sentinel list-rules` and a known-failing Sentinel scan to verify the runtime. Every rule should document the incident it prevents._\n' "$total" "$yaml_count" "$plugin_count"
 }
 
 if [[ "$MODE" == "stdout" ]]; then
