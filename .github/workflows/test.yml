@@ -93,6 +93,19 @@ jobs:
       - name: Run pytest
         run: python -m pytest tests/ -v
 
+  meta-harness-unpack-windows:
+    name: Meta-Harness archive installer (Windows Git Bash)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install locked test dependencies
+        run: python -m pip install --require-hashes -r requirements-ci.lock
+      - name: Run actual Bash installer and negative release cases
+        run: python -m pytest tests/test_install_meta_harness.py -v
+
   hash-check:
     name: HASH files in sync with install scripts
     runs-on: ubuntu-latest
