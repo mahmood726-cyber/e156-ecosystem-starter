@@ -174,8 +174,12 @@ def test_planted_pester_file_added_in_ci_only_is_refused(vl, workflow_text):
 
 
 def test_planted_shellcheck_file_dropped_in_ci_is_refused(vl, workflow_text):
-    planted = workflow_text.replace("            scripts/install-overmind.sh \\n", "")
-    assert planted != workflow_text
+    # The CI command is backslash-continued across physical lines.  The old
+    # "\\n" string matched a *literal n*, never the actual newline, making
+    # this planted-drift negative control fail before it exercised the gate.
+    needle = "            scripts/install-overmind.sh " + chr(92) + "\n"
+    assert needle in workflow_text, "ShellCheck fixture format changed"
+    planted = workflow_text.replace(needle, "", 1)
     drift = vl.find_drift(planted)
     assert any(p.startswith("ShellCheck file lists differ") for p in drift), drift
 
