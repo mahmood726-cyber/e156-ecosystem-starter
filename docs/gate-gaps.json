@@ -351,9 +351,9 @@
         "Behavioral errors in Sentinel rules, despite correct pinned filenames.",
         "Operating-system differences and checks outside the mapped workflows."
       ],
-      "source": "scripts/verify-local.py docstring; docs/VERIFY-LOCAL.md; port S-A report.",
+      "source": "scripts/verify-local.py CI parity mapping, PESTER_FILES, docstring and docs/VERIFY-LOCAL.md; reviewed for Windows capsule test addition on 2026-10-24.",
       "seal": {
-        "scripts/verify-local.py": "450a55b56def3f84e48a0af303b0c3350ff0bc60a7906ee96f98f9f52201194c"
+        "scripts/verify-local.py": "f248be90914df7819f257f1f048097039206f46457c55abeae86a91fad40e380"
       }
     },
     {
