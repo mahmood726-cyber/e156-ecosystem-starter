@@ -191,3 +191,35 @@ def test_case_colliding_zip_members_are_rejected_before_extraction(tmp_path):
     p = _run(rel, target)
     assert p.returncode != 0 and "duplicate archive path" in (p.stdout + p.stderr)
     assert not target.exists()
+
+@pytest.mark.parametrize("bad_ref", [
+    "../escape", "tag/../../escape", r"..\\..\\escape",
+    "v1.0.0?raw=1", "v1.0.0#fragment", "v1.0.0%2Fescape",
+    "v1.0.0 latest", "v1.0.0\\nextra", "-unexpected-option",
+])
+@pytest.mark.parametrize("via_cli", [False, True])
+def test_unsafe_release_ref_is_refused_before_download_or_publication(tmp_path, bad_ref, via_cli):
+    """Execute the actual Bash installer, not a helper-only synthetic assertion."""
+    target = tmp_path / "published"
+    env = dict(os.environ, META_HARNESS_BASE_URL=(tmp_path / "no-release").resolve().as_uri(),
+               META_HARNESS_REF=(TAG if via_cli else bad_ref))
+    cmd = [_bash(), str(SCRIPT), "--target", str(target)]
+    if via_cli:
+        cmd.extend(["--ref", bad_ref])
+    p = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=30)
+    assert p.returncode == 2, p.stdout + p.stderr
+    assert "invalid Meta-Harness release ref" in p.stderr
+    assert "could not download" not in p.stderr
+    assert "release fetch" not in p.stdout
+    assert not target.exists()
+
+
+def test_safe_explicit_ref_still_fetches_verified_release(tmp_path):
+    rel = _release(tmp_path / "rel", GOOD)
+    target = tmp_path / "published"
+    env = dict(os.environ, META_HARNESS_BASE_URL=rel.resolve().as_uri(),
+               META_HARNESS_REF="v0-incorrect")
+    p = subprocess.run([_bash(), str(SCRIPT), "--ref", TAG, "--target", str(target)],
+                       capture_output=True, text=True, env=env, timeout=120)
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert (target / "scripts" / "replay_offline.py").is_file()
