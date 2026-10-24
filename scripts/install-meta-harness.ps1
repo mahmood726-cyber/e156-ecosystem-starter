@@ -40,7 +40,8 @@ function Get-MetaHarnessDefaultTarget { param([string]$Tag) return (Join-Path $e
 
 function Test-MetaHarnessPresent {
     param([string]$Dir)
-    return [bool]($Dir -and (Test-Path (Join-Path $Dir 'scripts\replay_offline.py')))
+    # A directory named replay_offline.py is not an executable replay entry point.
+    return [bool]($Dir -and (Test-Path -LiteralPath (Join-Path $Dir 'scripts\replay_offline.py') -PathType Leaf))
 }
 
 # The digest SHA256SUMS records for $Name, or $null.
@@ -99,18 +100,32 @@ function Assert-MetaHarnessArchiveSafe {
 
 function Expand-MetaHarness {
     param([string]$ZipPath, [string]$TargetDir)
-    if ((Test-Path $TargetDir) -and (Get-ChildItem -Force $TargetDir | Select-Object -First 1)) {
+    $targetFull = [IO.Path]::GetFullPath($TargetDir)
+    if ((Test-Path -LiteralPath $targetFull) -and
+        (Get-ChildItem -LiteralPath $targetFull -Force | Select-Object -First 1)) {
         throw "REFUSED: $TargetDir exists and is not empty"
     }
-    $tmp = Join-Path ([IO.Path]::GetTempPath()) ("mh-" + [guid]::NewGuid())
+    # Preserve the existing archive-path refusal before any extraction.
     Assert-MetaHarnessArchiveSafe -ZipPath $ZipPath
-    Expand-Archive -LiteralPath $ZipPath -DestinationPath $tmp
-    $tops = @(Get-ChildItem -Force $tmp)
-    $src = if ($tops.Count -eq 1 -and $tops[0].PSIsContainer) { $tops[0].FullName } else { $tmp }
-    New-Item -ItemType Directory -Force (Split-Path $TargetDir -Parent) | Out-Null
-    if (Test-Path $TargetDir) { Remove-Item -LiteralPath $TargetDir }
-    Move-Item -LiteralPath $src -Destination $TargetDir
-    if (Test-Path $tmp) { Remove-Item -Recurse -Force -LiteralPath $tmp }
+    $parent = Split-Path -Path $targetFull -Parent
+    New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    # Stage beside the destination so the final move stays on the same volume.
+    $tmp = Join-Path $parent (".mh-stage-" + [guid]::NewGuid().ToString('N'))
+    try {
+        Expand-Archive -LiteralPath $ZipPath -DestinationPath $tmp
+        $tops = @(Get-ChildItem -LiteralPath $tmp -Force)
+        $src = if ($tops.Count -eq 1 -and $tops[0].PSIsContainer) { $tops[0].FullName } else { $tmp }
+        # Never publish an archive missing the actual replay *file*.
+        if (-not (Test-MetaHarnessPresent $src)) {
+            throw "REFUSED: scripts/replay_offline.py is missing from staged archive"
+        }
+        if (Test-Path -LiteralPath $targetFull) { Remove-Item -LiteralPath $targetFull }
+        Move-Item -LiteralPath $src -Destination $targetFull -ErrorAction Stop
+    } finally {
+        if (Test-Path -LiteralPath $tmp) {
+            Remove-Item -Recurse -Force -LiteralPath $tmp
+        }
+    }
 }
 
 if ($Import) { return }

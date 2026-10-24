@@ -22,6 +22,18 @@ BeforeAll {
         [IO.File]::WriteAllText((Join-Path $Dir 'SHA256SUMS'), "$SumsLine`n")
         return $zip
     }
+    function New-TestIncompleteRelease {
+        param([string]$Dir, [switch]$EntrypointIsDirectory)
+        $zip = New-TestRelease -Dir $Dir
+        $entrypoint = Join-Path $Dir 'src\meta-harness-v9.9.9-test\scripts\replay_offline.py'
+        Remove-Item -LiteralPath $entrypoint
+        if ($EntrypointIsDirectory) {
+            New-Item -ItemType Directory -Path $entrypoint | Out-Null
+        }
+        Remove-Item -LiteralPath $zip
+        Compress-Archive -Path (Join-Path $Dir 'src\meta-harness-v9.9.9-test') -DestinationPath $zip
+        return $zip
+    }
 }
 
 Describe "Get-MetaHarnessDefaultRef pins the published release" {
@@ -63,6 +75,31 @@ Describe "Expand-MetaHarness" {
         Set-Content -LiteralPath (Join-Path $t 'mine.txt') -Value 'keep'
         { Expand-MetaHarness -ZipPath $zip -TargetDir $t } | Should -Throw '*not empty*'
         Get-Content -LiteralPath (Join-Path $t 'mine.txt') | Should -Be 'keep'
+    }
+}
+
+Describe "Expand-MetaHarness refuses incomplete releases before publishing" {
+    It "does not publish a missing replay entry point or leave staging debris" {
+        $d = Join-Path $TestDrive 'missing-replay'; $zip = New-TestIncompleteRelease -Dir $d
+        $target = Join-Path $d 'out\mh'
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*replay_offline.py is missing*'
+        Test-Path -LiteralPath $target | Should -BeFalse
+        @(Get-ChildItem -LiteralPath (Split-Path $target -Parent) -Filter '.mh-stage-*' -Force).Count | Should -Be 0
+    }
+    It "preserves a pre-existing empty target on invalid release" {
+        $d = Join-Path $TestDrive 'empty-target'; $zip = New-TestIncompleteRelease -Dir $d
+        $target = Join-Path $d 'out\mh'
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*replay_offline.py is missing*'
+        Test-Path -LiteralPath $target -PathType Container | Should -BeTrue
+        @(Get-ChildItem -LiteralPath $target -Force).Count | Should -Be 0
+        @(Get-ChildItem -LiteralPath (Split-Path $target -Parent) -Filter '.mh-stage-*' -Force).Count | Should -Be 0
+    }
+    It "refuses a directory masquerading as replay_offline.py" {
+        $d = Join-Path $TestDrive 'fake-replay'; $zip = New-TestIncompleteRelease -Dir $d -EntrypointIsDirectory
+        $target = Join-Path $d 'out\mh'
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*replay_offline.py is missing*'
+        Test-Path -LiteralPath $target | Should -BeFalse
     }
 }
 
