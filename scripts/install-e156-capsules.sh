@@ -93,8 +93,10 @@ verify_chartkit() {
     # Windows python under git-bash, which can't resolve it); clean up after.
     local out="$target/.chartkit_check.svg"
     if "$PYTHON" "$target/chartkit.py" "$target/sample.capsule.json" --out "$out" >/dev/null 2>&1; then
-        # A zero exit code without an SVG artifact is not a successful render.
-        if [[ -s "$out" ]]; then rm -f "$out"; return 0; fi
+        # A successful exit and nonempty file are insufficient if it is not SVG.
+        if [[ -s "$out" ]] && "$PYTHON" -c 'import sys, xml.etree.ElementTree as ET; sys.exit(0 if ET.parse(sys.argv[1]).getroot().tag in ("svg", "{http://www.w3.org/2000/svg}svg") else 1)' "$out" >/dev/null 2>&1; then
+            rm -f "$out"; return 0
+        fi
     fi
     rm -f "$out"; return 1
 }
