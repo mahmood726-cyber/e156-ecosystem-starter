@@ -169,10 +169,23 @@ if ($existing -and -not $HmacKey) {
 
 # Step 3: quick sanity check
 Write-Step "overmind meta-verify (canary)"
-$canary = & overmind meta-verify 2>&1
+# Keep the native exit status before formatting the output.  In particular,
+# a failed verifier must never be followed by a "ready" banner and exit 0.
+try {
+    $canary = & overmind meta-verify 2>&1
+    $canaryExitCode = $LASTEXITCODE
+} catch {
+    Write-Host "ERROR: overmind meta-verify could not complete; installation is not ready. $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
 $canary | Select-Object -First 5 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
-if ($LASTEXITCODE -ne 0) {
-    Write-Warning "overmind meta-verify returned non-zero ($LASTEXITCODE). Not necessarily fatal, but review above."
+if ($null -eq $canaryExitCode) {
+    Write-Host "ERROR: overmind meta-verify returned no native exit status; installation is not ready." -ForegroundColor Red
+    exit 1
+}
+if ($canaryExitCode -ne 0) {
+    Write-Host "ERROR: overmind meta-verify failed (exit $canaryExitCode); installation is not ready." -ForegroundColor Red
+    exit $canaryExitCode
 }
 
 Write-Host ""
