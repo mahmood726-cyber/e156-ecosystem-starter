@@ -111,14 +111,7 @@ function Backup-ExistingPrePushHook {
     # Detect Sentinel-installed hooks (which carry a known marker) so we
     # don't churn backups on every re-install.
     $existing = Get-Content -Raw -Path $hookPath -ErrorAction SilentlyContinue
-    # The pinned Sentinel hook runs `python -m sentinel scan`, not the older
-    # `sentinel run-pre-push` form. Recognise its canonical banner and scanner
-    # to avoid misclassifying a genuine Sentinel hook as a user's hook.
-    $marker = '# === SENTINEL PRE-PUSH HOOK (do not edit above this line) ==='
-    if ($existing -and (
-        ($existing.Contains($marker) -and $existing.Contains('python -m sentinel scan')) -or
-        $existing -match 'sentinel\s+(scan|run-pre-push)'
-    )) { return $null }
+    if ($existing -and $existing -match 'sentinel\s+(scan|run-pre-push)') { return $null }
     $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
     $backup = "$hookPath.user-$ts"
     Copy-Item -Path $hookPath -Destination $backup -Force
