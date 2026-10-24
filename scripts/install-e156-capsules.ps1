@@ -49,16 +49,28 @@ function Set-E156PathEnv {
 }
 
 function Test-E156Chartkit {
-    # Verify the offline chart-kit renders the bundled sample (token-free).
+    # A successful exit alone does not prove that an SVG was actually rendered.
     [CmdletBinding()]
     param([string]$TargetDir)
     $py = Get-Command python -ErrorAction SilentlyContinue
-    if (-not $py) { return $true }   # python missing: skip, not fail
+    if (-not $py -or $py.Source -match 'WindowsApps') { return $false }
     $out = Join-Path $env:TEMP ("e156_" + [System.Guid]::NewGuid().ToString('N') + '.svg')
-    & python (Join-Path $TargetDir 'chartkit.py') (Join-Path $TargetDir 'sample.capsule.json') --out $out 2>&1 | Out-Null
-    $ok = ($LASTEXITCODE -eq 0)
-    if (Test-Path $out) { Remove-Item $out -Force }
-    return $ok
+    try {
+        & $py.Source (Join-Path $TargetDir 'chartkit.py') (Join-Path $TargetDir 'sample.capsule.json') --out $out 2>&1 | Out-Null
+        $status = $LASTEXITCODE
+        if ($status -ne 0 -or -not (Test-Path -LiteralPath $out -PathType Leaf)) { return $false }
+        # Parse the output with the platform XML parser rather than trusting an
+        # exit-0 command that could have written nothing or a non-SVG document.
+        $doc = New-Object System.Xml.XmlDocument
+        $doc.Load($out)
+        $root = $doc.DocumentElement
+        return [bool]($root -and $root.LocalName -eq 'svg' -and
+            ($root.NamespaceURI -eq '' -or $root.NamespaceURI -eq 'http://www.w3.org/2000/svg'))
+    } catch {
+        return $false
+    } finally {
+        if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Force }
+    }
 }
 
 if ($Import) { return }
@@ -88,13 +100,18 @@ if ($SkipCopy) {
     Write-Ok "template copied"
 }
 
+# Never advertise or persist a path whose chart-kit canary was not executed
+# successfully. This protects the user's previous E156_CAPSULES_PATH setting.
+Write-Step "Verifying the offline chart-kit renders the sample"
+if (-not (Test-E156Chartkit -TargetDir $Target)) {
+    Write-Host "REFUSED: chart-kit render canary failed; E156_CAPSULES_PATH was not persisted." -ForegroundColor Red
+    exit 1
+}
+Write-Ok "chartkit OK (stdlib-only SVG render verified, no network)"
+
 Write-Step "Persisting E156_CAPSULES_PATH (User env var)"
 Set-E156PathEnv -TargetDir $Target
 Write-Ok "E156_CAPSULES_PATH = $Target"
-
-Write-Step "Verifying the offline chart-kit renders the sample"
-if (Test-E156Chartkit -TargetDir $Target) { Write-Ok "chartkit OK (stdlib-only SVG render verified, no network)" }
-else { Write-Host "    WARNING: chartkit render check did not pass (python missing?)." -ForegroundColor Yellow }
 
 Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green
