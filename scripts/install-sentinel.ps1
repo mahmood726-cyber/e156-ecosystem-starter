@@ -111,7 +111,14 @@ function Backup-ExistingPrePushHook {
     # Detect Sentinel-installed hooks (which carry a known marker) so we
     # don't churn backups on every re-install.
     $existing = Get-Content -Raw -Path $hookPath -ErrorAction SilentlyContinue
-    if ($existing -and $existing -match 'sentinel\s+(scan|run-pre-push)') { return $null }
+    # The pinned Sentinel hook runs `python -m sentinel scan`, not the older
+    # `sentinel run-pre-push` form. Recognise its canonical banner and scanner
+    # to avoid misclassifying a genuine Sentinel hook as a user's hook.
+    $marker = '# === SENTINEL PRE-PUSH HOOK (do not edit above this line) ==='
+    if ($existing -and (
+        ($existing.Contains($marker) -and $existing.Contains('python -m sentinel scan')) -or
+        $existing -match 'sentinel\s+(scan|run-pre-push)'
+    )) { return $null }
     $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
     $backup = "$hookPath.user-$ts"
     Copy-Item -Path $hookPath -Destination $backup -Force
@@ -138,6 +145,22 @@ function Install-SentinelHookInRepo {
     $out | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
     if ($LASTEXITCODE -ne 0) {
         throw "sentinel install-hook failed (exit $LASTEXITCODE)"
+    }
+    # Exit 0 alone is not proof that a pre-push hook was installed. Verify the
+    # actual upstream Sentinel hook banner, scanner and requested install mode.
+    # This verifies a local installation postcondition, NOT a cryptographic
+    # signature or that a Sentinel scan has run.
+    $hookPath = Join-Path $abs '.git\hooks\pre-push'
+    if (-not (Test-Path -LiteralPath $hookPath -PathType Leaf)) {
+        throw "sentinel install-hook returned success but no pre-push hook exists at $hookPath"
+    }
+    $hook = Get-Content -LiteralPath $hookPath -Raw -ErrorAction Stop
+    $marker = '# === SENTINEL PRE-PUSH HOOK (do not edit above this line) ==='
+    $modeLine = 'MODE="${SENTINEL_MODE:-' + $HookMode + '}"'
+    if (-not $hook.Contains($marker) -or
+        -not $hook.Contains('python -m sentinel scan') -or
+        -not $hook.Contains($modeLine)) {
+        throw "sentinel install-hook returned success but pre-push hook identity/mode verification failed at $hookPath"
     }
     return $abs
 }
