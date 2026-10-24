@@ -144,3 +144,50 @@ Describe "Expand-MetaHarness rejects unsafe archive members before unpacking" {
         Test-Path -LiteralPath $target | Should -BeFalse
     }
 }
+
+Describe "Expand-MetaHarness refuses ambiguous Windows ZIP member paths" {
+    It "refuses an exact duplicate member before extraction" {
+        $d = Join-Path $TestDrive 'duplicate-member'; $zip = New-TestRelease -Dir $d
+        $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+        try {
+            $archive.CreateEntry('meta-harness-v9.9.9-test/scripts/replay_offline.py') | Out-Null
+        } finally { $archive.Dispose() }
+        $target = Join-Path $d 'published'
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*duplicate or case-colliding*'
+        Test-Path -LiteralPath $target | Should -BeFalse
+    }
+    It "refuses paths that collide after Windows case-folding" {
+        $d = Join-Path $TestDrive 'case-member'; $zip = New-TestRelease -Dir $d
+        $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+        try {
+            $archive.CreateEntry('meta-harness-v9.9.9-test/SCRIPTS/REPLAY_OFFLINE.PY') | Out-Null
+        } finally { $archive.Dispose() }
+        $target = Join-Path $d 'published'
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*duplicate or case-colliding*'
+        Test-Path -LiteralPath $target | Should -BeFalse
+    }
+    It "refuses reserved Windows device names at any path depth" {
+        foreach ($bad in @('AUX.txt', 'nul', 'docs/COM1.log', 'docs/lPt9.ext')) {
+            $d = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+            $zip = New-TestRelease -Dir $d
+            $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+            try {
+                $archive.CreateEntry("meta-harness-v9.9.9-test/$bad") | Out-Null
+            } finally { $archive.Dispose() }
+            $target = Join-Path $d 'published'
+            { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*reserved device name*'
+            Test-Path -LiteralPath $target | Should -BeFalse
+        }
+    }
+    It "still accepts an ordinary path with a similar prefix" {
+        $d = Join-Path $TestDrive 'non-device'; $zip = New-TestRelease -Dir $d
+        $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+        try {
+            $archive.CreateEntry('meta-harness-v9.9.9-test/COM10.txt') | Out-Null
+            $archive.CreateEntry('meta-harness-v9.9.9-test/docs/console.txt') | Out-Null
+        } finally { $archive.Dispose() }
+        $target = Join-Path $d 'published'
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Not -Throw
+        Test-MetaHarnessPresent $target | Should -BeTrue
+    }
+}
