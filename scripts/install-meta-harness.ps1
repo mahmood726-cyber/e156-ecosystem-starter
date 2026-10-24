@@ -73,6 +73,9 @@ function Assert-MetaHarnessArchiveSafe {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $archive = [IO.Compression.ZipFile]::OpenRead($ZipPath)
     try {
+        # Windows paths are case-insensitive. Refuse multiple ZIP records that
+        # would name the same destination before any files are extracted.
+        $seen = @{}
         foreach ($entry in $archive.Entries) {
             $name = $entry.FullName
             if ([string]::IsNullOrEmpty($name) -or
@@ -86,7 +89,16 @@ function Assert-MetaHarnessArchiveSafe {
                     $part -match '[. ]$') {
                     throw "REFUSED: unsafe archive entry path"
                 }
+                # Device names remain reserved in every Windows directory.
+                if ($part -match '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])([.].*)?$') {
+                    throw "REFUSED: Windows reserved device name in archive"
+                }
             }
+            $key = $name.TrimEnd('/').ToUpperInvariant()
+            if ($seen.ContainsKey($key)) {
+                throw "REFUSED: duplicate or case-colliding archive entry"
+            }
+            $seen[$key] = $true
             # ZIP creator's POSIX file type is stored in the high 16 bits.
             $type = (($entry.ExternalAttributes -shr 16) -band 0xF000)
             if ($type -eq 0xA000) {
