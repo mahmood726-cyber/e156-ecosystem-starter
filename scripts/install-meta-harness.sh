@@ -61,10 +61,10 @@ meta_harness_sha256() {
     fi
 }
 
-# The digest SHA256SUMS records for <name> (exactly one line, `<64 hex>  <name>`), or nothing.
+# Return all matching SHA256SUMS digest records; verify_meta_harness_asset refuses ambiguity.
 meta_harness_expected_sha() {
     local sums="$1" name="$2"
-    tr -d '\r' < "$sums" | awk -v n="$name" '($2 == n || $2 == "*" n) && $1 ~ /^[0-9a-f]{64}$/ {print $1}' | head -1
+    tr -d '\r' < "$sums" | awk -v n="$name" '($2 == n || $2 == "*" n) && $1 ~ /^[0-9a-f]{64}$/ {print $1}'
 }
 
 # Verify <zip> against <sums>. Prints the reason and returns 1 on any failure.
@@ -73,6 +73,10 @@ verify_meta_harness_asset() {
     name="$(basename "$zip")"
     expected="$(meta_harness_expected_sha "$sums" "$name")"
     [[ -n "$expected" ]] || { echo "REFUSED: SHA256SUMS has no line for $name" >&2; return 1; }
+    # Do not silently choose between duplicate records for the same asset.
+    if [[ "$expected" == *$'\n'* ]]; then
+        echo "REFUSED: SHA256SUMS has multiple entries for $name" >&2; return 1
+    fi
     actual="$(meta_harness_sha256 "$zip")"
     [[ "$actual" == "$expected" ]] || {
         echo "REFUSED: sha256 mismatch for $name (expected $expected, got $actual)" >&2; return 1; }
