@@ -48,22 +48,22 @@ function Test-MetaHarnessPresent {
 # the first digest (including when the second line uses the GNU '*' marker).
 function Get-MetaHarnessExpectedSha {
     param([string]$SumsPath, [string]$Name)
-    $matches = 0
+    $matchingRecords = 0
     $malformed = $false
     $digest = $null
     foreach ($line in (Get-Content -LiteralPath $SumsPath)) {
         $parts = ($line.TrimEnd("`r")) -split '\s+', 2
         if ($parts.Count -ne 2) { continue }
         if ($parts[1] -cne $Name -and $parts[1] -cne "*$Name") { continue }
-        $matches++
+        $matchingRecords++
         if ($parts[0] -cnotmatch '^[0-9a-f]{64}$') {
             $malformed = $true
         } else {
             $digest = $parts[0]
         }
     }
-    if ($matches -eq 0) { return $null }
-    if ($matches -ne 1 -or $malformed) {
+    if ($matchingRecords -eq 0) { return $null }
+    if ($matchingRecords -ne 1 -or $malformed) {
         throw "REFUSED: SHA256SUMS has duplicate or malformed entries for $Name"
     }
     return $digest
