@@ -109,7 +109,9 @@ def test_malformed_matching_sha256sums_record_is_refused(tmp_path, position):
     sums.write_text((first_line if position == "after_valid" else "") + malformed, encoding="ascii")
     target = tmp_path / "out" / "mh"
     p = _run(rel, target)
-    assert p.returncode != 0 and "malformed entry" in (p.stdout + p.stderr)
+    # A second matching line is also an ambiguity, even if it is malformed.
+    expected_reason = "malformed entry" if position == "only" else "multiple entries"
+    assert p.returncode != 0 and expected_reason in (p.stdout + p.stderr)
     assert not target.exists()
 
 
