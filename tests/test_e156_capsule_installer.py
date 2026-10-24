@@ -43,6 +43,7 @@ def run_installer(tmp_path, chartkit, *, sample=True, without_python=False):
     "raise SystemExit(9)\n",
     "pass\n",  # returns zero but produces no SVG
     "from pathlib import Path\nimport sys\nPath(sys.argv[-1]).write_bytes(b'')\n",
+    "from pathlib import Path\nimport sys\nPath(sys.argv[-1]).write_bytes(b'NOT SVG')\n",
     "from pathlib import Path\nimport sys\nPath(sys.argv[1]).read_bytes()\nPath(sys.argv[-1]).write_text('<svg/>')\n",
 ])
 def test_installer_refuses_failed_renderer_or_missing_sample(tmp_path, program):
