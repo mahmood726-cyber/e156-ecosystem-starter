@@ -66,7 +66,12 @@ LAYERS = [
 ]
 
 _SHA_RE = re.compile(r"[0-9a-f]{40}")
-_PIN_RE = re.compile(r"DEFAULT_REF[^\n]*?([0-9a-f]{40})", re.IGNORECASE)
+# Only the actual shell DEFAULT_REF assignment can supply an install pin.
+# Never fall back to a SHA mentioned in a comment, example or migration note.
+_PIN_RE = re.compile(
+    r"""^\s*(?:[A-Z][A-Z0-9_]*_)?DEFAULT_REF\s*=\s*(?:'([0-9a-f]{40})'|"([0-9a-f]{40})"|([0-9a-f]{40}))(?=\s*(?:#|$))""",
+    re.MULTILINE,
+)
 
 # Files (beyond each layer's own installers) that also reference the pinned SHA
 # and must stay in sync: the README short-SHA mentions and the layer tests that
@@ -81,10 +86,9 @@ def repo_root() -> Path:
 def extract_pin(sh_text: str) -> str | None:
     """Return the 40-hex SHA the .sh installer pins, or None (e.g. tag-pinned)."""
     m = _PIN_RE.search(sh_text)
-    if m:
-        return m.group(1)
-    m = _SHA_RE.search(sh_text)  # fallback: first 40-hex anywhere
-    return m.group(0) if m else None
+    if not m:
+        return None
+    return next(group for group in m.groups() if group is not None)
 
 
 def remote_head(repo: str) -> str | None:
