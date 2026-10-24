@@ -163,21 +163,19 @@ def test_planted_ci_only_entry_without_reason_is_refused(vl, workflow_text):
 
 
 def test_planted_pester_file_added_in_ci_only_is_refused(vl, workflow_text):
-    # Use the LAST named suite so a legitimate new suite does not turn this
-    # failure-injection test into a fixture mismatch before parity is exercised.
+    # Use the last named suite so new legitimate suites cannot invalidate the plant.
     last_suite = vl.PESTER_FILES[-1]
-    needle = f"            '{last_suite}'\\n"
+    needle = f"            '{last_suite}'\n"
     assert needle in workflow_text, "Pester suite fixture format changed"
     planted = workflow_text.replace(
         needle,
-        f"            '{last_suite}',\\n"
-        "            'scripts\\\\pester.new-suite.tests.ps1'\\n",
+        f"            '{last_suite}',\n"
+        "            'scripts\\pester.new-suite.tests.ps1'\n",
         1,
     )
     assert planted != workflow_text
     drift = vl.find_drift(planted)
     assert any(p.startswith("Pester file lists differ") for p in drift), drift
-
 
 def test_planted_shellcheck_file_dropped_in_ci_is_refused(vl, workflow_text):
     # The CI command is backslash-continued across physical lines.  The old
