@@ -90,7 +90,7 @@ function Assert-MetaHarnessArchiveSafe {
                     throw "REFUSED: unsafe archive entry path"
                 }
                 # Device names remain reserved in every Windows directory.
-                if ($part -match '^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\\..*)?$') {
+                if ($part -match '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])([.].*)?$') {
                     throw "REFUSED: Windows reserved device name in archive"
                 }
             }
