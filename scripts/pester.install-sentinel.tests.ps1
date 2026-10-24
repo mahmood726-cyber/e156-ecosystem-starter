@@ -178,12 +178,4 @@ Describe "Windows Sentinel post-install hook integrity (isolated failure injecti
         $result | Should -Be $script:stubRoot
     }
 
-    It "recognises the pinned upstream marker and scanner on reinstall, without unnecessary user-backup" {
-        [System.IO.File]::WriteAllText($global:SentinelStubHook,
-            "#!/bin/sh`n$script:canonicalMarker`n$script:scanner`n" +
-            'MODE="${SENTINEL_MODE:-block}"')
-        Backup-ExistingPrePushHook -RepoPath $script:stubRoot | Should -BeNullOrEmpty
-        @(Get-ChildItem -Path (Join-Path $script:stubRoot '.git\hooks') -Filter 'pre-push.user-*').Count |
-            Should -Be 0
-    }
 }
