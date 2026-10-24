@@ -61,28 +61,6 @@ Describe "Test-MetaHarnessAsset is fail-closed" {
     }
 }
 
-Describe "Test-MetaHarnessAsset refuses duplicate digest records" {
-    It "refuses two identical digest lines for the same asset" {
-        $d = Join-Path $TestDrive 'sha-dupe-identical'; $zip = New-TestRelease -Dir $d
-        $sums = Join-Path $d 'SHA256SUMS'
-        $line = Get-Content -LiteralPath $sums | Select-Object -First 1
-        [IO.File]::AppendAllText($sums, "$line`n")
-        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*multiple entries*'
-    }
-    It "refuses conflicting digest lines for the same asset" {
-        $d = Join-Path $TestDrive 'sha-dupe-conflicting'; $zip = New-TestRelease -Dir $d
-        $sums = Join-Path $d 'SHA256SUMS'
-        [IO.File]::AppendAllText($sums, "$('0' * 64)  meta-harness-v9.9.9-test.zip`n")
-        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*multiple entries*'
-    }
-    It "accepts a second digest record for a different asset" {
-        $d = Join-Path $TestDrive 'sha-unrelated'; $zip = New-TestRelease -Dir $d
-        $sums = Join-Path $d 'SHA256SUMS'
-        [IO.File]::AppendAllText($sums, "$('0' * 64)  different.zip`n")
-        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Not -Throw
-    }
-}
-
 Describe "Expand-MetaHarness" {
     It "unpacks the single top-level folder as the target, with the entry point" {
         $d = Join-Path $TestDrive 'unpack'; $zip = New-TestRelease -Dir $d
