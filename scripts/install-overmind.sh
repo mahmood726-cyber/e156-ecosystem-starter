@@ -161,8 +161,18 @@ else
 fi
 
 log_step "overmind meta-verify (canary)"
-overmind meta-verify 2>&1 | head -5 | sed 's/^/  /' || \
-    log_warn "overmind meta-verify returned non-zero (review above)"
+# Preserve the command's actual exit status.  A warning followed by a
+# "ready" banner used to turn a failed verification into an apparent success.
+# Capture output before limiting display: head -5 under pipefail can cause a
+# successful but verbose verifier to receive SIGPIPE.
+if canary_output="$(overmind meta-verify 2>&1)"; then
+    printf '%s\n' "$canary_output" | sed -n '1,5p' | sed 's/^/  /'
+else
+    canary_rc=$?
+    printf '%s\n' "$canary_output" | sed -n '1,5p' | sed 's/^/  /'
+    echo "ERROR: overmind meta-verify failed (exit ${canary_rc}); installation is not ready." >&2
+    exit "$canary_rc"
+fi
 
 echo
 echo "====================================================="
