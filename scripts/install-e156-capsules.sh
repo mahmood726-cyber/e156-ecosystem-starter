@@ -88,12 +88,13 @@ persist_e156_path_env() {
 # Verify the offline chart-kit actually renders the bundled sample (token-free).
 verify_chartkit() {
     local target="$1"
-    [[ -n "$PYTHON" ]] || { echo "  (python not found; skipping render check)"; return 0; }
+    [[ -n "$PYTHON" ]] || { echo "ERROR: Python is required to verify chartkit; installation not certified." >&2; return 1; }
     # Render into the target dir itself (avoids passing a /tmp unix path to a native
     # Windows python under git-bash, which can't resolve it); clean up after.
     local out="$target/.chartkit_check.svg"
     if "$PYTHON" "$target/chartkit.py" "$target/sample.capsule.json" --out "$out" >/dev/null 2>&1; then
-        rm -f "$out"; return 0
+        # A zero exit code without an SVG artifact is not a successful render.
+        if [[ -s "$out" ]]; then rm -f "$out"; return 0; fi
     fi
     rm -f "$out"; return 1
 }
@@ -125,15 +126,16 @@ else
     log_ok "template copied"
 fi
 
+log_step "Verifying the offline chart-kit renders the sample"
+if ! verify_chartkit "$TARGET"; then
+    echo "ERROR: chartkit render check failed; refusing a successful installation." >&2
+    exit 1
+fi
+log_ok "chartkit OK (stdlib-only SVG render verified, no network)"
+
+# Never advertise or persist a broken template as a successful install.
 log_step "Persisting E156_CAPSULES_PATH"
 persist_e156_path_env "$TARGET"
-
-log_step "Verifying the offline chart-kit renders the sample"
-if verify_chartkit "$TARGET"; then
-    log_ok "chartkit OK (stdlib-only SVG render verified, no network)"
-else
-    echo "    WARNING: chartkit render check did not pass (python missing?)." >&2
-fi
 
 echo
 echo "====================================================="
