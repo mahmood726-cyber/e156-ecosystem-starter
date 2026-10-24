@@ -18,6 +18,16 @@ Describe 'E156 capsule installer refuses invalid canaries' {
         Test-E156Chartkit -TargetDir $fixture | Should -BeFalse
     }
 
+    It 'refuses a renderer that writes non-SVG bytes despite exit zero' {
+        Get-Command python -ErrorAction Stop | Should -Not -BeNullOrEmpty
+        $fixture = Join-Path $TestDrive 'not-svg'
+        New-Item -ItemType Directory -Path $fixture -Force | Out-Null
+        $program = "from pathlib import Path`nimport sys`nPath(sys.argv[-1]).write_bytes(b'NOT SVG')"
+        Set-Content -LiteralPath (Join-Path $fixture 'chartkit.py') -Value $program
+        Set-Content -LiteralPath (Join-Path $fixture 'sample.capsule.json') -Value '{}'
+        Test-E156Chartkit -TargetDir $fixture | Should -BeFalse
+    }
+
     It 'refuses a renderer that returns nonzero in a real installer process' {
         Get-Command python -ErrorAction Stop | Should -Not -BeNullOrEmpty
         $fixture = Join-Path $TestDrive 'broken'
