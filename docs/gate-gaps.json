@@ -6,16 +6,16 @@
       "id": ".github/workflows/test.yml#jobs.pester",
       "kind": "ci-job",
       "name": "Pester (Windows)",
-      "stops": "A failing assertion in any of the 11 Pester suites named in the job's $files list (installer helpers, redaction, supply-chain pinning, SHA gate), run under pwsh on windows-latest.",
+      "stops": "A failing assertion, empty Pester result, or any failed/skipped/not-run/inconclusive case across the 11 named Windows Pester suites. The CI job refuses incomplete results even if Pester's process otherwise returns success.",
       "would_not_stop": [
-        "A Pester suite that exists but is not in the hard-coded $files list: a new scripts/pester.*.tests.ps1 is silently never run.",
-        "Behaviour that differs under Windows PowerShell 5.1, which many students run: the job uses pwsh 7.",
-        "Real installs over the network: the suites test wrapper logic, not that Sentinel / Overmind / the extractor actually install.",
-        "Any behaviour no suite asserts."
+        "A Pester suite absent from the job's hard-coded $files list: a newly added scripts/pester.*.tests.ps1 still does not run automatically.",
+        "Behaviour that differs under Windows PowerShell 5.1: this job runs pwsh 7.",
+        "Real pinned Sentinel, Overmind, extractor or Meta-Harness installs and publisher signatures: the suites exercise wrapper logic and isolated test shims, not authenticated releases.",
+        "A behavioural defect for which no assertion exists in the selected Pester suites."
       ],
-      "source": ".github/workflows/test.yml header comment and the job's $files list.",
+      "source": ".github/workflows/test.yml Pester job and scripts/pester.install-sentinel.tests.ps1; reviewed 2026-10-24.",
       "seal": {
-        ".github/workflows/test.yml#jobs.pester": "890466c0ab813436912330e6769f79451a8d10677753a009b3fad1289a9ad26d"
+        ".github/workflows/test.yml#jobs.pester": "b0f3e528853e513fbd6674da273136257345f2c28ccdd96789502c479003b090"
       }
     },
     {
