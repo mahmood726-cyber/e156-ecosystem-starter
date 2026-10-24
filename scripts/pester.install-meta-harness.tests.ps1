@@ -57,7 +57,7 @@ Describe "Test-MetaHarnessAsset is fail-closed" {
     It "refuses two identical checksum records instead of taking the first" {
         $d = Join-Path $TestDrive 'duplicate'; $zip = New-TestRelease -Dir $d
         $sums = Join-Path $d 'SHA256SUMS'
-        $line = (Get-Content -LiteralPath $sums)[0]
+        $line = [IO.File]::ReadAllText($sums).TrimEnd()
         [IO.File]::AppendAllText($sums, "$line`n")
         { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*duplicate or malformed*'
     }
