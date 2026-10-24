@@ -44,16 +44,30 @@ function Test-MetaHarnessPresent {
     return [bool]($Dir -and (Test-Path -LiteralPath (Join-Path $Dir 'scripts\replay_offline.py') -PathType Leaf))
 }
 
-# The digest SHA256SUMS records for $Name, or $null.
+# Accept precisely one well-formed record for the requested asset.  Do not
+# silently take the first when a release SHA256SUMS has duplicate or malformed
+# entries: the Bash installer deliberately refuses the same ambiguity.
+# GNU binary-mode lines ("*filename") are accepted.
 function Get-MetaHarnessExpectedSha {
     param([string]$SumsPath, [string]$Name)
+    $matchingLines = 0
+    $digest = $null
     foreach ($line in (Get-Content -LiteralPath $SumsPath)) {
-        $parts = ($line.TrimEnd("`r")) -split '\s+', 2
-        if ($parts.Count -eq 2 -and $parts[0] -match '^[0-9a-f]{64}$' -and ($parts[1] -eq $Name -or $parts[1] -eq "*$Name")) {
-            return $parts[0]
+        $parts = @($line.Trim() -split '\s+')
+        if ($parts.Count -lt 2 -or
+            ($parts[1] -cne $Name -and $parts[1] -cne "*$Name")) {
+            continue
         }
+        $matchingLines++
+        if ($matchingLines -gt 1) {
+            throw "REFUSED: SHA256SUMS has multiple entries for $Name"
+        }
+        if ($parts.Count -ne 2 -or $parts[0] -cnotmatch '^[0-9a-f]{64}$') {
+            throw "REFUSED: SHA256SUMS has malformed entry for $Name"
+        }
+        $digest = $parts[0]
     }
-    return $null
+    return $digest
 }
 
 function Test-MetaHarnessAsset {
