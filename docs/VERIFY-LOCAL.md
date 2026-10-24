@@ -18,6 +18,7 @@ CI step, and prints one verdict per limb:
 | `bash-handoff-locale` | bash-tests / Run handoff-locale bash tests |
 | `hash-check` | hash-check / Verify docs/HASH.txt + docs/HASH-linux.txt |
 | `i18n-parity` | i18n-parity / Verify `<details>` count parity |
+| `sentinel-rule-list-drift` | sentinel-rule-list-drift / Verify auto-generated Sentinel list matches source (requires pinned clone) |
 | `pester` | pester / Run Pester suites (needs Pester 5+) |
 | `shellcheck` | lint / ShellCheck |
 | `psscriptanalyzer` | lint / PSScriptAnalyzer |
@@ -75,8 +76,7 @@ On Linux/macOS, make the hooks executable once if your checkout did not:
 
 - a CI job or step has no limb, and is not listed in `CI_ONLY_STEPS` /
   `CI_ONLY_JOBS` in `scripts/verify-local.py` with a reason (checkout,
-  set-up-python and version prints are listed there; the
-  `sentinel-rule-list-drift` job is listed only while CI has it at `if: false`);
+  set-up-python and version prints are listed there);
 - a limb points at a CI step that no longer exists;
 - the Pester file list, ShellCheck files and flags, PSScriptAnalyzer folders and
   excluded rules, or lychee arguments differ from CI's.
@@ -89,9 +89,10 @@ So adding a step to CI without adding a limb turns CI red.
   staged changes the two can differ; CI is the authority.
 - Same tool, different machine: CI runs Pester on Windows (pwsh) and the bash
   suites on Ubuntu. A local pass on another OS is strong evidence, not proof.
-- It never runs `sentinel-rule-list-drift` (disabled in CI). Run
-  `bash scripts/regen-sentinel-rule-list.sh --check` yourself with
-  `SENTINEL_REPO` set.
+- The Sentinel limb requires `SENTINEL_REPO` to point at the same exact
+  reviewed commit as CI (`97273997db160aee99d89af94fcc18bf621b3cb9`).
+  A missing clone is COULD-NOT-EXECUTE; a different commit is REFUSED. The
+  documentation check alone does not prove that Sentinel rules execute.
 - The hook is a convenience, not enforcement: a fresh clone has no hook, and
   `core.hooksPath` is local config. CI is the gate.
 
