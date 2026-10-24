@@ -100,6 +100,30 @@ def test_sha256sums_unrelated_entry_is_not_mistaken_for_duplicate(tmp_path):
     assert (target / "scripts" / "replay_offline.py").is_file()
 
 
+@pytest.mark.parametrize("position", ["only", "after_valid"])
+def test_malformed_matching_sha256sums_record_is_refused(tmp_path, position):
+    rel = _release(tmp_path / "rel", GOOD)
+    sums = rel / "SHA256SUMS"
+    malformed = f"invalid-sha256  {ASSET}\n"
+    first_line = sums.read_text(encoding="ascii")
+    sums.write_text((first_line if position == "after_valid" else "") + malformed, encoding="ascii")
+    target = tmp_path / "out" / "mh"
+    p = _run(rel, target)
+    assert p.returncode != 0 and "malformed entry" in (p.stdout + p.stderr)
+    assert not target.exists()
+
+
+def test_single_gnu_binary_marker_checksum_is_accepted(tmp_path):
+    rel = _release(tmp_path / "rel", GOOD)
+    sums = rel / "SHA256SUMS"
+    digest = hashlib.sha256((rel / ASSET).read_bytes()).hexdigest()
+    sums.write_text(f"{digest} *{ASSET}\n", encoding="ascii")
+    target = tmp_path / "out" / "mh"
+    p = _run(rel, target)
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert (target / "scripts" / "replay_offline.py").is_file()
+
+
 def test_a_missing_asset_is_refused(tmp_path):
     rel = _release(tmp_path / "rel", GOOD)
     (rel / ASSET).unlink()
