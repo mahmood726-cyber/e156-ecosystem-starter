@@ -14,11 +14,15 @@ Describe "Test-SentinelInstalled" {
         $r = Test-SentinelInstalled
         $r | Should -BeOfType [bool]
     }
-    It "is true when sentinel is on PATH (author's machine contract)" -Skip:(-not (Get-Command sentinel -ErrorAction SilentlyContinue)) {
-        # Documents the ecosystem-starter assumption on a developer machine.
-        # Skipped in CI / fresh-runner environments where sentinel isn't
-        # pre-installed; not a regression to ship.
-        Test-SentinelInstalled | Should -BeTrue
+    It "detects a discoverable command without needing preinstalled Sentinel" {
+        # Isolated command-lookup unit test only: this function must never be
+        # executed. Actual pinned Sentinel installs need separate live canaries.
+        function sentinel { throw 'Sentinel lookup test shim was executed' }
+        try {
+            Test-SentinelInstalled | Should -BeTrue
+        } finally {
+            Remove-Item Function:\sentinel -ErrorAction SilentlyContinue
+        }
     }
 }
 
