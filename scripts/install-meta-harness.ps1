@@ -43,16 +43,30 @@ function Test-MetaHarnessPresent {
     return [bool]($Dir -and (Test-Path (Join-Path $Dir 'scripts\replay_offline.py')))
 }
 
-# The digest SHA256SUMS records for $Name, or $null.
+# Return the SHA only when exactly one canonical SHA256SUMS record names this
+# asset. Duplicate or malformed matching records are REFUSALS, not fallbacks to
+# the first digest (including when the second line uses the GNU '*' marker).
 function Get-MetaHarnessExpectedSha {
     param([string]$SumsPath, [string]$Name)
+    $matchingRecords = 0
+    $malformed = $false
+    $digest = $null
     foreach ($line in (Get-Content -LiteralPath $SumsPath)) {
         $parts = ($line.TrimEnd("`r")) -split '\s+', 2
-        if ($parts.Count -eq 2 -and $parts[0] -match '^[0-9a-f]{64}$' -and ($parts[1] -eq $Name -or $parts[1] -eq "*$Name")) {
-            return $parts[0]
+        if ($parts.Count -ne 2) { continue }
+        if ($parts[1] -cne $Name -and $parts[1] -cne "*$Name") { continue }
+        $matchingRecords++
+        if ($parts[0] -cnotmatch '^[0-9a-f]{64}$') {
+            $malformed = $true
+        } else {
+            $digest = $parts[0]
         }
     }
-    return $null
+    if ($matchingRecords -eq 0) { return $null }
+    if ($matchingRecords -ne 1 -or $malformed) {
+        throw "REFUSED: SHA256SUMS has duplicate or malformed entries for $Name"
+    }
+    return $digest
 }
 
 function Test-MetaHarnessAsset {
