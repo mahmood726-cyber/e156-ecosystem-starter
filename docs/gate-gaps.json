@@ -234,15 +234,15 @@
       "id": "scripts/refresh-ecosystem-pins.py",
       "kind": "script",
       "name": "refresh-ecosystem-pins --check",
-      "stops": "A 40-hex install-layer pin that lags its source repo's remote HEAD, or a layer whose ls-remote failed (exit 1 in --check).",
+      "stops": "When explicitly run, detects drift in genuine 40-hex DEFAULT_REF shell assignments (exit 1 with --check). Commented or example SHAs cannot be mistaken for installer pins; tag-pinned installers are skipped rather than rewritten.",
       "would_not_stop": [
-        "Tag-pinned layers: they are skipped. As of 2026-06-08 every layer is tag-pinned, so --check reports all [skip] and passes by construction.",
-        "Whether the remote commit it would move to is trustworthy: it moves pins forward, it does not review them.",
-        "Anything in CI: it needs the network and no CI job runs it."
+        "Tag-pinned layers: skipped. As of 2026-06-08 every layer is tag-pinned; a run of --check reports those layers as [skip] and does not establish that their release tags are immutable.",
+        "Whether an upstream commit is trustworthy or whether transitive dependencies are reproducible: this helper updates explicit pins, not cryptographic provenance or dependency locks.",
+        "Live upstream pin drift in CI: offline negative parser tests run under tests/, but no CI job executes the networked refresh-ecosystem-pins.py --check. A passing fixture test is not an install canary."
       ],
-      "source": "scripts/refresh-ecosystem-pins.py docstring 'Design guarantees'.",
+      "source": "scripts/refresh-ecosystem-pins.py pin parser and design guarantees; tests/test_refresh_pin_safety.py refusal tests.",
       "seal": {
-        "scripts/refresh-ecosystem-pins.py": "ab426c33f31691f1c032939860a9364113f68c08062f084bc72e7a03cbf46247"
+        "scripts/refresh-ecosystem-pins.py": "e0c44f8c600e8eafe9bb45b0d26de25902724064734c905752e1ad116f1746c6"
       }
     },
     {
