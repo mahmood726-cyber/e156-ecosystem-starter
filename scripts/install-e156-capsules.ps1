@@ -57,10 +57,13 @@ function Test-E156Chartkit {
     $out = Join-Path $env:TEMP ("e156_" + [System.Guid]::NewGuid().ToString('N') + '.svg')
     try {
         & $py.Source (Join-Path $TargetDir 'chartkit.py') (Join-Path $TargetDir 'sample.capsule.json') --out $out 2>&1 | Out-Null
-        # Exit zero alone is not evidence of a rendered output artifact.
-        return [bool](($LASTEXITCODE -eq 0) -and
-            (Test-Path -LiteralPath $out -PathType Leaf) -and
-            ((Get-Item -LiteralPath $out).Length -gt 0))
+        # Exit zero and nonempty bytes alone do not prove a valid SVG artifact.
+        if ($LASTEXITCODE -ne 0 -or
+            -not (Test-Path -LiteralPath $out -PathType Leaf) -or
+            (Get-Item -LiteralPath $out).Length -eq 0) { return $false }
+        $xml = New-Object System.Xml.XmlDocument
+        $xml.Load($out)
+        return [bool]($xml.DocumentElement.LocalName -eq 'svg')
     } catch {
         return $false
     } finally {
