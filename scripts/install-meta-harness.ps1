@@ -30,6 +30,14 @@ function Get-MetaHarnessDefaultRef {
     if ($env:META_HARNESS_REF) { return $env:META_HARNESS_REF }
     return $script:MetaHarnessDefaultRef
 }
+# Ref is interpolated into both the release asset path and default target.
+# Restrict it to one tag/commit token before downloading or creating files.
+function Assert-MetaHarnessRef {
+    param([string]$Tag)
+    if ($Tag -cnotmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
+        throw "REFUSED: invalid Meta-Harness release ref (expected one tag token)"
+    }
+}
 function Get-MetaHarnessAssetName { param([string]$Tag) return "meta-harness-$Tag.zip" }
 function Get-MetaHarnessBaseUrl {
     param([string]$Tag)
@@ -144,6 +152,7 @@ if ($Import) { return }
 
 # === Real flow =============================================================
 if (-not $Ref) { $Ref = Get-MetaHarnessDefaultRef }
+Assert-MetaHarnessRef -Tag $Ref
 $asset = Get-MetaHarnessAssetName -Tag $Ref
 $base = Get-MetaHarnessBaseUrl -Tag $Ref
 if (-not $Target) { $Target = Get-MetaHarnessDefaultTarget -Tag $Ref }
