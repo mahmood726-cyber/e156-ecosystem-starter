@@ -77,6 +77,28 @@ def test_sha256sums_without_a_line_for_the_asset_is_refused(tmp_path):
     assert not target.exists()
 
 
+
+@pytest.mark.parametrize("extra_entry", ["duplicate", "conflicting", "malformed"])
+def test_ambiguous_sha256sums_refused_before_unpacked(tmp_path, extra_entry):
+    """Matching a valid first line is insufficient if another asset line exists."""
+    rel = _release(tmp_path / "rel", GOOD)
+    sums = rel / "SHA256SUMS"
+    valid_line = sums.read_text(encoding="utf-8").strip()
+    bad_line = {
+        "duplicate": valid_line,
+        "conflicting": f"{'0' * 64}  *{ASSET}",
+        "malformed": f"invalid-sha256  {ASSET}",
+    }[extra_entry]
+    sums.write_text(valid_line + "\\n" + bad_line + "\\n", encoding="utf-8")
+
+    target = tmp_path / "out" / "mh"
+    p = _run(rel, target)
+    assert p.returncode != 0, p.stdout + p.stderr
+    assert "duplicate or malformed entries" in p.stderr
+    assert not target.exists(), "ambiguous checksum must not publish an installation"
+
+
+
 def test_a_missing_asset_is_refused(tmp_path):
     rel = _release(tmp_path / "rel", GOOD)
     (rel / ASSET).unlink()
