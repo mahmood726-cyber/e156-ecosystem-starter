@@ -171,6 +171,13 @@ fi
 command -v curl >/dev/null 2>&1 || { echo "ERROR: curl not found." >&2; exit 1; }
 
 REF="${REF_ARG:-$(meta_harness_default_ref)}"
+# The ref forms both a download filename and a default install path. Refuse
+# separators, URL syntax and control/whitespace before any network or writes.
+# A version tag or commit token is one path segment (e.g. v1.0.0, abc123).
+if [[ ! "$REF" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+    echo "REFUSED: invalid Meta-Harness release ref (expected one tag token)" >&2
+    exit 2
+fi
 ASSET="$(meta_harness_asset_name "$REF")"
 BASE="$(meta_harness_base_url "$REF")"
 [[ -n "$TARGET" ]] || TARGET="$(meta_harness_default_target "$REF")"
