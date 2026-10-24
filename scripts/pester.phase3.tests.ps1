@@ -169,6 +169,12 @@ Path(sys.argv[-1]).write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
         Test-E156Chartkit -TargetDir $script:CapsulesDir | Should -BeTrue
     }
 
+    It "renders the repository's real bundled chartkit and illustrative sample" {
+        $template = Join-Path (Split-Path -Parent $PSScriptRoot) 'templates/e156-capsule'
+        Test-Path (Join-Path $template 'chartkit.py') | Should -BeTrue
+        Test-E156Chartkit -TargetDir $template | Should -BeTrue
+    }
+
     It "runs the actual installer: failed rendering exits nonzero without setting User env or printing ready" {
         Set-Content -Path (Join-Path $script:CapsulesDir 'chartkit.py') -Value 'import sys; sys.exit(17)' -Encoding UTF8
         $priorUser = [Environment]::GetEnvironmentVariable('E156_CAPSULES_PATH', 'User')
