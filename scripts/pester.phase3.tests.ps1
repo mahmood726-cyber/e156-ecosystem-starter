@@ -132,3 +132,56 @@ Describe "ProjectIndex: Write-ReconcileScript" {
         (Get-Content -Raw $errFile) | Should -Match 'missing'
     }
 }
+
+# E156 offline capsule installer: fail-closed render canary, using a disposable
+# chartkit fixture and actual Windows PowerShell execution (no network).
+Describe "E156 capsules: Windows render canary integrity" {
+    BeforeAll {
+        $script:CapsulesScript = Join-Path $PSScriptRoot 'install-e156-capsules.ps1'
+        . $script:CapsulesScript -Import
+        $script:CapsulesDir = Join-Path $script:tmpRoot 'capsule-canary'
+        New-Item -ItemType Directory -Force -Path $script:CapsulesDir | Out-Null
+        Set-Content -Path (Join-Path $script:CapsulesDir 'sample.capsule.json') -Value '{}' -Encoding UTF8
+        $script:SvgWriter = @'
+from pathlib import Path
+import sys
+Path(sys.argv[-1]).write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
+'@
+    }
+
+    It "refuses an unavailable Python command rather than treating it as a pass" {
+        Mock Get-Command { $null } -ParameterFilter { $Name -eq 'python' }
+        Test-E156Chartkit -TargetDir $script:CapsulesDir | Should -BeFalse
+    }
+
+    It "refuses an exit-0 renderer that writes no SVG" {
+        Set-Content -Path (Join-Path $script:CapsulesDir 'chartkit.py') -Value 'import sys; sys.exit(0)' -Encoding UTF8
+        Test-E156Chartkit -TargetDir $script:CapsulesDir | Should -BeFalse
+    }
+
+    It "refuses non-SVG XML despite an exit-0 renderer" {
+        Set-Content -Path (Join-Path $script:CapsulesDir 'chartkit.py') -Value 'import sys; open(sys.argv[-1], "w").write("<html/>")' -Encoding UTF8
+        Test-E156Chartkit -TargetDir $script:CapsulesDir | Should -BeFalse
+    }
+
+    It "accepts a real, parsable SVG output from the fixture renderer" {
+        Set-Content -Path (Join-Path $script:CapsulesDir 'chartkit.py') -Value $script:SvgWriter -Encoding UTF8
+        Test-E156Chartkit -TargetDir $script:CapsulesDir | Should -BeTrue
+    }
+
+    It "runs the actual installer: failed rendering exits nonzero without setting User env or printing ready" {
+        Set-Content -Path (Join-Path $script:CapsulesDir 'chartkit.py') -Value 'import sys; sys.exit(17)' -Encoding UTF8
+        $priorUser = [Environment]::GetEnvironmentVariable('E156_CAPSULES_PATH', 'User')
+        try {
+            $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script:CapsulesScript -SkipCopy -Target $script:CapsulesDir 2>&1 | Out-String
+            $code = $LASTEXITCODE
+            $code | Should -Not -Be 0
+            $output | Should -Match 'REFUSED: chart-kit render canary failed'
+            $output | Should -Not -Match 'e156-capsules installed at'
+            [Environment]::GetEnvironmentVariable('E156_CAPSULES_PATH', 'User') | Should -Be $priorUser
+        } finally {
+            # Restore even if a prior implementation erroneously persisted the path.
+            [Environment]::SetEnvironmentVariable('E156_CAPSULES_PATH', $priorUser, 'User')
+        }
+    }
+}
