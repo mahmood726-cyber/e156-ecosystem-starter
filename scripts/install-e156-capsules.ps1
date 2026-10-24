@@ -63,7 +63,12 @@ function Test-E156Chartkit {
             (Get-Item -LiteralPath $out).Length -eq 0) { return $false }
         $xml = New-Object System.Xml.XmlDocument
         $xml.Load($out)
-        return [bool]($xml.DocumentElement.LocalName -eq 'svg')
+        # LocalName alone accepts impostors such as <SVG/> or an unrelated
+        # namespace's <x:svg/>. Match the SVG root exactly, as Bash does.
+        $root = $xml.DocumentElement
+        return [bool](($root.LocalName -ceq 'svg') -and
+            (($root.NamespaceURI -ceq '') -or
+             ($root.NamespaceURI -ceq 'http://www.w3.org/2000/svg')))
     } catch {
         return $false
     } finally {
