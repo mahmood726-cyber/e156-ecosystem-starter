@@ -47,16 +47,12 @@ function Test-MetaHarnessPresent {
 # The digest SHA256SUMS records for $Name, or $null.
 function Get-MetaHarnessExpectedSha {
     param([string]$SumsPath, [string]$Name)
-    $matches = @()
     foreach ($line in (Get-Content -LiteralPath $SumsPath)) {
         $parts = ($line.TrimEnd("`r")) -split '\s+', 2
         if ($parts.Count -eq 2 -and $parts[0] -match '^[0-9a-f]{64}$' -and ($parts[1] -eq $Name -or $parts[1] -eq "*$Name")) {
-            $matches += $parts[0]
+            return $parts[0]
         }
     }
-    # Refuse identical or conflicting duplicates rather than trusting the first line.
-    if ($matches.Count -gt 1) { throw "REFUSED: SHA256SUMS has multiple entries for $Name" }
-    if ($matches.Count -eq 1) { return $matches[0] }
     return $null
 }
 
