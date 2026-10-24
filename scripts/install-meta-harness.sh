@@ -61,17 +61,32 @@ meta_harness_sha256() {
     fi
 }
 
-# The digest SHA256SUMS records for <name> (exactly one line, `<64 hex>  <name>`), or nothing.
+# Accept exactly ONE well-formed SHA256SUMS line for the requested asset.
+# A second line (even with the same digest) is ambiguous, not authorization to
+# install. Check length explicitly for portability across awk implementations.
 meta_harness_expected_sha() {
     local sums="$1" name="$2"
-    tr -d '\r' < "$sums" | awk -v n="$name" '($2 == n || $2 == "*" n) && $1 ~ /^[0-9a-f]{64}$/ {print $1}' | head -1
+    tr -d '\r' < "$sums" | awk -v n="$name" '
+        ($2 == n || $2 == "*" n) {
+            matches++
+            if (length($1) != 64 || $1 !~ /^[0-9a-f]+$/) invalid=1
+            else digest=$1
+        }
+        END {
+            if (matches == 0) exit 0
+            if (matches != 1 || invalid) exit 1
+            print digest
+        }'
 }
 
 # Verify <zip> against <sums>. Prints the reason and returns 1 on any failure.
 verify_meta_harness_asset() {
     local zip="$1" sums="$2" name expected actual
     name="$(basename "$zip")"
-    expected="$(meta_harness_expected_sha "$sums" "$name")"
+    if ! expected="$(meta_harness_expected_sha "$sums" "$name")"; then
+        echo "REFUSED: SHA256SUMS has duplicate or malformed entries for $name" >&2
+        return 1
+    fi
     [[ -n "$expected" ]] || { echo "REFUSED: SHA256SUMS has no line for $name" >&2; return 1; }
     actual="$(meta_harness_sha256 "$zip")"
     [[ "$actual" == "$expected" ]] || {
