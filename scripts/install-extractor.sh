@@ -86,16 +86,14 @@ test_extractor_present() {
 }
 
 clone_or_update_extractor() {
-    local target="$1" ref="$2"
-    local url; url="$(extractor_repo_url)"
+    local target="$1" ref="$2" url commit actual
+    url="$(extractor_repo_url)"
     if [[ -d "$target/.git" ]]; then
         echo "  existing checkout: $target (fetch + checkout $ref)"
-        git -C "$target" fetch --quiet origin "$ref" 2>/dev/null || git -C "$target" fetch --quiet origin
-        git -C "$target" checkout --quiet "$ref" 2>&1 | sed 's/^/  /' || true
     else
         echo "  cloning $url"
-        # Shallow-ish: full clone is needed to checkout an arbitrary SHA, so a
-        # plain clone then checkout is the most portable across git versions.
+        # A fresh clone may succeed even when the requested tag/SHA does not
+        # exist. Never report the clone's default branch as the requested ref.
         local attempt
         for attempt in 1 2 3; do
             if git clone --quiet "$url" "$target" 2>&1 | sed 's/^/  /'; then
@@ -106,12 +104,32 @@ clone_or_update_extractor() {
                 echo "  clone attempt $attempt failed; retrying in ${wait}s..." >&2
                 sleep "$wait"
             else
-                echo "  clone failed after 3 attempts" >&2
+                echo "REFUSED: extractor clone failed after 3 attempts" >&2
                 return 1
             fi
         done
-        git -C "$target" checkout --quiet "$ref" 2>&1 | sed 's/^/  /' || true
     fi
+
+    # Fetch ONLY the requested ref. A fallback fetch of origin followed by a
+    # swallowed checkout error can silently leave an arbitrary old HEAD.
+    if ! git -C "$target" fetch --quiet origin "$ref"; then
+        echo "REFUSED: could not fetch requested extractor ref: $ref" >&2
+        return 1
+    fi
+    commit="$(git -C "$target" rev-parse --verify 'FETCH_HEAD^{commit}')" || {
+        echo "REFUSED: requested extractor ref is not a commit: $ref" >&2
+        return 1
+    }
+    if ! git -C "$target" checkout --quiet --detach "$commit"; then
+        echo "REFUSED: could not check out extractor commit $commit" >&2
+        return 1
+    fi
+    actual="$(git -C "$target" rev-parse --verify HEAD)" || return 1
+    if [[ "$actual" != "$commit" ]]; then
+        echo "REFUSED: extractor checkout identity mismatch ($actual != $commit)" >&2
+        return 1
+    fi
+    echo "  verified extractor HEAD: $actual (requested ref: $ref)"
 }
 
 # Persist RCT_EXTRACTOR_PATH so the meta-system bridges find the extractor in
