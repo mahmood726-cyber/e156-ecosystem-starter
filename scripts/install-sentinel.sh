@@ -109,6 +109,29 @@ backup_existing_pre_push_hook() {
     printf '%s' "$backup"
 }
 
+# A successful CLI exit does not prove that Git will execute a Sentinel
+# pre-push hook. Match the upstream hook contract at Sentinel commit
+# 97273997db160aee99d89af94fcc18bf621b3cb9 (sentinel/hook/payload.py).
+# This is a structural postcondition, not cryptographic authentication or
+# proof that a scan ran.
+verify_sentinel_hook_postinstall() {
+    local abs="$1" requested_mode="$2" hook="$1/.git/hooks/pre-push"
+    case "$requested_mode" in
+        block|warn) ;;
+        *) echo "ERROR: unsupported Sentinel hook mode: $requested_mode" >&2; return 1 ;;
+    esac
+    if [[ ! -f "$hook" || ! -r "$hook" || ! -x "$hook" ]]; then
+        echo "ERROR: Sentinel pre-push hook missing, unreadable or non-executable: $hook" >&2
+        return 1
+    fi
+    if ! grep -Fxq -- '# === SENTINEL PRE-PUSH HOOK (do not edit above this line) ===' "$hook" ||
+       ! grep -Fq -- 'python -m sentinel scan --repo "$REPO_TOPLEVEL"' "$hook" ||
+       ! grep -Fxq -- "MODE=\"\${SENTINEL_MODE:-${requested_mode}}\"" "$hook"; then
+        echo "ERROR: Sentinel pre-push hook contents/mode do not match the installed release" >&2
+        return 1
+    fi
+}
+
 install_sentinel_hook_in_repo() {
     local repo_path="$1" hook_mode="$2"
     local abs
@@ -121,7 +144,11 @@ install_sentinel_hook_in_repo() {
         echo "  If you want to chain it with Sentinel, see:"
         echo "    https://github.com/mahmood726-cyber/Sentinel#chaining-with-existing-hooks"
     fi
-    sentinel install-hook --repo "$abs" --mode "$hook_mode" 2>&1 | sed 's/^/  /'
+    if ! sentinel install-hook --repo "$abs" --mode "$hook_mode" 2>&1 | sed 's/^/  /'; then
+        echo "ERROR: sentinel install-hook failed in $abs" >&2
+        return 1
+    fi
+    verify_sentinel_hook_postinstall "$abs" "$hook_mode"
 }
 
 get_sentinel_bypass_log_path() {
