@@ -40,6 +40,35 @@ Describe 'E156 capsule installer refuses invalid canaries' {
         $output | Should -Match 'refusing a successful installation'
     }
 
+
+    It 'refuses impostor SVG roots despite renderer exit zero' {
+        Get-Command python -ErrorAction Stop | Should -Not -BeNullOrEmpty
+        $impostors = @(
+            '<svg xmlns="urn:not-svg"/>',
+            '<foreign:svg xmlns:foreign="urn:not-svg"/>',
+            '<SVG/>',
+            '<svg xmlns="http://www.w3.org/2000/SVG"/>'
+        )
+        for ($i = 0; $i -lt $impostors.Count; $i++) {
+            $fixture = Join-Path $TestDrive ("impostor-svg-" + $i)
+            New-Item -ItemType Directory -Path $fixture -Force | Out-Null
+            $program = "from pathlib import Path`nimport sys`nPath(sys.argv[-1]).write_bytes(b'$($impostors[$i])')"
+            Set-Content -LiteralPath (Join-Path $fixture 'chartkit.py') -Value $program
+            Set-Content -LiteralPath (Join-Path $fixture 'sample.capsule.json') -Value '{}'
+            Test-E156Chartkit -TargetDir $fixture | Should -BeFalse -Because "XML root $($impostors[$i]) is not SVG"
+        }
+    }
+
+    It 'accepts a correctly namespaced SVG root' {
+        Get-Command python -ErrorAction Stop | Should -Not -BeNullOrEmpty
+        $fixture = Join-Path $TestDrive 'namespaced-svg'
+        New-Item -ItemType Directory -Path $fixture -Force | Out-Null
+        $program = "from pathlib import Path`nimport sys`nPath(sys.argv[-1]).write_bytes(b'<svg xmlns=`"http://www.w3.org/2000/svg`"/>')"
+        Set-Content -LiteralPath (Join-Path $fixture 'chartkit.py') -Value $program
+        Set-Content -LiteralPath (Join-Path $fixture 'sample.capsule.json') -Value '{}'
+        Test-E156Chartkit -TargetDir $fixture | Should -BeTrue
+    }
+
     It 'accepts an actual non-empty SVG written by Python' {
         Get-Command python -ErrorAction Stop | Should -Not -BeNullOrEmpty
         $fixture = Join-Path $TestDrive 'valid'
