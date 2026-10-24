@@ -56,12 +56,25 @@ jobs:
           )
           $config = New-PesterConfiguration
           $config.Run.Path = $files
-          $config.Run.Exit = $true
+          # Enforce non-vacuous zero-skip Windows verification. Without
+          # PassThru, a green Pester process can conceal skipped installer tests.
+          $config.Run.Exit = $false
+          $config.Run.PassThru = $true
           $config.Output.Verbosity = 'Detailed'
           $config.TestResult.Enabled = $true
           $config.TestResult.OutputPath = 'pester-results.xml'
           $config.TestResult.OutputFormat = 'NUnitXml'
-          Invoke-Pester -Configuration $config
+          $result = Invoke-Pester -Configuration $config
+          if (-not $result -or $result.TotalCount -lt 1) {
+            throw 'REFUSED: Pester produced no executable test results'
+          }
+          if ($result.Result -ne 'Passed' -or $result.FailedCount -ne 0 -or
+              $result.SkippedCount -ne 0 -or $result.NotRunCount -ne 0 -or
+              $result.InconclusiveCount -ne 0) {
+            throw ("REFUSED: incomplete Pester run: result={0} passed={1} failed={2} skipped={3} notrun={4} inconclusive={5}" -f
+              $result.Result, $result.PassedCount, $result.FailedCount, $result.SkippedCount,
+              $result.NotRunCount, $result.InconclusiveCount)
+          }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
