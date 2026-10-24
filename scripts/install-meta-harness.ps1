@@ -65,12 +65,45 @@ function Test-MetaHarnessAsset {
     Write-Host "  sha256 OK: $actual  $name" -ForegroundColor DarkGray
 }
 
+# Reject unsafe ZIP member names before Expand-Archive touches the filesystem.
+# A matching SHA256SUMS digest alone does not make archive paths safe.
+function Assert-MetaHarnessArchiveSafe {
+    param([string]$ZipPath)
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = [IO.Compression.ZipFile]::OpenRead($ZipPath)
+    try {
+        foreach ($entry in $archive.Entries) {
+            $name = $entry.FullName
+            if ([string]::IsNullOrEmpty($name) -or
+                $name.StartsWith('/') -or $name.StartsWith([string][char]92) -or
+                $name.Contains([string][char]92) -or $name.Contains(':') -or
+                $name -match '[\x00-\x1f]') {
+                throw "REFUSED: unsafe archive entry path"
+            }
+            foreach ($part in $name.TrimEnd('/').Split('/')) {
+                if (-not $part -or $part -eq '.' -or $part -eq '..' -or
+                    $part -match '[. ]$') {
+                    throw "REFUSED: unsafe archive entry path"
+                }
+            }
+            # ZIP creator's POSIX file type is stored in the high 16 bits.
+            $type = (($entry.ExternalAttributes -shr 16) -band 0xF000)
+            if ($type -eq 0xA000) {
+                throw "REFUSED: symlink entry in archive"
+            }
+        }
+    } finally {
+        $archive.Dispose()
+    }
+}
+
 function Expand-MetaHarness {
     param([string]$ZipPath, [string]$TargetDir)
     if ((Test-Path $TargetDir) -and (Get-ChildItem -Force $TargetDir | Select-Object -First 1)) {
         throw "REFUSED: $TargetDir exists and is not empty"
     }
     $tmp = Join-Path ([IO.Path]::GetTempPath()) ("mh-" + [guid]::NewGuid())
+    Assert-MetaHarnessArchiveSafe -ZipPath $ZipPath
     Expand-Archive -LiteralPath $ZipPath -DestinationPath $tmp
     $tops = @(Get-ChildItem -Force $tmp)
     $src = if ($tops.Count -eq 1 -and $tops[0].PSIsContainer) { $tops[0].FullName } else { $tmp }
