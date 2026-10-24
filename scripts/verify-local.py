@@ -91,6 +91,7 @@ PESTER_FILES = (
     "scripts\\pester.handoff-locale.tests.ps1",
     "scripts\\pester.install-long-term-plan.tests.ps1",
     "scripts\\pester.install-meta-harness.tests.ps1",
+    "scripts\\pester.install-e156-capsules.tests.ps1",
 )
 SHELLCHECK_FILES = (
     "install/install.sh",
@@ -277,7 +278,8 @@ class Limb:
 LIMBS = (
     Limb("pytest", "pytest tests/",
          (("python-tests", "Run pytest"),
-          ("meta-harness-unpack-windows", "Run actual Bash installer and negative release cases")),
+          ("meta-harness-unpack-windows", "Run actual Bash installer and negative release cases"),
+          ("meta-harness-unpack-windows", "Run E156 offline capsule fail-closed canaries through Git Bash")),
          limb_pytest),
     Limb("bash-install-sh", "bash tests/test-install-sh.bash", (("bash-tests", "Run bash test suite"),), limb_bash_install_sh),
     Limb("bash-handoff-locale", "bash tests/test-handoff-locale.bash",
