@@ -53,12 +53,19 @@ function Test-E156Chartkit {
     [CmdletBinding()]
     param([string]$TargetDir)
     $py = Get-Command python -ErrorAction SilentlyContinue
-    if (-not $py) { return $true }   # python missing: skip, not fail
+    if (-not $py -or $py.Source -match 'WindowsApps') { return $false }
     $out = Join-Path $env:TEMP ("e156_" + [System.Guid]::NewGuid().ToString('N') + '.svg')
-    & python (Join-Path $TargetDir 'chartkit.py') (Join-Path $TargetDir 'sample.capsule.json') --out $out 2>&1 | Out-Null
-    $ok = ($LASTEXITCODE -eq 0)
-    if (Test-Path $out) { Remove-Item $out -Force }
-    return $ok
+    try {
+        & $py.Source (Join-Path $TargetDir 'chartkit.py') (Join-Path $TargetDir 'sample.capsule.json') --out $out 2>&1 | Out-Null
+        # Exit zero alone is not evidence of a rendered output artifact.
+        return [bool](($LASTEXITCODE -eq 0) -and
+            (Test-Path -LiteralPath $out -PathType Leaf) -and
+            ((Get-Item -LiteralPath $out).Length -gt 0))
+    } catch {
+        return $false
+    } finally {
+        if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Force }
+    }
 }
 
 if ($Import) { return }
@@ -88,13 +95,17 @@ if ($SkipCopy) {
     Write-Ok "template copied"
 }
 
+Write-Step "Verifying the offline chart-kit renders the sample"
+if (-not (Test-E156Chartkit -TargetDir $Target)) {
+    Write-Host "ERROR: chartkit render check failed; refusing a successful installation." -ForegroundColor Red
+    exit 1
+}
+Write-Ok "chartkit OK (stdlib-only SVG render verified, no network)"
+
+# Do not persist a path whose chartkit has not passed its installation canary.
 Write-Step "Persisting E156_CAPSULES_PATH (User env var)"
 Set-E156PathEnv -TargetDir $Target
 Write-Ok "E156_CAPSULES_PATH = $Target"
-
-Write-Step "Verifying the offline chart-kit renders the sample"
-if (Test-E156Chartkit -TargetDir $Target) { Write-Ok "chartkit OK (stdlib-only SVG render verified, no network)" }
-else { Write-Host "    WARNING: chartkit render check did not pass (python missing?)." -ForegroundColor Yellow }
 
 Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green
