@@ -65,3 +65,45 @@ Describe "Expand-MetaHarness" {
         Get-Content -LiteralPath (Join-Path $t 'mine.txt') | Should -Be 'keep'
     }
 }
+
+Describe "Expand-MetaHarness rejects unsafe archive members before unpacking" {
+    It "refuses ../ traversal without publishing the target" {
+        $d = Join-Path $TestDrive 'zip-traversal'; $zip = New-TestRelease -Dir $d
+        $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+        try { $archive.CreateEntry('../outside.txt') | Out-Null } finally { $archive.Dispose() }
+        $target = Join-Path $d 'published'
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*unsafe archive entry*'
+        Test-Path -LiteralPath $target | Should -BeFalse
+        Test-Path -LiteralPath (Join-Path $d 'outside.txt') | Should -BeFalse
+    }
+    It "refuses Windows backslash traversal" {
+        $d = Join-Path $TestDrive 'zip-backslash'; $zip = New-TestRelease -Dir $d
+        $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+        try { $archive.CreateEntry(('..' + [char]92 + 'outside.txt')) | Out-Null } finally { $archive.Dispose() }
+        $target = Join-Path $d 'published'
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*unsafe archive entry*'
+        Test-Path -LiteralPath $target | Should -BeFalse
+    }
+    It "refuses drive-rooted or ADS-style archive member names" {
+        foreach ($bad in @('C:/outside.txt', 'file.txt:payload')) {
+            $d = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+            $zip = New-TestRelease -Dir $d
+            $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+            try { $archive.CreateEntry($bad) | Out-Null } finally { $archive.Dispose() }
+            $target = Join-Path $d 'published'
+            { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*unsafe archive entry*'
+            Test-Path -LiteralPath $target | Should -BeFalse
+        }
+    }
+    It "refuses ZIP entries marked as Unix symbolic links" {
+        $d = Join-Path $TestDrive 'zip-symlink'; $zip = New-TestRelease -Dir $d
+        $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+        try {
+            $link = $archive.CreateEntry('meta-harness-v9.9.9-test/link')
+            $link.ExternalAttributes = -1610612736  # 0xA0000000: POSIX symlink type
+        } finally { $archive.Dispose() }
+        $target = Join-Path $d 'published'
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*symlink entry*'
+        Test-Path -LiteralPath $target | Should -BeFalse
+    }
+}
