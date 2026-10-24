@@ -163,10 +163,16 @@ def test_planted_ci_only_entry_without_reason_is_refused(vl, workflow_text):
 
 
 def test_planted_pester_file_added_in_ci_only_is_refused(vl, workflow_text):
+    # Use the LAST named suite so a legitimate new suite does not turn this
+    # failure-injection test into a fixture mismatch before parity is exercised.
+    last_suite = vl.PESTER_FILES[-1]
+    needle = f"            '{last_suite}'\\n"
+    assert needle in workflow_text, "Pester suite fixture format changed"
     planted = workflow_text.replace(
-        "            'scripts\\pester.install-meta-harness.tests.ps1'\n",
-        "            'scripts\\pester.install-meta-harness.tests.ps1',\n"
-        "            'scripts\\pester.new-suite.tests.ps1'\n",
+        needle,
+        f"            '{last_suite}',\\n"
+        "            'scripts\\\\pester.new-suite.tests.ps1'\\n",
+        1,
     )
     assert planted != workflow_text
     drift = vl.find_drift(planted)
