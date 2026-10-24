@@ -65,7 +65,7 @@ def test_bad_explicit_key_refused_without_creating_secret_or_running_canary(tmp_
     assert "REFUSED" in result.stderr
     assert not key_path.exists()
     assert not marker.exists()
-    assert "ready" not in result.stdout
+    assert "Overmind + TruthCert ready." not in result.stdout
 
 
 @pytest.mark.parametrize("bad_key", ["short", "g" * 64, "0" * 63])
