@@ -74,3 +74,25 @@ def test_valid_svg_render_succeeds_then_persists_path(tmp_path: Path):
     assert f"e156-capsules installed at {target}" in proc.stdout
     assert str(target) in (home / ".bashrc").read_text(encoding="utf-8")
     assert not list(target.glob(".chartkit_check.*.svg"))
+
+def test_actual_bundled_chartkit_sample_renders_end_to_end(tmp_path: Path):
+    """Execute the actual bundled installer and chartkit, not a fake renderer.
+
+    The shipped example data are illustrative, NOT independently verified clinical effects.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    target = tmp_path / "installed-capsules"
+    proc = subprocess.run(
+        ["/usr/bin/bash", str(SCRIPT), "--target", str(target)],
+        env={**os.environ, "HOME": str(home)},
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "chartkit OK" in proc.stdout
+    assert (target / "chartkit.py").read_bytes() == (
+        ROOT / "templates" / "e156-capsule" / "chartkit.py"
+    ).read_bytes()
+    assert (target / "sample.capsule.json").is_file()
+    assert str(target) in (home / ".bashrc").read_text(encoding="utf-8")
+    assert not list(target.glob(".chartkit_check.*.svg"))
