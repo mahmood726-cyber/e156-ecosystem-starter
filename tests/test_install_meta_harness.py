@@ -89,7 +89,7 @@ def test_ambiguous_sha256sums_refused_before_unpacked(tmp_path, extra_entry):
         "conflicting": f"{'0' * 64}  *{ASSET}",
         "malformed": f"invalid-sha256  {ASSET}",
     }[extra_entry]
-    sums.write_text(valid_line + "\\n" + bad_line + "\\n", encoding="utf-8")
+    sums.write_text(valid_line + "\n" + bad_line + "\n", encoding="utf-8")
 
     target = tmp_path / "out" / "mh"
     p = _run(rel, target)
