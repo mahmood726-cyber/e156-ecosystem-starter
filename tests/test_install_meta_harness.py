@@ -77,6 +77,29 @@ def test_sha256sums_without_a_line_for_the_asset_is_refused(tmp_path):
     assert not target.exists()
 
 
+@pytest.mark.parametrize("second_digest", ["same", "conflicting"])
+def test_duplicate_sha256sums_asset_entries_are_refused(tmp_path, second_digest):
+    rel = _release(tmp_path / "rel", GOOD)
+    sums = rel / "SHA256SUMS"
+    first_line = sums.read_text(encoding="ascii").strip()
+    other_line = first_line if second_digest == "same" else f"{'0' * 64}  {ASSET}"
+    sums.write_text(first_line + "\n" + other_line + "\n", encoding="ascii")
+    target = tmp_path / "out" / "mh"
+    p = _run(rel, target)
+    assert p.returncode != 0 and "multiple entries" in (p.stdout + p.stderr)
+    assert not target.exists()
+
+
+def test_sha256sums_unrelated_entry_is_not_mistaken_for_duplicate(tmp_path):
+    rel = _release(tmp_path / "rel", GOOD)
+    sums = rel / "SHA256SUMS"
+    sums.write_text(sums.read_text(encoding="ascii") + f"{'0' * 64}  different.zip\n", encoding="ascii")
+    target = tmp_path / "out" / "mh"
+    p = _run(rel, target)
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert (target / "scripts" / "replay_offline.py").is_file()
+
+
 def test_a_missing_asset_is_refused(tmp_path):
     rel = _release(tmp_path / "rel", GOOD)
     (rel / ASSET).unlink()
