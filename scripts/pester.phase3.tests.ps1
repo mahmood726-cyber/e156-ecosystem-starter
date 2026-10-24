@@ -132,3 +132,77 @@ Describe "ProjectIndex: Write-ReconcileScript" {
         (Get-Content -Raw $errFile) | Should -Match 'missing'
     }
 }
+
+
+Describe "Overmind: actual Windows installer fails closed on a verifier failure" {
+    # A disposable overmind.cmd intercepts the native CLI call.  These are
+    # network-free failure-injection tests, NOT signed production canaries.
+    BeforeAll {
+        $script:overmindFixtureDir = Join-Path $script:tmpRoot 'overmind-native-fixture'
+        New-Item -ItemType Directory -Force -Path $script:overmindFixtureDir | Out-Null
+        $script:overmindFixtureCmd = Join-Path $script:overmindFixtureDir 'overmind.cmd'
+        $script:previousUserHmac = [Environment]::GetEnvironmentVariable('TRUTHCERT_HMAC_KEY', 'User')
+        [Environment]::SetEnvironmentVariable('TRUTHCERT_HMAC_KEY', (New-TruthCertHmacKey), 'User')
+
+        function Invoke-OvermindNativeFixture {
+            param([int]$ExitCode, [int]$Lines = 2)
+            $cmdLines = @(
+                '@echo off',
+                'if /I not "%~1"=="meta-verify" exit /b 97'
+            )
+            for ($i = 1; $i -le $Lines; $i++) {
+                $cmdLines += "echo canary-fixture-line-$i"
+            }
+            $cmdLines += "exit /b $ExitCode"
+            [IO.File]::WriteAllText(
+                $script:overmindFixtureCmd,
+                (($cmdLines -join [Environment]::NewLine) + [Environment]::NewLine),
+                [Text.Encoding]::ASCII
+            )
+            $previousPath = $env:PATH
+            try {
+                $env:PATH = "$script:overmindFixtureDir;$previousPath"
+                # Run the shipped entrypoint under Windows PowerShell 5.1,
+                # not a mocked copy of its validation logic.
+                $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script:OvermindScript -SkipPipInstall 2>&1 | Out-String
+                $status = $LASTEXITCODE
+                return [pscustomobject]@{ Status = $status; Output = $output }
+            } finally {
+                $env:PATH = $previousPath
+            }
+        }
+    }
+
+    AfterAll {
+        [Environment]::SetEnvironmentVariable('TRUTHCERT_HMAC_KEY', $script:previousUserHmac, 'User')
+    }
+
+    It "refuses exit 1 rather than claiming readiness" {
+        $run = Invoke-OvermindNativeFixture -ExitCode 1
+        $run.Status | Should -Be 1
+        $run.Output | Should -Match 'meta-verify failed \(exit 1\)'
+        $run.Output | Should -Not -Match 'Overmind \+ TruthCert ready'
+    }
+
+    It "preserves a distinctive nonzero verifier exit code" {
+        $run = Invoke-OvermindNativeFixture -ExitCode 23
+        $run.Status | Should -Be 23
+        $run.Output | Should -Match 'meta-verify failed \(exit 23\)'
+        $run.Output | Should -Not -Match 'Overmind \+ TruthCert ready'
+    }
+
+    It "refuses another nonzero verifier exit code" {
+        $run = Invoke-OvermindNativeFixture -ExitCode 42
+        $run.Status | Should -Be 42
+        $run.Output | Should -Match 'meta-verify failed \(exit 42\)'
+        $run.Output | Should -Not -Match 'Overmind \+ TruthCert ready'
+    }
+
+    It "reports ready for a successful but verbose verifier without truncating its execution" {
+        $run = Invoke-OvermindNativeFixture -ExitCode 0 -Lines 10
+        $run.Status | Should -Be 0
+        $run.Output | Should -Match 'Overmind \+ TruthCert ready'
+        $run.Output | Should -Match 'canary-fixture-line-5'
+        $run.Output | Should -Not -Match 'canary-fixture-line-6'
+    }
+}
