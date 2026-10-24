@@ -14,7 +14,7 @@ Describe "Test-SentinelInstalled" {
         $r = Test-SentinelInstalled
         $r | Should -BeOfType [bool]
     }
-    It "detects a discoverable command without needing preinstalled Sentinel" {
+    It "is true when sentinel is on PATH (author's machine contract)" {
         # Isolated command-lookup unit test only: this function must never be
         # executed. Actual pinned Sentinel installs need separate live canaries.
         function sentinel { throw 'Sentinel lookup test shim was executed' }
