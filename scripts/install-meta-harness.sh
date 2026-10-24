@@ -61,18 +61,32 @@ meta_harness_sha256() {
     fi
 }
 
-# The digest SHA256SUMS records for <name> (exactly one line, `<64 hex>  <name>`), or nothing.
+# Accept exactly one well-formed checksum record naming this asset.
+# GNU binary-mode checksum lines (*filename) are supported. Fail closed when a
+# matching record is malformed or repeated; never select the first of several.
 meta_harness_expected_sha() {
-    local sums="$1" name="$2"
-    tr -d '\r' < "$sums" | awk -v n="$name" '($2 == n || $2 == "*" n) && $1 ~ /^[0-9a-f]{64}$/ {print $1}' | head -1
+    local sums="$1" name="$2" hash="" entry="" extra="" digest="" matches=0
+    while read -r hash entry extra || [[ -n "${hash}${entry}${extra}" ]]; do
+        [[ "$entry" == "$name" || "$entry" == "*$name" ]] || continue
+        matches=$((matches + 1))
+        if [[ "$matches" -gt 1 ]]; then
+            echo "REFUSED: SHA256SUMS has multiple entries for $name" >&2; return 1
+        fi
+        if [[ ! "$hash" =~ ^[0-9a-f]{64}$ || -n "$extra" ]]; then
+            echo "REFUSED: SHA256SUMS has malformed entry for $name" >&2; return 1
+        fi
+        digest="$hash"
+    done < <(tr -d '\r' < "$sums")
+    [[ "$matches" -eq 1 ]] || {
+        echo "REFUSED: SHA256SUMS has no line for $name" >&2; return 1; }
+    printf '%s\n' "$digest"
 }
 
 # Verify <zip> against <sums>. Prints the reason and returns 1 on any failure.
 verify_meta_harness_asset() {
     local zip="$1" sums="$2" name expected actual
     name="$(basename "$zip")"
-    expected="$(meta_harness_expected_sha "$sums" "$name")"
-    [[ -n "$expected" ]] || { echo "REFUSED: SHA256SUMS has no line for $name" >&2; return 1; }
+    expected="$(meta_harness_expected_sha "$sums" "$name")" || return 1
     actual="$(meta_harness_sha256 "$zip")"
     [[ "$actual" == "$expected" ]] || {
         echo "REFUSED: sha256 mismatch for $name (expected $expected, got $actual)" >&2; return 1; }
