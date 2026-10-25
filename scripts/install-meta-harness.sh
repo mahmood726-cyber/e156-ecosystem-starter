@@ -68,7 +68,15 @@ meta_harness_sha256() {
         digest="${output%% *}"
     else
         [[ -n "$PYTHON" ]] || { echo "REFUSED: no SHA256 tool available" >&2; return 1; }
-        digest="$("$PYTHON" -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "$1")" || return 1
+        # Stream the published ~609 MB archive instead of allocating its full
+        # contents in memory on hosts without sha256sum (including some Windows
+        # setups). A missing/failed Python digest still refuses installation.
+        digest="$("$PYTHON" -c 'import hashlib, sys
+h = hashlib.sha256()
+with open(sys.argv[1], "rb") as stream:
+    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+        h.update(chunk)
+print(h.hexdigest())' "$1")" || return 1
     fi
     if [[ ! "$digest" =~ ^[0-9a-f]{64}$ ]]; then
         echo "REFUSED: invalid SHA256 tool output" >&2
