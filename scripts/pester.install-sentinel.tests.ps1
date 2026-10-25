@@ -14,11 +14,14 @@ Describe "Test-SentinelInstalled" {
         $r = Test-SentinelInstalled
         $r | Should -BeOfType [bool]
     }
-    It "is true when sentinel is on PATH (author's machine contract)" -Skip:(-not (Get-Command sentinel -ErrorAction SilentlyContinue)) {
-        # Documents the ecosystem-starter assumption on a developer machine.
-        # Skipped in CI / fresh-runner environments where sentinel isn't
-        # pre-installed; not a regression to ship.
+    It "returns true when the Sentinel command is discoverable (isolated unit test)" {
+        # Test only the command-discovery wrapper. No Sentinel binary is
+        # installed or invoked here; a live pinned-system canary is separate.
+        Mock Get-Command { [pscustomobject]@{ Name = 'sentinel'; Source = 'fixture' } } -ParameterFilter {
+            $Name -eq 'sentinel'
+        }
         Test-SentinelInstalled | Should -BeTrue
+        Should -Invoke Get-Command -Times 1 -Exactly -ParameterFilter { $Name -eq 'sentinel' }
     }
 }
 
