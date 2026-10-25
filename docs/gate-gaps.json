@@ -6,16 +6,17 @@
       "id": ".github/workflows/test.yml#jobs.pester",
       "kind": "ci-job",
       "name": "Pester (Windows)",
-      "stops": "A failing assertion in any of the 11 Pester suites named in the job's $files list (installer helpers, redaction, supply-chain pinning, SHA gate), run under pwsh on windows-latest.",
+      "stops": "A missing, duplicate, empty, failed, errored, skipped or not-run test in any of the 11 explicitly required Pester suites fails the Windows pwsh 7 job. Each suite produces a separately checked result and NUnit XML.",
       "would_not_stop": [
-        "A Pester suite that exists but is not in the hard-coded $files list: a new scripts/pester.*.tests.ps1 is silently never run.",
-        "Behaviour that differs under Windows PowerShell 5.1, which many students run: the job uses pwsh 7.",
-        "Real installs over the network: the suites test wrapper logic, not that Sentinel / Overmind / the extractor actually install.",
-        "Any behaviour no suite asserts."
+        "New Pester suites not added to the explicit 11-file list: the job does not discover or enforce newly created *.tests.ps1 files automatically.",
+        "Differences in Windows PowerShell 5.1 behaviour: this job runs PowerShell 7.",
+        "A live installation of pinned Sentinel, Overmind/TruthCert, E156 or Meta-Harness: the Pester suites exercise local wrapper/fixture behaviour only.",
+        "Independent signature verification, source SHA authentication and complete multi-repository ecosystem canaries.",
+        "Behaviour absent from the explicitly listed test assertions."
       ],
-      "source": ".github/workflows/test.yml header comment and the job's $files list.",
+      "source": ".github/workflows/test.yml Pester job and per-suite pass/fail accounting.",
       "seal": {
-        ".github/workflows/test.yml#jobs.pester": "890466c0ab813436912330e6769f79451a8d10677753a009b3fad1289a9ad26d"
+        ".github/workflows/test.yml#jobs.pester": "95935562e1e788e9a9c20ce5300fe027aab28e1519162f34433d2e8562614dc7"
       }
     },
     {
