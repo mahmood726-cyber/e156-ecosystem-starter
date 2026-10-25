@@ -266,3 +266,46 @@ def test_crlf_release_manifest_is_refused_as_changed_bytes(tmp_path):
     assert p.returncode != 0
     assert "differs from reviewed pinned digest" in p.stderr
 
+
+
+def test_python_fallback_hashes_in_chunks_when_sha256sum_is_missing(tmp_path):
+    """Exercise the real installer helper with sha256sum intentionally unavailable.
+
+    The payload is a binary integrity fixture, not research data. A regression
+    to open(...).read() would reintroduce a ~609 MB memory allocation on the
+    published release download, even if small digest fixtures still matched.
+    """
+    source = SCRIPT.read_text(encoding="utf-8")
+    assert 'for chunk in iter(lambda: stream.read(1024 * 1024), b""):' in source
+    payload = tmp_path / "hash-fixture.bin"
+    payload.write_bytes(b"integrity-fallback-fixture" * 131073)
+    shell = r'''source "$1" --import
+command() {
+    if [[ "${1:-}" == "-v" && "${2:-}" == "sha256sum" ]]; then return 1; fi
+    builtin command "$@"
+}
+meta_harness_sha256 "$2"'''
+    result = subprocess.run(
+        [_bash(), "-c", shell, "bash", str(SCRIPT), str(payload)],
+        capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == hashlib.sha256(payload.read_bytes()).hexdigest()
+
+
+def test_no_hash_tool_or_python_must_fail_closed(tmp_path):
+    payload = tmp_path / "hash-fixture.bin"
+    payload.write_bytes(b"binary integrity fixture")
+    shell = r'''source "$1" --import
+command() {
+    if [[ "${1:-}" == "-v" && "${2:-}" == "sha256sum" ]]; then return 1; fi
+    builtin command "$@"
+}
+PYTHON=""
+meta_harness_sha256 "$2"'''
+    result = subprocess.run(
+        [_bash(), "-c", shell, "bash", str(SCRIPT), str(payload)],
+        capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode != 0
+    assert "REFUSED: no SHA256 tool available" in result.stderr
