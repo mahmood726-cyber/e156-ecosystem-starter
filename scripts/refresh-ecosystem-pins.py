@@ -20,13 +20,11 @@ Design guarantees:
   * NON-DESTRUCTIVE. Edits tracked files in place; you review the diff. --commit
     makes a normal commit; --push uses fast-forward-only push (rejected, never
     forced, if the remote moved).
-  * Tag-pinned layers are left alone -- only layers carrying a 40-hex SHA are
-    bumped. As of 2026-06-08 every ecosystem layer (sentinel v1.0.0, extractor
-    v1.0.0, overmind v1.0.0, rapidmeta v1.1.0, pairwise70 v1.0.0, aact v1.0.0,
-    aact-kit v1.0.0) is pinned to a signed release tag, so a normal run reports
-    all layers [skip] -- which is the intended steady state. Re-point an
-    installer at a 40-hex SHA only to track an unreleased commit; this tool will
-    then resume bumping it.
+  * Frozen Sentinel v1.0.0 is an exact reviewed Git commit, not an unsigned
+    tag. --check refuses mismatched Bash and PowerShell declarations; --apply
+    cannot silently advance this release to the mutable default-branch HEAD.
+    Other SHA-pinned development layers may be advanced; tag pins are skipped.
+    A frozen commit is not a signature or pip dependency lock.
 
 Usage:
   python scripts/refresh-ecosystem-pins.py            # dry-run: report drift
@@ -45,6 +43,11 @@ import sys
 from pathlib import Path
 
 REPO_OWNER = "mahmood726-cyber"
+
+# Sentinel annotated tag v1.0.0 (UNSIGNED; object
+# 89b8474f355511b0efb9c88b7a17ecf44198bbc4) resolved to this commit
+# on 2026-10-25. Frozen releases are never auto-upgraded to HEAD.
+FROZEN_RELEASES = {"sentinel": "5808f2bdc024506fa3d49a367c88b42b15fdf164"}
 
 # One entry per pinned install layer. `files` are relative to the repo root; the
 # first must be the .sh installer (the authoritative source of the current pin).
@@ -115,6 +118,295 @@ def process_layer(layer: dict, apply: bool, root: Path) -> dict:
     sh_path = root / sh_rel
     if not sh_path.exists():
         return {"name": layer["name"], "status": "missing", "detail": sh_rel}
+    frozen = FROZEN_RELEASES.get(layer["name"])
+    if frozen is not None:
+        # Check the actual defaults in both installers, never incidental hex
+        # strings or a movable Git tag. This path MUST NOT access remote HEAD.
+        declarations = (
+            (layer["files"][0], r'''(?m)^SENTINEL_DEFAULT_REF=["']([0-9a-f]{40})["']\s*
+    if old is None:
+        return {"name": layer["name"], "status": "skip", "detail": "no 40-hex pin (tag-pinned?)"}
+    new = remote_head(layer["repo"])
+    if new is None:
+        return {"name": layer["name"], "status": "error", "detail": "ls-remote failed", "old": old}
+    if new == old:
+        return {"name": layer["name"], "status": "current", "old": old, "new": new}
+
+    changed = []
+    if apply:
+        # Read/write as bytes so original line endings (LF for .sh, possibly
+        # CRLF for .ps1) are preserved -- we only swap a 40-hex substring.
+        targets = list(layer["files"]) + EXTRA_TARGETS
+        for rel in targets:
+            p = root / rel
+            if not p.exists():
+                continue
+            raw = p.read_bytes()
+            txt = raw.decode("utf-8", errors="replace")
+            new_txt = apply_bump(txt, old, new)
+            if new_txt != txt:
+                p.write_bytes(new_txt.encode("utf-8"))
+                changed.append(rel)
+    return {"name": layer["name"], "status": "drift", "old": old, "new": new, "changed": changed}
+
+
+def git(root: Path, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True)
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--apply", action="store_true", help="rewrite stale pins in place")
+    ap.add_argument("--check", action="store_true",
+                    help="report drift and exit 1 if any layer is stale (CI mode)")
+    ap.add_argument("--layer", default=None,
+                    help="comma list of layer names to limit to (default: all)")
+    ap.add_argument("--commit", action="store_true", help="git add+commit the bumps (implies --apply)")
+    ap.add_argument("--push", action="store_true", help="git push (ff-only) after commit")
+    args = ap.parse_args(argv)
+
+    if args.commit:
+        args.apply = True
+    root = repo_root()
+
+    wanted = {s.strip() for s in args.layer.split(",")} if args.layer else None
+    layers = [l for l in LAYERS if wanted is None or l["name"] in wanted]
+    if wanted:
+        unknown = wanted - {l["name"] for l in LAYERS}
+        if unknown:
+            ap.error(f"unknown layer(s): {', '.join(sorted(unknown))}; "
+                     f"known: {', '.join(l['name'] for l in LAYERS)}")
+
+    print(f"ecosystem pin refresh ({'apply' if args.apply else 'check' if args.check else 'dry-run'})")
+    print(f"  repo: {root}\n")
+
+    results = [process_layer(l, args.apply, root) for l in layers]
+
+    drift, errors, all_changed = 0, 0, []
+    for r in results:
+        name = r["name"]
+        if r["status"] == "current":
+            print(f"  [ok]      {name:12s} {r['old'][:12]} (current)")
+        elif r["status"] == "drift":
+            drift += 1
+            arrow = f"{r['old'][:12]} -> {r['new'][:12]}"
+            if args.apply:
+                print(f"  [bumped]  {name:12s} {arrow}  ({len(r['changed'])} file(s))")
+                all_changed += r["changed"]
+            else:
+                print(f"  [stale]   {name:12s} {arrow}")
+        elif r["status"] == "skip":
+            print(f"  [skip]    {name:12s} {r['detail']}")
+        elif r["status"] == "missing":
+            print(f"  [missing] {name:12s} {r['detail']}")
+        else:
+            errors += 1
+            print(f"  [error]   {name:12s} {r.get('detail', '')}")
+
+    print()
+    if args.check:
+        if drift or errors:
+            print(f"DRIFT: {drift} layer(s) stale, {errors} error(s). "
+                  f"Fix: python scripts/refresh-ecosystem-pins.py --apply")
+            return 1
+        print("OK: all pins current.")
+        return 0
+
+    if not args.apply:
+        if drift:
+            print(f"{drift} layer(s) stale. Re-run with --apply to update.")
+        else:
+            print("All pins current; nothing to do.")
+        return 0
+
+    # --apply path
+    if errors:
+        print(f"WARNING: {errors} layer(s) could not be checked (ls-remote failed).")
+    if not all_changed:
+        print("All pins already current; no files changed.")
+        return 0
+
+    uniq = sorted(set(all_changed))
+    print(f"Updated {len(uniq)} file(s): {', '.join(uniq)}")
+    print("  NOTE: install/install.{ps1,sh} were not touched, but if you edited")
+    print("        them re-run scripts/regen-hashes.sh before committing.")
+
+    if args.commit:
+        g = git(root, "add", *uniq)
+        if g.returncode != 0:
+            print(f"git add failed:\n{g.stderr}", file=sys.stderr)
+            return 1
+        bumped = [r for r in results if r["status"] == "drift"]
+        body = "\n".join(f"- {r['name']}: {r['old'][:12]} -> {r['new'][:12]}" for r in bumped)
+        msg = "chore: refresh ecosystem install-layer pins\n\n" + body
+        g = git(root, "commit", "-m", msg)
+        if g.returncode != 0:
+            print(f"git commit failed:\n{g.stdout}\n{g.stderr}", file=sys.stderr)
+            return 1
+        print("Committed pin refresh.")
+        if args.push:
+            g = git(root, "push")  # ff-only by default; never forced
+            if g.returncode != 0:
+                print(f"git push failed (pull --rebase then retry):\n{g.stderr}", file=sys.stderr)
+                return 1
+            print("Pushed.")
+    else:
+        print("Review the diff, then commit (or re-run with --commit).")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+''),
+            (layer["files"][1], r'''(?m)^\$script:SentinelDefaultRef\s*=\s*["']([0-9a-f]{40})["']\s*
+    if old is None:
+        return {"name": layer["name"], "status": "skip", "detail": "no 40-hex pin (tag-pinned?)"}
+    new = remote_head(layer["repo"])
+    if new is None:
+        return {"name": layer["name"], "status": "error", "detail": "ls-remote failed", "old": old}
+    if new == old:
+        return {"name": layer["name"], "status": "current", "old": old, "new": new}
+
+    changed = []
+    if apply:
+        # Read/write as bytes so original line endings (LF for .sh, possibly
+        # CRLF for .ps1) are preserved -- we only swap a 40-hex substring.
+        targets = list(layer["files"]) + EXTRA_TARGETS
+        for rel in targets:
+            p = root / rel
+            if not p.exists():
+                continue
+            raw = p.read_bytes()
+            txt = raw.decode("utf-8", errors="replace")
+            new_txt = apply_bump(txt, old, new)
+            if new_txt != txt:
+                p.write_bytes(new_txt.encode("utf-8"))
+                changed.append(rel)
+    return {"name": layer["name"], "status": "drift", "old": old, "new": new, "changed": changed}
+
+
+def git(root: Path, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True)
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--apply", action="store_true", help="rewrite stale pins in place")
+    ap.add_argument("--check", action="store_true",
+                    help="report drift and exit 1 if any layer is stale (CI mode)")
+    ap.add_argument("--layer", default=None,
+                    help="comma list of layer names to limit to (default: all)")
+    ap.add_argument("--commit", action="store_true", help="git add+commit the bumps (implies --apply)")
+    ap.add_argument("--push", action="store_true", help="git push (ff-only) after commit")
+    args = ap.parse_args(argv)
+
+    if args.commit:
+        args.apply = True
+    root = repo_root()
+
+    wanted = {s.strip() for s in args.layer.split(",")} if args.layer else None
+    layers = [l for l in LAYERS if wanted is None or l["name"] in wanted]
+    if wanted:
+        unknown = wanted - {l["name"] for l in LAYERS}
+        if unknown:
+            ap.error(f"unknown layer(s): {', '.join(sorted(unknown))}; "
+                     f"known: {', '.join(l['name'] for l in LAYERS)}")
+
+    print(f"ecosystem pin refresh ({'apply' if args.apply else 'check' if args.check else 'dry-run'})")
+    print(f"  repo: {root}\n")
+
+    results = [process_layer(l, args.apply, root) for l in layers]
+
+    drift, errors, all_changed = 0, 0, []
+    for r in results:
+        name = r["name"]
+        if r["status"] == "current":
+            print(f"  [ok]      {name:12s} {r['old'][:12]} (current)")
+        elif r["status"] == "drift":
+            drift += 1
+            arrow = f"{r['old'][:12]} -> {r['new'][:12]}"
+            if args.apply:
+                print(f"  [bumped]  {name:12s} {arrow}  ({len(r['changed'])} file(s))")
+                all_changed += r["changed"]
+            else:
+                print(f"  [stale]   {name:12s} {arrow}")
+        elif r["status"] == "skip":
+            print(f"  [skip]    {name:12s} {r['detail']}")
+        elif r["status"] == "missing":
+            print(f"  [missing] {name:12s} {r['detail']}")
+        else:
+            errors += 1
+            print(f"  [error]   {name:12s} {r.get('detail', '')}")
+
+    print()
+    if args.check:
+        if drift or errors:
+            print(f"DRIFT: {drift} layer(s) stale, {errors} error(s). "
+                  f"Fix: python scripts/refresh-ecosystem-pins.py --apply")
+            return 1
+        print("OK: all pins current.")
+        return 0
+
+    if not args.apply:
+        if drift:
+            print(f"{drift} layer(s) stale. Re-run with --apply to update.")
+        else:
+            print("All pins current; nothing to do.")
+        return 0
+
+    # --apply path
+    if errors:
+        print(f"WARNING: {errors} layer(s) could not be checked (ls-remote failed).")
+    if not all_changed:
+        print("All pins already current; no files changed.")
+        return 0
+
+    uniq = sorted(set(all_changed))
+    print(f"Updated {len(uniq)} file(s): {', '.join(uniq)}")
+    print("  NOTE: install/install.{ps1,sh} were not touched, but if you edited")
+    print("        them re-run scripts/regen-hashes.sh before committing.")
+
+    if args.commit:
+        g = git(root, "add", *uniq)
+        if g.returncode != 0:
+            print(f"git add failed:\n{g.stderr}", file=sys.stderr)
+            return 1
+        bumped = [r for r in results if r["status"] == "drift"]
+        body = "\n".join(f"- {r['name']}: {r['old'][:12]} -> {r['new'][:12]}" for r in bumped)
+        msg = "chore: refresh ecosystem install-layer pins\n\n" + body
+        g = git(root, "commit", "-m", msg)
+        if g.returncode != 0:
+            print(f"git commit failed:\n{g.stdout}\n{g.stderr}", file=sys.stderr)
+            return 1
+        print("Committed pin refresh.")
+        if args.push:
+            g = git(root, "push")  # ff-only by default; never forced
+            if g.returncode != 0:
+                print(f"git push failed (pull --rebase then retry):\n{g.stderr}", file=sys.stderr)
+                return 1
+            print("Pushed.")
+    else:
+        print("Review the diff, then commit (or re-run with --commit).")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+''),
+        )
+        for rel, pattern in declarations:
+            path = root / rel
+            if not path.is_file():
+                return {"name": layer["name"], "status": "error",
+                        "detail": f"frozen release mirror missing: {rel}"}
+            matches = re.findall(pattern, path.read_text(encoding="utf-8"))
+            if matches != [frozen]:
+                return {"name": layer["name"], "status": "error",
+                        "detail": f"frozen release mismatch/unsafe ref in {rel}"}
+        return {"name": layer["name"], "status": "skip",
+                "detail": f"frozen release commit {frozen[:12]} (not advanced to HEAD)"}
     old = extract_pin(sh_path.read_text(encoding="utf-8", errors="replace"))
     if old is None:
         return {"name": layer["name"], "status": "skip", "detail": "no 40-hex pin (tag-pinned?)"}

@@ -49,15 +49,14 @@ assert_real_python() {
     fi
 }
 
-# Known-good Sentinel commit (the 53-rule build: 21 BLOCK / 28 WARN / 4 INFO).
-# v0.1.0 is stale (only ~12 rules); pinned to the v1.0.0 release tag (the
-# known-good 53-rule build). Same tag-pinned approach used for Overmind.
-SENTINEL_DEFAULT_REF="v1.0.0"
+# Frozen Sentinel v1.0.0 release source (not a signature or dependency lock).
+# GitHub unsigned tag object 89b8474f355511b0efb9c88b7a17ecf44198bbc4
+# pointed to this immutable commit on 2026-10-25.
+SENTINEL_DEFAULT_REF="5808f2bdc024506fa3d49a367c88b42b15fdf164"
 
 sentinel_default_source() {
-    # Pinned to a known-good commit so fresh installs are reproducible. Override
-    # with SENTINEL_REF=main (or any branch/tag/SHA) for bleeding edge or to
-    # roll back if a future release breaks something.
+    # Frozen release source by default. An explicit SENTINEL_REF overrides
+    # the pin and must never be presented as an authenticated installation.
     local ref="${SENTINEL_REF:-$SENTINEL_DEFAULT_REF}"
     printf 'git+https://github.com/mahmood726-cyber/Sentinel.git@%s' "$ref"
 }

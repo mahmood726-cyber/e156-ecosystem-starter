@@ -62,15 +62,14 @@ Optional: also disable the Store alias in
     }
 }
 
-# Known-good Sentinel commit (the 53-rule build: 21 BLOCK / 28 WARN / 4 INFO).
-# v0.1.0 is stale (only ~12 rules); pinned to the v1.0.0 release tag (the
-# known-good 53-rule build). Same tag-pinned approach used for Overmind.
-$script:SentinelDefaultRef = 'v1.0.0'
+# Frozen Sentinel v1.0.0 release source (not a signature or dependency lock).
+# GitHub unsigned tag object 89b8474f355511b0efb9c88b7a17ecf44198bbc4
+# pointed to this immutable commit on 2026-10-25.
+$script:SentinelDefaultRef = '5808f2bdc024506fa3d49a367c88b42b15fdf164'
 
 function Get-SentinelDefaultSource {
-    # Pinned to a known-good commit by default so a fresh install is reproducible.
-    # Override with $env:SENTINEL_REF=main (or any branch/tag/SHA) to opt into
-    # bleeding-edge or to roll back if a future release breaks something.
+    # Frozen release source by default. SENTINEL_REF deliberately opts out
+    # of the pin; an overridden install is not authenticated.
     $ref = if ($env:SENTINEL_REF) { $env:SENTINEL_REF } else { $script:SentinelDefaultRef }
     return "git+https://github.com/mahmood726-cyber/Sentinel.git@$ref"
 }
