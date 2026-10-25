@@ -49,7 +49,7 @@ Describe "Overmind: Get-OvermindDefaultSource pins the supply chain (P0)" {
     BeforeEach { Remove-Item Env:OVERMIND_REF -ErrorAction SilentlyContinue }
     AfterEach  { Remove-Item Env:OVERMIND_REF -ErrorAction SilentlyContinue }
 
-    It "defaults to the exact reviewed immutable release commit" {
+    It "defaults to a SHA-or-tag (not bare main)" {
         $src = Get-OvermindDefaultSource
         $src | Should -Be 'git+https://github.com/mahmood726-cyber/overmind.git@d3d2de5f84d852f27d64d1686f1e105e190ac375'
     }
