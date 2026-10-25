@@ -212,7 +212,7 @@ def _check_pinned_manifest(path: Path, ref: str, base: str) -> subprocess.Comple
 
 def test_independently_pinned_v1_manifest_is_accepted(tmp_path):
     manifest = tmp_path / "SHA256SUMS"
-    manifest.write_text(PUBLISHED_V1_MANIFEST, encoding="ascii")
+    manifest.write_bytes(PUBLISHED_V1_MANIFEST.encode("ascii"))
     assert hashlib.sha256(manifest.read_bytes()).hexdigest() == PUBLISHED_V1_MANIFEST_SHA
     p = _check_pinned_manifest(manifest, "v1.0.0",
                                "https://github.com/mahmood726-cyber/meta-harness/releases/download/v1.0.0")
@@ -231,7 +231,7 @@ def test_manifest_pin_refuses_coordinated_zip_and_sums_replacement(tmp_path):
 
 def test_unreviewed_remote_release_ref_is_refused_even_with_well_formed_sums(tmp_path):
     manifest = tmp_path / "SHA256SUMS"
-    manifest.write_text(PUBLISHED_V1_MANIFEST, encoding="ascii")
+    manifest.write_bytes(PUBLISHED_V1_MANIFEST.encode("ascii"))
     p = _check_pinned_manifest(manifest, "v1.0.1",
                                "https://github.com/mahmood726-cyber/meta-harness/releases/download/v1.0.1")
     assert p.returncode != 0
@@ -256,3 +256,13 @@ def test_actual_installer_refuses_changed_v1_manifest_before_zip_fetch(tmp_path)
     assert "differs from reviewed pinned digest" in p.stderr
     assert "could not download" not in p.stderr, "manifest must gate before ZIP download"
     assert not target.exists()
+
+def test_crlf_release_manifest_is_refused_as_changed_bytes(tmp_path):
+    manifest = tmp_path / "SHA256SUMS"
+    # On Windows, Path.write_text() silently writes CRLF; release checksums
+    # must cover the actual LF-terminated 90-byte publication, not text equality.
+    manifest.write_bytes(PUBLISHED_V1_MANIFEST.replace("\n", "\r\n").encode("ascii"))
+    p = _check_pinned_manifest(manifest, "v1.0.0", tmp_path.as_uri())
+    assert p.returncode != 0
+    assert "differs from reviewed pinned digest" in p.stderr
+
