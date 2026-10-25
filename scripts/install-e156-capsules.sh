@@ -67,7 +67,6 @@ copy_e156_template() {
 
 persist_e156_path_env() {
     local target="$1"
-    export E156_CAPSULES_PATH="$target"
     # Double-quoting an rc assignment is insufficient: a target containing
     # literal $(...) or backticks would execute when the shell reloads the rc.
     # %q serialises a single shell token without permitting re-expansion.
@@ -75,6 +74,22 @@ persist_e156_path_env() {
     printf -v escaped '%q' "$target"
     local line="export E156_CAPSULES_PATH=$escaped"
     local rc
+    # Preflight both profiles before modifying either. A stale export (or even
+    # a commented-out assignment) previously made grep skip the write while the
+    # installer still claimed the requested path would load in a new shell.
+    # Never overwrite user-managed assignments: refuse for manual reconciliation.
+    for rc in "${HOME}/.bashrc" "${HOME}/.zshrc"; do
+        [[ -e "$rc" ]] || continue
+        if [[ ! -f "$rc" || ! -r "$rc" || ! -w "$rc" ]]; then
+            echo "REFUSED: shell profile $rc is not a readable/writable regular file." >&2
+            return 1
+        fi
+        if grep -F 'E156_CAPSULES_PATH=' "$rc" | grep -Fvx "$line" >/dev/null; then
+            echo "REFUSED: $rc has an existing conflicting E156_CAPSULES_PATH reference; reconcile manually." >&2
+            return 1
+        fi
+    done
+    export E156_CAPSULES_PATH="$target"
     for rc in "${HOME}/.bashrc" "${HOME}/.zshrc"; do
         [[ -e "$rc" ]] || continue
         if ! grep -qF "E156_CAPSULES_PATH=" "$rc" 2>/dev/null; then
