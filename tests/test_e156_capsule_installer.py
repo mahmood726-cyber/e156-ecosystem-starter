@@ -98,6 +98,43 @@ def test_installer_accepts_fresh_svg_without_deleting_stale_user_file(tmp_path):
     assert sorted(p.name for p in target.glob(".chartkit_check.*")) == [".chartkit_check.svg"]
 
 
+def test_copy_refuses_nonempty_destination_without_overwriting_user_files(tmp_path):
+    # Normal installation previously copied before verification, overwriting
+    # user-edited capsules even when the installer later refused the canary.
+    target = tmp_path / "capsules"
+    target.mkdir()
+    original = target / "chartkit.py"
+    original.write_text("human-owned capsule content\\n", encoding="utf-8")
+    home = tmp_path / "isolated-home"
+    home.mkdir()
+    result = subprocess.run(
+        [bash_executable(), str(SCRIPT), "--target", str(target)],
+        env=dict(os.environ, HOME=str(home)), text=True, capture_output=True, timeout=30,
+    )
+    assert result.returncode != 0, result.stdout + result.stderr
+    assert "REFUSED: destination" in result.stderr
+    assert original.read_text(encoding="utf-8") == "human-owned capsule content\\n"
+    assert sorted(p.name for p in target.iterdir()) == ["chartkit.py"]
+    assert not (home / ".bashrc").exists()
+
+
+def test_copy_accepts_clean_destination_with_actual_bundled_template(tmp_path):
+    # This exercises the shipped offline chart-kit, not a fabricated clinical
+    # input, a network integration canary, or external signature verification.
+    home = tmp_path / "isolated-home"
+    home.mkdir()
+    target = tmp_path / "fresh-capsules"
+    result = subprocess.run(
+        [bash_executable(), str(SCRIPT), "--target", str(target)],
+        env=dict(os.environ, HOME=str(home)), text=True, capture_output=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "chartkit OK" in result.stdout
+    assert (target / "chartkit.py").is_file()
+    assert (target / "sample.capsule.json").is_file()
+    assert "E156_CAPSULES_PATH" in (home / ".bashrc").read_text(encoding="utf-8")
+
+
 def test_installer_accepts_real_svg_artifact(tmp_path):
     program = (
         "from pathlib import Path\nimport sys\n"

@@ -3,6 +3,27 @@
 BeforeAll {
     . (Join-Path $PSScriptRoot 'install-e156-capsules.ps1') -Import
 }
+Describe 'E156 capsule copy safety' {
+    It 'refuses to overwrite an existing nonempty destination' {
+        $src = Join-Path (Split-Path -Parent $PSScriptRoot) 'templates/e156-capsule'
+        $target = Join-Path $TestDrive 'existing-capsules'
+        New-Item -ItemType Directory -Path $target -Force | Out-Null
+        $owned = Join-Path $target 'chartkit.py'
+        Set-Content -LiteralPath $owned -Value 'human-owned content'
+        { Copy-E156Template -Src $src -Dst $target } | Should -Throw '*REFUSED*'
+        (Get-Content -LiteralPath $owned -Raw).Trim() | Should -BeExactly 'human-owned content'
+        @(Get-ChildItem -LiteralPath $target -Force).Count | Should -Be 1
+    }
+
+    It 'copies the actual bundled template into a fresh target' {
+        $src = Join-Path (Split-Path -Parent $PSScriptRoot) 'templates/e156-capsule'
+        $target = Join-Path $TestDrive 'new-capsules'
+        Copy-E156Template -Src $src -Dst $target
+        (Test-Path -LiteralPath (Join-Path $target 'chartkit.py') -PathType Leaf) | Should -BeTrue
+        (Test-Path -LiteralPath (Join-Path $target 'sample.capsule.json') -PathType Leaf) | Should -BeTrue
+    }
+}
+
 Describe 'E156 capsule installer refuses invalid canaries' {
     It 'refuses a missing Python interpreter' {
         Mock Get-Command { $null } -ParameterFilter { $Name -eq 'python' }

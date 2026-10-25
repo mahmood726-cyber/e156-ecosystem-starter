@@ -60,7 +60,24 @@ test_e156_capsules_present() {
 copy_e156_template() {
     local src="$1" dst="$2"
     [[ -d "$src" ]] || { echo "  bundled template not found at $src" >&2; return 1; }
-    mkdir -p "$dst"
+    # A normal copy must never overwrite existing capsules or follow a
+    # destination symlink. Use --skip-copy for an existing verified template.
+    if [[ -e "$dst" || -L "$dst" ]]; then
+        if [[ ! -d "$dst" || -L "$dst" || ! -r "$dst" || ! -w "$dst" ]]; then
+            echo "REFUSED: destination $dst is not a writable regular directory." >&2
+            return 1
+        fi
+        local first_entry
+        first_entry="$(find "$dst" -mindepth 1 -maxdepth 1 -print -quit)" || {
+            echo "REFUSED: cannot inspect destination $dst." >&2
+            return 1
+        }
+        if [[ -n "$first_entry" ]]; then
+            echo "REFUSED: destination $dst is not empty; use --skip-copy to verify the existing template." >&2
+            return 1
+        fi
+    fi
+    mkdir -p -- "$dst"
     # cp -R contents (portable; no rsync dependency)
     cp -R "$src/." "$dst/"
 }
