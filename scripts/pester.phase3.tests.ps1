@@ -54,12 +54,26 @@ Describe "Overmind: explicit blank signing-key rotation is refused" {
         @{ Label = 'whitespace'; Key = '   ' }
     ) {
         $userKeyBefore = [Environment]::GetEnvironmentVariable('TRUTHCERT_HMAC_KEY', 'User')
-        $escapedPath = $script:OvermindScript.Replace("'", "''")
-        $escapedKey = $Key.Replace("'", "''")
-        $command = "& '$escapedPath' -SkipPipInstall -HmacKey '$escapedKey'"
-        $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
-        $output = & powershell.exe -NoProfile -NonInteractive -EncodedCommand $encoded 2>&1 | Out-String
-        $exitCode = $LASTEXITCODE
+        # Use .NET's native argument list to preserve even a zero-length
+        # argument in a real -File invocation on Windows. Redirect output at
+        # the OS process boundary so Write-Host is included in assertions.
+        $info = [System.Diagnostics.ProcessStartInfo]::new()
+        $info.FileName = (Get-Command powershell.exe).Source
+        $info.UseShellExecute = $false
+        $info.RedirectStandardOutput = $true
+        $info.RedirectStandardError = $true
+        foreach ($arg in @('-NoProfile', '-NonInteractive', '-File',
+                            $script:OvermindScript, '-SkipPipInstall', '-HmacKey', $Key)) {
+            [void]$info.ArgumentList.Add([string]$arg)
+        }
+        $child = [System.Diagnostics.Process]::Start($info)
+        try {
+            $output = $child.StandardOutput.ReadToEnd() + $child.StandardError.ReadToEnd()
+            $child.WaitForExit()
+            $exitCode = $child.ExitCode
+        } finally {
+            $child.Dispose()
+        }
         $exitCode | Should -Be 2
         $output | Should -Match 'REFUSED: -HmacKey was explicitly empty or whitespace'
         $output | Should -Not -Match 'Overmind \\+ TruthCert ready'
