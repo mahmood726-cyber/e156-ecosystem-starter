@@ -21,6 +21,29 @@ Describe "Overmind: Test-OvermindInstalled" {
     It "returns a boolean" {
         Test-OvermindInstalled | Should -BeOfType [bool]
     }
+
+    It "rejects a missing CLI instead of trusting PowerShell's assignment status" {
+        # An isolated command-lookup mock: no network or Overmind installation.
+        Mock Get-Command { $null } -ParameterFilter { $Name -eq 'overmind' }
+        Test-OvermindInstalled | Should -BeFalse
+        Should -Invoke Get-Command -Times 1 -Exactly -ParameterFilter {
+            $Name -eq 'overmind' -and $CommandType -eq 'Application'
+        }
+    }
+
+    It "accepts a discoverable executable via a local PATH fixture" {
+        # A .cmd file tests Windows executable discovery, not Overmind itself.
+        $bin = Join-Path $TestDrive 'overmind-probe-bin'
+        New-Item -ItemType Directory -Force -Path $bin | Out-Null
+        Set-Content -LiteralPath (Join-Path $bin 'overmind.cmd') -Encoding Ascii -Value '@echo off'
+        $priorPath = $env:PATH
+        try {
+            $env:PATH = "$bin;$priorPath"
+            Test-OvermindInstalled | Should -BeTrue
+        } finally {
+            $env:PATH = $priorPath
+        }
+    }
 }
 
 Describe "Overmind: New-TruthCertHmacKey" {
