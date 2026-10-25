@@ -91,10 +91,12 @@ verify_chartkit() {
     [[ -n "$PYTHON" ]] || { echo "REFUSED: no runnable Python; chart-kit verification is required." >&2; return 1; }
     # Render into the target dir itself (avoids passing a /tmp unix path to a native
     # Windows python under git-bash, which can't resolve it); clean up after.
-    # Fresh per-run output: a stale prior SVG must never satisfy this run, and
-    # verification must not delete a user-created .chartkit_check.svg file.
-    local out="$target/.chartkit_check.${BASHPID}.${RANDOM}.svg"
-    [[ ! -e "$out" ]] || { echo "REFUSED: chart-kit canary output already exists." >&2; return 1; }
+    # mktemp reserves a fresh output exclusively, so stale files or symlink
+    # collisions cannot turn a renderer no-op into a successful canary.
+    local out
+    out="$(mktemp "$target/.chartkit_check.XXXXXXXX")" || {
+        echo "REFUSED: cannot create isolated chart-kit canary output." >&2; return 1;
+    }
     # A zero exit status without an actual SVG must not count as a verified canary.
     if "$PYTHON" "$target/chartkit.py" "$target/sample.capsule.json" --out "$out" >/dev/null 2>&1 && [[ -s "$out" ]]; then
         rm -f "$out"; return 0
