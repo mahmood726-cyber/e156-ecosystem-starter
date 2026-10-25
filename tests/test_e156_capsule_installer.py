@@ -21,10 +21,12 @@ def bash_executable():
     pytest.fail("Bash unavailable; installer canary must not silently skip")
 
 
-def run_installer(tmp_path, chartkit, *, sample=True, without_python=False):
+def run_installer(tmp_path, chartkit, *, sample=True, without_python=False, stale_svg=False):
     target = tmp_path / "capsules"
     target.mkdir()
     (target / "chartkit.py").write_text(chartkit, encoding="utf-8")
+    if stale_svg:
+        (target / ".chartkit_check.svg").write_bytes(b"<svg/>")
     if sample:
         (target / "sample.capsule.json").write_text("{}", encoding="utf-8")
     home = tmp_path / "isolated-home"
@@ -60,6 +62,33 @@ def test_installer_refuses_missing_python(tmp_path):
     assert result.returncode != 0
     assert "Python is required" in result.stderr
     assert not (home / ".bashrc").exists()
+
+
+def test_installer_refuses_stale_svg_without_clobbering_it(tmp_path):
+    # Pre-existing, valid SVG bytes are not evidence this run rendered anything.
+    # The actual chartkit process exits zero but writes no output at all.
+    result, home = run_installer(tmp_path, "pass\n", stale_svg=True)
+    assert result.returncode != 0, result.stdout + result.stderr
+    assert "refus" in (result.stdout + result.stderr).lower()
+    assert not (home / ".bashrc").exists()
+    target = tmp_path / "capsules"
+    assert (target / ".chartkit_check.svg").read_bytes() == b"<svg/>"
+    assert sorted(p.name for p in target.glob(".chartkit_check.*")) == [".chartkit_check.svg"]
+
+
+def test_installer_accepts_fresh_svg_without_deleting_stale_user_file(tmp_path):
+    program = (
+        "from pathlib import Path\nimport sys\n"
+        "Path(sys.argv[1]).read_bytes()\n"
+        "Path(sys.argv[-1]).write_bytes(b'<svg/>')\n"
+    )
+    result, home = run_installer(tmp_path, program, stale_svg=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "chartkit OK" in result.stdout
+    assert "E156_CAPSULES_PATH" in (home / ".bashrc").read_text(encoding="utf-8")
+    target = tmp_path / "capsules"
+    assert (target / ".chartkit_check.svg").read_bytes() == b"<svg/>"
+    assert sorted(p.name for p in target.glob(".chartkit_check.*")) == [".chartkit_check.svg"]
 
 
 def test_installer_accepts_real_svg_artifact(tmp_path):
