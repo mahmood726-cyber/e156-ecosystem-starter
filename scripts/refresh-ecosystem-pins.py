@@ -20,13 +20,11 @@ Design guarantees:
   * NON-DESTRUCTIVE. Edits tracked files in place; you review the diff. --commit
     makes a normal commit; --push uses fast-forward-only push (rejected, never
     forced, if the remote moved).
-  * Tag-pinned layers are left alone -- only layers carrying a 40-hex SHA are
-    bumped. As of 2026-06-08 every ecosystem layer (sentinel v1.0.0, extractor
-    v1.0.0, overmind v1.0.0, rapidmeta v1.1.0, pairwise70 v1.0.0, aact v1.0.0,
-    aact-kit v1.0.0) is pinned to a signed release tag, so a normal run reports
-    all layers [skip] -- which is the intended steady state. Re-point an
-    installer at a 40-hex SHA only to track an unreleased commit; this tool will
-    then resume bumping it.
+  * A frozen release SHA (currently Overmind v1.0.0) is deliberately NOT
+    advanced to default-branch HEAD. Both Bash and PowerShell declarations
+    must match its reviewed commit, otherwise --check fails. Other SHA-pinned
+    development layers may be advanced; tag-pinned layers are left alone.
+    Tags alone are not proof of signatures: Overmind v1.0.0 is unsigned.
 
 Usage:
   python scripts/refresh-ecosystem-pins.py            # dry-run: report drift
@@ -45,6 +43,11 @@ import sys
 from pathlib import Path
 
 REPO_OWNER = "mahmood726-cyber"
+
+# An immutable release ref must not be silently replaced with latest HEAD.
+# Resolved from Overmind annotated tag v1.0.0 (tag object
+# fdde5606f5ba8810fb253c943e8fb3bfd4ba1593) on 2026-10-25.
+FROZEN_RELEASES = {"overmind": "d3d2de5f84d852f27d64d1686f1e105e190ac375"}
 
 # One entry per pinned install layer. `files` are relative to the repo root; the
 # first must be the .sh installer (the authoritative source of the current pin).
@@ -115,6 +118,24 @@ def process_layer(layer: dict, apply: bool, root: Path) -> dict:
     sh_path = root / sh_rel
     if not sh_path.exists():
         return {"name": layer["name"], "status": "missing", "detail": sh_rel}
+    frozen = FROZEN_RELEASES.get(layer["name"])
+    if frozen is not None:
+        # Inspect both actual default-ref assignments, not incidental SHA text.
+        # Refuse edited/missing mirrors instead of updating to remote HEAD.
+        declarations = (
+            (layer["files"][0], r"(?m)^OVERMIND_DEFAULT_REF=[\\\"']([0-9a-f]{40})[\\\"']\\s*$"),
+            (layer["files"][1], r"(?m)^\\$script:OvermindDefaultRef\\s*=\\s*[\\\"']([0-9a-f]{40})[\\\"']\\s*$"),
+        )
+        for rel, pattern in declarations:
+            path = root / rel
+            if not path.is_file():
+                return {"name": layer["name"], "status": "error", "detail": f"frozen release mirror missing: {rel}"}
+            actual = re.findall(pattern, path.read_text(encoding="utf-8"))
+            if actual != [frozen]:
+                return {"name": layer["name"], "status": "error",
+                        "detail": f"frozen release SHA mismatch/unsafe ref in {rel}"}
+        return {"name": layer["name"], "status": "skip",
+                "detail": f"frozen release commit {frozen[:12]} (not advanced to HEAD)"}
     old = extract_pin(sh_path.read_text(encoding="utf-8", errors="replace"))
     if old is None:
         return {"name": layer["name"], "status": "skip", "detail": "no 40-hex pin (tag-pinned?)"}
