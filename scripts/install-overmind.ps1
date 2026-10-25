@@ -167,12 +167,26 @@ if ($existing -and -not $HmacKey) {
     Write-Host "    Back it up somewhere safe -- losing this key invalidates all prior signed bundles." -ForegroundColor Yellow
 }
 
-# Step 3: quick sanity check
-Write-Step "overmind meta-verify (canary)"
+# Step 3: fail-closed verifier-health canary. Overmind's meta-verify CLI
+# can return exit 0 even when its JSON contains passed=false / REJECT.
+Write-Step "overmind meta-verify (verifier-health canary)"
+$checker = Join-Path $PSScriptRoot 'check-overmind-canary.py'
+$py = Get-Command python -ErrorAction SilentlyContinue
+if (-not $py -or -not (Test-Path -LiteralPath $checker -PathType Leaf)) {
+    Write-Host "REFUSED: Python or the mandatory Overmind canary checker is missing." -ForegroundColor Red
+    exit 1
+}
 $canary = & overmind meta-verify 2>&1
-$canary | Select-Object -First 5 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+$overmindExit = $LASTEXITCODE
+if ($overmindExit -ne 0) {
+    Write-Host "REFUSED: Overmind meta-verify command failed ($overmindExit)." -ForegroundColor Red
+    exit 1
+}
+$canaryJson = $canary -join "`n"
+$canaryJson | & $py.Source $checker
 if ($LASTEXITCODE -ne 0) {
-    Write-Warning "overmind meta-verify returned non-zero ($LASTEXITCODE). Not necessarily fatal, but review above."
+    Write-Host "REFUSED: Overmind verifier-health result was not CERTIFIED; not reporting ready." -ForegroundColor Red
+    exit 1
 }
 
 Write-Host ""
