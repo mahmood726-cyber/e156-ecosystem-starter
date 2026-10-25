@@ -277,6 +277,16 @@ else
     bad "empty canary succeeded or persisted environment: $capsule_output"
 fi
 
+start "e156 capsule: an old canary SVG cannot forge new verification"
+printf 'pre-existing user artifact\n' > "$capsule_dir/.chartkit_check.svg"
+capsule_output="$(HOME="$capsule_home" bash "$ROOT/scripts/install-e156-capsules.sh" --skip-copy --target "$capsule_dir" 2>&1)"
+capsule_status=$?
+if [[ "$capsule_status" -ne 0 && "$capsule_output" == *"REFUSED:"* && "$(cat "$capsule_dir/.chartkit_check.svg")" == "pre-existing user artifact" && ! -e "$capsule_home/.bashrc" ]] && ! compgen -G "$capsule_dir/.chartkit_check.*.svg" >/dev/null; then
+    ok
+else
+    bad "stale SVG was accepted or changed: $capsule_output"
+fi
+
 start "e156 capsule: failing renderer exits nonzero and never persists path"
 printf 'raise SystemExit(17)\n' > "$capsule_dir/chartkit.py"
 capsule_output="$(HOME="$capsule_home" bash "$ROOT/scripts/install-e156-capsules.sh" --skip-copy --target "$capsule_dir" 2>&1)"
