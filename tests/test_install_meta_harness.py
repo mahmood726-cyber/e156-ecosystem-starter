@@ -43,8 +43,8 @@ GOOD = {f"meta-harness-{TAG}/scripts/replay_offline.py": b"print('replay')\n",
         f"meta-harness-{TAG}/README.md": b"# meta-harness\n"}
 
 
-def _run(rel: Path, target: Path) -> subprocess.CompletedProcess:
-    env = dict(os.environ, META_HARNESS_BASE_URL=rel.resolve().as_uri(), META_HARNESS_REF=TAG)
+def _run(rel: Path, target: Path, ref: str = TAG) -> subprocess.CompletedProcess:
+    env = dict(os.environ, META_HARNESS_BASE_URL=rel.resolve().as_uri(), META_HARNESS_REF=ref)
     return subprocess.run([_bash(), str(SCRIPT), "--target", str(target)], capture_output=True, text=True, env=env,
                           timeout=120)
 
@@ -190,4 +190,69 @@ def test_case_colliding_zip_members_are_rejected_before_extraction(tmp_path):
     target = tmp_path / "out" / "mh"
     p = _run(rel, target)
     assert p.returncode != 0 and "duplicate archive path" in (p.stdout + p.stderr)
+    assert not target.exists()
+
+# These checks exercise the actual Bash manifest-pin helper in both Ubuntu and
+# Windows Git Bash. Release manifests here are *integrity fixtures*, not research
+# data or proof of any signed scientific certification.
+PUBLISHED_V1_MANIFEST = (
+    "694dc82f51fcde9040a8e1a5f0172978cb1a6f3eeade237fcd81df61185c2d0d"
+    "  meta-harness-v1.0.0.zip\\n"
+)
+PUBLISHED_V1_MANIFEST_SHA = "3bf1d1f9eaa6f423f3130ca5f6413b05dcf2994833a9fce038e1ee8e9ad00ddb"
+
+
+def _check_pinned_manifest(path: Path, ref: str, base: str) -> subprocess.CompletedProcess:
+    command = 'source "$1" --import; verify_meta_harness_release_manifest "$2" "$3" "$4"'
+    return subprocess.run(
+        [_bash(), "-c", command, "bash", str(SCRIPT), str(path), ref, base],
+        capture_output=True, text=True, timeout=30,
+    )
+
+
+def test_independently_pinned_v1_manifest_is_accepted(tmp_path):
+    manifest = tmp_path / "SHA256SUMS"
+    manifest.write_text(PUBLISHED_V1_MANIFEST, encoding="ascii")
+    assert hashlib.sha256(manifest.read_bytes()).hexdigest() == PUBLISHED_V1_MANIFEST_SHA
+    p = _check_pinned_manifest(manifest, "v1.0.0",
+                               "https://github.com/mahmood726-cyber/meta-harness/releases/download/v1.0.0")
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert "pinned meta-harness v1.0.0 SHA256SUMS OK" in p.stdout
+
+
+def test_manifest_pin_refuses_coordinated_zip_and_sums_replacement(tmp_path):
+    manifest = tmp_path / "SHA256SUMS"
+    manifest.write_text("0" * 64 + "  meta-harness-v1.0.0.zip\\n", encoding="ascii")
+    # Its ZIP could match this altered checksum, but starter's independent pin cannot.
+    p = _check_pinned_manifest(manifest, "v1.0.0", tmp_path.as_uri())
+    assert p.returncode != 0
+    assert "differs from reviewed pinned digest" in p.stderr
+
+
+def test_unreviewed_remote_release_ref_is_refused_even_with_well_formed_sums(tmp_path):
+    manifest = tmp_path / "SHA256SUMS"
+    manifest.write_text(PUBLISHED_V1_MANIFEST, encoding="ascii")
+    p = _check_pinned_manifest(manifest, "v1.0.1",
+                               "https://github.com/mahmood726-cyber/meta-harness/releases/download/v1.0.1")
+    assert p.returncode != 0
+    assert "unreviewed meta-harness release" in p.stderr
+
+
+def test_only_explicitly_local_fixture_ref_is_unpinned(tmp_path):
+    manifest = tmp_path / "SHA256SUMS"
+    manifest.write_text("0" * 64 + f"  {ASSET}\\n", encoding="ascii")
+    local = _check_pinned_manifest(manifest, TAG, tmp_path.as_uri())
+    assert local.returncode == 0, local.stdout + local.stderr
+    assert "LOCAL TEST FIXTURE" in local.stderr
+    remote = _check_pinned_manifest(manifest, TAG, "https://example.org/releases")
+    assert remote.returncode != 0
+
+
+def test_actual_installer_refuses_changed_v1_manifest_before_zip_fetch(tmp_path):
+    rel = _release(tmp_path / "rel", GOOD)
+    target = tmp_path / "out" / "mh"
+    p = _run(rel, target, ref="v1.0.0")
+    assert p.returncode != 0
+    assert "differs from reviewed pinned digest" in p.stderr
+    assert "could not download" not in p.stderr, "manifest must gate before ZIP download"
     assert not target.exists()
