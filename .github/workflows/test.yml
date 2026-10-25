@@ -46,6 +46,7 @@ jobs:
             'bootstrap\pester.bat.tests.ps1',
             'scripts\pester.doctor-report.tests.ps1',
             'scripts\pester.install-sentinel.tests.ps1',
+            'scripts\pester.install-e156-capsules.tests.ps1',
             'scripts\pester.install-extractor.tests.ps1',
             'scripts\pester.phase3.tests.ps1',
             'scripts\pester.phase4.tests.ps1',
