@@ -138,7 +138,7 @@ start "sentinel_default_source honours SENTINEL_REF override"
 override_src="$(bash -c "export SENTINEL_REF=main; source '$ROOT/scripts/install-sentinel.sh' --import; sentinel_default_source")"
 assert_eq "$override_src" "git+https://github.com/mahmood726-cyber/Sentinel.git@main" && ok
 
-start "overmind_default_source pins the exact reviewed v1.0.0 commit"
+start "overmind_default_source pins to a SHA-or-tag by default"
 default_src="$(bash -c "unset OVERMIND_REF; source '$ROOT/scripts/install-overmind.sh' --import && overmind_default_source")"
 assert_eq "$default_src" "git+https://github.com/mahmood726-cyber/overmind.git@d3d2de5f84d852f27d64d1686f1e105e190ac375" && ok
 
