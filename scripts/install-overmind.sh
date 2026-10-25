@@ -160,9 +160,20 @@ else
     echo "      export TRUTHCERT_HMAC_KEY=\"\$(cat $key_file)\""
 fi
 
-log_step "overmind meta-verify (canary)"
-overmind meta-verify 2>&1 | head -5 | sed 's/^/  /' || \
-    log_warn "overmind meta-verify returned non-zero (review above)"
+log_step "overmind meta-verify (verifier-health canary)"
+# Overmind's CLI can exit zero after emitting {"passed":false}. Never treat
+# process success, the first five lines, or a warning as certification.
+assert_real_python || exit 1
+canary_checker="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/check-overmind-canary.py"
+[[ -f "$canary_checker" ]] || {
+    echo "REFUSED: mandatory Overmind canary checker is missing." >&2
+    exit 1
+}
+# pipefail propagates both Overmind's exit status and the JSON verdict gate.
+if ! overmind meta-verify | "$PYTHON" "$canary_checker"; then
+    echo "REFUSED: Overmind verifier-health canary failed; not reporting ready." >&2
+    exit 1
+fi
 
 echo
 echo "====================================================="
