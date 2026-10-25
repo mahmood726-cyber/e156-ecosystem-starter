@@ -14,13 +14,23 @@ Describe "Test-SentinelInstalled" {
         $r = Test-SentinelInstalled
         $r | Should -BeOfType [bool]
     }
-    It "returns true when the Sentinel command is discoverable (isolated unit test)" {
-        # Test only the command-discovery wrapper. No Sentinel binary is
-        # installed or invoked here; a live pinned-system canary is separate.
-        Mock Get-Command { [pscustomobject]@{ Name = 'sentinel'; Source = 'fixture' } } -ParameterFilter {
-            $Name -eq 'sentinel'
+    It "is true when sentinel is on PATH (author's machine contract)" {
+        # Isolated PATH-discovery fixture: this tiny .cmd is NOT the real
+        # Sentinel CLI. Never count this as a pinned full-system canary.
+        $bin = Join-Path $TestDrive 'sentinel-probe-bin'
+        New-Item -ItemType Directory -Force -Path $bin | Out-Null
+        Set-Content -LiteralPath (Join-Path $bin 'sentinel.cmd') -Encoding Ascii -Value '@echo off'
+        $previousPath = $env:PATH
+        try {
+            $env:PATH = "$bin;$previousPath"
+            Test-SentinelInstalled | Should -BeTrue
+        } finally {
+            $env:PATH = $previousPath
         }
-        Test-SentinelInstalled | Should -BeTrue
+    }
+    It "is false when Sentinel is not discoverable (isolated mock)" {
+        Mock Get-Command { $null } -ParameterFilter { $Name -eq 'sentinel' }
+        Test-SentinelInstalled | Should -BeFalse
         Should -Invoke Get-Command -Times 1 -Exactly -ParameterFilter { $Name -eq 'sentinel' }
     }
 }
