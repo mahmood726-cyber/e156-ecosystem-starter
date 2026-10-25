@@ -68,7 +68,12 @@ copy_e156_template() {
 persist_e156_path_env() {
     local target="$1"
     export E156_CAPSULES_PATH="$target"
-    local line="export E156_CAPSULES_PATH=\"$target\""
+    # Double-quoting an rc assignment is insufficient: a target containing
+    # literal $(...) or backticks would execute when the shell reloads the rc.
+    # %q serialises a single shell token without permitting re-expansion.
+    local escaped
+    printf -v escaped '%q' "$target"
+    local line="export E156_CAPSULES_PATH=$escaped"
     local rc
     for rc in "${HOME}/.bashrc" "${HOME}/.zshrc"; do
         [[ -e "$rc" ]] || continue
