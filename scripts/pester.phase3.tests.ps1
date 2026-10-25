@@ -45,6 +45,30 @@ Describe "Overmind: Set-TruthCertHmacKey" {
     }
 }
 
+Describe "Overmind: explicit blank signing-key rotation is refused" {
+    # Execute the shipped entrypoint in a fresh Windows PowerShell 5.1 host,
+    # not a copied helper. EncodedCommand preserves an intentionally empty
+    # argument across the pwsh -> powershell.exe native-process boundary.
+    It "refuses explicit <Label> -HmacKey before any installer side effects" -ForEach @(
+        @{ Label = 'empty'; Key = '' },
+        @{ Label = 'whitespace'; Key = '   ' }
+    ) {
+        $userKeyBefore = [Environment]::GetEnvironmentVariable('TRUTHCERT_HMAC_KEY', 'User')
+        $escapedPath = $script:OvermindScript.Replace("'", "''")
+        $escapedKey = $Key.Replace("'", "''")
+        $command = "& '$escapedPath' -SkipPipInstall -HmacKey '$escapedKey'"
+        $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
+        $output = & powershell.exe -NoProfile -NonInteractive -EncodedCommand $encoded 2>&1 | Out-String
+        $exitCode = $LASTEXITCODE
+        $exitCode | Should -Be 2
+        $output | Should -Match 'REFUSED: -HmacKey was explicitly empty or whitespace'
+        $output | Should -Not -Match 'Overmind \\+ TruthCert ready'
+        $output | Should -Not -Match 'Installing overmind'
+        [Environment]::GetEnvironmentVariable('TRUTHCERT_HMAC_KEY', 'User') |
+            Should -Be $userKeyBefore
+    }
+}
+
 Describe "Overmind: Get-OvermindDefaultSource pins the supply chain (P0)" {
     BeforeEach { Remove-Item Env:OVERMIND_REF -ErrorAction SilentlyContinue }
     AfterEach  { Remove-Item Env:OVERMIND_REF -ErrorAction SilentlyContinue }
