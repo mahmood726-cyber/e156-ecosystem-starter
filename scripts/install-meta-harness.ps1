@@ -94,7 +94,10 @@ function Assert-MetaHarnessArchiveSafe {
                     throw "REFUSED: Windows reserved device name in archive"
                 }
             }
-            $key = $name.TrimEnd('/').ToUpperInvariant()
+            # A release that contains NFC/NFD-equivalent names is ambiguous
+            # on normalising filesystems. Mirror the Bash preflight so a ZIP
+            # cannot pass one installer but collide on another platform.
+            $key = $name.TrimEnd('/').ToUpperInvariant().Normalize([Text.NormalizationForm]::FormC)
             if ($seen.ContainsKey($key)) {
                 throw "REFUSED: duplicate or case-colliding archive entry"
             }
