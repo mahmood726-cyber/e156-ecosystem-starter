@@ -8,7 +8,6 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 import re
-import shutil
 import subprocess
 
 import pytest
@@ -45,7 +44,6 @@ def test_both_real_installer_defaults_are_the_reviewed_commit():
     ) == PIN
 
 
-@pytest.mark.skipif(shutil.which("bash") is None, reason="Bash unavailable; Windows Pester checks PowerShell")
 def test_bash_runtime_defaults_to_the_exact_commit():
     proc = subprocess.run(
         ["bash", "-c", "unset OVERMIND_REF; source scripts/install-overmind.sh --import; overmind_default_source"],
