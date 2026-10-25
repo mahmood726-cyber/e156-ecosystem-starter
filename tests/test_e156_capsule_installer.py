@@ -22,7 +22,7 @@ def bash_executable():
 
 
 def run_installer(tmp_path, chartkit, *, sample=True, without_python=False, stale_svg=False,
-                  target_name="capsules", preexisting_rc=False):
+                  target_name="capsules", preexisting_rc=False, profile_contents=None):
     target = tmp_path / target_name
     target.mkdir()
     (target / "chartkit.py").write_text(chartkit, encoding="utf-8")
@@ -35,6 +35,9 @@ def run_installer(tmp_path, chartkit, *, sample=True, without_python=False, stal
     if preexisting_rc:
         for rc in (".bashrc", ".zshrc"):
             (home / rc).write_text("# existing user settings\n", encoding="utf-8")
+    if profile_contents:
+        for rc, contents in profile_contents.items():
+            (home / rc).write_text(contents, encoding="utf-8")
     env = dict(os.environ, HOME=str(home))
     if without_python:
         env["PATH"] = ""
@@ -140,3 +143,53 @@ def test_persisted_path_is_literal_and_cannot_execute_rc_commands(tmp_path, targ
         assert reload.stdout == target
     assert not (tmp_path / "injected_substitution").exists()
     assert not (tmp_path / "injected_backtick").exists()
+
+
+VALID_RENDERER = (
+    "from pathlib import Path\\nimport sys\\n"
+    "Path(sys.argv[1]).read_bytes()\\n"
+    "Path(sys.argv[-1]).write_bytes(b'<svg/>')\\n"
+)
+
+
+@pytest.mark.parametrize(("conflicting_rc", "stale_line"), [
+    (".bashrc", "export E156_CAPSULES_PATH=/old/capsules\\n"),
+    (".bashrc", "# E156_CAPSULES_PATH=/old/capsules\\n"),
+    (".zshrc", "export E156_CAPSULES_PATH=/old/capsules\\n"),
+])
+def test_installer_refuses_conflicting_profile_without_partial_writes(
+    tmp_path, conflicting_rc, stale_line,
+):
+    # Reproduce the old false-success: grep saw an obsolete/commented setting,
+    # skipped the new path, and announced successful installation anyway.
+    # Even a conflict in .zshrc must not first modify .bashrc.
+    profiles = {
+        ".bashrc": "# existing user settings\\n",
+        ".zshrc": "# existing user settings\\n",
+    }
+    profiles[conflicting_rc] = stale_line
+    result, home = run_installer(
+        tmp_path, VALID_RENDERER, preexisting_rc=True, profile_contents=profiles,
+    )
+    assert result.returncode != 0, result.stdout + result.stderr
+    assert "REFUSED" in result.stderr
+    assert "conflicting E156_CAPSULES_PATH" in result.stderr
+    assert "installed at" not in result.stdout
+    for rc, expected in profiles.items():
+        assert (home / rc).read_text(encoding="utf-8") == expected
+
+
+def test_repeated_installer_accepts_matching_export_without_duplicate_lines(tmp_path):
+    # The corrective refusal must not break normal idempotent reinstallation.
+    first, home = run_installer(tmp_path, VALID_RENDERER, preexisting_rc=True)
+    assert first.returncode == 0, first.stdout + first.stderr
+    original = {rc: (home / rc).read_text(encoding="utf-8") for rc in (".bashrc", ".zshrc")}
+    second = subprocess.run(
+        [bash_executable(), str(SCRIPT), "--target", str(tmp_path / "capsules"), "--skip-copy"],
+        env=dict(os.environ, HOME=str(home)),
+        text=True, capture_output=True, timeout=30,
+    )
+    assert second.returncode == 0, second.stdout + second.stderr
+    assert "E156_CAPSULES_PATH already set" in second.stdout
+    for rc, expected in original.items():
+        assert (home / rc).read_text(encoding="utf-8") == expected
