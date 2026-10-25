@@ -191,3 +191,34 @@ Describe "Expand-MetaHarness refuses ambiguous Windows ZIP member paths" {
         Test-MetaHarnessPresent $target | Should -BeTrue
     }
 }
+
+# The checksum text is the public v1.0.0 release metadata (90 bytes), NOT a
+# locally generated scientific result. ZIP bytes are not downloaded in Pester.
+Describe "Meta-Harness published manifest is independently pinned" {
+    It "accepts the exact 90-byte reviewed v1.0.0 SHA256SUMS file" {
+        $p = Join-Path $TestDrive 'published-v1-SHA256SUMS'
+        $line = '694dc82f51fcde9040a8e1a5f0172978cb1a6f3eeade237fcd81df61185c2d0d  meta-harness-v1.0.0.zip'
+        [IO.File]::WriteAllText($p, "$line`n", (New-Object System.Text.UTF8Encoding($false)))
+        { Assert-MetaHarnessReleaseManifest -SumsPath $p -Tag 'v1.0.0' -BaseUrl 'https://github.com/mahmood726-cyber/meta-harness/releases/download/v1.0.0' } | Should -Not -Throw
+        (Get-FileHash -Algorithm SHA256 -LiteralPath $p).Hash.ToLowerInvariant() |
+            Should -Be '3bf1d1f9eaa6f423f3130ca5f6413b05dcf2994833a9fce038e1ee8e9ad00ddb'
+    }
+    It "refuses a replacement manifest even when the new ZIP checksum is well formed" {
+        $p = Join-Path $TestDrive 'replaced-v1-SHA256SUMS'
+        [IO.File]::WriteAllText($p, ('0' * 64 + "  meta-harness-v1.0.0.zip`n"))
+        { Assert-MetaHarnessReleaseManifest -SumsPath $p -Tag 'v1.0.0' -BaseUrl 'file:///fixture' } |
+            Should -Throw '*differs from reviewed pinned digest*'
+    }
+    It "refuses remote unreviewed tags rather than silently using co-hosted SHA256SUMS" {
+        $p = Join-Path $TestDrive 'unreviewed-SHA256SUMS'
+        [IO.File]::WriteAllText($p, "anything")
+        { Assert-MetaHarnessReleaseManifest -SumsPath $p -Tag 'v1.0.1' -BaseUrl 'https://github.com/mahmood726-cyber/meta-harness/releases/download/v1.0.1' } |
+            Should -Throw '*unreviewed meta-harness release*'
+    }
+    It "keeps the only unpinned path explicitly local for isolated fixture tests" {
+        $p = Join-Path $TestDrive 'fixture-SHA256SUMS'
+        [IO.File]::WriteAllText($p, "fixture")
+        { Assert-MetaHarnessReleaseManifest -SumsPath $p -Tag 'v9.9.9-test' -BaseUrl 'file:///fixture' } |
+            Should -Not -Throw
+    }
+}
