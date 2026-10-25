@@ -49,12 +49,16 @@ assert_real_python() {
     fi
 }
 
-OVERMIND_DEFAULT_REF="v1.0.0"   # 2026-06-08: first stable tag (was ec23ccb, broken on fresh installs because cryptography was undeclared). v1.0.0 declares cryptography as a core dep -> clean fresh install (758 passed / 0 failed on isolated venv). Tag-pinned, so refresh-ecosystem-pins.py leaves it stable. Override with OVERMIND_REF=master.
+# v1.0.0 is an *unsigned, movable* annotated tag. Its Git tag object
+# (fdde5606f5ba8810fb253c943e8fb3bfd4ba1593) points to this exact commit
+# as checked on 2026-10-25. Pin the object identity, not the tag name, by
+# default; explicit OVERMIND_REF overrides are user-controlled/unverified.
+# The pin does not hash-lock pip's transitive dependencies or verify signatures.
+OVERMIND_DEFAULT_REF="d3d2de5f84d852f27d64d1686f1e105e190ac375"
 
 overmind_default_source() {
-    # Pinned to a known-good commit so fresh installs are reproducible. Override
-    # with OVERMIND_REF=main (or any branch/tag/SHA) for bleeding edge or
-    # rollback if a release breaks something.
+    # Frozen release commit by default. OVERMIND_REF explicitly opts out of
+    # this identity pin; do not treat overridden installations as certified.
     local ref="${OVERMIND_REF:-$OVERMIND_DEFAULT_REF}"
     printf 'git+https://github.com/mahmood726-cyber/overmind.git@%s' "$ref"
 }
