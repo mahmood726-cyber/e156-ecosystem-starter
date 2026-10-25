@@ -26,6 +26,9 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $script:MetaHarnessDefaultRef = 'v1.0.0'
+# Reviewed checksum of the *separate* v1.0.0 SHA256SUMS release asset.
+# Release assets are mutable; change only with independent release review.
+$script:MetaHarnessV1ManifestSha = '3bf1d1f9eaa6f423f3130ca5f6413b05dcf2994833a9fce038e1ee8e9ad00ddb'
 function Get-MetaHarnessDefaultRef {
     if ($env:META_HARNESS_REF) { return $env:META_HARNESS_REF }
     return $script:MetaHarnessDefaultRef
@@ -42,6 +45,25 @@ function Test-MetaHarnessPresent {
     param([string]$Dir)
     # A directory named replay_offline.py is not an executable replay entry point.
     return [bool]($Dir -and (Test-Path -LiteralPath (Join-Path $Dir 'scripts\replay_offline.py') -PathType Leaf))
+}
+
+# Reject a changed release manifest before fetching the 609 MB ZIP.
+# SHA256SUMS and the ZIP are hosted together; validating only one against the
+# other would not detect a coordinated replacement of both release assets.
+function Assert-MetaHarnessReleaseManifest {
+    [CmdletBinding()]
+    param([string]$SumsPath, [string]$Tag, [string]$BaseUrl)
+    if ($Tag -ceq $script:MetaHarnessDefaultRef) {
+        $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $SumsPath).Hash.ToLowerInvariant()
+        if ($actual -cne $script:MetaHarnessV1ManifestSha) {
+            throw "REFUSED: meta-harness v1.0.0 SHA256SUMS differs from reviewed pinned digest"
+        }
+        Write-Host "  pinned meta-harness v1.0.0 SHA256SUMS OK" -ForegroundColor DarkGray
+    } elseif ($BaseUrl -like 'file://*') {
+        Write-Warning "LOCAL TEST FIXTURE: unpinned release $Tag (not an authenticated distribution)"
+    } else {
+        throw "REFUSED: unreviewed meta-harness release ref '$Tag'; no pinned SHA256SUMS trust anchor"
+    }
 }
 
 # The digest SHA256SUMS records for $Name, or $null.
@@ -157,6 +179,7 @@ New-Item -ItemType Directory $work | Out-Null
 try {
     $ProgressPreference = 'SilentlyContinue'
     Invoke-WebRequest -UseBasicParsing -Uri "$base/SHA256SUMS" -OutFile (Join-Path $work 'SHA256SUMS')
+    Assert-MetaHarnessReleaseManifest -SumsPath (Join-Path $work 'SHA256SUMS') -Tag $Ref -BaseUrl $base
     Invoke-WebRequest -UseBasicParsing -Uri "$base/$asset" -OutFile (Join-Path $work $asset)
     Write-Host "==> verifying against the release's SHA256SUMS"
     Test-MetaHarnessAsset -ZipPath (Join-Path $work $asset) -SumsPath (Join-Path $work 'SHA256SUMS')
