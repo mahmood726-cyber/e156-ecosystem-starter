@@ -21,8 +21,9 @@ def bash_executable():
     pytest.fail("Bash unavailable; installer canary must not silently skip")
 
 
-def run_installer(tmp_path, chartkit, *, sample=True, without_python=False, stale_svg=False):
-    target = tmp_path / "capsules"
+def run_installer(tmp_path, chartkit, *, sample=True, without_python=False, stale_svg=False,
+                  target_name="capsules", preexisting_rc=False):
+    target = tmp_path / target_name
     target.mkdir()
     (target / "chartkit.py").write_text(chartkit, encoding="utf-8")
     if stale_svg:
@@ -31,6 +32,9 @@ def run_installer(tmp_path, chartkit, *, sample=True, without_python=False, stal
         (target / "sample.capsule.json").write_text("{}", encoding="utf-8")
     home = tmp_path / "isolated-home"
     home.mkdir()
+    if preexisting_rc:
+        for rc in (".bashrc", ".zshrc"):
+            (home / rc).write_text("# existing user settings\n", encoding="utf-8")
     env = dict(os.environ, HOME=str(home))
     if without_python:
         env["PATH"] = ""
@@ -101,3 +105,38 @@ def test_installer_accepts_real_svg_artifact(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     assert "chartkit OK" in result.stdout
     assert "E156_CAPSULES_PATH" in (home / ".bashrc").read_text(encoding="utf-8")
+
+@pytest.mark.parametrize("target_name", [
+    "capsules$(touch injected_substitution)",
+    "capsules`touch injected_backtick`",
+    "capsules with spaces '$HOME' and a dollar $USER",
+])
+def test_persisted_path_is_literal_and_cannot_execute_rc_commands(tmp_path, target_name):
+    # A legitimate local folder name must never become shell code in .bashrc
+    # or .zshrc. Exercise the shipped installer, then reload both files in Bash.
+    # This is a structural shell-quoting test, not a full-system canary.
+    program = (
+        "from pathlib import Path\\nimport sys\\n"
+        "Path(sys.argv[1]).read_bytes()\\n"
+        "Path(sys.argv[-1]).write_bytes(b'<svg/>')\\n"
+    )
+    result, home = run_installer(
+        tmp_path, program, target_name=target_name, preexisting_rc=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "chartkit OK" in result.stdout
+    target = str(tmp_path / target_name)
+    for rc in (".bashrc", ".zshrc"):
+        contents = (home / rc).read_text(encoding="utf-8")
+        assert "# existing user settings" in contents
+        assert "export E156_CAPSULES_PATH=" in contents
+        reload = subprocess.run(
+            [bash_executable(), "-c",
+             f'source "$HOME/{rc}"; printf "%s" "$E156_CAPSULES_PATH"'],
+            cwd=tmp_path, env=dict(os.environ, HOME=str(home)),
+            text=True, capture_output=True, timeout=15,
+        )
+        assert reload.returncode == 0, reload.stderr
+        assert reload.stdout == target
+    assert not (tmp_path / "injected_substitution").exists()
+    assert not (tmp_path / "injected_backtick").exists()
