@@ -290,7 +290,7 @@ if capsule_output="$(HOME="$capsule_home" bash "$ROOT/scripts/install-e156-capsu
 else
     capsule_status=$?
 fi
-if [[ "$capsule_status" -ne 0 && "$capsule_output" == *"REFUSED:"* && "$(cat "$capsule_dir/.chartkit_check.svg")" == "pre-existing user artifact" && ! -e "$capsule_home/.bashrc" ]] && ! compgen -G "$capsule_dir/.chartkit_check.*.svg" >/dev/null; then
+if [[ "$capsule_status" -ne 0 && "$capsule_output" == *"REFUSED:"* && "$(cat "$capsule_dir/.chartkit_check.svg")" == "pre-existing user artifact" && ! -e "$capsule_home/.bashrc" ]] && ! compgen -G "$capsule_dir/.chartkit_check.????????" >/dev/null; then
     ok
 else
     bad "stale SVG was accepted or changed: $capsule_output"
