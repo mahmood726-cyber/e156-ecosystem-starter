@@ -234,15 +234,17 @@
       "id": "scripts/refresh-ecosystem-pins.py",
       "kind": "script",
       "name": "refresh-ecosystem-pins --check",
-      "stops": "A 40-hex install-layer pin that lags its source repo's remote HEAD, or a layer whose ls-remote failed (exit 1 in --check).",
+      "stops": "For an explicitly frozen Overmind v1.0.0 release, --check requires both Bash and PowerShell defaults to match the reviewed exact 40-hex commit; a tag, altered SHA, or missing mirror refuses. Non-frozen development SHA pins still compare to remote HEAD and refuse failed queries.",
       "would_not_stop": [
-        "Tag-pinned layers: they are skipped. As of 2026-06-08 every layer is tag-pinned, so --check reports all [skip] and passes by construction.",
-        "Whether the remote commit it would move to is trustworthy: it moves pins forward, it does not review them.",
-        "Anything in CI: it needs the network and no CI job runs it."
+        "Unreviewed changes to the stored expected frozen-release SHA and both installers in the same PR: checks cannot replace human release-source review.",
+        "Mutable tags on other layers: these remain tag-pinned and are skipped by the refresher; a tag alone is not a cryptographic signature.",
+        "An explicit OVERMIND_REF override: the installer permits it, but it is not the frozen default and does not establish a certified installation.",
+        "Pip transitive dependency drift, source-code trust, actual Overmind/TruthCert runtime and external signature validity.",
+        "This --check is not invoked as a live networked CI job; pytest only exercises local frozen-release and negative fixture behaviour."
       ],
-      "source": "scripts/refresh-ecosystem-pins.py docstring 'Design guarantees'.",
+      "source": "scripts/refresh-ecosystem-pins.py frozen-release branch, installers and tests/test_overmind_frozen_release.py.",
       "seal": {
-        "scripts/refresh-ecosystem-pins.py": "ab426c33f31691f1c032939860a9364113f68c08062f084bc72e7a03cbf46247"
+        "scripts/refresh-ecosystem-pins.py": "5d8d8edfa85ce38afffd541af60beafb72846ebd158a3e1dabe40a7770482151"
       }
     },
     {
