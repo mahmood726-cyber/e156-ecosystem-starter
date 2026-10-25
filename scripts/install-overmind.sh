@@ -95,14 +95,41 @@ new_truthcert_hmac_key() {
     fi
 }
 
+# Do not read through existing symlinks or publish secrets into redirected
+# config paths. The key is security-sensitive even when its format is valid.
+assert_truthcert_key_storage_safe() {
+    local cfg_root="${HOME}/.config"
+    local cfg_dir="$cfg_root/e156"
+    local key_file="$cfg_dir/truthcert-hmac-key"
+    if [[ -L "$cfg_root" || -L "$cfg_dir" || -L "$key_file" || -d "$key_file" ]]; then
+        echo "REFUSED: TruthCert key storage path is a symlink or directory." >&2
+        return 1
+    fi
+}
+
 store_truthcert_hmac_key() {
     local key="$1"
     [[ -n "$key" ]] || { echo "ERROR: empty key" >&2; return 1; }
     local cfg_dir="${HOME}/.config/e156"
-    mkdir -p "$cfg_dir"
     local key_file="$cfg_dir/truthcert-hmac-key"
-    printf '%s\n' "$key" > "$key_file"
-    chmod 600 "$key_file"
+    local tmp
+    assert_truthcert_key_storage_safe || return 1
+    (umask 077; mkdir -p "$cfg_dir") || return 1
+
+    # A new key must never exist at default-umask (often 0644) permissions,
+    # even briefly. Stage with mktemp (0600) and publish by same-dir rename.
+    tmp="$(umask 077; mktemp "$cfg_dir/.truthcert-hmac-key.XXXXXXXX")" || return 1
+    if ! printf '%s\n' "$key" > "$tmp" || ! chmod 600 "$tmp"; then
+        rm -f -- "$tmp"
+        echo "REFUSED: could not stage TruthCert key securely." >&2
+        return 1
+    fi
+    assert_truthcert_key_storage_safe || { rm -f -- "$tmp"; return 1; }
+    if ! mv -f -- "$tmp" "$key_file"; then
+        rm -f -- "$tmp"
+        echo "REFUSED: could not publish TruthCert key securely." >&2
+        return 1
+    fi
     printf '%s' "$key_file"
 }
 
@@ -138,6 +165,8 @@ fi
 
 log_step "Setting TRUTHCERT_HMAC_KEY"
 key_file="${HOME}/.config/e156/truthcert-hmac-key"
+# Existing keys must not be sourced from redirected paths before the canary.
+assert_truthcert_key_storage_safe || exit 1
 if [[ -f "$key_file" && -z "$HMAC_KEY" ]]; then
     existing="$(cat "$key_file")"
     log_ok "existing key at $key_file (length: ${#existing})"
