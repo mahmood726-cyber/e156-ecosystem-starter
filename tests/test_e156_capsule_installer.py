@@ -116,9 +116,9 @@ def test_persisted_path_is_literal_and_cannot_execute_rc_commands(tmp_path, targ
     # or .zshrc. Exercise the shipped installer, then reload both files in Bash.
     # This is a structural shell-quoting test, not a full-system canary.
     program = (
-        "from pathlib import Path\\nimport sys\\n"
-        "Path(sys.argv[1]).read_bytes()\\n"
-        "Path(sys.argv[-1]).write_bytes(b'<svg/>')\\n"
+        "from pathlib import Path\nimport sys\n"
+        "Path(sys.argv[1]).read_bytes()\n"
+        "Path(sys.argv[-1]).write_bytes(b'<svg/>')\n"
     )
     result, home = run_installer(
         tmp_path, program, target_name=target_name, preexisting_rc=True,
