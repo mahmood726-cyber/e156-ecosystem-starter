@@ -142,7 +142,7 @@ unset -f overmind
 start "overmind CLI discovery accepts an executable PATH fixture"
 cli_bin="$SANDBOX/overmind-cli-PATH"
 mkdir -p "$cli_bin"
-printf '#!/bin/sh\\nexit 0\\n' > "$cli_bin/overmind"
+printf '#!/bin/sh\nexit 0\n' > "$cli_bin/overmind"
 chmod 700 "$cli_bin/overmind"
 if ( PATH="$cli_bin"; source "$ROOT/scripts/install-overmind.sh" --import; test_overmind_installed ); then
     ok
