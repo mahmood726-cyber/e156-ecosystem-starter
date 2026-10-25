@@ -146,16 +146,16 @@ def test_persisted_path_is_literal_and_cannot_execute_rc_commands(tmp_path, targ
 
 
 VALID_RENDERER = (
-    "from pathlib import Path\\nimport sys\\n"
-    "Path(sys.argv[1]).read_bytes()\\n"
-    "Path(sys.argv[-1]).write_bytes(b'<svg/>')\\n"
+    "from pathlib import Path\nimport sys\n"
+    "Path(sys.argv[1]).read_bytes()\n"
+    "Path(sys.argv[-1]).write_bytes(b'<svg/>')\n"
 )
 
 
 @pytest.mark.parametrize(("conflicting_rc", "stale_line"), [
-    (".bashrc", "export E156_CAPSULES_PATH=/old/capsules\\n"),
-    (".bashrc", "# E156_CAPSULES_PATH=/old/capsules\\n"),
-    (".zshrc", "export E156_CAPSULES_PATH=/old/capsules\\n"),
+    (".bashrc", "export E156_CAPSULES_PATH=/old/capsules\n"),
+    (".bashrc", "# E156_CAPSULES_PATH=/old/capsules\n"),
+    (".zshrc", "export E156_CAPSULES_PATH=/old/capsules\n"),
 ])
 def test_installer_refuses_conflicting_profile_without_partial_writes(
     tmp_path, conflicting_rc, stale_line,
@@ -164,8 +164,8 @@ def test_installer_refuses_conflicting_profile_without_partial_writes(
     # skipped the new path, and announced successful installation anyway.
     # Even a conflict in .zshrc must not first modify .bashrc.
     profiles = {
-        ".bashrc": "# existing user settings\\n",
-        ".zshrc": "# existing user settings\\n",
+        ".bashrc": "# existing user settings\n",
+        ".zshrc": "# existing user settings\n",
     }
     profiles[conflicting_rc] = stale_line
     result, home = run_installer(
