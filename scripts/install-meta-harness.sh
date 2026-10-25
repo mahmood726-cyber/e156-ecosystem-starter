@@ -58,11 +58,23 @@ meta_harness_default_target() { echo "${HOME}/code/meta-harness-$1"; }
 test_meta_harness_present() { [[ -n "$1" && -f "$1/scripts/replay_offline.py" ]]; }
 
 meta_harness_sha256() {
+    local output digest
     if command -v sha256sum >/dev/null 2>&1; then
-        sha256sum "$1" | awk '{print $1}'
+        # Hash stdin, not a filename: GNU sha256sum prefixes its digest with
+        # a backslash when a Windows-native path contains backslashes. Splitting
+        # its filename-bearing output previously produced a false mismatch on
+        # Windows Git Bash despite identical bytes.
+        output="$(sha256sum < "$1")" || return 1
+        digest="${output%% *}"
     else
-        "$PYTHON" -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "$1"
+        [[ -n "$PYTHON" ]] || { echo "REFUSED: no SHA256 tool available" >&2; return 1; }
+        digest="$("$PYTHON" -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "$1")" || return 1
     fi
+    if [[ ! "$digest" =~ ^[0-9a-f]{64}$ ]]; then
+        echo "REFUSED: invalid SHA256 tool output" >&2
+        return 1
+    fi
+    printf '%s\n' "$digest"
 }
 
 # Verify the independently reviewed release manifest BEFORE downloading the ~609 MB ZIP.
