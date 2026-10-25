@@ -234,15 +234,16 @@
       "id": "scripts/refresh-ecosystem-pins.py",
       "kind": "script",
       "name": "refresh-ecosystem-pins --check",
-      "stops": "A 40-hex install-layer pin that lags its source repo's remote HEAD, or a layer whose ls-remote failed (exit 1 in --check).",
+      "stops": "For frozen Sentinel v1.0.0, --check rejects missing/mismatched Bash or PowerShell default commit declarations rather than tracking HEAD; for nonfrozen development SHA pins it checks remote drift and failed ls-remote.",
       "would_not_stop": [
-        "Tag-pinned layers: they are skipped. As of 2026-06-08 every layer is tag-pinned, so --check reports all [skip] and passes by construction.",
-        "Whether the remote commit it would move to is trustworthy: it moves pins forward, it does not review them.",
-        "Anything in CI: it needs the network and no CI job runs it."
+        "A coordinated, unreviewed change to the trusted frozen SHA and both installers: the local consistency check is not independent source verification.",
+        "An explicit SENTINEL_REF override: that install opts out of the frozen default.",
+        "Pip dependency drift, live Sentinel hook behavior, third-party signatures or an end-to-end certified ecosystem canary.",
+        "This script is not invoked as a live networked CI gate; pytest checks only offline freeze/refusal behavior."
       ],
       "source": "scripts/refresh-ecosystem-pins.py docstring 'Design guarantees'.",
       "seal": {
-        "scripts/refresh-ecosystem-pins.py": "ab426c33f31691f1c032939860a9364113f68c08062f084bc72e7a03cbf46247"
+        "scripts/refresh-ecosystem-pins.py": "b15845647edc2062e7a6d2ad38282ae576e8d4c59d99b3815eb111a458fb870c"
       }
     },
     {
