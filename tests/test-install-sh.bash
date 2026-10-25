@@ -256,6 +256,48 @@ else
 fi
 rm -rf "$repo"
 
+# E156 offline capsule canary must fail closed (no Python, non-zero, or empty render).
+# These are network-free failure-injection checks, not a full Sentinel/Overmind canary.
+capsule_dir="$(mktemp -d)"
+capsule_home="$(mktemp -d)"
+cp -R "$ROOT/templates/e156-capsule/." "$capsule_dir/"
+
+start "e156 capsule: runnable Python is mandatory for canary"
+capsule_output="$(bash -c 'source "$1" --import; PYTHON=""; verify_chartkit "$2"' _ "$ROOT/scripts/install-e156-capsules.sh" "$capsule_dir" 2>&1)"
+capsule_status=$?
+if [[ "$capsule_status" -ne 0 && "$capsule_output" == *"no runnable Python"* ]]; then ok; else bad "missing Python was accepted: $capsule_output"; fi
+
+start "e156 capsule: successful exit without SVG is refused without persisting path"
+printf 'raise SystemExit(0)\n' > "$capsule_dir/chartkit.py"
+capsule_output="$(HOME="$capsule_home" bash "$ROOT/scripts/install-e156-capsules.sh" --skip-copy --target "$capsule_dir" 2>&1)"
+capsule_status=$?
+if [[ "$capsule_status" -ne 0 && "$capsule_output" == *"produced no SVG"* && "$capsule_output" != *"e156-capsules installed at"* && ! -e "$capsule_home/.bashrc" ]]; then
+    ok
+else
+    bad "empty canary succeeded or persisted environment: $capsule_output"
+fi
+
+start "e156 capsule: failing renderer exits nonzero and never persists path"
+printf 'raise SystemExit(17)\n' > "$capsule_dir/chartkit.py"
+capsule_output="$(HOME="$capsule_home" bash "$ROOT/scripts/install-e156-capsules.sh" --skip-copy --target "$capsule_dir" 2>&1)"
+capsule_status=$?
+if [[ "$capsule_status" -ne 0 && "$capsule_output" == *"REFUSED:"* && ! -e "$capsule_home/.bashrc" ]]; then
+    ok
+else
+    bad "failed canary was accepted or persisted environment: $capsule_output"
+fi
+
+start "e156 capsule: bundled sample renders and permits successful installation"
+cp "$ROOT/templates/e156-capsule/chartkit.py" "$capsule_dir/chartkit.py"
+capsule_output="$(HOME="$capsule_home" bash "$ROOT/scripts/install-e156-capsules.sh" --skip-copy --target "$capsule_dir" 2>&1)"
+capsule_status=$?
+if [[ "$capsule_status" -eq 0 && "$capsule_output" == *"chartkit OK"* && -f "$capsule_home/.bashrc" ]]; then
+    ok
+else
+    bad "real bundled sample could not verify: $capsule_output"
+fi
+rm -rf "$capsule_dir" "$capsule_home"
+
 # Summary
 echo
 echo "Tests completed: $((PASS+FAIL))"
