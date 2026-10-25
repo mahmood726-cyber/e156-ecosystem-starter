@@ -256,6 +256,28 @@ else
 fi
 rm -rf "$repo"
 
+# E156 offline capsule profile persistence must treat a target path as data.
+# The isolated path is synthetic; this is installer-integrity failure injection,
+# not a live five-component canary or evidence-synthesis dataset.
+start "E156 capsule shell profiles preserve literal paths without executing them"
+rc_home="$SANDBOX/e156-profile-home"
+mkdir -p "$rc_home"
+: > "$rc_home/.bashrc"
+: > "$rc_home/.zshrc"
+injected_file="$rc_home/path-executed"
+dangerous_path="$SANDBOX/space ' quote \"double\" \$(touch $injected_file) \$HOME"
+if (
+    export HOME="$rc_home"
+    source "$ROOT/scripts/install-e156-capsules.sh" --import
+    persist_e156_path_env "$dangerous_path" >/dev/null
+    bash -c 'source "$1"; [[ "$E156_CAPSULES_PATH" == "$2" ]]' _ "$HOME/.bashrc" "$dangerous_path" &&
+    bash -c 'source "$1"; [[ "$E156_CAPSULES_PATH" == "$2" ]]' _ "$HOME/.zshrc" "$dangerous_path"
+) && [[ ! -e "$injected_file" ]]; then
+    ok
+else
+    bad "profile source executed part of the requested path or changed its value"
+fi
+
 # Summary
 echo
 echo "Tests completed: $((PASS+FAIL))"
