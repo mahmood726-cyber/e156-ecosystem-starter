@@ -89,16 +89,23 @@ persist_e156_path_env() {
 verify_chartkit() {
     local target="$1"
     [[ -n "$PYTHON" ]] || { echo "ERROR: Python is required to verify chartkit; installation not certified." >&2; return 1; }
-    # Render into the target dir itself (avoids passing a /tmp unix path to a native
-    # Windows python under git-bash, which can't resolve it); clean up after.
-    local out="$target/.chartkit_check.svg"
+    # Never reuse a predictable filename: a stale valid .chartkit_check.svg
+    # otherwise makes a no-op renderer look successful. Keep the workspace
+    # under the target so native Windows Python resolves it under Git Bash.
+    local workdir out
+    workdir="$(mktemp -d "$target/.chartkit_check.XXXXXXXX")" || {
+        echo "ERROR: cannot create isolated chartkit verification directory." >&2
+        return 1
+    }
+    out="$workdir/render.svg"
     if "$PYTHON" "$target/chartkit.py" "$target/sample.capsule.json" --out "$out" >/dev/null 2>&1; then
-        # A successful exit and nonempty file are insufficient if it is not SVG.
         if [[ -s "$out" ]] && "$PYTHON" -c 'import sys, xml.etree.ElementTree as ET; sys.exit(0 if ET.parse(sys.argv[1]).getroot().tag in ("svg", "{http://www.w3.org/2000/svg}svg") else 1)' "$out" >/dev/null 2>&1; then
-            rm -f "$out"; return 0
+            rm -rf -- "$workdir" || return 1
+            return 0
         fi
     fi
-    rm -f "$out"; return 1
+    rm -rf -- "$workdir" || return 1
+    return 1
 }
 
 if [[ "$IMPORT" -eq 1 ]]; then
