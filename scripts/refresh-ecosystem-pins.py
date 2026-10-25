@@ -123,8 +123,8 @@ def process_layer(layer: dict, apply: bool, root: Path) -> dict:
         # Inspect both actual default-ref assignments, not incidental SHA text.
         # Refuse edited/missing mirrors instead of updating to remote HEAD.
         declarations = (
-            (layer["files"][0], r"(?m)^OVERMIND_DEFAULT_REF=[\\\"']([0-9a-f]{40})[\\\"']\\s*$"),
-            (layer["files"][1], r"(?m)^\\$script:OvermindDefaultRef\\s*=\\s*[\\\"']([0-9a-f]{40})[\\\"']\\s*$"),
+            (layer["files"][0], r"""(?m)^OVERMIND_DEFAULT_REF=["']([0-9a-f]{40})["']\s*$"""),
+            (layer["files"][1], r"""(?m)^\$script:OvermindDefaultRef\s*=\s*["']([0-9a-f]{40})["']\s*$"""),
         )
         for rel, pattern in declarations:
             path = root / rel
