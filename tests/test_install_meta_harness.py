@@ -184,6 +184,37 @@ def test_windows_style_zip_path_is_rejected_on_all_platforms(tmp_path):
     assert not target.exists()
 
 
+
+@pytest.mark.parametrize(
+    "unsafe_component",
+    [
+        "CON",
+        "con.txt",
+        "PRN",
+        "AUX.md",
+        "NUL",
+        "COM1.py",
+        "lpt9.log",
+        "line\nbreak",
+        "tab\tname",
+        "carriage\rreturn",
+    ],
+)
+def test_windows_reserved_or_control_character_zip_paths_refuse_on_all_platforms(
+    tmp_path, unsafe_component
+):
+    # SHA256SUMS is correct: path safety, not a checksum mismatch, must reject.
+    rel = _release(tmp_path / "rel", {
+        **GOOD,
+        f"meta-harness-{TAG}/docs/{unsafe_component}": b"cannot install portably\n",
+    })
+    target = tmp_path / "out" / "mh"
+    p = _run(rel, target)
+    assert p.returncode != 0, p.stdout + p.stderr
+    assert "unsafe path in archive" in p.stderr
+    assert not target.exists(), "refusal must not publish an archive"
+    assert not list(target.parent.glob(".meta-harness-stage-*")), "staging directory leaked"
+
 def test_case_colliding_zip_members_are_rejected_before_extraction(tmp_path):
     rel = _release(tmp_path / "rel", {**GOOD,
                    f"meta-harness-{TAG}/scripts/Replay_Offline.py": b"print('different')\\n"})
