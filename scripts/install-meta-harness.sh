@@ -121,13 +121,24 @@ with zipfile.ZipFile(zp) as z:
     if not infos:
         sys.exit("REFUSED: empty meta-harness archive")
     seen = set()
+    # Windows rejects these path components and ASCII control characters.
+    # Refuse them on Linux too: the same verified ZIP must not appear usable
+    # on one supported platform while being unextractable on the other.
+    reserved_device = re.compile(
+        r"(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?", re.IGNORECASE
+    )
     for info in infos:
         name = info.filename
         parts = name.rstrip("/").split("/")
         unsafe = (
             not name or name.startswith("/") or "\\" in name
-            or any(not part or part in (".", "..") or ":" in part
-                   or part.endswith((" ", ".")) for part in parts)
+            or any(
+                not part or part in (".", "..") or ":" in part
+                or part.endswith((" ", "."))
+                or re.search(r"[\x00-\x1f]", part) is not None
+                or reserved_device.fullmatch(part) is not None
+                for part in parts
+            )
         )
         if unsafe:
             sys.exit(f"REFUSED: unsafe path in archive: {name}")
