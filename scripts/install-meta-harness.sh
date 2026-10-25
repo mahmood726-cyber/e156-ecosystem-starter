@@ -73,7 +73,7 @@ verify_meta_harness_release_manifest() {
     if [[ "$ref" == "$META_HARNESS_DEFAULT_REF" ]]; then
         actual="$(meta_harness_sha256 "$sums")" || return 1
         if [[ "$actual" != "$META_HARNESS_V1_MANIFEST_SHA256" ]]; then
-            echo "REFUSED: meta-harness v1.0.0 SHA256SUMS differs from reviewed pinned digest" >&2
+            echo "REFUSED: meta-harness v1.0.0 SHA256SUMS differs from reviewed pinned digest (actual: ${actual:-empty})" >&2
             return 1
         fi
         echo "  pinned meta-harness v1.0.0 SHA256SUMS OK"
