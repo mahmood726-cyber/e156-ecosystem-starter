@@ -197,7 +197,7 @@ def test_case_colliding_zip_members_are_rejected_before_extraction(tmp_path):
 # data or proof of any signed scientific certification.
 PUBLISHED_V1_MANIFEST = (
     "694dc82f51fcde9040a8e1a5f0172978cb1a6f3eeade237fcd81df61185c2d0d"
-    "  meta-harness-v1.0.0.zip\\n"
+    "  meta-harness-v1.0.0.zip\n"
 )
 PUBLISHED_V1_MANIFEST_SHA = "3bf1d1f9eaa6f423f3130ca5f6413b05dcf2994833a9fce038e1ee8e9ad00ddb"
 
@@ -222,7 +222,7 @@ def test_independently_pinned_v1_manifest_is_accepted(tmp_path):
 
 def test_manifest_pin_refuses_coordinated_zip_and_sums_replacement(tmp_path):
     manifest = tmp_path / "SHA256SUMS"
-    manifest.write_text("0" * 64 + "  meta-harness-v1.0.0.zip\\n", encoding="ascii")
+    manifest.write_text("0" * 64 + "  meta-harness-v1.0.0.zip\n", encoding="ascii")
     # Its ZIP could match this altered checksum, but starter's independent pin cannot.
     p = _check_pinned_manifest(manifest, "v1.0.0", tmp_path.as_uri())
     assert p.returncode != 0
@@ -240,7 +240,7 @@ def test_unreviewed_remote_release_ref_is_refused_even_with_well_formed_sums(tmp
 
 def test_only_explicitly_local_fixture_ref_is_unpinned(tmp_path):
     manifest = tmp_path / "SHA256SUMS"
-    manifest.write_text("0" * 64 + f"  {ASSET}\\n", encoding="ascii")
+    manifest.write_text("0" * 64 + f"  {ASSET}\n", encoding="ascii")
     local = _check_pinned_manifest(manifest, TAG, tmp_path.as_uri())
     assert local.returncode == 0, local.stdout + local.stderr
     assert "LOCAL TEST FIXTURE" in local.stderr
