@@ -55,7 +55,7 @@ Describe 'E156 offline chart-kit installer refuses unverified canaries' {
         $fixture = Join-Path $env:TEMP ('e156-canary-chartless-' + [guid]::NewGuid().ToString('N'))
         New-Item -ItemType Directory -Force -Path $fixture | Out-Null
         try {
-            Set-Content -Path (Join-Path $fixture 'chartkit.py') -Value 'import sys; from pathlib import Path; Path(sys.argv[sys.argv.index("--out") + 1]).write_text("<svg xmlns=\\\"http://www.w3.org/2000/svg\\\"></svg>")' -Encoding ascii
+            Set-Content -Path (Join-Path $fixture 'chartkit.py') -Value 'import sys; from pathlib import Path; Path(sys.argv[sys.argv.index("--out") + 1]).write_text("<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>")' -Encoding ascii
             $output = & pwsh -NoProfile -File $script:Installer -SkipCopy -Target $fixture 2>&1
             $LASTEXITCODE | Should -Not -Be 0
             ($output -join "`n") | Should -Match 'REFUSED:'
