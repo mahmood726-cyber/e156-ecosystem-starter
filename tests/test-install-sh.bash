@@ -283,6 +283,32 @@ else
     bad "empty canary succeeded or persisted environment: $capsule_output"
 fi
 
+start "e156 capsule: nonempty garbage is not accepted as an SVG chart"
+printf 'from pathlib import Path\nimport sys\nPath(sys.argv[sys.argv.index("--out") + 1]).write_text("garbage, not SVG")\n' > "$capsule_dir/chartkit.py"
+if capsule_output="$(HOME="$capsule_home" bash "$ROOT/scripts/install-e156-capsules.sh" --skip-copy --target "$capsule_dir" 2>&1)"; then
+    capsule_status=0
+else
+    capsule_status=$?
+fi
+if [[ "$capsule_status" -ne 0 && "$capsule_output" == *"REFUSED:"* && ! -e "$capsule_home/.bashrc" ]]; then
+    ok
+else
+    bad "non-SVG canary was accepted or persisted environment: $capsule_output"
+fi
+
+start "e156 capsule: an empty SVG root without chart primitives is refused"
+printf 'from pathlib import Path\nimport sys\nPath(sys.argv[sys.argv.index("--out") + 1]).write_text("<svg xmlns=\\\"http://www.w3.org/2000/svg\\\"></svg>")\n' > "$capsule_dir/chartkit.py"
+if capsule_output="$(HOME="$capsule_home" bash "$ROOT/scripts/install-e156-capsules.sh" --skip-copy --target "$capsule_dir" 2>&1)"; then
+    capsule_status=0
+else
+    capsule_status=$?
+fi
+if [[ "$capsule_status" -ne 0 && "$capsule_output" == *"REFUSED:"* && ! -e "$capsule_home/.bashrc" ]]; then
+    ok
+else
+    bad "chartless SVG canary was accepted or persisted environment: $capsule_output"
+fi
+
 start "e156 capsule: an old canary SVG cannot forge new verification"
 printf 'pre-existing user artifact\n' > "$capsule_dir/.chartkit_check.svg"
 if capsule_output="$(HOME="$capsule_home" bash "$ROOT/scripts/install-e156-capsules.sh" --skip-copy --target "$capsule_dir" 2>&1)"; then

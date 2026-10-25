@@ -61,6 +61,13 @@ function Test-E156Chartkit {
         # A zero exit without a nonempty output file is not verified rendering.
         $ok = ($LASTEXITCODE -eq 0) -and (Test-Path -LiteralPath $out -PathType Leaf) -and
               ((Get-Item -LiteralPath $out).Length -gt 0)
+        if ($ok) {
+            # A nonempty output is insufficient: parse SVG XML and require
+            # the expected chart primitives from the bundled renderer.
+            $svgCheck = 'import sys,xml.etree.ElementTree as ET;r=ET.parse(sys.argv[1]).getroot();ns="{http://www.w3.org/2000/svg}";sys.exit(0 if r.tag==ns+"svg" and r.find(ns+"rect") is not None and r.find(ns+"line") is not None else 1)'
+            & $py.Source -c $svgCheck $out 2>&1 | Out-Null
+            $ok = ($LASTEXITCODE -eq 0)
+        }
     } catch {
         $ok = $false
     } finally {

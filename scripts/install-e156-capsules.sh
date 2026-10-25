@@ -97,8 +97,10 @@ verify_chartkit() {
     out="$(mktemp "$target/.chartkit_check.XXXXXXXX")" || {
         echo "REFUSED: cannot create isolated chart-kit canary output." >&2; return 1;
     }
-    # A zero exit status without an actual SVG must not count as a verified canary.
-    if "$PYTHON" "$target/chartkit.py" "$target/sample.capsule.json" --out "$out" >/dev/null 2>&1 && [[ -s "$out" ]]; then
+    # A zero exit and nonempty file alone do not prove a valid SVG chart.
+    # Parse XML and require the chartkit SVG root plus chart primitives.
+    if "$PYTHON" "$target/chartkit.py" "$target/sample.capsule.json" --out "$out" >/dev/null 2>&1 && [[ -s "$out" ]] &&
+       "$PYTHON" -c 'import sys,xml.etree.ElementTree as ET;r=ET.parse(sys.argv[1]).getroot();ns="{http://www.w3.org/2000/svg}";sys.exit(0 if r.tag==ns+"svg" and r.find(ns+"rect") is not None and r.find(ns+"line") is not None else 1)' "$out" >/dev/null 2>&1; then
         rm -f "$out"; return 0
     fi
     rm -f "$out"
