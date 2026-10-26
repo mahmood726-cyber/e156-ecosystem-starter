@@ -102,10 +102,20 @@ backup_existing_pre_push_hook() {
     if grep -qE 'sentinel[[:space:]]+(scan|run-pre-push)' "$hook" 2>/dev/null; then
         return 0  # already a Sentinel hook
     fi
-    local ts
+    local ts backup
     ts="$(date +%Y%m%d-%H%M%S)"
-    local backup="${hook}.user-${ts}"
-    cp "$hook" "$backup"
+    # Timestamp-only names collide on rapid reinstalls, silently overwriting
+    # the researcher's earlier hook backup. mktemp reserves a fresh sibling
+    # atomically; cp -p retains the original hook's executable permissions.
+    backup="$(mktemp "${hook}.user-${ts}.XXXXXX")" || {
+        echo "ERROR: cannot reserve a unique pre-push hook backup" >&2
+        return 1
+    }
+    if ! cp -p "$hook" "$backup"; then
+        rm -f "$backup"
+        echo "ERROR: cannot save pre-push hook backup" >&2
+        return 1
+    fi
     printf '%s' "$backup"
 }
 
