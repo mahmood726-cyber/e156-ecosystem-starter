@@ -82,20 +82,48 @@ def lock_problems(lock_path: Path) -> list[str]:
 
 
 def _logical_lines(text: str) -> list[tuple[int, str]]:
-    """Drop YAML comment lines and join shell `\\` continuations."""
+    """Preserve source lines, join shell backslashes and folded YAML run blocks.
+
+    In GitHub Actions, `run: >-` folds successive YAML lines to spaces.
+    Treating those source lines separately can miss an executable command
+    written as `python -m pip` followed by `install pytest`.
+    """
+    lines = text.splitlines()
     out: list[tuple[int, str]] = []
     buf, start = "", 0
-    for n, raw in enumerate(text.splitlines(), 1):
+    i = 0
+    while i < len(lines):
+        raw = lines[i]
+        n = i + 1
+        folded = re.match(r"^(\\s*)(?:-\\s*)?run:\\s*>[+-]?\\s*(?:#.*)?$", raw)
+        if folded and not buf:
+            parent_indent = len(folded.group(1))
+            command_lines: list[str] = []
+            i += 1
+            while i < len(lines):
+                child = lines[i]
+                child_indent = len(child) - len(child.lstrip(" "))
+                if child.strip() and child_indent <= parent_indent:
+                    break
+                if child.strip() and not child.lstrip().startswith("#"):
+                    command_lines.append(child.strip())
+                i += 1
+            out.append((n, "run: " + " ".join(command_lines)))
+            continue
+
         if not buf and raw.lstrip().startswith("#"):
+            i += 1
             continue
         if not buf:
             start = n
         stripped = raw.rstrip()
         if stripped.endswith("\\"):
             buf += stripped[:-1] + " "
+            i += 1
             continue
         out.append((start, buf + stripped))
         buf = ""
+        i += 1
     if buf:
         out.append((start, buf))
     return out
@@ -253,3 +281,45 @@ def test_empty_lock_is_refused(tmp_path):
     lock = tmp_path / "empty.lock"
     lock.write_text("# only comments\n", encoding="utf-8")
     assert lock_problems(lock)
+
+@pytest.mark.parametrize("fold_indicator", [">", ">-", ">+"])
+def test_folded_yaml_run_cannot_hide_unpinned_install(tmp_path, fold_indicator):
+    """Real Actions YAML folds these source lines into one shell command."""
+    anchor = "      - name: Show bash version\\n"
+    planted = (
+        "      - name: Planted folded unpinned dependency\\n"
+        f"        run: {fold_indicator}\\n"
+        "          python -m pip\\n"
+        "          install --upgrade pytest\\n"
+    )
+    wf = _planted_workflow(tmp_path, anchor, planted + anchor)
+    reasons = workflow_problems(wf, tmp_path)
+    assert any("without --require-hashes" in r for r in reasons), reasons
+
+
+def test_folded_yaml_run_with_hash_locked_install_passes(tmp_path):
+    """Do not convict a genuinely locked pip install solely for folding."""
+    anchor = "      - name: Show bash version\\n"
+    clean = (
+        "      - name: Clean folded locked dependency\\n"
+        "        run: >-\\n"
+        "          python -m pip\\n"
+        "          install --require-hashes -r requirements-ci.lock\\n"
+    )
+    wf = _planted_workflow(tmp_path, anchor, clean + anchor)
+    assert workflow_problems(wf, tmp_path) == []
+
+
+def test_folded_yaml_run_with_chained_unlocked_install_is_refused(tmp_path):
+    """An unpinned second install in the same folded block must be detected."""
+    anchor = "      - name: Show bash version\\n"
+    planted = (
+        "      - name: Chained folded dependency\\n"
+        "        run: >-\\n"
+        "          python -m pip install --require-hashes -r requirements-ci.lock\\n"
+        "          && python -m pip\\n"
+        "          install requests\\n"
+    )
+    wf = _planted_workflow(tmp_path, anchor, planted + anchor)
+    reasons = workflow_problems(wf, tmp_path)
+    assert any("requests" in r for r in reasons), reasons
