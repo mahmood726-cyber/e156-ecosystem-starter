@@ -95,7 +95,7 @@ def _logical_lines(text: str) -> list[tuple[int, str]]:
     while i < len(lines):
         raw = lines[i]
         n = i + 1
-        folded = re.match(r"^(\\s*)(?:-\\s*)?run:\\s*>[+-]?\\s*(?:#.*)?$", raw)
+        folded = re.match(r"^(\s*)(?:-\s*)?run:\s*>[+-]?\s*(?:#.*)?$", raw)
         if folded and not buf:
             parent_indent = len(folded.group(1))
             command_lines: list[str] = []
@@ -285,12 +285,12 @@ def test_empty_lock_is_refused(tmp_path):
 @pytest.mark.parametrize("fold_indicator", [">", ">-", ">+"])
 def test_folded_yaml_run_cannot_hide_unpinned_install(tmp_path, fold_indicator):
     """Real Actions YAML folds these source lines into one shell command."""
-    anchor = "      - name: Show bash version\\n"
+    anchor = "      - name: Show bash version\n"
     planted = (
-        "      - name: Planted folded unpinned dependency\\n"
-        f"        run: {fold_indicator}\\n"
-        "          python -m pip\\n"
-        "          install --upgrade pytest\\n"
+        "      - name: Planted folded unpinned dependency\n"
+        f"        run: {fold_indicator}\n"
+        "          python -m pip\n"
+        "          install --upgrade pytest\n"
     )
     wf = _planted_workflow(tmp_path, anchor, planted + anchor)
     reasons = workflow_problems(wf, tmp_path)
@@ -299,12 +299,12 @@ def test_folded_yaml_run_cannot_hide_unpinned_install(tmp_path, fold_indicator):
 
 def test_folded_yaml_run_with_hash_locked_install_passes(tmp_path):
     """Do not convict a genuinely locked pip install solely for folding."""
-    anchor = "      - name: Show bash version\\n"
+    anchor = "      - name: Show bash version\n"
     clean = (
-        "      - name: Clean folded locked dependency\\n"
-        "        run: >-\\n"
-        "          python -m pip\\n"
-        "          install --require-hashes -r requirements-ci.lock\\n"
+        "      - name: Clean folded locked dependency\n"
+        "        run: >-\n"
+        "          python -m pip\n"
+        "          install --require-hashes -r requirements-ci.lock\n"
     )
     wf = _planted_workflow(tmp_path, anchor, clean + anchor)
     assert workflow_problems(wf, tmp_path) == []
@@ -312,13 +312,13 @@ def test_folded_yaml_run_with_hash_locked_install_passes(tmp_path):
 
 def test_folded_yaml_run_with_chained_unlocked_install_is_refused(tmp_path):
     """An unpinned second install in the same folded block must be detected."""
-    anchor = "      - name: Show bash version\\n"
+    anchor = "      - name: Show bash version\n"
     planted = (
-        "      - name: Chained folded dependency\\n"
-        "        run: >-\\n"
-        "          python -m pip install --require-hashes -r requirements-ci.lock\\n"
-        "          && python -m pip\\n"
-        "          install requests\\n"
+        "      - name: Chained folded dependency\n"
+        "        run: >-\n"
+        "          python -m pip install --require-hashes -r requirements-ci.lock\n"
+        "          && python -m pip\n"
+        "          install requests\n"
     )
     wf = _planted_workflow(tmp_path, anchor, planted + anchor)
     reasons = workflow_problems(wf, tmp_path)
