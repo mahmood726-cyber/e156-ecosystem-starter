@@ -12,6 +12,8 @@
 #                      anchor or dead external link fails CI before it
 #                      reaches the Pages surface
 #
+# actions/setup-python v5 is pinned to reviewed, GitHub-verified upstream commit a26af69be951a213d495a4c3e4e4022e16d87065.
+# This does NOT independently attest runners, transitive dependencies or releases.
 # Bash tests do NOT pip-install Sentinel/Overmind in CI -- those live in
 # separate repos with their own pipelines. We only verify wrapper logic.
 
@@ -85,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.11'
       - name: Install pytest
@@ -98,7 +100,7 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.11'
       - name: Install locked test dependencies
