@@ -33,7 +33,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "test.yml"
 LOCK = REPO_ROOT / "requirements-ci.lock"
 
-_PIP_INSTALL = re.compile(r"\bpip3?(\.exe)?\s+install\b")
+# Detect pip global flags/options before the install subcommand as well.
+# pip --no-input install requests is executable but must not evade the lock gate.
+_PIP_INSTALL = re.compile(r"\bpip3?(?:\.exe)?(?:\s+[^\s;&|]+)*\s+install\b")
 _PINNED = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*==[A-Za-z0-9.+!_-]+$")
 _HASH = re.compile(r"^--hash=sha256:[0-9a-f]{64}$")
 # pip options that consume the following token as their value.
@@ -137,7 +139,8 @@ def _install_problems(segment: str, where: str, repo_root: Path) -> list[str]:
         tokens = shlex.split(segment, comments=True)
     except ValueError as exc:
         return [f"{where}: cannot tokenise pip install line ({exc})"]
-    idx = next((i for i, t in enumerate(tokens) if t == "install" and i and "pip" in tokens[i - 1]), None)
+    pip_idx = next((i for i, t in enumerate(tokens) if re.fullmatch(r"pip3?(?:\.exe)?", t, re.I)), None)
+    idx = next((i for i in range(pip_idx + 1, len(tokens)) if tokens[i] == "install"), None) if pip_idx is not None else None
     if idx is None:
         return [f"{where}: pip install in a form this guard cannot parse"]
     args = tokens[idx + 1:]
@@ -355,3 +358,26 @@ def test_folded_yaml_run_with_chained_unlocked_install_is_refused(tmp_path):
     wf = _planted_workflow(tmp_path, anchor, planted + anchor)
     reasons = workflow_problems(wf, tmp_path)
     assert any("requests" in r for r in reasons), reasons
+
+
+@pytest.mark.parametrize("planted", [
+    "python -m pip --disable-pip-version-check install pytest",
+    "python -m pip --log /tmp/pip.log install requests",
+    "pip --no-input install requests",
+    "pip3 -q install urllib3",
+])
+def test_pip_global_options_cannot_hide_unlocked_install(tmp_path, planted):
+    """Valid pip global options before install must not evade the CI lock gate."""
+    wf = _planted_workflow(tmp_path, GOOD_INSTALL, planted)
+    reasons = workflow_problems(wf, tmp_path)
+    assert any("without --require-hashes" in r for r in reasons), reasons
+
+
+def test_hash_locked_install_with_pip_global_option_is_accepted(tmp_path):
+    """A genuine hashed install with a pip global flag remains acceptable."""
+    wf = _planted_workflow(
+        tmp_path,
+        GOOD_INSTALL,
+        "python -m pip --no-input install --require-hashes -r requirements-ci.lock",
+    )
+    assert workflow_problems(wf, tmp_path) == []
