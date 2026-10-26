@@ -95,7 +95,10 @@ def _logical_lines(text: str) -> list[tuple[int, str]]:
     while i < len(lines):
         raw = lines[i]
         n = i + 1
-        folded = re.match(r"^(\s*)(?:-\s*)?run:\s*>[+-]?\s*(?:#.*)?$", raw)
+        folded = re.match(
+            r"^(\s*)(?:-\s*)?run:\s*>(?:[1-9][+-]?|[+-][1-9]?|)\s*(?:#.*)?$",
+            raw,
+        )
         if folded and not buf:
             parent_indent = len(folded.group(1))
             command_lines: list[str] = []
@@ -295,6 +298,35 @@ def test_folded_yaml_run_cannot_hide_unpinned_install(tmp_path, fold_indicator):
     wf = _planted_workflow(tmp_path, anchor, planted + anchor)
     reasons = workflow_problems(wf, tmp_path)
     assert any("without --require-hashes" in r for r in reasons), reasons
+
+
+
+@pytest.mark.parametrize("fold_indicator", [">2", ">2-", ">-2", ">2+", ">+2"])
+def test_explicit_indent_folded_yaml_cannot_hide_unpinned_install(tmp_path, fold_indicator):
+    """Valid YAML explicit-indentation indicators must be inspected too."""
+    anchor = "      - name: Show bash version\n"
+    planted = (
+        "      - name: Planted explicitly indented folded dependency\n"
+        f"        run: {fold_indicator}\n"
+        "          python -m pip\n"
+        "          install --upgrade pytest\n"
+    )
+    wf = _planted_workflow(tmp_path, anchor, planted + anchor)
+    reasons = workflow_problems(wf, tmp_path)
+    assert any("without --require-hashes" in r for r in reasons), reasons
+
+
+def test_explicit_indent_folded_yaml_hash_locked_install_passes(tmp_path):
+    """A valid, hash-pinned command with an indent indicator remains accepted."""
+    anchor = "      - name: Show bash version\n"
+    clean = (
+        "      - name: Hash-locked explicit folded dependency\n"
+        "        run: >2-\n"
+        "          python -m pip\n"
+        "          install --require-hashes -r requirements-ci.lock\n"
+    )
+    wf = _planted_workflow(tmp_path, anchor, clean + anchor)
+    assert workflow_problems(wf, tmp_path) == []
 
 
 def test_folded_yaml_run_with_hash_locked_install_passes(tmp_path):
