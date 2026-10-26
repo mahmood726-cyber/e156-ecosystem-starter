@@ -6,16 +6,17 @@
       "id": ".github/workflows/test.yml#jobs.pester",
       "kind": "ci-job",
       "name": "Pester (Windows)",
-      "stops": "A failing assertion in any of the 11 Pester suites named in the job's $files list (installer helpers, redaction, supply-chain pinning, SHA gate), run under pwsh on windows-latest.",
+      "stops": "A failing assertion in any of the 11 Pester suites named in the job's $files list (installer helpers, redaction, supply-chain pinning, SHA gate), run under pwsh on windows-latest. A missing pester-results.xml now fails the artifact upload rather than only issuing a warning.",
       "would_not_stop": [
         "A Pester suite that exists but is not in the hard-coded $files list: a new scripts/pester.*.tests.ps1 is silently never run.",
         "Behaviour that differs under Windows PowerShell 5.1, which many students run: the job uses pwsh 7.",
         "Real installs over the network: the suites test wrapper logic, not that Sentinel / Overmind / the extractor actually install.",
-        "Any behaviour no suite asserts."
+        "Any behaviour no suite asserts.",
+        "A present but malformed Pester XML, or a report containing skipped tests: the artifact uploader checks file presence, not test-result completeness or authenticity."
       ],
       "source": ".github/workflows/test.yml header comment and the job's $files list.",
       "seal": {
-        ".github/workflows/test.yml#jobs.pester": "890466c0ab813436912330e6769f79451a8d10677753a009b3fad1289a9ad26d"
+        ".github/workflows/test.yml#jobs.pester": "649cf8eda92d66420781afa905f34ab9f8e4e49a205233969382815872b7b3be"
       }
     },
     {
