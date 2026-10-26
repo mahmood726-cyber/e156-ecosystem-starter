@@ -57,7 +57,7 @@ def checkout_pin_problems(workflow: str) -> list[str]:
 def test_live_workflow_has_exact_checkout_sha_in_every_job():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert checkout_pin_problems(text) == []
-    assert len(re.findall(r"(?m)^  [A-Za-z0-9_-]+:\s*$", text.split("jobs:", 1)[1])) == 9
+    assert len(re.findall(r"(?m)^  [A-Za-z0-9_-]+:\s*$", text.split("\njobs:\n", 1)[1])) == 9
 
 
 @pytest.mark.parametrize("bad", [
