@@ -221,7 +221,7 @@ start "backup_existing_pre_push_hook backs up user-authored hook"
 repo="$(mk_repo)"
 printf '#!/bin/sh\nmy custom lint\n' > "$repo/.git/hooks/pre-push"
 result="$(bash -c "source '$ROOT/scripts/install-sentinel.sh' --import; backup_existing_pre_push_hook '$repo'")"
-if [[ "$result" =~ pre-push\.user-[0-9]{8}-[0-9]{6}$ ]] && [[ -f "$result" ]] && grep -q 'my custom lint' "$result"; then
+if [[ "$result" =~ pre-push\.user-[0-9]{8}-[0-9]{6}\.[[:alnum:]]{6}$ ]] && [[ -f "$result" ]] && grep -q 'my custom lint' "$result"; then
     ok
 else
     bad "expected timestamped backup with original content, got: $result"
@@ -244,6 +244,36 @@ ts_backup_count="$(ls "$target"/lessons.md.user-* 2>/dev/null | wc -l)"
     [[ "$ts_backup_count" -eq 1 ]] && \
     [[ "$(cat "$target"/lessons.md.user-*)" == "edit-2" ]] && ok
 rm -rf "$target"
+
+start "backup_existing_pre_push_hook preserves same-second hook backups and mode"
+repo="$(mk_repo)"
+hook="$repo/.git/hooks/pre-push"
+printf '#!/bin/sh\necho first hook\n' > "$hook"
+chmod +x "$hook"
+first="$(bash -c "source '$ROOT/scripts/install-sentinel.sh' --import; date() { printf '20261026-040300\n'; }; backup_existing_pre_push_hook '$repo'")"
+printf '#!/bin/sh\necho second hook\n' > "$hook"
+second="$(bash -c "source '$ROOT/scripts/install-sentinel.sh' --import; date() { printf '20261026-040300\n'; }; backup_existing_pre_push_hook '$repo'")"
+if [[ "$first" != "$second" ]] && [[ -f "$first" && -f "$second" ]] &&
+   [[ -x "$first" && -x "$second" ]] &&
+   grep -q 'first hook' "$first" && grep -q 'second hook' "$second"; then
+    ok
+else
+    bad "backups collided, lost their original contents or lost executable mode"
+fi
+rm -rf "$repo"
+
+start "backup_existing_pre_push_hook fails closed if unique backup cannot be reserved"
+repo="$(mk_repo)"
+printf '#!/bin/sh\necho my intact hook\n' > "$repo/.git/hooks/pre-push"
+if bash -c "source '$ROOT/scripts/install-sentinel.sh' --import; mktemp() { return 1; }; backup_existing_pre_push_hook '$repo'" >/dev/null 2>&1; then
+    bad "backup unexpectedly succeeded after forced reservation failure"
+elif grep -q 'my intact hook' "$repo/.git/hooks/pre-push" &&
+     ! compgen -G "$repo/.git/hooks/pre-push.user-*" >/dev/null; then
+    ok
+else
+    bad "reservation failure modified a hook or left a misleading backup"
+fi
+rm -rf "$repo"
 
 start "backup_existing_pre_push_hook skips Sentinel-installed hooks"
 repo="$(mk_repo)"
