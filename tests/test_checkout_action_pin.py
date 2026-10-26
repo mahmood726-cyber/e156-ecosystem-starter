@@ -17,8 +17,8 @@ WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "test
 REVIEWED_CHECKOUT_SHA = "11d5960a326750d5838078e36cf38b85af677262"
 CHECKOUT = "actions/checkout@" + REVIEWED_CHECKOUT_SHA
 
-_JOB = re.compile(r"^  ([A-Za-z0-9_-]+):\\s*(?:#.*)?$")
-_USES = re.compile(r"^\\s*- uses:\\s*(\\S+)\\s*(?:#.*)?$")
+_JOB = re.compile(r"^  ([A-Za-z0-9_-]+):\s*(?:#.*)?$")
+_USES = re.compile(r"^\s*- uses:\s*(\S+)\s*(?:#.*)?$")
 
 
 def checkout_pin_problems(workflow: str) -> list[str]:
@@ -57,7 +57,7 @@ def checkout_pin_problems(workflow: str) -> list[str]:
 def test_live_workflow_has_exact_checkout_sha_in_every_job():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert checkout_pin_problems(text) == []
-    assert len(re.findall(r"(?m)^  [A-Za-z0-9_-]+:\\s*$", text.split("jobs:", 1)[1])) == 9
+    assert len(re.findall(r"(?m)^  [A-Za-z0-9_-]+:\s*$", text.split("jobs:", 1)[1])) == 9
 
 
 @pytest.mark.parametrize("bad", [
@@ -76,10 +76,10 @@ def test_planted_checkout_reference_changes_are_refused(bad):
 
 def test_planted_duplicate_checkout_is_refused():
     original = WORKFLOW.read_text(encoding="utf-8")
-    altered = original.replace("- uses: " + CHECKOUT, "- uses: " + CHECKOUT + "\\n      - uses: " + CHECKOUT, 1)
+    altered = original.replace("- uses: " + CHECKOUT, "- uses: " + CHECKOUT + "\n      - uses: " + CHECKOUT, 1)
     assert altered != original
     assert checkout_pin_problems(altered)
 
 
 def test_planted_no_jobs_is_refused():
-    assert checkout_pin_problems("name: workflow without jobs\\n") != []
+    assert checkout_pin_problems("name: workflow without jobs\n") != []
