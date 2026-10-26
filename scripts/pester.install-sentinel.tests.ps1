@@ -78,7 +78,7 @@ Describe "Backup-ExistingPrePushHook (P0 - researcher's existing hook)" {
 
 
     It "preserves successive user hooks when backup timestamps collide" {
-        $hook = Join-Path $script:hookTmp '.git\\hooks\\pre-push'
+        $hook = Join-Path $script:hookTmp '.git\hooks\pre-push'
         Mock Get-Date { '20261026-020000' } -ParameterFilter { $Format -eq 'yyyyMMdd-HHmmss' }
         Set-Content -LiteralPath $hook -Value "#!/bin/sh`nfirst user hook" -NoNewline
         $first = Backup-ExistingPrePushHook -RepoPath $script:hookTmp
