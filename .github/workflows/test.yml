@@ -67,6 +67,7 @@ jobs:
         with:
           name: pester-results
           path: pester-results.xml
+          if-no-files-found: error
 
   bash-tests:
     name: Bash tests (Ubuntu)
