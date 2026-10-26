@@ -15,7 +15,7 @@
       ],
       "source": ".github/workflows/test.yml header comment and the job's $files list.",
       "seal": {
-        ".github/workflows/test.yml#jobs.pester": "890466c0ab813436912330e6769f79451a8d10677753a009b3fad1289a9ad26d"
+        ".github/workflows/test.yml#jobs.pester": "d4b6996aeec1d50e9ce70304a0b91fb9a299958ff562bb7ddba5b8e8b537982b"
       }
     },
     {
@@ -30,7 +30,7 @@
       ],
       "source": ".github/workflows/test.yml header comment; tests/ listing.",
       "seal": {
-        ".github/workflows/test.yml#jobs.bash-tests": "fca438b2ce88689e51640eb7d5e4a7e0a18f81b465b2aa33fb02715707d9c19f"
+        ".github/workflows/test.yml#jobs.bash-tests": "0ab71c125cc96322ef100a83a33f81757562533372e4c804db47d3ef7386326b"
       }
     },
     {
@@ -48,7 +48,7 @@
       ],
       "source": ".github/workflows/test.yml python-tests job; scripts/ listing. Port S-D report (requirements-ci.lock, tests/test_ci_lock.py).",
       "seal": {
-        ".github/workflows/test.yml#jobs.python-tests": "92e83e3d085dab0a8ddd344d9058a21abbf3e4fd6c8f2d74f5ca2407102f6652"
+        ".github/workflows/test.yml#jobs.python-tests": "f9ff5458422fae3e9b2083b17404dda4f95dd7baa12ef97b57f2562837f65cf1"
       }
     },
     {
@@ -63,7 +63,7 @@
       ],
       "source": "scripts/regen-hashes.sh header; .github/workflows/test.yml hash-check job.",
       "seal": {
-        ".github/workflows/test.yml#jobs.hash-check": "9c0dbdbd2c8fc352bbf350084c22e46885ddfe37d68e5ceadba565efe78aa8f2",
+        ".github/workflows/test.yml#jobs.hash-check": "3ce76350ca4021d66ca2d21da9088baf51997b881a060a37ee25baa5ed2caebb",
         "scripts/regen-hashes.sh": "b1125b2ed6edf33a0b098fc04cceac5e139e9a29bf181154665bc2c29209f693"
       }
     },
@@ -79,7 +79,7 @@
       ],
       "source": "scripts/check-i18n-parity.sh header ('We don't validate translation quality') and its langs=(fr pt ar ur) list.",
       "seal": {
-        ".github/workflows/test.yml#jobs.i18n-parity": "ce6b56c3a14b541b396993fdb965af3576b22b0f88a56064e00914f3200c7476",
+        ".github/workflows/test.yml#jobs.i18n-parity": "5f425065856ff0cdd938af00e59fa4921f739049064974442892a49bf0155861",
         "scripts/check-i18n-parity.sh": "ef1e3ff1cd12dee383e868036cc74e73ee9abc55292270ad3716cb1cbb72e8ca"
       }
     },
@@ -95,7 +95,7 @@
       ],
       "source": ".github/workflows/test.yml link-check job comments and args.",
       "seal": {
-        ".github/workflows/test.yml#jobs.link-check": "011866fddf3ab550c5ec417fb8ad1fa29e0feeb8267caf4e8d2ed2209b3151a2"
+        ".github/workflows/test.yml#jobs.link-check": "ea2246c11f5af8ddd152fdad2e70db8e87bba5cf82d0eac30e1b3408352e7e48"
       }
     },
     {
@@ -111,7 +111,7 @@
       ],
       "source": ".github/workflows/test.yml lint job comments and file list.",
       "seal": {
-        ".github/workflows/test.yml#jobs.lint": "d16c9f291ff1fa959557f5d9c2b64917930820d27adf43a892536ce3d2cbcc5b"
+        ".github/workflows/test.yml#jobs.lint": "a6e8967838ff609a1d67dc441b2259a644a4f656508cf4af9ba8f91d33a430dd"
       }
     },
     {
@@ -127,7 +127,7 @@
       ],
       "source": ".github/workflows/test.yml enabled pinned Sentinel job; scripts/regen-sentinel-rule-list.sh generator.",
       "seal": {
-        ".github/workflows/test.yml#jobs.sentinel-rule-list-drift": "e9b96777178a6252da795cd1b5b38d7891940ce972836762f853d9aa5a1c8d11",
+        ".github/workflows/test.yml#jobs.sentinel-rule-list-drift": "2a7349c4873934a5de33c88c9636fd387b12955140cf0d264b545409346715e7",
         "scripts/regen-sentinel-rule-list.sh": "6daf7ed9b7f8c63869b55fb8b48bb13db14ffe3736471ed5cf31943e61e77a8f"
       }
     },
@@ -369,7 +369,7 @@
       ],
       "source": ".github/workflows/test.yml meta-harness-unpack-windows job and tests/test_install_meta_harness.py.",
       "seal": {
-        ".github/workflows/test.yml#jobs.meta-harness-unpack-windows": "557f1b8ee9dc8db1be2df741a1415730dd340f4cbb22aa819e49ada224a871c4"
+        ".github/workflows/test.yml#jobs.meta-harness-unpack-windows": "4f27fa20083104d9184e64107823286e1a73a45e94bc44a01ec20cd96bf85ecb"
       }
     }
   ]
