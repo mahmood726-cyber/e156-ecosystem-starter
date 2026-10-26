@@ -104,9 +104,30 @@ backup_existing_pre_push_hook() {
     fi
     local ts
     ts="$(date +%Y%m%d-%H%M%S)"
-    local backup="${hook}.user-${ts}"
-    cp "$hook" "$backup"
-    printf '%s' "$backup"
+    # Stage a mode-preserving copy, then publish with an exclusive hard link.
+    # Second-resolution timestamps can collide on rapid reinstalls; never
+    # overwrite an earlier user hook or follow a pre-existing backup symlink.
+    local base="${hook}.user-${ts}" backup="" stage attempt=0
+    stage="$(mktemp "${hook}.user-stage.XXXXXXXX")" || return 1
+    if ! cp -p -- "$hook" "$stage"; then
+        rm -f -- "$stage"
+        return 1
+    fi
+    while (( attempt < 100 )); do
+        backup="$base"
+        if (( attempt > 0 )); then backup="${base}.${attempt}"; fi
+        if ln "$stage" "$backup" 2>/dev/null; then
+            rm -f -- "$stage"
+            printf '%s' "$backup"
+            return 0
+        fi
+        # A non-collision error (permissions, unsupported links) must fail.
+        if [[ ! -e "$backup" && ! -L "$backup" ]]; then break; fi
+        attempt=$((attempt + 1))
+    done
+    rm -f -- "$stage"
+    echo "ERROR: cannot create a unique pre-push hook backup" >&2
+    return 1
 }
 
 install_sentinel_hook_in_repo() {
