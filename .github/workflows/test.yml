@@ -12,6 +12,8 @@
 #                      anchor or dead external link fails CI before it
 #                      reaches the Pages surface
 #
+# GitHub checkout is pinned to reviewed actions/checkout v4 commit 11d5960a326750d5838078e36cf38b85af677262.
+# Other third-party Actions remain separately mutable; this pin is not release attestation.
 # Bash tests do NOT pip-install Sentinel/Overmind in CI -- those live in
 # separate repos with their own pipelines. We only verify wrapper logic.
 
@@ -32,7 +34,7 @@ jobs:
     name: Pester (Windows)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Show PowerShell + Pester versions
         shell: pwsh
         run: |
@@ -72,7 +74,7 @@ jobs:
     name: Bash tests (Ubuntu)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Show bash version
         run: bash --version
       - name: Run bash test suite
@@ -84,7 +86,7 @@ jobs:
     name: Python tests (Ubuntu)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -97,7 +99,7 @@ jobs:
     name: Meta-Harness archive installer (Windows Git Bash)
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -110,7 +112,7 @@ jobs:
     name: HASH files in sync with install scripts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Verify docs/HASH.txt + docs/HASH-linux.txt
         run: bash scripts/regen-hashes.sh --check
 
@@ -118,7 +120,7 @@ jobs:
     name: i18n landing pages match English structure
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Verify <details> count parity across en/fr/pt/ar/ur
         run: bash scripts/check-i18n-parity.sh
 
@@ -128,7 +130,7 @@ jobs:
     # Fetch the exact reviewed Sentinel revision; never skip this drift gate.
     # Update the SHA deliberately alongside the generated teaching page.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Verify auto-generated Sentinel list matches source
         env:
           SENTINEL_REPO: ${{ github.workspace }}/Sentinel
@@ -144,7 +146,7 @@ jobs:
     name: Pages link-check (lychee)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Lychee link checker
         # Pinned to v2 major; bump deliberately when changing anchor / fragment
         # behaviour. (P2-4 from 2026-04-27 review.)
@@ -167,7 +169,7 @@ jobs:
     name: Static analysis (ShellCheck + PSScriptAnalyzer)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: ShellCheck
         run: |
