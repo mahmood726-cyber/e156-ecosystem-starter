@@ -48,7 +48,7 @@
       ],
       "source": ".github/workflows/test.yml python-tests job; scripts/ listing. Port S-D report (requirements-ci.lock, tests/test_ci_lock.py).",
       "seal": {
-        ".github/workflows/test.yml#jobs.python-tests": "92e83e3d085dab0a8ddd344d9058a21abbf3e4fd6c8f2d74f5ca2407102f6652"
+        ".github/workflows/test.yml#jobs.python-tests": "75e43575e0cfc57abe303176bca40de6184923dd55ebc692d33e0244d2259796"
       }
     },
     {
@@ -369,7 +369,7 @@
       ],
       "source": ".github/workflows/test.yml meta-harness-unpack-windows job and tests/test_install_meta_harness.py.",
       "seal": {
-        ".github/workflows/test.yml#jobs.meta-harness-unpack-windows": "557f1b8ee9dc8db1be2df741a1415730dd340f4cbb22aa819e49ada224a871c4"
+        ".github/workflows/test.yml#jobs.meta-harness-unpack-windows": "143be99b2021a58f720327a4aa1b91c8e1ec3395718ced9ae0e814499e2daca8"
       }
     }
   ]
