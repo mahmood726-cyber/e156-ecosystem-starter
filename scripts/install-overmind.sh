@@ -106,6 +106,21 @@ store_truthcert_hmac_key() {
     printf '%s' "$key_file"
 }
 
+
+# Fail closed: a downloaded CLI is not ready merely because it is on PATH.
+# This is a component smoke check, NOT authenticated release certification.
+verify_overmind_canary() {
+    local output status
+    if output="$(overmind meta-verify 2>&1)"; then
+        printf '%s\n' "$output" | sed -n '1,5s/^/  /p'
+    else
+        status=$?
+        printf '%s\n' "$output" | sed -n '1,5s/^/  /p' >&2
+        echo "ERROR: overmind meta-verify exited $status; cannot claim readiness." >&2
+        return 1
+    fi
+}
+
 if [[ "$IMPORT" -eq 1 ]]; then
     return 0 2>/dev/null || exit 0
 fi
@@ -161,8 +176,7 @@ else
 fi
 
 log_step "overmind meta-verify (canary)"
-overmind meta-verify 2>&1 | head -5 | sed 's/^/  /' || \
-    log_warn "overmind meta-verify returned non-zero (review above)"
+verify_overmind_canary
 
 echo
 echo "====================================================="

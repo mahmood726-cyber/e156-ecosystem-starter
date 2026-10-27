@@ -256,6 +256,24 @@ else
 fi
 rm -rf "$repo"
 
+
+# Explicit failure injection: these are mocked CLI responses, not live canaries.
+start "overmind meta-verify refuses injected nonzero exit"
+if result="$(bash -c "source '$ROOT/scripts/install-overmind.sh' --import; overmind() { echo 'fixture verifier refusal' >&2; return 42; }; verify_overmind_canary" 2>&1)"; then
+    bad "injected verifier failure was accepted"
+elif [[ "$result" == *"ERROR: overmind meta-verify exited 42"* ]]; then
+    ok
+else
+    bad "expected fail-closed diagnostic, got: $result"
+fi
+
+start "overmind meta-verify accepts injected zero exit"
+if result="$(bash -c "source '$ROOT/scripts/install-overmind.sh' --import; overmind() { echo 'fixture verifier success'; return 0; }; verify_overmind_canary" 2>&1)" && [[ "$result" == *"fixture verifier success"* ]]; then
+    ok
+else
+    bad "expected fixture success, got: $result"
+fi
+
 # Summary
 echo
 echo "Tests completed: $((PASS+FAIL))"

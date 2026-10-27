@@ -311,3 +311,33 @@ Describe "Self-SHA gate exits 0 under -DryRun" {
         ($r -join ' ') | Should -Match 'Dry run'
     }
 }
+
+
+# Failure-injection only: no production Overmind executable is invoked here.
+Describe "Assert-OvermindMetaVerify fail-closed readiness (fixture)" {
+    BeforeAll {
+        . (Join-Path $script:starterRoot 'scripts/install-overmind.ps1') -Import
+    }
+    It "refuses a verifier nonzero exit" {
+        function global:overmind {
+            $global:LASTEXITCODE = 42
+            'fixture verifier refusal'
+        }
+        try {
+            { Assert-OvermindMetaVerify } | Should -Throw '*meta-verify failed*'
+        } finally {
+            Remove-Item Function:overmind -ErrorAction SilentlyContinue
+        }
+    }
+    It "allows a verifier zero exit (fixture only)" {
+        function global:overmind {
+            $global:LASTEXITCODE = 0
+            'fixture verifier success'
+        }
+        try {
+            { Assert-OvermindMetaVerify } | Should -Not -Throw
+        } finally {
+            Remove-Item Function:overmind -ErrorAction SilentlyContinue
+        }
+    }
+}

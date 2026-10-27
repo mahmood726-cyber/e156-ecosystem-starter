@@ -117,6 +117,20 @@ function Set-TruthCertHmacKey {
     $env:TRUTHCERT_HMAC_KEY = $Key
 }
 
+
+# A real verifier refusal must stop the installer before it advertises success.
+# A passing smoke check is not a signed full-system canary.
+function Assert-OvermindMetaVerify {
+    [CmdletBinding()]
+    param()
+    $canary = & overmind meta-verify 2>&1
+    $exitCode = $LASTEXITCODE
+    $canary | Select-Object -First 5 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+    if ($exitCode -ne 0) {
+        throw "Overmind meta-verify failed (exit $exitCode); cannot claim readiness."
+    }
+}
+
 if ($Import) { return }
 
 # === Real flow =============================================================
@@ -169,11 +183,7 @@ if ($existing -and -not $HmacKey) {
 
 # Step 3: quick sanity check
 Write-Step "overmind meta-verify (canary)"
-$canary = & overmind meta-verify 2>&1
-$canary | Select-Object -First 5 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
-if ($LASTEXITCODE -ne 0) {
-    Write-Warning "overmind meta-verify returned non-zero ($LASTEXITCODE). Not necessarily fatal, but review above."
-}
+Assert-OvermindMetaVerify
 
 Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green
