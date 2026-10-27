@@ -73,7 +73,8 @@ jobs:
             $config.Run.PassThru = $true
             $config.Output.Verbosity = 'Detailed'
             $config.TestResult.Enabled = $true
-            $config.TestResult.OutputPath = ('pester-results-{0:D2}.xml' -f $i)
+            $xmlPath = ('pester-results-{0:D2}.xml' -f $i)
+          $config.TestResult.OutputPath = $xmlPath
             $config.TestResult.OutputFormat = 'NUnitXml'
             $result = Invoke-Pester -Configuration $config
             if ($null -eq $result) {
@@ -88,6 +89,14 @@ jobs:
                 $result.SkippedCount -ne 0 -or $result.NotRunCount -ne 0 -or
                 $result.PassedCount -ne $result.TotalCount) {
               throw "Incomplete Pester suite $suite (total=$($result.TotalCount); passed=$($result.PassedCount); failed=$($result.FailedCount); skipped=$($result.SkippedCount); not-run=$($result.NotRunCount))"
+            }
+            # Pester's in-memory counts are not proof that every individual
+            # NUnit XML artifact was actually written for later inspection.
+            if (-not (Test-Path -LiteralPath $xmlPath -PathType Leaf)) {
+              throw "Required Pester XML missing for suite: $suite ($xmlPath)"
+            }
+            if ((Get-Item -LiteralPath $xmlPath).Length -le 0) {
+              throw "Required Pester XML empty for suite: $suite ($xmlPath)"
             }
             Write-Host "Required Pester suite PASSED: $suite ($($result.PassedCount) tests)"
           }
