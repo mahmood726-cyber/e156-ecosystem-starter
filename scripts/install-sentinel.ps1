@@ -68,9 +68,12 @@ Optional: also disable the Store alias in
 $script:SentinelDefaultRef = '5808f2bdc024506fa3d49a367c88b42b15fdf164'
 
 function Get-SentinelDefaultSource {
-    # Frozen release source by default. SENTINEL_REF deliberately opts out
-    # of the pin; an overridden install is not authenticated.
+    # Explicit rollback overrides must be immutable commits, not tags or branches.
+    # A commit SHA establishes identity, not an authenticated publisher.
     $ref = if ($env:SENTINEL_REF) { $env:SENTINEL_REF } else { $script:SentinelDefaultRef }
+    if ($ref -cnotmatch '^[0-9a-f]{40}$') {
+        throw 'SENTINEL_REF must be a full lowercase 40-character commit SHA.'
+    }
     return "git+https://github.com/mahmood726-cyber/Sentinel.git@$ref"
 }
 
@@ -165,6 +168,8 @@ Write-Host "Sentinel pre-push hook installer" -ForegroundColor Cyan
 Write-Host ""
 
 # Step 1: is sentinel on PATH?
+# Reject a mutable override even when a Sentinel executable is already on PATH.
+try { $null = Get-SentinelDefaultSource } catch { Write-Host $_.Exception.Message -ForegroundColor Red; exit 1 }
 Write-Step "Checking for sentinel CLI"
 if (Test-SentinelInstalled) {
     $ver = (& sentinel --help 2>&1 | Select-String 'usage: sentinel').ToString().Trim()

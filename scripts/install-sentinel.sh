@@ -55,9 +55,13 @@ assert_real_python() {
 SENTINEL_DEFAULT_REF="5808f2bdc024506fa3d49a367c88b42b15fdf164"
 
 sentinel_default_source() {
-    # Frozen release source by default. An explicit SENTINEL_REF overrides
-    # the pin and must never be presented as an authenticated installation.
+    # Explicit rollback overrides must also be exact immutable commits.
+    # Neither a tag nor a SHA establishes an authenticated publisher.
     local ref="${SENTINEL_REF:-$SENTINEL_DEFAULT_REF}"
+    if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+        echo "ERROR: SENTINEL_REF must be a full lowercase 40-character commit SHA." >&2
+        return 1
+    fi
     printf 'git+https://github.com/mahmood726-cyber/Sentinel.git@%s' "$ref"
 }
 
@@ -140,6 +144,8 @@ echo
 echo "Sentinel pre-push hook installer"
 echo
 
+# Reject a mutable override even if an existing executable is on PATH.
+sentinel_default_source >/dev/null || exit 1
 log_step "Checking for sentinel CLI"
 if test_sentinel_installed; then
     log_ok "sentinel already installed"

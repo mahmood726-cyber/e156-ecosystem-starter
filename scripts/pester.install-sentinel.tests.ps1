@@ -107,8 +107,15 @@ Describe "Get-SentinelDefaultSource pins the supply chain (P0)" {
         }
     }
 
-    It "honours SENTINEL_REF override (rollback / bleeding-edge)" {
-        $env:SENTINEL_REF = 'main'
-        Get-SentinelDefaultSource | Should -Be 'git+https://github.com/mahmood726-cyber/Sentinel.git@main'
+    It "accepts only a full lowercase commit SHA for explicit rollback" {
+        $env:SENTINEL_REF = 'f' * 40
+        Get-SentinelDefaultSource | Should -Be ("git+https://github.com/mahmood726-cyber/Sentinel.git@" + ('f' * 40))
+    }
+
+    It "refuses mutable or malformed SENTINEL_REF overrides" {
+        foreach ($unsafe in @('main', 'master', 'HEAD', 'v1.0.0', 'deadbeef', ('f' * 39), ('f' * 41), ('F' * 40))) {
+            $env:SENTINEL_REF = $unsafe
+            { Get-SentinelDefaultSource } | Should -Throw '*40-character commit SHA*'
+        }
     }
 }

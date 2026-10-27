@@ -6,6 +6,7 @@ verification, real Git pre-push test or full five-component ecosystem canary.
 from __future__ import annotations
 
 import importlib.util
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -41,6 +42,39 @@ def test_real_bash_runtime_uses_commit_not_movable_tag():
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert proc.stdout.strip() == "git+https://github.com/mahmood726-cyber/Sentinel.git@" + PIN
+
+
+@pytest.mark.parametrize("unsafe_ref", [
+    "main", "master", "HEAD", "latest", "v1.0.0", "f" * 39,
+    "f" * 41, "F" * 40, "deadbeef", "refs/heads/main",
+])
+def test_bash_rejects_mutable_or_noncanonical_override(unsafe_ref):
+    proc = subprocess.run(
+        ["bash", "-c", "source scripts/install-sentinel.sh --import; sentinel_default_source"],
+        cwd=ROOT, capture_output=True, text=True, timeout=30,
+        env={**os.environ, "SENTINEL_REF": unsafe_ref},
+    )
+    assert proc.returncode != 0, proc.stdout + proc.stderr
+    assert "40-character commit SHA" in proc.stderr
+    assert "git+https" not in proc.stdout
+
+
+def test_bash_accepts_explicit_exact_sha_override():
+    requested = "f" * 40
+    proc = subprocess.run(
+        ["bash", "-c", "source scripts/install-sentinel.sh --import; sentinel_default_source"],
+        cwd=ROOT, capture_output=True, text=True, timeout=30,
+        env={**os.environ, "SENTINEL_REF": requested},
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert proc.stdout == "git+https://github.com/mahmood726-cyber/Sentinel.git@" + requested
+
+
+def test_mutable_override_preflight_runs_before_existing_cli_check():
+    bash_source = (ROOT / "scripts/install-sentinel.sh").read_text(encoding="utf-8")
+    ps_source = (ROOT / "scripts/install-sentinel.ps1").read_text(encoding="utf-8")
+    assert bash_source.index("sentinel_default_source >/dev/null || exit 1") < bash_source.index("if test_sentinel_installed; then")
+    assert ps_source.index("try { $null = Get-SentinelDefaultSource }") < ps_source.index("if (Test-SentinelInstalled) {")
 
 
 def test_frozen_release_never_queries_mutable_remote_head(monkeypatch):
