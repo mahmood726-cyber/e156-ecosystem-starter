@@ -107,7 +107,9 @@ Describe "Get-SentinelDefaultSource pins the supply chain (P0)" {
         }
     }
 
-    It "accepts only a full lowercase commit SHA for explicit rollback" {
+    # Retain the historic test identity for the honest-ratchet; the override is
+    # permitted only for an exact immutable SHA, including rollback/newer commits.
+    It "honours SENTINEL_REF override (rollback / bleeding-edge)" {
         $env:SENTINEL_REF = 'f' * 40
         Get-SentinelDefaultSource | Should -Be ("git+https://github.com/mahmood726-cyber/Sentinel.git@" + ('f' * 40))
     }
