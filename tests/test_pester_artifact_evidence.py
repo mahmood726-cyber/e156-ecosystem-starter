@@ -32,6 +32,16 @@ def require_pester_artifact_contract(source: str) -> None:
     # upload glob, rather than an old aggregate pester-results.xml path.
     if job.count("('pester-results-{0:D2}.xml' -f $i)") != 1:
         raise ValueError("Per-suite XML output naming absent or duplicated")
+    # A wildcard upload only requires *one* matching file. Each required
+    # Pester suite must prove it wrote a nonempty report before CI can pass.
+    required_guards = (
+        "$config.TestResult.OutputPath = $xmlPath",
+        "if (-not (Test-Path -LiteralPath $xmlPath -PathType Leaf)) {",
+        "if ((Get-Item -LiteralPath $xmlPath).Length -le 0) {",
+    )
+    for guard in required_guards:
+        if job.count(guard) != 1:
+            raise ValueError(f"Missing or duplicated per-suite XML guard: {guard}")
 
     steps = list(re.finditer(r"(?m)^      - uses:\s*([^\s#]+)\s*$", job))
     uploads = [step for step in steps if "upload-artifact" in step.group(1)]
@@ -84,3 +94,15 @@ def test_duplicate_uploader_refused() -> None:
     assert source.count(marker) == 1
     with pytest.raises(ValueError):
         require_pester_artifact_contract(source.replace(marker, marker + marker, 1))
+
+
+@pytest.mark.parametrize("guard", [
+    "$config.TestResult.OutputPath = $xmlPath",
+    "if (-not (Test-Path -LiteralPath $xmlPath -PathType Leaf)) {",
+    "if ((Get-Item -LiteralPath $xmlPath).Length -le 0) {",
+])
+def test_missing_per_suite_xml_guard_refused(guard: str) -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+    assert source.count(guard) == 1, "mutation must apply to current workflow"
+    with pytest.raises(ValueError, match="per-suite XML guard"):
+        require_pester_artifact_contract(source.replace(guard, "", 1))
