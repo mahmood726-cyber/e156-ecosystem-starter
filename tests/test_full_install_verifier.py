@@ -95,7 +95,7 @@ def test_warn_mode_sentinel_hook_refuses_static_full_canary(tmp_path):
 def test_sentinel_keyword_without_authentic_hook_marker_refuses(tmp_path):
     _fake_installed_tree(tmp_path)
     hook = tmp_path / "code" / "my-first-repo" / ".git" / "hooks" / "pre-push"
-    hook.write_text("#!/bin/sh\\necho sentinel\\nexit 0\\n", encoding="utf-8")
+    hook.write_text("#!/bin/sh\necho sentinel\nexit 0\n", encoding="utf-8")
     assert "Sentinel hook installed" in _failures(tmp_path)
 
 
