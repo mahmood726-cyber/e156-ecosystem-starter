@@ -196,6 +196,18 @@ if [[ "$IMPORT" -eq 0 ]]; then
     verify_self_sha
 fi
 
+# --full promises every mandatory component. Missing installer scripts used
+# to be silently labelled "skipped" and could produce a zero exit status.
+# Refuse before touching agent rules/memory or invoking any sub-installer.
+if [[ "$IMPORT" -eq 0 && "$FULL" -eq 1 ]]; then
+    for required_script in install-sentinel.sh install-overmind.sh install-projectindex.sh install-extractor.sh; do
+        if [[ ! -f "$STARTER_ROOT/scripts/$required_script" ]]; then
+            echo "ERROR: --full requires scripts/$required_script; refusing partial install." >&2
+            exit 2
+        fi
+    done
+fi
+
 # --------------------------- helpers --------------------------------------
 
 log_step() { printf '==> %s\n' "$1"; }
