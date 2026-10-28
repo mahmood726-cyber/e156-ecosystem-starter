@@ -261,6 +261,15 @@ start "Linux Sentinel sub-installer defaults to blocking mode"
 default_mode="$(bash -c 'source "$1" --import; printf "%s" "$MODE"' _ "$ROOT/scripts/install-sentinel.sh")"
 assert_eq "$default_mode" "block" && ok
 
+# The --full parent must request blocking Sentinel explicitly, rather than
+# depending on a sub-installer default that could change. Static fixture only.
+start "Linux --full chain explicitly requests blocking Sentinel"
+if grep -Fq -- 'if bash "$SCRIPTS_DIR/install-sentinel.sh" --repo "$sentinel_repo" --mode block; then' "$ROOT/install/install.sh"; then
+    ok
+else
+    bad "install.sh does not explicitly chain Sentinel with --mode block"
+fi
+
 # Summary
 echo
 echo "Tests completed: $((PASS+FAIL))"
