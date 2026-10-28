@@ -6,15 +6,16 @@
       "id": ".github/workflows/test.yml#jobs.pester",
       "kind": "ci-job",
       "name": "Pester (Windows)",
-      "stops": "A missing, duplicate, empty, failed, errored, skipped or not-run test in any of the 11 explicitly required Pester suites fails the Windows pwsh 7 job. Each suite produces a separately checked result and NUnit XML.",
+      "stops": "The Windows pwsh 7 job refuses a missing or duplicate required suite path, a required suite with zero discovered tests, or any of its 11 named suites reporting failed, skipped, not-run or incomplete in-memory Pester test counts. It also refuses a missing or empty per-suite NUnit XML file and refuses an artifact upload with no matching files.",
       "would_not_stop": [
-        "New Pester suites not added to the explicit 11-file list: the job does not discover or enforce newly created *.tests.ps1 files automatically.",
+        "Malformed but nonempty NUnit XML, or XML testcase identities/counters that disagree with Pester in-memory results: the Windows job checks file existence and nonzero length, not XML parsing or count agreement.",
+        "The Windows job itself does not discover newly added, unlisted *.tests.ps1 files; a separate Ubuntu pytest suite-inventory test rejects these when the full CI runs.",
         "Differences in Windows PowerShell 5.1 behaviour: this job runs PowerShell 7.",
         "A live installation of pinned Sentinel, Overmind/TruthCert, E156 or Meta-Harness: the Pester suites exercise local wrapper/fixture behaviour only.",
         "Independent signature verification, source SHA authentication and complete multi-repository ecosystem canaries.",
         "Behaviour absent from the explicitly listed test assertions."
       ],
-      "source": ".github/workflows/test.yml Pester job and per-suite pass/fail accounting.",
+      "source": ".github/workflows/test.yml Pester job and upload step; tests/test_pester_suite_inventory.py (separate Ubuntu inventory guard).",
       "seal": {
         ".github/workflows/test.yml#jobs.pester": "95935562e1e788e9a9c20ce5300fe027aab28e1519162f34433d2e8562614dc7"
       }
