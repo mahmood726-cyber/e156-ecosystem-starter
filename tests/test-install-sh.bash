@@ -256,6 +256,11 @@ else
 fi
 rm -rf "$repo"
 
+# Fail-closed Sentinel mode: no network or fake certification involved.
+start "Linux Sentinel sub-installer defaults to blocking mode"
+default_mode="$(bash -c 'source "$1" --import; printf "%s" "$MODE"' _ "$ROOT/scripts/install-sentinel.sh")"
+assert_eq "$default_mode" "block" && ok
+
 # Summary
 echo
 echo "Tests completed: $((PASS+FAIL))"
