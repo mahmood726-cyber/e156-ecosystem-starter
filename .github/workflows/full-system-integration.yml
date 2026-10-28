@@ -41,7 +41,7 @@ jobs:
 
       - name: Run verifier negative controls
         run: |
-          python -m pip install pytest
+          python -m pip install --require-hashes -r requirements-ci.lock
           python -m pytest tests/test_full_install_verifier.py -q
 
       - name: Verify installer SHA before running
