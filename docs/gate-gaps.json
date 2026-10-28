@@ -17,7 +17,7 @@
       ],
       "source": ".github/workflows/test.yml Pester job and upload step; tests/test_pester_suite_inventory.py (separate Ubuntu inventory guard).",
       "seal": {
-        ".github/workflows/test.yml#jobs.pester": "95935562e1e788e9a9c20ce5300fe027aab28e1519162f34433d2e8562614dc7"
+        ".github/workflows/test.yml#jobs.pester": "08bc1052adf15d32f5c0716e463eb7b1ec10d941db34b457008182fa229e92b4"
       }
     },
     {
