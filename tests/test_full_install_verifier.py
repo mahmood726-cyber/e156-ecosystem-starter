@@ -100,3 +100,66 @@ def test_insecure_key_permissions_refuse_on_posix(tmp_path):
     key.chmod(0o644)
     if os.name == "posix":
         assert "TruthCert key permissions" in _failures(tmp_path)
+
+
+# These are explicitly synthetic failure-injection fixtures, not signed bundles
+# or evidence that a real published four-component ecosystem is certified.
+import subprocess
+
+import pytest
+
+
+CERTIFIED_FIXTURE = (
+    '{"passed":true,"verdict":"CERTIFIED","bundle_hash":"0123456789abcdef"}'
+)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '{"passed":false,"verdict":"REJECT","bundle_hash":"0123456789abcdef"}',
+        '{"passed":1,"verdict":"CERTIFIED","bundle_hash":"0123456789abcdef"}',
+        '{"passed":true,"verdict":"CERTIFIED"}',
+        '{"passed":true,"verdict":"CERTIFIED","bundle_hash":"INVALID"}',
+        '{"passed":true,"verdict":"CERTIFIED","bundle_hash":"0123456789abcdef","alarm_written":false}',
+        '{"passed":true,"verdict":"CERTIFIED","bundle_hash":"0123456789abcdef","passed":false}',
+        '{"passed":true,"verdict":"CERTIFIED","bundle_hash":"0123456789abcdef","noise":NaN}',
+        'not JSON',
+        CERTIFIED_FIXTURE + '\nwarning: unexpected extra text',
+    ],
+)
+def test_overmind_meta_verify_rejects_ambiguous_or_failed_json(payload):
+    assert MODULE._overmind_certified_result(payload) is False
+
+
+def test_overmind_meta_verify_accepts_unambiguous_fixture_json():
+    assert MODULE._overmind_certified_result(CERTIFIED_FIXTURE) is True
+
+
+@pytest.mark.parametrize(
+    ("stdout", "exit_code", "expected"),
+    [
+        ('{"passed":false,"verdict":"REJECT","bundle_hash":"0123456789abcdef"}', 0, "FAIL"),
+        (CERTIFIED_FIXTURE, 1, "FAIL"),
+        (CERTIFIED_FIXTURE, 0, "PASS"),
+    ],
+)
+def test_full_canary_requires_overmind_json_verdict_and_process_success(
+    tmp_path, monkeypatch, stdout, exit_code, expected
+):
+    _fake_installed_tree(tmp_path)
+    monkeypatch.setattr(MODULE.shutil, "which", lambda _exe: "/isolated-test-bin")
+    calls = []
+
+    def simulated_runner(argv, **_kwargs):
+        calls.append(tuple(argv))
+        if argv[:2] == ["overmind", "meta-verify"]:
+            return subprocess.CompletedProcess(argv, exit_code, stdout=stdout, stderr="")
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(MODULE.subprocess, "run", simulated_runner)
+    outcomes = MODULE.verify(tmp_path, run_canaries=True)
+    results = {name: verdict for name, verdict, _ in outcomes}
+    assert ("overmind", "meta-verify") in calls
+    assert results["Overmind numerical canary"] == expected
+    assert results["Sentinel CLI scan"] == "PASS"
