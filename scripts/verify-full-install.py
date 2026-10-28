@@ -8,6 +8,7 @@ Never run --full on a personal machine just to satisfy this CI test.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -19,6 +20,44 @@ from pathlib import Path
 
 RULE_FILES = ("rules.md", "e156.md", "advanced-stats.md", "lessons.md")
 CONTEXT_FILES = ("AGENTS.md", "CLAUDE.md", "GEMINI.md", "CODEX.md")
+
+
+def _unique_json_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """Reject duplicate verdict fields rather than accepting last-one-wins JSON."""
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate meta-verify JSON member")
+        result[key] = value
+    return result
+
+
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"non-standard JSON constant: {value}")
+
+
+def _overmind_certified_result(stdout: str) -> bool:
+    """Accept only the pinned Overmind verifier-health fixture's clear success.
+
+    This is NOT proof that a production bundle is signed or independently
+    authenticated. Overmind v1.0.0 may exit zero for passed=false.
+    """
+    try:
+        payload = json.loads(
+            stdout,
+            object_pairs_hook=_unique_json_pairs,
+            parse_constant=_reject_json_constant,
+        )
+    except (TypeError, ValueError, UnicodeError, RecursionError):
+        return False
+    return (
+        type(payload) is dict
+        and payload.get("passed") is True
+        and payload.get("verdict") == "CERTIFIED"
+        and type(payload.get("bundle_hash")) is str
+        and re.fullmatch(r"[0-9a-f]{16}", payload["bundle_hash"]) is not None
+        and "alarm_written" not in payload
+    )
 
 
 def verify(home: Path, *, run_canaries: bool = True) -> list[tuple[str, str, str]]:
@@ -75,7 +114,8 @@ def verify(home: Path, *, run_canaries: bool = True) -> list[tuple[str, str, str
     check("RCT extractor bridge installed", entry.is_file(), str(entry))
 
     if run_canaries:
-        def canary(name: str, argv: list[str], *, timeout: int = 180) -> None:
+        def canary(name: str, argv: list[str], *, timeout: int = 180,
+                   require_overmind_json: bool = False) -> None:
             if shutil.which(argv[0]) is None:
                 check(name, False, f"{argv[0]} unavailable on PATH")
                 return
@@ -86,11 +126,16 @@ def verify(home: Path, *, run_canaries: bool = True) -> list[tuple[str, str, str
                 check(name, False, str(exc))
                 return
             detail = (proc.stderr or proc.stdout or "").strip()[-300:]
-            check(name, proc.returncode == 0,
-                  f"exit={proc.returncode}; {detail}")
+            certified = (
+                _overmind_certified_result(proc.stdout)
+                if require_overmind_json else True
+            )
+            check(name, proc.returncode == 0 and certified,
+                  f"exit={proc.returncode}; meta_verdict_certified={certified}; {detail}")
 
         canary("Sentinel CLI scan", ["sentinel", "scan", "--repo", str(sample_repo)])
-        canary("Overmind numerical canary", ["overmind", "meta-verify"], timeout=240)
+        canary("Overmind numerical canary", ["overmind", "meta-verify"],
+               timeout=240, require_overmind_json=True)
         canary("ProjectIndex reconcile", [sys.executable, str(index / "reconcile_counts.py"),
                                            "--root", str(index)])
         if entry.is_file():
