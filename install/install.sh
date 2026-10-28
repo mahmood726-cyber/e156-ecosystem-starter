@@ -452,8 +452,8 @@ if [[ "$do_sentinel" -eq 1 && -f "$SCRIPTS_DIR/install-sentinel.sh" ]]; then
         ( cd "$sentinel_repo" && git init --quiet ) 2>/dev/null \
             && log_ok "git init at $sentinel_repo"
     fi
-    log_step "Chaining: install-sentinel.sh --repo $sentinel_repo"
-    if bash "$SCRIPTS_DIR/install-sentinel.sh" --repo "$sentinel_repo"; then
+    log_step "Chaining: install-sentinel.sh --repo $sentinel_repo --mode block"
+    if bash "$SCRIPTS_DIR/install-sentinel.sh" --repo "$sentinel_repo" --mode block; then
         chain_sentinel="ok"
         chain_sentinel_detail="installed in $sentinel_repo"
     else
