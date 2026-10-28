@@ -33,7 +33,15 @@ def _fake_installed_tree(home: Path) -> None:
         p.write_text("memory\n", encoding="utf-8")
     hook = home / "code" / "my-first-repo" / ".git" / "hooks" / "pre-push"
     hook.parent.mkdir(parents=True)
-    hook.write_text("#!/bin/sh\nsentinel scan --repo .\n", encoding="utf-8")
+    # A synthetic BLOCK-mode installed hook fixture; NOT a real Sentinel hook.
+    hook.write_text(
+        "#!/bin/sh\n"
+        "# === SENTINEL PRE-PUSH HOOK (do not edit above this line) ===\n"
+        'MODE="${SENTINEL_MODE:-block}"\n'
+        "python -m sentinel scan --repo .\n",
+        encoding="utf-8",
+    )
+    hook.chmod(0o700)
     key = home / ".config" / "e156" / "truthcert-hmac-key"
     key.parent.mkdir(parents=True)
     key.write_text("a" * 64 + "\n", encoding="utf-8")
@@ -71,6 +79,32 @@ def test_missing_extractor_refuses_even_with_other_layers(tmp_path):
     bridge = tmp_path / "code" / "rct-extractor-v2" / "scripts" / "build_metakit_config.py"
     bridge.unlink()
     assert "RCT extractor bridge installed" in _failures(tmp_path)
+
+
+def test_warn_mode_sentinel_hook_refuses_static_full_canary(tmp_path):
+    _fake_installed_tree(tmp_path)
+    hook = tmp_path / "code" / "my-first-repo" / ".git" / "hooks" / "pre-push"
+    # Pinned Sentinel source specifies that warn mode allows BLOCK pushes.
+    hook.write_text(
+        hook.read_text(encoding="utf-8").replace(":-block}", ":-warn}"),
+        encoding="utf-8",
+    )
+    assert "Sentinel hook installed" in _failures(tmp_path)
+
+
+def test_sentinel_keyword_without_authentic_hook_marker_refuses(tmp_path):
+    _fake_installed_tree(tmp_path)
+    hook = tmp_path / "code" / "my-first-repo" / ".git" / "hooks" / "pre-push"
+    hook.write_text("#!/bin/sh\\necho sentinel\\nexit 0\\n", encoding="utf-8")
+    assert "Sentinel hook installed" in _failures(tmp_path)
+
+
+def test_non_executable_sentinel_hook_refuses_on_posix(tmp_path):
+    _fake_installed_tree(tmp_path)
+    hook = tmp_path / "code" / "my-first-repo" / ".git" / "hooks" / "pre-push"
+    hook.chmod(0o600)
+    if os.name == "posix":
+        assert "Sentinel hook installed" in _failures(tmp_path)
 
 
 def test_placeholder_truthcert_key_refuses(tmp_path):
