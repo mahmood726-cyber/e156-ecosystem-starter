@@ -163,3 +163,6 @@ def test_full_canary_requires_overmind_json_verdict_and_process_success(
     assert ("overmind", "meta-verify") in calls
     assert results["Overmind numerical canary"] == expected
     assert results["Sentinel CLI scan"] == "PASS"
+    details = {name: diagnostic for name, _, diagnostic in outcomes}
+    assert f"overmind_fixture_verdict_certified={expected == 'PASS'}" in details["Overmind numerical canary"]
+    assert "overmind_fixture_verdict_certified" not in details["Sentinel CLI scan"]
