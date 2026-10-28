@@ -13,7 +13,9 @@
 set -euo pipefail
 
 REPO=""
-MODE="warn"
+# Fail closed on a fresh installation: warn mode permits BLOCK findings to push.
+# A caller must opt in explicitly to a non-blocking mode.
+MODE="block"
 SKIP_PIP=0
 IMPORT=0
 
