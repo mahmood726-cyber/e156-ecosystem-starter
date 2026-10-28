@@ -31,6 +31,7 @@ PORT_VERSION = "1.0.0"
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "test.yml"
+FULL_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "full-system-integration.yml"
 LOCK = REPO_ROOT / "requirements-ci.lock"
 
 _PIP_INSTALL = re.compile(r"\bpip3?(\.exe)?\s+install\b")
@@ -162,6 +163,14 @@ def test_real_workflow_installs_only_from_hashed_lock():
     assert workflow_problems(WORKFLOW) == []
 
 
+def test_real_full_install_workflow_installs_only_from_hashed_lock():
+    """Full Linux install uses the same reviewed wheel hashes as the unit gate."""
+    assert workflow_problems(FULL_WORKFLOW) == []
+    assert "python -m pip install --require-hashes -r requirements-ci.lock" in (
+        FULL_WORKFLOW.read_text(encoding="utf-8")
+    )
+
+
 def test_python_tests_job_uses_ci_lock():
     """The python-tests job specifically must install from requirements-ci.lock."""
     text = WORKFLOW.read_text(encoding="utf-8")
@@ -198,6 +207,33 @@ def _planted_workflow(tmp_path: Path, old: str, new: str) -> Path:
 
 
 GOOD_INSTALL = "python -m pip install --require-hashes -r requirements-ci.lock"
+
+
+@pytest.mark.parametrize("planted", [
+    "python -m pip install pytest",
+    "python -m pip install -r requirements-ci.lock",
+    "python -m pip install --require-hashes pytest==9.1.1",
+    "python -m pip install --require-hashes -r requirements-ci.lock requests",
+])
+def test_full_install_workflow_refuses_unlocked_dependency(tmp_path, planted):
+    """Mutation checks fail closed on the *integration* workflow, not test.yml."""
+    (tmp_path / "requirements-ci.lock").write_text(
+        LOCK.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    original = FULL_WORKFLOW.read_text(encoding="utf-8")
+    assert GOOD_INSTALL in original
+    wf = tmp_path / "full-system-integration.yml"
+    wf.write_text(original.replace(GOOD_INSTALL, planted), encoding="utf-8")
+    assert workflow_problems(wf, tmp_path), planted
+
+
+def test_full_install_workflow_good_copy_passes(tmp_path):
+    (tmp_path / "requirements-ci.lock").write_text(
+        LOCK.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    wf = tmp_path / "full-system-integration.yml"
+    wf.write_text(FULL_WORKFLOW.read_text(encoding="utf-8"), encoding="utf-8")
+    assert workflow_problems(wf, tmp_path) == []
 
 
 def test_good_temp_copy_passes(tmp_path):
