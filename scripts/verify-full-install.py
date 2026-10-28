@@ -126,12 +126,16 @@ def verify(home: Path, *, run_canaries: bool = True) -> list[tuple[str, str, str
                 check(name, False, str(exc))
                 return
             detail = (proc.stderr or proc.stdout or "").strip()[-300:]
-            certified = (
-                _overmind_certified_result(proc.stdout)
-                if require_overmind_json else True
-            )
-            check(name, proc.returncode == 0 and certified,
-                  f"exit={proc.returncode}; meta_verdict_certified={certified}; {detail}")
+            if require_overmind_json:
+                certified = _overmind_certified_result(proc.stdout)
+                detail = (
+                    f"exit={proc.returncode}; "
+                    f"overmind_fixture_verdict_certified={certified}; {detail}"
+                )
+            else:
+                certified = True
+                detail = f"exit={proc.returncode}; {detail}"
+            check(name, proc.returncode == 0 and certified, detail)
 
         canary("Sentinel CLI scan", ["sentinel", "scan", "--repo", str(sample_repo)])
         canary("Overmind numerical canary", ["overmind", "meta-verify"],
