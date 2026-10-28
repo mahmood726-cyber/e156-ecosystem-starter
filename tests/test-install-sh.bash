@@ -270,6 +270,39 @@ else
     bad "install.sh does not explicitly chain Sentinel with --mode block"
 fi
 
+# Failure-injection fixture: if any required --full sub-installer is absent,
+# refuse before writing user agent files. All components are empty test stubs,
+# so this test makes no network requests and never asserts a real install.
+start "Linux --full refuses each missing mandatory sub-installer"
+full_fixture="$SANDBOX/full-required-subinstallers"
+mkdir -p "$full_fixture"/{install,scripts,docs,home}
+cp "$ROOT/install/install.sh" "$full_fixture/install/install.sh"
+if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$full_fixture/install/install.sh" | awk '{print $1}' > "$full_fixture/docs/HASH-linux.txt"
+else
+    shasum -a 256 "$full_fixture/install/install.sh" | awk '{print $1}' > "$full_fixture/docs/HASH-linux.txt"
+fi
+required_full_scripts=(install-sentinel.sh install-overmind.sh install-projectindex.sh install-extractor.sh)
+for required in "${required_full_scripts[@]}"; do
+    : > "$full_fixture/scripts/$required"
+done
+refusals_ok=1
+for required in "${required_full_scripts[@]}"; do
+    rm -f "$full_fixture/scripts/$required"
+    refusal_output="$(HOME="$full_fixture/home" bash "$full_fixture/install/install.sh" --full --github-user fixture-ci 2>&1)"
+    refusal_code=$?
+    if [[ "$refusal_code" -ne 2 || "$refusal_output" != *"ERROR: --full requires scripts/$required"* || -d "$full_fixture/home/.claude" ]]; then
+        refusals_ok=0
+        break
+    fi
+    : > "$full_fixture/scripts/$required"
+done
+if [[ "$refusals_ok" -eq 1 ]]; then
+    ok
+else
+    bad "missing $required: status=$refusal_code; expected preflight refusal before agent changes"
+fi
+
 # Summary
 echo
 echo "Tests completed: $((PASS+FAIL))"
