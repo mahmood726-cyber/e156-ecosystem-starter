@@ -8,14 +8,14 @@
 #
 # Usage:
 #   .\scripts\install-sentinel.ps1 -Repo C:\Projects\my-paper
-#   .\scripts\install-sentinel.ps1 -Repo . -Mode block   # abort push on BLOCK (default: warn)
+#   .\scripts\install-sentinel.ps1 -Repo . -Mode warn    # explicit nonblocking opt-in (default: block)
 #   .\scripts\install-sentinel.ps1 -Repo . -SkipPipInstall
 #   .\scripts\install-sentinel.ps1 -Import               # dot-source for tests
 
 [CmdletBinding()]
 param(
     [string]$Repo,
-    [ValidateSet('warn', 'block')][string]$Mode = 'warn',
+    [ValidateSet('warn', 'block')][string]$Mode = 'block',
     [switch]$SkipPipInstall,
     [switch]$Import
 )
@@ -122,7 +122,7 @@ function Install-SentinelHookInRepo {
     [CmdletBinding()]
     param(
         [string]$RepoPath,
-        [string]$HookMode = 'warn'
+        [ValidateSet('warn', 'block')][string]$HookMode = 'block'
     )
     $abs = (Resolve-Path $RepoPath -ErrorAction Stop).Path
     if (-not (Test-Path (Join-Path $abs '.git'))) {
