@@ -109,7 +109,7 @@ Describe "Get-SentinelDefaultSource pins the supply chain (P0)" {
         # The guard rejects a mutable default like 'main'; both a version tag
         # (v1.2.3) and a 7-40 char hex SHA are accepted.
         $src = Get-SentinelDefaultSource
-        $src | Should -Match '^git\+https://github\.com/mahmood726-cyber/Sentinel\.git@(v\d+(\.\d+){0,2}|[0-9a-f]{7,40})$'
+        $src | Should -Be 'git+https://github.com/mahmood726-cyber/Sentinel.git@5808f2bdc024506fa3d49a367c88b42b15fdf164'
     }
     It "the pin pattern itself rejects mutable refs (guards the guard)" {
         foreach ($mutable in 'main', 'master', 'HEAD', 'latest', 'dev', 'v1.0.0-rc', 'v1.x') {
@@ -120,9 +120,18 @@ Describe "Get-SentinelDefaultSource pins the supply chain (P0)" {
         }
     }
 
+    # Retain the historic test identity for the honest-ratchet; the override is
+    # permitted only for an exact immutable SHA, including rollback/newer commits.
     It "honours SENTINEL_REF override (rollback / bleeding-edge)" {
-        $env:SENTINEL_REF = 'main'
-        Get-SentinelDefaultSource | Should -Be 'git+https://github.com/mahmood726-cyber/Sentinel.git@main'
+        $env:SENTINEL_REF = 'f' * 40
+        Get-SentinelDefaultSource | Should -Be ("git+https://github.com/mahmood726-cyber/Sentinel.git@" + ('f' * 40))
+    }
+
+    It "refuses mutable or malformed SENTINEL_REF overrides" {
+        foreach ($unsafe in @('main', 'master', 'HEAD', 'v1.0.0', 'deadbeef', ('f' * 39), ('f' * 41), ('F' * 40))) {
+            $env:SENTINEL_REF = $unsafe
+            { Get-SentinelDefaultSource } | Should -Throw '*40-character commit SHA*'
+        }
     }
 }
 

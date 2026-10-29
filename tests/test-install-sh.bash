@@ -130,13 +130,24 @@ hex="$(bash -c "source '$ROOT/scripts/install-overmind.sh' --import && new_truth
 [[ ${#hex} -eq 64 && "$hex" =~ ^[0-9a-f]{64}$ ]] && ok
 
 # Describe: supply-chain pinning (P0 — fresh installs must be reproducible)
+# Retain these test identities for the honest-ratchet, but require the
+# exact release-target commit. A mutable tag alone is not an immutable pin.
 start "sentinel_default_source pins to a tagged release by default"
 default_src="$(bash -c "source '$ROOT/scripts/install-sentinel.sh' --import && sentinel_default_source")"
-[[ "$default_src" == git+https://github.com/mahmood726-cyber/Sentinel.git@v* ]] && ok
+assert_eq "$default_src" "git+https://github.com/mahmood726-cyber/Sentinel.git@5808f2bdc024506fa3d49a367c88b42b15fdf164" && ok
 
 start "sentinel_default_source honours SENTINEL_REF override"
-override_src="$(bash -c "export SENTINEL_REF=main; source '$ROOT/scripts/install-sentinel.sh' --import; sentinel_default_source")"
-assert_eq "$override_src" "git+https://github.com/mahmood726-cyber/Sentinel.git@main" && ok
+override_sha="ffffffffffffffffffffffffffffffffffffffff"
+override_src="$(bash -c "export SENTINEL_REF='$override_sha'; source '$ROOT/scripts/install-sentinel.sh' --import; sentinel_default_source")"
+assert_eq "$override_src" "git+https://github.com/mahmood726-cyber/Sentinel.git@$override_sha" && ok
+
+start "sentinel_default_source refuses mutable or malformed overrides"
+for unsafe in main master HEAD v1.0.0 deadbeef FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF; do
+    if bash -c "export SENTINEL_REF='$unsafe'; source '$ROOT/scripts/install-sentinel.sh' --import; sentinel_default_source" >/dev/null 2>&1; then
+        bad "unsafe SENTINEL_REF was accepted: $unsafe"
+    fi
+done
+[[ "$FAIL" -eq 0 ]] && ok
 
 start "overmind_default_source pins to a SHA-or-tag by default"
 default_src="$(bash -c "source '$ROOT/scripts/install-overmind.sh' --import && overmind_default_source")"
