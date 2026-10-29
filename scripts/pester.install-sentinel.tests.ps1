@@ -178,4 +178,28 @@ Describe "Windows Sentinel post-install hook integrity (isolated failure injecti
         $result | Should -Be $script:stubRoot
     }
 
+    It "defaults to a verified BLOCK hook when HookMode is omitted" {
+        $global:SentinelStubContent = ("#!/bin/sh" + [char]10 + $script:canonicalMarker + [char]10 + $script:scanner + [char]10 +
+            'MODE="${SENTINEL_MODE:-block}"')
+        $result = Install-SentinelHookInRepo -RepoPath $script:stubRoot
+        $result | Should -Be $script:stubRoot
+    }
+
+    It "permits explicit WARN opt-in without silently changing the default" {
+        $global:SentinelStubContent = ("#!/bin/sh" + [char]10 + $script:canonicalMarker + [char]10 + $script:scanner + [char]10 +
+            'MODE="${SENTINEL_MODE:-warn}"')
+        $result = Install-SentinelHookInRepo -RepoPath $script:stubRoot -HookMode warn
+        $result | Should -Be $script:stubRoot
+    }
+
+    It "refuses off-mode before a hook can be created" {
+        { Install-SentinelHookInRepo -RepoPath $script:stubRoot -HookMode off } | Should -Throw
+        (Test-Path -LiteralPath $global:SentinelStubHook) | Should -BeFalse
+    }
+
+    It "the Starter Windows entrypoint itself defaults to BLOCK" {
+        $source = Get-Content -LiteralPath $script:Script -Raw
+        $source.Contains('    [ValidateSet(''warn'', ''block'')][string]$Mode = ''block'',') | Should -BeTrue
+    }
+
 }
