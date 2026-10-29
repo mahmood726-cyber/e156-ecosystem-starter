@@ -53,11 +53,26 @@ function Test-E156Chartkit {
     [CmdletBinding()]
     param([string]$TargetDir)
     $py = Get-Command python -ErrorAction SilentlyContinue
-    if (-not $py) { return $true }   # python missing: skip, not fail
+    if (-not $py) { return $false }  # absence is not a successful canary
     $out = Join-Path $env:TEMP ("e156_" + [System.Guid]::NewGuid().ToString('N') + '.svg')
-    & python (Join-Path $TargetDir 'chartkit.py') (Join-Path $TargetDir 'sample.capsule.json') --out $out 2>&1 | Out-Null
-    $ok = ($LASTEXITCODE -eq 0)
-    if (Test-Path $out) { Remove-Item $out -Force }
+    $ok = $false
+    try {
+        & $py.Source (Join-Path $TargetDir 'chartkit.py') (Join-Path $TargetDir 'sample.capsule.json') --out $out 2>&1 | Out-Null
+        # A zero exit without a nonempty output file is not verified rendering.
+        $ok = ($LASTEXITCODE -eq 0) -and (Test-Path -LiteralPath $out -PathType Leaf) -and
+              ((Get-Item -LiteralPath $out).Length -gt 0)
+        if ($ok) {
+            # A nonempty output is insufficient: parse SVG XML and require
+            # the expected chart primitives from the bundled renderer.
+            $svgCheck = 'import sys,xml.etree.ElementTree as ET;r=ET.parse(sys.argv[1]).getroot();ns="{http://www.w3.org/2000/svg}";sys.exit(0 if r.tag==ns+"svg" and r.find(ns+"rect") is not None and r.find(ns+"line") is not None else 1)'
+            & $py.Source -c $svgCheck $out 2>&1 | Out-Null
+            $ok = ($LASTEXITCODE -eq 0)
+        }
+    } catch {
+        $ok = $false
+    } finally {
+        if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Force }
+    }
     return $ok
 }
 
@@ -88,13 +103,17 @@ if ($SkipCopy) {
     Write-Ok "template copied"
 }
 
+Write-Step "Verifying the offline chart-kit renders the sample"
+if (Test-E156Chartkit -TargetDir $Target) {
+    Write-Ok "chartkit OK (stdlib-only SVG render verified, no network)"
+} else {
+    Write-Host "REFUSED: chart-kit render failed or produced no SVG; E156_CAPSULES_PATH was not persisted." -ForegroundColor Red
+    exit 1
+}
+
 Write-Step "Persisting E156_CAPSULES_PATH (User env var)"
 Set-E156PathEnv -TargetDir $Target
 Write-Ok "E156_CAPSULES_PATH = $Target"
-
-Write-Step "Verifying the offline chart-kit renders the sample"
-if (Test-E156Chartkit -TargetDir $Target) { Write-Ok "chartkit OK (stdlib-only SVG render verified, no network)" }
-else { Write-Host "    WARNING: chartkit render check did not pass (python missing?)." -ForegroundColor Yellow }
 
 Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green

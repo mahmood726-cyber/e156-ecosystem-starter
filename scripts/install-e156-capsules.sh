@@ -88,14 +88,24 @@ persist_e156_path_env() {
 # Verify the offline chart-kit actually renders the bundled sample (token-free).
 verify_chartkit() {
     local target="$1"
-    [[ -n "$PYTHON" ]] || { echo "  (python not found; skipping render check)"; return 0; }
+    [[ -n "$PYTHON" ]] || { echo "REFUSED: no runnable Python; chart-kit verification is required." >&2; return 1; }
     # Render into the target dir itself (avoids passing a /tmp unix path to a native
     # Windows python under git-bash, which can't resolve it); clean up after.
-    local out="$target/.chartkit_check.svg"
-    if "$PYTHON" "$target/chartkit.py" "$target/sample.capsule.json" --out "$out" >/dev/null 2>&1; then
+    # mktemp reserves a fresh output exclusively, so stale files or symlink
+    # collisions cannot turn a renderer no-op into a successful canary.
+    local out
+    out="$(mktemp "$target/.chartkit_check.XXXXXXXX")" || {
+        echo "REFUSED: cannot create isolated chart-kit canary output." >&2; return 1;
+    }
+    # A zero exit and nonempty file alone do not prove a valid SVG chart.
+    # Parse XML and require the chartkit SVG root plus chart primitives.
+    if "$PYTHON" "$target/chartkit.py" "$target/sample.capsule.json" --out "$out" >/dev/null 2>&1 && [[ -s "$out" ]] &&
+       "$PYTHON" -c 'import sys,xml.etree.ElementTree as ET;r=ET.parse(sys.argv[1]).getroot();ns="{http://www.w3.org/2000/svg}";sys.exit(0 if r.tag==ns+"svg" and r.find(ns+"rect") is not None and r.find(ns+"line") is not None else 1)' "$out" >/dev/null 2>&1; then
         rm -f "$out"; return 0
     fi
-    rm -f "$out"; return 1
+    rm -f "$out"
+    echo "REFUSED: chart-kit render failed or produced no SVG." >&2
+    return 1
 }
 
 if [[ "$IMPORT" -eq 1 ]]; then
@@ -125,15 +135,16 @@ else
     log_ok "template copied"
 fi
 
-log_step "Persisting E156_CAPSULES_PATH"
-persist_e156_path_env "$TARGET"
-
 log_step "Verifying the offline chart-kit renders the sample"
 if verify_chartkit "$TARGET"; then
     log_ok "chartkit OK (stdlib-only SVG render verified, no network)"
 else
-    echo "    WARNING: chartkit render check did not pass (python missing?)." >&2
+    echo "REFUSED: E156_CAPSULES_PATH was not persisted; installation is incomplete." >&2
+    exit 1
 fi
+
+log_step "Persisting E156_CAPSULES_PATH"
+persist_e156_path_env "$TARGET"
 
 echo
 echo "====================================================="
