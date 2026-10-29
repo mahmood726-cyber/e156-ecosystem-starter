@@ -33,9 +33,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "test.yml"
 LOCK = REPO_ROOT / "requirements-ci.lock"
 
-# Detect pip global flags/options before the install subcommand as well.
+# Detect pip global flags/options and versioned pip3.13 entry points before install.
 # pip --no-input install requests is executable but must not evade the lock gate.
-_PIP_INSTALL = re.compile(r"\bpip3?(?:\.exe)?(?:\s+[^\s;&|]+)*\s+install\b")
+_PIP_INSTALL = re.compile(r"\bpip(?:3(?:\.\d+)?)?(?:\.exe)?(?:\s+[^\s;&|]+)*\s+install\b", re.I)
 _PINNED = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*==[A-Za-z0-9.+!_-]+$")
 _HASH = re.compile(r"^--hash=sha256:[0-9a-f]{64}$")
 # pip options that consume the following token as their value.
@@ -139,7 +139,7 @@ def _install_problems(segment: str, where: str, repo_root: Path) -> list[str]:
         tokens = shlex.split(segment, comments=True)
     except ValueError as exc:
         return [f"{where}: cannot tokenise pip install line ({exc})"]
-    pip_idx = next((i for i, t in enumerate(tokens) if re.fullmatch(r"pip3?(?:\.exe)?", t, re.I)), None)
+    pip_idx = next((i for i, t in enumerate(tokens) if re.fullmatch(r"pip(?:3(?:\.\d+)?)?(?:\.exe)?", t, re.I)), None)
     idx = next((i for i in range(pip_idx + 1, len(tokens)) if tokens[i] == "install"), None) if pip_idx is not None else None
     if idx is None:
         return [f"{where}: pip install in a form this guard cannot parse"]
@@ -379,5 +379,28 @@ def test_hash_locked_install_with_pip_global_option_is_accepted(tmp_path):
         tmp_path,
         GOOD_INSTALL,
         "python -m pip --no-input install --require-hashes -r requirements-ci.lock",
+    )
+    assert workflow_problems(wf, tmp_path) == []
+
+
+@pytest.mark.parametrize("planted", [
+    "pip3.9 install requests",
+    "pip3.13 install pytest",
+    "pip3.13.exe --no-input install urllib3",
+])
+def test_versioned_pip_executables_cannot_hide_unlocked_install(tmp_path, planted):
+    """Version-specific pip entry points execute installs and must be hash-locked."""
+    wf = _planted_workflow(tmp_path, GOOD_INSTALL, planted)
+    reasons = workflow_problems(wf, tmp_path)
+    assert any("without --require-hashes" in r for r in reasons), reasons
+
+
+@pytest.mark.parametrize("binary", ["pip3.9", "pip3.13", "pip3.13.exe"])
+def test_versioned_pip_executables_accept_hash_locked_install(tmp_path, binary):
+    """Do not reject a legitimate locked invocation because of its executable name."""
+    wf = _planted_workflow(
+        tmp_path,
+        GOOD_INSTALL,
+        f"{binary} install --require-hashes -r requirements-ci.lock",
     )
     assert workflow_problems(wf, tmp_path) == []
