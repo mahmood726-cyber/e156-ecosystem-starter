@@ -23,8 +23,10 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Test-SentinelInstalled {
-    $null = Get-Command sentinel -ErrorAction SilentlyContinue
-    return $?
+    # $? after assigning a command result can reflect the assignment rather
+    # than the presence of the executable. Check the lookup object itself.
+    $command = Get-Command sentinel -ErrorAction SilentlyContinue
+    return ($null -ne $command)
 }
 
 function Assert-RealPython {

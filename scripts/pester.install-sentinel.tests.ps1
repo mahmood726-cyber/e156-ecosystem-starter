@@ -14,11 +14,24 @@ Describe "Test-SentinelInstalled" {
         $r = Test-SentinelInstalled
         $r | Should -BeOfType [bool]
     }
-    It "is true when sentinel is on PATH (author's machine contract)" -Skip:(-not (Get-Command sentinel -ErrorAction SilentlyContinue)) {
-        # Documents the ecosystem-starter assumption on a developer machine.
-        # Skipped in CI / fresh-runner environments where sentinel isn't
-        # pre-installed; not a regression to ship.
-        Test-SentinelInstalled | Should -BeTrue
+    It "is true when sentinel is on PATH (author's machine contract)" {
+        # Isolated PATH-discovery fixture: this tiny .cmd is NOT the real
+        # Sentinel CLI. Never count this as a pinned full-system canary.
+        $bin = Join-Path $TestDrive 'sentinel-probe-bin'
+        New-Item -ItemType Directory -Force -Path $bin | Out-Null
+        Set-Content -LiteralPath (Join-Path $bin 'sentinel.cmd') -Encoding Ascii -Value '@echo off'
+        $previousPath = $env:PATH
+        try {
+            $env:PATH = "$bin;$previousPath"
+            Test-SentinelInstalled | Should -BeTrue
+        } finally {
+            $env:PATH = $previousPath
+        }
+    }
+    It "is false when Sentinel is not discoverable (isolated mock)" {
+        Mock Get-Command { $null } -ParameterFilter { $Name -eq 'sentinel' }
+        Test-SentinelInstalled | Should -BeFalse
+        Should -Invoke Get-Command -Times 1 -Exactly -ParameterFilter { $Name -eq 'sentinel' }
     }
 }
 
@@ -112,7 +125,6 @@ Describe "Get-SentinelDefaultSource pins the supply chain (P0)" {
         Get-SentinelDefaultSource | Should -Be 'git+https://github.com/mahmood726-cyber/Sentinel.git@main'
     }
 }
-
 
 Describe "Windows Sentinel post-install hook integrity (isolated failure injection)" {
     BeforeAll {
