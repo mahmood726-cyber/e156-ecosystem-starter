@@ -54,19 +54,58 @@ jobs:
             'scripts\pester.install-long-term-plan.tests.ps1',
             'scripts\pester.install-meta-harness.tests.ps1'
           )
-          $config = New-PesterConfiguration
-          $config.Run.Path = $files
-          $config.Run.Exit = $true
-          $config.Output.Verbosity = 'Detailed'
-          $config.TestResult.Enabled = $true
-          $config.TestResult.OutputPath = 'pester-results.xml'
-          $config.TestResult.OutputFormat = 'NUnitXml'
-          Invoke-Pester -Configuration $config
+          # A green aggregate can conceal a missing suite or an all-skipped file.
+          # Require every declared suite to exist, discover tests, and finish
+          # without skipped, not-run, failed, or errored cases.
+          $ErrorActionPreference = 'Stop'
+          $missing = @($files | Where-Object { -not (Test-Path -LiteralPath $_ -PathType Leaf) })
+          if ($missing.Count -gt 0) {
+            throw "Required Pester suite(s) missing: $($missing -join ', ')"
+          }
+          if (@($files | Select-Object -Unique).Count -ne $files.Count) {
+            throw 'Duplicate required Pester suite path.'
+          }
+          for ($i = 0; $i -lt $files.Count; $i++) {
+            $suite = $files[$i]
+            $config = New-PesterConfiguration
+            $config.Run.Path = @($suite)
+            $config.Run.Exit = $false
+            $config.Run.PassThru = $true
+            $config.Output.Verbosity = 'Detailed'
+            $config.TestResult.Enabled = $true
+            $xmlPath = ('pester-results-{0:D2}.xml' -f $i)
+          $config.TestResult.OutputPath = $xmlPath
+            $config.TestResult.OutputFormat = 'NUnitXml'
+            $result = Invoke-Pester -Configuration $config
+            if ($null -eq $result) {
+              throw "Pester returned no results for required suite: $suite"
+            }
+            foreach ($key in @('TotalCount', 'PassedCount', 'FailedCount', 'SkippedCount', 'NotRunCount')) {
+              if ($null -eq $result.$key) {
+                throw "Pester did not report $key for required suite: $suite"
+              }
+            }
+            if ($result.TotalCount -lt 1 -or $result.FailedCount -ne 0 -or
+                $result.SkippedCount -ne 0 -or $result.NotRunCount -ne 0 -or
+                $result.PassedCount -ne $result.TotalCount) {
+              throw "Incomplete Pester suite $suite (total=$($result.TotalCount); passed=$($result.PassedCount); failed=$($result.FailedCount); skipped=$($result.SkippedCount); not-run=$($result.NotRunCount))"
+            }
+            # Pester's in-memory counts are not proof that every individual
+            # NUnit XML artifact was actually written for later inspection.
+            if (-not (Test-Path -LiteralPath $xmlPath -PathType Leaf)) {
+              throw "Required Pester XML missing for suite: $suite ($xmlPath)"
+            }
+            if ((Get-Item -LiteralPath $xmlPath).Length -le 0) {
+              throw "Required Pester XML empty for suite: $suite ($xmlPath)"
+            }
+            Write-Host "Required Pester suite PASSED: $suite ($($result.PassedCount) tests)"
+          }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: pester-results
-          path: pester-results.xml
+          path: pester-results-*.xml
+          if-no-files-found: error
 
   bash-tests:
     name: Bash tests (Ubuntu)
