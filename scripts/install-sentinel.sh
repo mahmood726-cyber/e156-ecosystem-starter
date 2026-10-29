@@ -6,14 +6,14 @@
 #
 # Usage:
 #   ./scripts/install-sentinel.sh --repo <path>
-#   ./scripts/install-sentinel.sh --repo . --mode block
+#   ./scripts/install-sentinel.sh --repo . --mode warn  # explicit nonblocking opt-in
 #   ./scripts/install-sentinel.sh --skip-pip-install
 #   ./scripts/install-sentinel.sh --import
 
 set -euo pipefail
 
 REPO=""
-MODE="warn"
+MODE="block"
 SKIP_PIP=0
 IMPORT=0
 
@@ -27,6 +27,13 @@ while [[ $# -gt 0 ]]; do
         *) echo "unknown arg: $1" >&2; exit 2 ;;
     esac
 done
+
+# Keep Starter's default consistent with Sentinel's fail-closed CLI default.
+# Validate before package installation or any change to a user's Git hook.
+case "$MODE" in
+    block|warn) ;;
+    *) echo "ERROR: unsupported Sentinel hook mode: $MODE" >&2; exit 2 ;;
+esac
 
 test_sentinel_installed() {
     command -v sentinel >/dev/null 2>&1
