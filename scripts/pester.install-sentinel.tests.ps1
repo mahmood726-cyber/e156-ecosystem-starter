@@ -125,3 +125,93 @@ Describe "Get-SentinelDefaultSource pins the supply chain (P0)" {
         Get-SentinelDefaultSource | Should -Be 'git+https://github.com/mahmood726-cyber/Sentinel.git@main'
     }
 }
+
+Describe "Windows Sentinel post-install hook integrity (isolated failure injection)" {
+    BeforeAll {
+        # A deliberately bounded fake CLI: these tests exercise the STARTER
+        # postcondition, not a real Sentinel installation or a live scan.
+        function global:sentinel {
+            if ($null -ne $global:SentinelStubContent) {
+                [System.IO.File]::WriteAllText(
+                    $global:SentinelStubHook, [string]$global:SentinelStubContent
+                )
+            }
+            $global:LASTEXITCODE = 0
+        }
+        $script:canonicalMarker = '# === SENTINEL PRE-PUSH HOOK (do not edit above this line) ==='
+        $script:scanner = 'output="$(python -m sentinel scan --repo "$REPO_TOPLEVEL" 2>&1)"'
+    }
+    AfterAll {
+        Remove-Item Function:\global:sentinel -ErrorAction SilentlyContinue
+        Remove-Variable SentinelStubContent -Scope Global -ErrorAction SilentlyContinue
+        Remove-Variable SentinelStubHook -Scope Global -ErrorAction SilentlyContinue
+    }
+    BeforeEach {
+        $script:stubRoot = Join-Path $env:TEMP "sentinel-hook-postcondition-$([guid]::NewGuid().ToString('N'))"
+        $hookDir = Join-Path $script:stubRoot '.git\hooks'
+        New-Item -ItemType Directory -Force -Path $hookDir | Out-Null
+        $global:SentinelStubHook = Join-Path $hookDir 'pre-push'
+        $global:SentinelStubContent = $null
+        $global:LASTEXITCODE = 0
+    }
+    AfterEach {
+        Remove-Item -LiteralPath $script:stubRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    It "refuses exit zero with no generated pre-push hook" {
+        { Install-SentinelHookInRepo -RepoPath $script:stubRoot -HookMode block } |
+            Should -Throw "*no pre-push hook exists*"
+    }
+
+    It "refuses a non-Sentinel hook even if CLI reports success" {
+        $global:SentinelStubContent = "#!/bin/sh`necho fake success`n"
+        { Install-SentinelHookInRepo -RepoPath $script:stubRoot -HookMode block } |
+            Should -Throw "*identity/mode verification failed*"
+    }
+
+    It "refuses a hook that merely claims the Sentinel banner without invoking the scanner" {
+        $global:SentinelStubContent = "#!/bin/sh`n$script:canonicalMarker`n" +
+            'MODE="${SENTINEL_MODE:-block}"'
+        { Install-SentinelHookInRepo -RepoPath $script:stubRoot -HookMode block } |
+            Should -Throw "*identity/mode verification failed*"
+    }
+
+    It "refuses the wrong installed mode despite a successful CLI exit" {
+        $global:SentinelStubContent = "#!/bin/sh`n$script:canonicalMarker`n$script:scanner`n" +
+            'MODE="${SENTINEL_MODE:-warn}"'
+        { Install-SentinelHookInRepo -RepoPath $script:stubRoot -HookMode block } |
+            Should -Throw "*identity/mode verification failed*"
+    }
+
+    It "accepts a canonical-looking fixture with the requested block mode" {
+        $global:SentinelStubContent = "#!/bin/sh`n$script:canonicalMarker`n$script:scanner`n" +
+            'MODE="${SENTINEL_MODE:-block}"'
+        $result = Install-SentinelHookInRepo -RepoPath $script:stubRoot -HookMode block
+        $result | Should -Be $script:stubRoot
+    }
+
+    It "defaults to a verified BLOCK hook when HookMode is omitted" {
+        $global:SentinelStubContent = ("#!/bin/sh" + [char]10 + $script:canonicalMarker + [char]10 + $script:scanner + [char]10 +
+            'MODE="${SENTINEL_MODE:-block}"')
+        $result = Install-SentinelHookInRepo -RepoPath $script:stubRoot
+        $result | Should -Be $script:stubRoot
+    }
+
+    It "permits explicit WARN opt-in without silently changing the default" {
+        $global:SentinelStubContent = ("#!/bin/sh" + [char]10 + $script:canonicalMarker + [char]10 + $script:scanner + [char]10 +
+            'MODE="${SENTINEL_MODE:-warn}"')
+        $result = Install-SentinelHookInRepo -RepoPath $script:stubRoot -HookMode warn
+        $result | Should -Be $script:stubRoot
+    }
+
+    It "refuses off-mode before a hook can be created" {
+        { Install-SentinelHookInRepo -RepoPath $script:stubRoot -HookMode off } | Should -Throw
+        (Test-Path -LiteralPath $global:SentinelStubHook) | Should -BeFalse
+    }
+
+    It "the Starter Windows entrypoint itself defaults to BLOCK" {
+        $source = Get-Content -LiteralPath $script:Script -Raw
+        $source.Contains('    [ValidateSet(''warn'', ''block'')][string]$Mode = ''block'',') | Should -BeTrue
+    }
+
+}

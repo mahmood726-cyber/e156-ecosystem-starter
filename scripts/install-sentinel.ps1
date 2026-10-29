@@ -8,14 +8,14 @@
 #
 # Usage:
 #   .\scripts\install-sentinel.ps1 -Repo C:\Projects\my-paper
-#   .\scripts\install-sentinel.ps1 -Repo . -Mode block   # abort push on BLOCK (default: warn)
+#   .\scripts\install-sentinel.ps1 -Repo . -Mode warn    # explicit nonblocking opt-in (default: block)
 #   .\scripts\install-sentinel.ps1 -Repo . -SkipPipInstall
 #   .\scripts\install-sentinel.ps1 -Import               # dot-source for tests
 
 [CmdletBinding()]
 param(
     [string]$Repo,
-    [ValidateSet('warn', 'block')][string]$Mode = 'warn',
+    [ValidateSet('warn', 'block')][string]$Mode = 'block',
     [switch]$SkipPipInstall,
     [switch]$Import
 )
@@ -124,7 +124,7 @@ function Install-SentinelHookInRepo {
     [CmdletBinding()]
     param(
         [string]$RepoPath,
-        [string]$HookMode = 'warn'
+        [ValidateSet('warn', 'block')][string]$HookMode = 'block'
     )
     $abs = (Resolve-Path $RepoPath -ErrorAction Stop).Path
     if (-not (Test-Path (Join-Path $abs '.git'))) {
@@ -140,6 +140,22 @@ function Install-SentinelHookInRepo {
     $out | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
     if ($LASTEXITCODE -ne 0) {
         throw "sentinel install-hook failed (exit $LASTEXITCODE)"
+    }
+    # Exit 0 alone is not proof that a pre-push hook was installed. Verify the
+    # actual upstream Sentinel hook banner, scanner and requested install mode.
+    # This verifies a local installation postcondition, NOT a cryptographic
+    # signature or that a Sentinel scan has run.
+    $hookPath = Join-Path $abs '.git\hooks\pre-push'
+    if (-not (Test-Path -LiteralPath $hookPath -PathType Leaf)) {
+        throw "sentinel install-hook returned success but no pre-push hook exists at $hookPath"
+    }
+    $hook = Get-Content -LiteralPath $hookPath -Raw -ErrorAction Stop
+    $marker = '# === SENTINEL PRE-PUSH HOOK (do not edit above this line) ==='
+    $modeLine = 'MODE="${SENTINEL_MODE:-' + $HookMode + '}"'
+    if (-not $hook.Contains($marker) -or
+        -not $hook.Contains('python -m sentinel scan') -or
+        -not $hook.Contains($modeLine)) {
+        throw "sentinel install-hook returned success but pre-push hook identity/mode verification failed at $hookPath"
     }
     return $abs
 }
