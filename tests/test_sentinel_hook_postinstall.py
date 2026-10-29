@@ -88,3 +88,43 @@ def test_sentinel_hook_postinstall_fail_closed(tmp_path: Path, fixture: str, mod
     else:
         assert result.returncode != 0, output
         assert "Sentinel hook installed. It fires on every git push." not in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "expected_mode"),
+    [
+        ([], "block"),                       # no --mode must BLOCK
+        (["--mode", "block"], "block"),
+        (["--mode", "warn"], "warn"),         # explicit nonblocking opt-in
+        (["--mode", "off"], None),            # unsupported bypass must refuse
+    ],
+)
+def test_wrapper_cli_default_block_and_warn_opt_in(tmp_path: Path, extra_args, expected_mode):
+    """Run the real Bash wrapper with a disposable Git repo and synthetic CLI.
+
+    This verifies requested mode and refusal, not real installed Sentinel runtime.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "--quiet", str(repo)], check=True)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    executable = bin_dir / "sentinel"
+    executable.write_text(FAKE_CLI, encoding="utf-8")
+    executable.chmod(0o755)
+    env = dict(os.environ)
+    env["PATH"] = str(bin_dir) + os.pathsep + env.get("PATH", "")
+    env["SENTINEL_POSTINSTALL_FIXTURE"] = "valid"
+    result = subprocess.run(
+        ["bash", str(INSTALLER), "--repo", str(repo), "--skip-pip-install", *extra_args],
+        env=env, capture_output=True, text=True, timeout=20, check=False,
+    )
+    hook = repo / ".git" / "hooks" / "pre-push"
+    if expected_mode is None:
+        assert result.returncode != 0, result.stdout + result.stderr
+        assert "unsupported Sentinel hook mode" in result.stderr
+        assert not hook.exists(), "invalid mode must be rejected before hook writes"
+    else:
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert hook.is_file() and os.access(hook, os.X_OK)
+        assert ("SENTINEL_MODE:-" + expected_mode) in hook.read_text(encoding="utf-8")
