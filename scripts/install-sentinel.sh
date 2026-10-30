@@ -118,9 +118,13 @@ backup_existing_pre_push_hook() {
     # Second-resolution timestamps can collide on rapid reinstalls; never
     # overwrite an earlier user hook or follow a pre-existing backup symlink.
     local base="${hook}.user-${ts}" backup="" stage attempt=0
-    stage="$(mktemp "${hook}.user-stage.XXXXXXXX")" || return 1
+    stage="$(mktemp "${hook}.user-stage.XXXXXXXX")" || {
+        echo "ERROR: cannot reserve a temporary pre-push hook backup" >&2
+        return 1
+    }
     if ! cp -p -- "$hook" "$stage"; then
         rm -f -- "$stage"
+        echo "ERROR: cannot stage a pre-push hook backup copy" >&2
         return 1
     fi
     while (( attempt < 100 )); do

@@ -79,3 +79,49 @@ fi
     assert "cannot create a unique" in result.stderr
     assert (hooks / "pre-push").read_text() == "#!/bin/sh\necho custom\n"
     assert not list(hooks.glob("pre-push.user-*"))
+
+
+def test_backup_temp_reservation_failure_keeps_original_hook(tmp_path: Path) -> None:
+    """A failed mktemp must refuse the backup without claiming installation."""
+    hooks = tmp_path / ".git" / "hooks"
+    hooks.mkdir(parents=True)
+    hook = hooks / "pre-push"
+    hook.write_text("#!/bin/sh\necho original\n")
+    hook.chmod(0o755)
+
+    result = run_helper(tmp_path, """
+mktemp() { return 73; }
+if backup_existing_pre_push_hook "$TEST_REPO"; then
+    echo "unexpected success" >&2
+    exit 98
+fi
+printf 'refused\n'
+""")
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == "refused\n"
+    assert "cannot reserve a temporary pre-push hook backup" in result.stderr
+    assert hook.read_text() == "#!/bin/sh\necho original\n"
+    assert hook.stat().st_mode & 0o111
+    assert not list(hooks.glob("pre-push.user-*"))
+
+
+def test_backup_copy_failure_does_not_publish_partial_backup(tmp_path: Path) -> None:
+    """A staged copy failure must clean up the staging path and refuse."""
+    hooks = tmp_path / ".git" / "hooks"
+    hooks.mkdir(parents=True)
+    hook = hooks / "pre-push"
+    hook.write_text("#!/bin/sh\necho original\n")
+
+    result = run_helper(tmp_path, """
+cp() { return 77; }
+if backup_existing_pre_push_hook "$TEST_REPO"; then
+    echo "unexpected success" >&2
+    exit 98
+fi
+printf 'refused\n'
+""")
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == "refused\n"
+    assert "cannot stage a pre-push hook backup copy" in result.stderr
+    assert hook.read_text() == "#!/bin/sh\necho original\n"
+    assert not list(hooks.glob("pre-push.user-*"))
