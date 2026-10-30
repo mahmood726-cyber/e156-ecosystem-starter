@@ -95,10 +95,13 @@ verify_chartkit() {
     [[ -n "$PYTHON" ]] || { echo "REFUSED: Python is required to verify the E156 chart-kit." >&2; return 1; }
     # Keep verification inside the target for native Windows Python under Git Bash.
     # A unique path avoids deleting/accepting a stale user's .chartkit_check.svg.
-    out="$target/.chartkit_check.$.$RANDOM.svg"
+    if ! out="$(mktemp "$target/.chartkit_check.XXXXXXXX")"; then
+        echo "REFUSED: cannot reserve a private chart-kit test output." >&2
+        return 1
+    fi
     if "$PYTHON" "$target/chartkit.py" "$target/sample.capsule.json" --out "$out" >/dev/null 2>&1 &&
        [[ -s "$out" ]] &&
-       "$PYTHON" -c 'import sys, xml.etree.ElementTree as ET; root=ET.parse(sys.argv[1]).getroot(); sys.exit(0 if root.tag in ("svg", "{http://www.w3.org/2000/svg}svg") else 1)' "$out" >/dev/null 2>&1; then
+       "$PYTHON" -c 'import sys, xml.etree.ElementTree as ET; root=ET.parse(sys.argv[1]).getroot(); sys.exit(0 if root.tag=="{http://www.w3.org/2000/svg}svg" and root.find("{http://www.w3.org/2000/svg}rect") is not None and root.find("{http://www.w3.org/2000/svg}line") is not None else 1)' "$out" >/dev/null 2>&1; then
         rm -f -- "$out"
         return 0
     fi

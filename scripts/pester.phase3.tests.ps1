@@ -230,7 +230,7 @@ Describe "E156 capsules: Windows render canary integrity" {
         $script:SvgWriter = @'
 from pathlib import Path
 import sys
-Path(sys.argv[-1]).write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
+Path(sys.argv[-1]).write_text('<svg xmlns="http://www.w3.org/2000/svg"><rect/><line/></svg>')
 '@
     }
 
@@ -246,6 +246,15 @@ Path(sys.argv[-1]).write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
 
     It "refuses non-SVG XML despite an exit-0 renderer" {
         Set-Content -Path (Join-Path $script:CapsulesDir 'chartkit.py') -Value 'import sys; open(sys.argv[-1], "w").write("<html/>")' -Encoding UTF8
+        Test-E156Chartkit -TargetDir $script:CapsulesDir | Should -BeFalse
+    }
+
+    It "refuses a valid SVG root with no chart primitives" {
+        Set-Content -Path (Join-Path $script:CapsulesDir 'chartkit.py') -Value @'
+from pathlib import Path
+import sys
+Path(sys.argv[-1]).write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
+'@ -Encoding UTF8
         Test-E156Chartkit -TargetDir $script:CapsulesDir | Should -BeFalse
     }
 

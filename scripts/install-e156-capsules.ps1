@@ -65,7 +65,9 @@ function Test-E156Chartkit {
         $doc.Load($out)
         $root = $doc.DocumentElement
         return [bool]($root -and $root.LocalName -eq 'svg' -and
-            ($root.NamespaceURI -eq '' -or $root.NamespaceURI -eq 'http://www.w3.org/2000/svg'))
+            $root.NamespaceURI -eq 'http://www.w3.org/2000/svg' -and
+            $doc.GetElementsByTagName('rect', 'http://www.w3.org/2000/svg').Count -gt 0 -and
+            $doc.GetElementsByTagName('line', 'http://www.w3.org/2000/svg').Count -gt 0)
     } catch {
         return $false
     } finally {

@@ -16,6 +16,10 @@ SCRIPT = ROOT / "scripts" / "install-e156-capsules.sh"
 
 VALID_SVG = '''from pathlib import Path
 import sys
+Path(sys.argv[-1]).write_text('<svg xmlns="http://www.w3.org/2000/svg"><rect/><line/></svg>')
+'''
+CHARTLESS_SVG = '''from pathlib import Path
+import sys
 Path(sys.argv[-1]).write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
 '''
 NON_SVG = '''from pathlib import Path
@@ -45,8 +49,8 @@ def run_isolated(tmp_path: Path, chartkit: str, *, missing_python: bool = False)
     return proc, home, target
 
 
-@pytest.mark.parametrize("program", [EXIT_FAILURE, EXIT_ZERO_WITHOUT_SVG, NON_SVG],
-                         ids=["nonzero-exit", "success-with-no-file", "success-with-non-svg"])
+@pytest.mark.parametrize("program", [EXIT_FAILURE, EXIT_ZERO_WITHOUT_SVG, NON_SVG, CHARTLESS_SVG],
+                         ids=["nonzero-exit", "success-with-no-file", "success-with-non-svg", "chartless-svg"])
 def test_invalid_render_never_claims_ready_or_persists_path(tmp_path: Path, program: str):
     proc, home, target = run_isolated(tmp_path, program)
     assert proc.returncode != 0, proc.stdout + proc.stderr
@@ -54,7 +58,7 @@ def test_invalid_render_never_claims_ready_or_persists_path(tmp_path: Path, prog
     assert "chartkit OK" not in proc.stdout
     assert "e156-capsules installed at" not in proc.stdout
     assert not (home / ".bashrc").exists()
-    assert not list(target.glob(".chartkit_check.*.svg"))
+    assert not list(target.glob(".chartkit_check.*"))
 
 
 def test_missing_python_is_refusal_not_silent_success(tmp_path: Path):
@@ -64,7 +68,7 @@ def test_missing_python_is_refusal_not_silent_success(tmp_path: Path):
     assert "e156-capsules installed at" not in proc.stdout
     assert "chartkit OK" not in proc.stdout
     assert not (home / ".bashrc").exists()
-    assert not list(target.glob(".chartkit_check.*.svg"))
+    assert not list(target.glob(".chartkit_check.*"))
 
 
 def test_valid_svg_render_succeeds_then_persists_path(tmp_path: Path):
@@ -73,7 +77,7 @@ def test_valid_svg_render_succeeds_then_persists_path(tmp_path: Path):
     assert "chartkit OK" in proc.stdout
     assert f"e156-capsules installed at {target}" in proc.stdout
     assert str(target) in (home / ".bashrc").read_text(encoding="utf-8")
-    assert not list(target.glob(".chartkit_check.*.svg"))
+    assert not list(target.glob(".chartkit_check.*"))
 
 def test_actual_bundled_chartkit_sample_renders_end_to_end(tmp_path: Path):
     """Execute the actual bundled installer and chartkit, not a fake renderer.
@@ -95,4 +99,4 @@ def test_actual_bundled_chartkit_sample_renders_end_to_end(tmp_path: Path):
     ).read_bytes()
     assert (target / "sample.capsule.json").is_file()
     assert str(target) in (home / ".bashrc").read_text(encoding="utf-8")
-    assert not list(target.glob(".chartkit_check.*.svg"))
+    assert not list(target.glob(".chartkit_check.*"))
