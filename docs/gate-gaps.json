@@ -246,7 +246,7 @@
       ],
       "source": "scripts/refresh-ecosystem-pins.py frozen-release branch and tests/test_{sentinel,overmind}_frozen_release.py.",
       "seal": {
-        "scripts/refresh-ecosystem-pins.py": "55c928d28657a229f8275ec026a98e3d436365b7c90dc7ee04a078fcff51ed74"
+        "scripts/refresh-ecosystem-pins.py": "45fc19420a935265332f3caeac90b78209078d305f6818a6a2270c0443cb068f"
       }
     },
     {
