@@ -194,6 +194,12 @@ def test_windows_style_zip_path_is_rejected_on_all_platforms(tmp_path):
         "NUL",
         "COM1.py",
         "lpt9.log",
+        "COM¹",
+        "COM².log",
+        "COM³.txt",
+        "LPT¹",
+        "lpt².dat",
+        "LPT³",
         "line" + chr(10) + "break",
         "tab" + chr(9) + "name",
         "carriage" + chr(13) + "return",
@@ -213,6 +219,19 @@ def test_windows_reserved_or_control_character_zip_paths_refuse_on_all_platforms
     assert "unsafe path in archive" in p.stderr
     assert not target.exists(), "refusal must not publish an archive"
     assert not list(target.parent.glob(".meta-harness-stage-*")), "staging directory leaked"
+
+
+@pytest.mark.parametrize("safe_component", ["COM10.txt", "LPT10.log", "README¹.md"])
+def test_nonreserved_windows_lookalike_names_are_allowed(tmp_path, safe_component):
+    # Full checksummed local fixture: don't over-block ordinary filenames.
+    rel = _release(tmp_path / "rel", {
+        **GOOD,
+        f"meta-harness-{TAG}/docs/{safe_component}": b"benign fixture\\n",
+    })
+    target = tmp_path / "out" / "mh"
+    p = _run(rel, target)
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert (target / "docs" / safe_component).is_file()
 
 
 def test_case_colliding_zip_members_are_rejected_before_extraction(tmp_path):
