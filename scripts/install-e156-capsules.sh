@@ -91,15 +91,22 @@ persist_e156_path_env() {
 
 # Verify the offline chart-kit actually renders the bundled sample (token-free).
 verify_chartkit() {
-    local target="$1"
-    [[ -n "$PYTHON" ]] || { echo "  (python not found; skipping render check)"; return 0; }
-    # Render into the target dir itself (avoids passing a /tmp unix path to a native
-    # Windows python under git-bash, which can't resolve it); clean up after.
-    local out="$target/.chartkit_check.svg"
-    if "$PYTHON" "$target/chartkit.py" "$target/sample.capsule.json" --out "$out" >/dev/null 2>&1; then
-        rm -f "$out"; return 0
+    local target="$1" out
+    [[ -n "$PYTHON" ]] || { echo "REFUSED: Python is required to verify the E156 chart-kit." >&2; return 1; }
+    # Keep verification inside the target for native Windows Python under Git Bash.
+    # A unique path avoids deleting/accepting a stale user's .chartkit_check.svg.
+    if ! out="$(mktemp "$target/.chartkit_check.XXXXXXXX")"; then
+        echo "REFUSED: cannot reserve a private chart-kit test output." >&2
+        return 1
     fi
-    rm -f "$out"; return 1
+    if "$PYTHON" "$target/chartkit.py" "$target/sample.capsule.json" --out "$out" >/dev/null 2>&1 &&
+       [[ -s "$out" ]] &&
+       "$PYTHON" -c 'import sys, xml.etree.ElementTree as ET; root=ET.parse(sys.argv[1]).getroot(); sys.exit(0 if root.tag=="{http://www.w3.org/2000/svg}svg" and root.find("{http://www.w3.org/2000/svg}rect") is not None and root.find("{http://www.w3.org/2000/svg}line") is not None else 1)' "$out" >/dev/null 2>&1; then
+        rm -f -- "$out"
+        return 0
+    fi
+    rm -f -- "$out"
+    return 1
 }
 
 if [[ "$IMPORT" -eq 1 ]]; then
@@ -129,15 +136,16 @@ else
     log_ok "template copied"
 fi
 
+# Refuse BEFORE persisting a path that would advertise an unusable installation.
+log_step "Verifying the offline chart-kit renders the sample"
+if ! verify_chartkit "$TARGET"; then
+    echo "REFUSED: chart-kit render canary failed; E156_CAPSULES_PATH was not persisted." >&2
+    exit 1
+fi
+log_ok "chartkit OK (stdlib-only SVG render verified, no network)"
+
 log_step "Persisting E156_CAPSULES_PATH"
 persist_e156_path_env "$TARGET"
-
-log_step "Verifying the offline chart-kit renders the sample"
-if verify_chartkit "$TARGET"; then
-    log_ok "chartkit OK (stdlib-only SVG render verified, no network)"
-else
-    echo "    WARNING: chartkit render check did not pass (python missing?)." >&2
-fi
 
 echo
 echo "====================================================="
