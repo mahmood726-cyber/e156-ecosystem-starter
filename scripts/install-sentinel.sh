@@ -6,14 +6,14 @@
 #
 # Usage:
 #   ./scripts/install-sentinel.sh --repo <path>
-#   ./scripts/install-sentinel.sh --repo . --mode block
+#   ./scripts/install-sentinel.sh --repo . --mode warn  # explicit nonblocking opt-in
 #   ./scripts/install-sentinel.sh --skip-pip-install
 #   ./scripts/install-sentinel.sh --import
 
 set -euo pipefail
 
 REPO=""
-MODE="warn"
+MODE="block"
 SKIP_PIP=0
 IMPORT=0
 
@@ -27,6 +27,13 @@ while [[ $# -gt 0 ]]; do
         *) echo "unknown arg: $1" >&2; exit 2 ;;
     esac
 done
+
+# Keep Starter's default consistent with Sentinel's fail-closed CLI default.
+# Validate before package installation or any change to a user's Git hook.
+case "$MODE" in
+    block|warn) ;;
+    *) echo "ERROR: unsupported Sentinel hook mode: $MODE" >&2; exit 2 ;;
+esac
 
 test_sentinel_installed() {
     command -v sentinel >/dev/null 2>&1
@@ -49,16 +56,19 @@ assert_real_python() {
     fi
 }
 
-# Known-good Sentinel commit (the 53-rule build: 21 BLOCK / 28 WARN / 4 INFO).
-# v0.1.0 is stale (only ~12 rules); pinned to the v1.0.0 release tag (the
-# known-good 53-rule build). Same tag-pinned approach used for Overmind.
-SENTINEL_DEFAULT_REF="v1.0.0"
+# Frozen Sentinel v1.0.0 release source (not a signature or dependency lock).
+# GitHub unsigned tag object 89b8474f355511b0efb9c88b7a17ecf44198bbc4
+# pointed to this immutable commit on 2026-10-25.
+SENTINEL_DEFAULT_REF="5808f2bdc024506fa3d49a367c88b42b15fdf164"
 
 sentinel_default_source() {
-    # Pinned to a known-good commit so fresh installs are reproducible. Override
-    # with SENTINEL_REF=main (or any branch/tag/SHA) for bleeding edge or to
-    # roll back if a future release breaks something.
+    # Explicit rollback overrides must also be exact immutable commits.
+    # Neither a tag nor a SHA establishes an authenticated publisher.
     local ref="${SENTINEL_REF:-$SENTINEL_DEFAULT_REF}"
+    if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+        echo "ERROR: SENTINEL_REF must be a full lowercase 40-character commit SHA." >&2
+        return 1
+    fi
     printf 'git+https://github.com/mahmood726-cyber/Sentinel.git@%s' "$ref"
 }
 
@@ -102,21 +112,59 @@ backup_existing_pre_push_hook() {
     if grep -qE 'sentinel[[:space:]]+(scan|run-pre-push)' "$hook" 2>/dev/null; then
         return 0  # already a Sentinel hook
     fi
-    local ts backup
+    local ts
     ts="$(date +%Y%m%d-%H%M%S)"
-    # Timestamp-only names collide on rapid reinstalls, silently overwriting
-    # the researcher's earlier hook backup. mktemp reserves a fresh sibling
-    # atomically; cp -p retains the original hook's executable permissions.
-    backup="$(mktemp "${hook}.user-${ts}.XXXXXX")" || {
-        echo "ERROR: cannot reserve a unique pre-push hook backup" >&2
+    # Stage a mode-preserving copy, then publish with an exclusive hard link.
+    # Second-resolution timestamps can collide on rapid reinstalls; never
+    # overwrite an earlier user hook or follow a pre-existing backup symlink.
+    local base="${hook}.user-${ts}" backup="" stage attempt=0
+    stage="$(mktemp "${hook}.user-stage.XXXXXXXX")" || {
+        echo "ERROR: cannot reserve a temporary pre-push hook backup" >&2
         return 1
     }
-    if ! cp -p "$hook" "$backup"; then
-        rm -f "$backup"
-        echo "ERROR: cannot save pre-push hook backup" >&2
+    if ! cp -p -- "$hook" "$stage"; then
+        rm -f -- "$stage"
+        echo "ERROR: cannot stage a pre-push hook backup copy" >&2
         return 1
     fi
-    printf '%s' "$backup"
+    while (( attempt < 100 )); do
+        backup="$base"
+        if (( attempt > 0 )); then backup="${base}.${attempt}"; fi
+        if ln "$stage" "$backup" 2>/dev/null; then
+            rm -f -- "$stage"
+            printf '%s' "$backup"
+            return 0
+        fi
+        # A non-collision error (permissions, unsupported links) must fail.
+        if [[ ! -e "$backup" && ! -L "$backup" ]]; then break; fi
+        attempt=$((attempt + 1))
+    done
+    rm -f -- "$stage"
+    echo "ERROR: cannot create a unique pre-push hook backup" >&2
+    return 1
+}
+
+# A successful CLI exit does not prove that Git will execute a Sentinel
+# pre-push hook. Match the upstream hook contract at Sentinel commit
+# 97273997db160aee99d89af94fcc18bf621b3cb9 (sentinel/hook/payload.py).
+# This is a structural postcondition, not cryptographic authentication or
+# proof that a scan ran.
+verify_sentinel_hook_postinstall() {
+    local abs="$1" requested_mode="$2" hook="$1/.git/hooks/pre-push"
+    case "$requested_mode" in
+        block|warn) ;;
+        *) echo "ERROR: unsupported Sentinel hook mode: $requested_mode" >&2; return 1 ;;
+    esac
+    if [[ ! -f "$hook" || ! -r "$hook" || ! -x "$hook" ]]; then
+        echo "ERROR: Sentinel pre-push hook missing, unreadable or non-executable: $hook" >&2
+        return 1
+    fi
+    if ! grep -Fxq -- '# === SENTINEL PRE-PUSH HOOK (do not edit above this line) ===' "$hook" ||
+       ! grep -Fq -- 'python -m sentinel scan --repo "$REPO_TOPLEVEL"' "$hook" ||
+       ! grep -Fxq -- "MODE=\"\${SENTINEL_MODE:-${requested_mode}}\"" "$hook"; then
+        echo "ERROR: Sentinel pre-push hook contents/mode do not match the installed release" >&2
+        return 1
+    fi
 }
 
 install_sentinel_hook_in_repo() {
@@ -131,7 +179,11 @@ install_sentinel_hook_in_repo() {
         echo "  If you want to chain it with Sentinel, see:"
         echo "    https://github.com/mahmood726-cyber/Sentinel#chaining-with-existing-hooks"
     fi
-    sentinel install-hook --repo "$abs" --mode "$hook_mode" 2>&1 | sed 's/^/  /'
+    if ! sentinel install-hook --repo "$abs" --mode "$hook_mode" 2>&1 | sed 's/^/  /'; then
+        echo "ERROR: sentinel install-hook failed in $abs" >&2
+        return 1
+    fi
+    verify_sentinel_hook_postinstall "$abs" "$hook_mode"
 }
 
 get_sentinel_bypass_log_path() {
@@ -151,6 +203,8 @@ echo
 echo "Sentinel pre-push hook installer"
 echo
 
+# Reject a mutable override even if an existing executable is on PATH.
+sentinel_default_source >/dev/null || exit 1
 log_step "Checking for sentinel CLI"
 if test_sentinel_installed; then
     log_ok "sentinel already installed"

@@ -6,16 +6,18 @@
       "id": ".github/workflows/test.yml#jobs.pester",
       "kind": "ci-job",
       "name": "Pester (Windows)",
-      "stops": "A failing assertion in any of the 11 Pester suites named in the job's $files list (installer helpers, redaction, supply-chain pinning, SHA gate), run under pwsh on windows-latest.",
+      "stops": "The Windows pwsh 7 job refuses a missing or duplicate required suite path, a required suite with zero discovered tests, or any of its 11 named suites reporting failed, skipped, not-run or incomplete in-memory Pester test counts. It also refuses a missing or empty per-suite NUnit XML file and refuses an artifact upload with no matching files.",
       "would_not_stop": [
-        "A Pester suite that exists but is not in the hard-coded $files list: a new scripts/pester.*.tests.ps1 is silently never run.",
-        "Behaviour that differs under Windows PowerShell 5.1, which many students run: the job uses pwsh 7.",
-        "Real installs over the network: the suites test wrapper logic, not that Sentinel / Overmind / the extractor actually install.",
-        "Any behaviour no suite asserts."
+        "Malformed but nonempty NUnit XML, or XML testcase identities/counters that disagree with Pester in-memory results: the Windows job checks file existence and nonzero length, not XML parsing or count agreement.",
+        "The Windows job itself does not discover newly added, unlisted *.tests.ps1 files; a separate Ubuntu pytest suite-inventory test rejects these when the full CI runs.",
+        "Differences in Windows PowerShell 5.1 behaviour: this job runs PowerShell 7.",
+        "A live installation of pinned Sentinel, Overmind/TruthCert, E156 or Meta-Harness: the Pester suites exercise local wrapper/fixture behaviour only.",
+        "Independent signature verification, source SHA authentication and complete multi-repository ecosystem canaries.",
+        "Behaviour absent from the explicitly listed test assertions."
       ],
-      "source": ".github/workflows/test.yml header comment and the job's $files list.",
+      "source": ".github/workflows/test.yml Pester job and upload step; tests/test_pester_suite_inventory.py (separate Ubuntu inventory guard).",
       "seal": {
-        ".github/workflows/test.yml#jobs.pester": "890466c0ab813436912330e6769f79451a8d10677753a009b3fad1289a9ad26d"
+        ".github/workflows/test.yml#jobs.pester": "08bc1052adf15d32f5c0716e463eb7b1ec10d941db34b457008182fa229e92b4"
       }
     },
     {
@@ -234,15 +236,16 @@
       "id": "scripts/refresh-ecosystem-pins.py",
       "kind": "script",
       "name": "refresh-ecosystem-pins --check",
-      "stops": "A 40-hex install-layer pin that lags its source repo's remote HEAD, or a layer whose ls-remote failed (exit 1 in --check).",
+      "stops": "For frozen Sentinel v1.0.0, --check rejects missing/mismatched Bash or PowerShell default commit declarations rather than tracking HEAD; for nonfrozen development SHA pins it checks remote drift and failed ls-remote.",
       "would_not_stop": [
-        "Tag-pinned layers: they are skipped. As of 2026-06-08 every layer is tag-pinned, so --check reports all [skip] and passes by construction.",
-        "Whether the remote commit it would move to is trustworthy: it moves pins forward, it does not review them.",
-        "Anything in CI: it needs the network and no CI job runs it."
+        "A coordinated, unreviewed change to the trusted frozen SHA and both installers: the local consistency check is not independent source verification.",
+        "An explicit SENTINEL_REF override: that install opts out of the frozen default.",
+        "Pip dependency drift, live Sentinel hook behavior, third-party signatures or an end-to-end certified ecosystem canary.",
+        "This script is not invoked as a live networked CI gate; pytest checks only offline freeze/refusal behavior."
       ],
       "source": "scripts/refresh-ecosystem-pins.py docstring 'Design guarantees'.",
       "seal": {
-        "scripts/refresh-ecosystem-pins.py": "ab426c33f31691f1c032939860a9364113f68c08062f084bc72e7a03cbf46247"
+        "scripts/refresh-ecosystem-pins.py": "b15845647edc2062e7a6d2ad38282ae576e8d4c59d99b3815eb111a458fb870c"
       }
     },
     {
