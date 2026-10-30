@@ -222,3 +222,33 @@ def test_single_unicode_named_member_is_still_installable(tmp_path):
     result = _run(rel, target)
     assert result.returncode == 0, result.stdout + result.stderr
     assert (target / "scripts" / "replay_offline.py").is_file()
+
+
+def test_e156_capsule_profile_path_is_literal_on_windows_git_bash_and_ubuntu(tmp_path):
+    """Cross-platform installer integrity: do not execute a path on shell startup.
+
+    This tests the real shipped Bash helper with synthetic shell metacharacters;
+    it is not a live signed five-component ecosystem installation.
+    """
+    installer = tmp_path / "installer.sh"
+    installer.write_bytes((ROOT / "scripts" / "install-e156-capsules.sh").read_bytes())
+    for name in (".bashrc", ".zshrc"):
+        (tmp_path / name).write_text("", encoding="utf-8")
+    # The old double-quoted export executed $(touch ...) while sourcing the profile.
+    requested = "dir with spaces ' \" $HOME $(touch path-executed)"
+    command = (
+        'source "./installer.sh" --import; '
+        'persist_e156_path_env "$1" >/dev/null; '
+        'source "./.bashrc"; [[ "$E156_CAPSULES_PATH" == "$1" ]] || exit 10; '
+        'source "./.zshrc"; [[ "$E156_CAPSULES_PATH" == "$1" ]] || exit 11'
+    )
+    result = subprocess.run(
+        [_bash(), "-c", command, "_", requested],
+        cwd=tmp_path,
+        env={**os.environ, "HOME": "."},
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not (tmp_path / "path-executed").exists()

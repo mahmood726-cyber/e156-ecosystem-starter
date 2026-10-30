@@ -21,6 +21,29 @@ Describe "Overmind: Test-OvermindInstalled" {
     It "returns a boolean" {
         Test-OvermindInstalled | Should -BeOfType [bool]
     }
+
+    It "rejects a missing CLI instead of trusting PowerShell's assignment status" {
+        # An isolated command-lookup mock: no network or Overmind installation.
+        Mock Get-Command { $null } -ParameterFilter { $Name -eq 'overmind' }
+        Test-OvermindInstalled | Should -BeFalse
+        Should -Invoke Get-Command -Times 1 -Exactly -ParameterFilter {
+            $Name -eq 'overmind' -and $CommandType -eq 'Application'
+        }
+    }
+
+    It "accepts a discoverable executable via a local PATH fixture" {
+        # A .cmd file tests Windows executable discovery, not Overmind itself.
+        $bin = Join-Path $TestDrive 'overmind-probe-bin'
+        New-Item -ItemType Directory -Force -Path $bin | Out-Null
+        Set-Content -LiteralPath (Join-Path $bin 'overmind.cmd') -Encoding Ascii -Value '@echo off'
+        $priorPath = $env:PATH
+        try {
+            $env:PATH = "$bin;$priorPath"
+            Test-OvermindInstalled | Should -BeTrue
+        } finally {
+            $env:PATH = $priorPath
+        }
+    }
 }
 
 Describe "Overmind: New-TruthCertHmacKey" {
@@ -51,13 +74,37 @@ Describe "Overmind: Get-OvermindDefaultSource pins the supply chain (P0)" {
 
     It "defaults to a SHA-or-tag (not bare main)" {
         $src = Get-OvermindDefaultSource
-        $src | Should -Match '^git\+https://github\.com/mahmood726-cyber/overmind\.git@[A-Za-z0-9._-]+$'
-        $src | Should -Not -Match '@main$'
+        $src | Should -Be 'git+https://github.com/mahmood726-cyber/overmind.git@d3d2de5f84d852f27d64d1686f1e105e190ac375'
     }
 
     It "honours OVERMIND_REF override (rollback / bleeding-edge)" {
         $env:OVERMIND_REF = 'main'
         Get-OvermindDefaultSource | Should -Be 'git+https://github.com/mahmood726-cyber/overmind.git@main'
+    }
+}
+
+Describe "Overmind: strict local verifier-health JSON gate (synthetic fixtures)" {
+    BeforeAll {
+        $script:CanaryChecker = Join-Path $PSScriptRoot 'check-overmind-canary.py'
+        $script:Python = (Get-Command python -ErrorAction Stop).Source
+    }
+
+    It "accepts the pinned Overmind CERTIFIED shape with a 16-hex bundle hash" {
+        '{"passed":true,"verdict":"CERTIFIED","bundle_hash":"0123456789abcdef"}' |
+            & $script:Python $script:CanaryChecker | Out-Null
+        $LASTEXITCODE | Should -Be 0
+    }
+
+    It "refuses a zero-exit CLI payload containing passed=false" {
+        '{"passed":false,"verdict":"REJECT","alarm_written":"alarm.json"}' |
+            & $script:Python $script:CanaryChecker 2>$null | Out-Null
+        $LASTEXITCODE | Should -Not -Be 0
+    }
+
+    It "refuses conflicting duplicate passed members" {
+        '{"passed":false,"passed":true,"verdict":"CERTIFIED","bundle_hash":"0123456789abcdef"}' |
+            & $script:Python $script:CanaryChecker 2>$null | Out-Null
+        $LASTEXITCODE | Should -Not -Be 0
     }
 }
 
