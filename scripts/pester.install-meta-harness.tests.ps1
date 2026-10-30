@@ -59,6 +59,38 @@ Describe "Test-MetaHarnessAsset is fail-closed" {
         $zip = New-TestRelease -Dir $d -SumsLine ("a" * 64 + "  other.zip")
         { Test-MetaHarnessAsset -ZipPath $zip -SumsPath (Join-Path $d 'SHA256SUMS') } | Should -Throw '*no line*'
     }
+    It "refuses duplicate checksum entries even when both digests agree" {
+        $d = Join-Path $TestDrive 'same-digest-duplicate'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $line = [IO.File]::ReadAllText($sums).Trim()
+        [IO.File]::AppendAllText($sums, "$line`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*multiple entries*'
+    }
+    It "refuses mixed text and GNU binary-marker checksum entries for one asset" {
+        $d = Join-Path $TestDrive 'binary-marker-duplicate'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $digest = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant()
+        [IO.File]::AppendAllText($sums, "$digest *meta-harness-v9.9.9-test.zip`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*multiple entries*'
+    }
+    It "refuses a malformed matching checksum rather than silently skipping it" {
+        $d = Join-Path $TestDrive 'malformed'; $zip = New-TestRelease -Dir $d -SumsLine 'invalid-sha  meta-harness-v9.9.9-test.zip'
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath (Join-Path $d 'SHA256SUMS') } |
+            Should -Throw '*malformed entry*'
+    }
+    It "refuses a malformed duplicate following a valid checksum" {
+        $d = Join-Path $TestDrive 'malformed-after-valid'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        [IO.File]::AppendAllText($sums, "invalid-sha  meta-harness-v9.9.9-test.zip`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*multiple entries*'
+    }
+    It "accepts a single GNU binary-marker checksum and an unrelated line" {
+        $d = Join-Path $TestDrive 'binary-single'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $digest = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant()
+        [IO.File]::WriteAllText($sums, "$digest *meta-harness-v9.9.9-test.zip`n$('0' * 64)  different.zip`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Not -Throw
+    }
 }
 
 Describe "Expand-MetaHarness" {
@@ -220,5 +252,36 @@ Describe "Meta-Harness published manifest is independently pinned" {
         [IO.File]::WriteAllText($p, "fixture")
         { Assert-MetaHarnessReleaseManifest -SumsPath $p -Tag 'v9.9.9-test' -BaseUrl 'file:///fixture' } |
             Should -Not -Throw
+    }
+}
+
+Describe "Expand-MetaHarness rejects canonically equivalent Unicode names" {
+    It "refuses NFC/NFD aliases without modifying an empty target" {
+        $d = Join-Path $TestDrive 'unicode-alias'; $zip = New-TestRelease -Dir $d
+        $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+        try {
+            # Two different UTF-8 archive names that normalise to the same path.
+            $nfc = "meta-harness-v9.9.9-test/notes/caf$([char]0x00E9).txt"
+            $nfd = "meta-harness-v9.9.9-test/notes/cafe$([char]0x0301).txt"
+            $archive.CreateEntry($nfc) | Out-Null
+            $archive.CreateEntry($nfd) | Out-Null
+        } finally { $archive.Dispose() }
+        $target = Join-Path $d 'published'
+        New-Item -ItemType Directory -Path $target | Out-Null
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*duplicate or case-colliding*'
+        Test-Path -LiteralPath $target -PathType Container | Should -BeTrue
+        @(Get-ChildItem -LiteralPath $target -Force).Count | Should -Be 0
+        @(Get-ChildItem -LiteralPath $d -Filter '.mh-stage-*' -Force).Count | Should -Be 0
+    }
+    It "still installs a release with one decomposed Unicode filename" {
+        $d = Join-Path $TestDrive 'unicode-single'; $zip = New-TestRelease -Dir $d
+        $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+        try {
+            $name = "meta-harness-v9.9.9-test/notes/cafe$([char]0x0301).txt"
+            $archive.CreateEntry($name) | Out-Null
+        } finally { $archive.Dispose() }
+        $target = Join-Path $d 'published'
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Not -Throw
+        Test-MetaHarnessPresent $target | Should -BeTrue
     }
 }

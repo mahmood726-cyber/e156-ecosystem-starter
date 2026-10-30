@@ -69,13 +69,25 @@ function Assert-MetaHarnessReleaseManifest {
 # The digest SHA256SUMS records for $Name, or $null.
 function Get-MetaHarnessExpectedSha {
     param([string]$SumsPath, [string]$Name)
+    # Match Bash: never select the first of ambiguous or malformed
+    # SHA256SUMS entries for this asset.
+    $found = $false
+    $digest = $null
     foreach ($line in (Get-Content -LiteralPath $SumsPath)) {
         $parts = ($line.TrimEnd("`r")) -split '\s+', 2
-        if ($parts.Count -eq 2 -and $parts[0] -match '^[0-9a-f]{64}$' -and ($parts[1] -eq $Name -or $parts[1] -eq "*$Name")) {
-            return $parts[0]
+        if ($parts.Count -ne 2 -or ($parts[1] -cne $Name -and $parts[1] -cne "*$Name")) {
+            continue
         }
+        if ($found) {
+            throw "REFUSED: SHA256SUMS has multiple entries for $Name"
+        }
+        if ($parts[0] -cnotmatch '^[0-9a-f]{64}$') {
+            throw "REFUSED: SHA256SUMS has malformed entry for $Name"
+        }
+        $found = $true
+        $digest = $parts[0]
     }
-    return $null
+    return $digest
 }
 
 function Test-MetaHarnessAsset {
@@ -116,7 +128,10 @@ function Assert-MetaHarnessArchiveSafe {
                     throw "REFUSED: Windows reserved device name in archive"
                 }
             }
-            $key = $name.TrimEnd('/').ToUpperInvariant()
+            # A release that contains NFC/NFD-equivalent names is ambiguous
+            # on normalising filesystems. Mirror the Bash preflight so a ZIP
+            # cannot pass one installer but collide on another platform.
+            $key = $name.TrimEnd('/').ToUpperInvariant().Normalize([Text.NormalizationForm]::FormC)
             if ($seen.ContainsKey($key)) {
                 throw "REFUSED: duplicate or case-colliding archive entry"
             }
