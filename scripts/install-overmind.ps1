@@ -52,19 +52,21 @@ aliases > toggle off python.exe and python3.exe
 }
 
 function Test-OvermindInstalled {
-    $null = Get-Command overmind -ErrorAction SilentlyContinue
-    return $?
+    # A successful assignment does not prove that Get-Command found anything.
+    # Require the pip-installed CLI executable, not a shell alias/function.
+    $command = Get-Command overmind -CommandType Application -ErrorAction SilentlyContinue
+    return ($null -ne $command)
 }
 
-# v1.0.0 is an unsigned, movable annotated tag. GitHub's tag object
-# fdde5606f5ba8810fb253c943e8fb3bfd4ba1593 pointed to this commit on
-# 2026-10-25. Pin the commit, not the tag; explicit OVERMIND_REF overrides
-# opt out of the identity pin. pip transitive dependencies remain un-hashed.
+# v1.0.0 is an unsigned, movable annotated tag (object
+# fdde5606f5ba8810fb253c943e8fb3bfd4ba1593), resolved on 2026-10-30.
+# Freeze source identity, not pip dependencies or signatures. Explicit
+# OVERMIND_REF overrides opt out of this identity pin.
 $script:OvermindDefaultRef = 'd3d2de5f84d852f27d64d1686f1e105e190ac375'
 
 function Get-OvermindDefaultSource {
-    # Frozen release commit by default. Explicit OVERMIND_REF overrides
-    # opt out of the pin and are not verified/certified by this installer.
+    # Frozen release commit by default; explicit overrides are not
+    # source-authenticated or certified.
     $ref = if ($env:OVERMIND_REF) { $env:OVERMIND_REF } else { $script:OvermindDefaultRef }
     return "git+https://github.com/mahmood726-cyber/overmind.git@$ref"
 }
@@ -170,12 +172,26 @@ if ($existing -and -not $HmacKey) {
     Write-Host "    Back it up somewhere safe -- losing this key invalidates all prior signed bundles." -ForegroundColor Yellow
 }
 
-# Step 3: quick sanity check
-Write-Step "overmind meta-verify (canary)"
+# Step 3: fail-closed verifier-health canary. Overmind's meta-verify CLI
+# can return exit 0 even when its JSON contains passed=false / REJECT.
+Write-Step "overmind meta-verify (verifier-health canary)"
+$checker = Join-Path $PSScriptRoot 'check-overmind-canary.py'
+$py = Get-Command python -ErrorAction SilentlyContinue
+if (-not $py -or -not (Test-Path -LiteralPath $checker -PathType Leaf)) {
+    Write-Host "REFUSED: Python or the mandatory Overmind canary checker is missing." -ForegroundColor Red
+    exit 1
+}
 $canary = & overmind meta-verify 2>&1
-$canary | Select-Object -First 5 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+$overmindExit = $LASTEXITCODE
+if ($overmindExit -ne 0) {
+    Write-Host "REFUSED: Overmind meta-verify command failed ($overmindExit)." -ForegroundColor Red
+    exit 1
+}
+$canaryJson = $canary -join "`n"
+$canaryJson | & $py.Source $checker
 if ($LASTEXITCODE -ne 0) {
-    Write-Warning "overmind meta-verify returned non-zero ($LASTEXITCODE). Not necessarily fatal, but review above."
+    Write-Host "REFUSED: Overmind verifier-health result was not CERTIFIED; not reporting ready." -ForegroundColor Red
+    exit 1
 }
 
 Write-Host ""

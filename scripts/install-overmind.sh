@@ -29,7 +29,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 test_overmind_installed() {
-    command -v overmind >/dev/null 2>&1
+    # command -v also accepts shell functions/aliases, even without a CLI.
+    # Require a real executable file on PATH. This is only a discovery check,
+    # not proof of a verified Overmind revision or TruthCert canary.
+    local cli
+    cli="$(type -P overmind 2>/dev/null)" || return 1
+    [[ -n "$cli" && -f "$cli" && -x "$cli" ]]
 }
 
 # Resolve python3 / python (modern Linux defaults to python3 only)
@@ -49,16 +54,15 @@ assert_real_python() {
     fi
 }
 
-# v1.0.0 is an *unsigned, movable* annotated tag. Its Git tag object
-# (fdde5606f5ba8810fb253c943e8fb3bfd4ba1593) points to this exact commit
-# as checked on 2026-10-25. Pin the object identity, not the tag name, by
-# default; explicit OVERMIND_REF overrides are user-controlled/unverified.
-# The pin does not hash-lock pip's transitive dependencies or verify signatures.
+# v1.0.0 is an unsigned, movable annotated tag (object
+# fdde5606f5ba8810fb253c943e8fb3bfd4ba1593), resolved on 2026-10-30.
+# Freeze its exact reviewed commit identity, not the tag. Explicit OVERMIND_REF
+# overrides are not source-authenticated. Pip dependencies remain un-hashed.
 OVERMIND_DEFAULT_REF="d3d2de5f84d852f27d64d1686f1e105e190ac375"
 
 overmind_default_source() {
-    # Frozen release commit by default. OVERMIND_REF explicitly opts out of
-    # this identity pin; do not treat overridden installations as certified.
+    # Frozen release commit by default. OVERMIND_REF deliberately opts out
+    # of the identity pin and cannot be described as certified.
     local ref="${OVERMIND_REF:-$OVERMIND_DEFAULT_REF}"
     printf 'git+https://github.com/mahmood726-cyber/overmind.git@%s' "$ref"
 }
@@ -164,9 +168,20 @@ else
     echo "      export TRUTHCERT_HMAC_KEY=\"\$(cat $key_file)\""
 fi
 
-log_step "overmind meta-verify (canary)"
-overmind meta-verify 2>&1 | head -5 | sed 's/^/  /' || \
-    log_warn "overmind meta-verify returned non-zero (review above)"
+log_step "overmind meta-verify (verifier-health canary)"
+# Overmind's CLI can exit zero after emitting {"passed":false}. Never treat
+# process success, the first five lines, or a warning as certification.
+assert_real_python || exit 1
+canary_checker="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/check-overmind-canary.py"
+[[ -f "$canary_checker" ]] || {
+    echo "REFUSED: mandatory Overmind canary checker is missing." >&2
+    exit 1
+}
+# pipefail propagates both Overmind's exit status and the JSON verdict gate.
+if ! overmind meta-verify | "$PYTHON" "$canary_checker"; then
+    echo "REFUSED: Overmind verifier-health canary failed; not reporting ready." >&2
+    exit 1
+fi
 
 echo
 echo "====================================================="
