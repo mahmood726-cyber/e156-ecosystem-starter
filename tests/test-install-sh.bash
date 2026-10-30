@@ -125,6 +125,39 @@ bash -c "source '$ROOT/scripts/install-sentinel.sh' --import && declare -F test_
 start "install-overmind.sh dot-sources cleanly"
 bash -c "source '$ROOT/scripts/install-overmind.sh' --import && declare -F new_truthcert_hmac_key > /dev/null" && ok
 
+# CLI discovery regression: negative controls use only isolated shell fixtures.
+# They cannot certify a pinned Overmind/TruthCert installation.
+start "overmind CLI discovery refuses an exported shell function"
+cli_empty="$SANDBOX/overmind-empty-PATH"
+mkdir -p "$cli_empty"
+overmind() { return 0; }
+export -f overmind
+if ( PATH="$cli_empty"; source "$ROOT/scripts/install-overmind.sh" --import; ! test_overmind_installed ); then
+    ok
+else
+    bad "a shell function without an executable was accepted as Overmind"
+fi
+unset -f overmind
+
+start "overmind CLI discovery accepts an executable PATH fixture"
+cli_bin="$SANDBOX/overmind-cli-PATH"
+mkdir -p "$cli_bin"
+printf '#!/bin/sh\nexit 0\n' > "$cli_bin/overmind"
+chmod 700 "$cli_bin/overmind"
+if ( PATH="$cli_bin"; source "$ROOT/scripts/install-overmind.sh" --import; test_overmind_installed ); then
+    ok
+else
+    bad "the executable fixture was not discovered"
+fi
+
+start "overmind CLI discovery refuses a non-executable PATH entry"
+chmod 600 "$cli_bin/overmind"
+if ( PATH="$cli_bin"; source "$ROOT/scripts/install-overmind.sh" --import; ! test_overmind_installed ); then
+    ok
+else
+    bad "a non-executable file was accepted as Overmind"
+fi
+
 start "new_truthcert_hmac_key produces a 64-hex-char string"
 hex="$(bash -c "source '$ROOT/scripts/install-overmind.sh' --import && new_truthcert_hmac_key")"
 [[ ${#hex} -eq 64 && "$hex" =~ ^[0-9a-f]{64}$ ]] && ok
