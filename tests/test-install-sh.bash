@@ -125,18 +125,62 @@ bash -c "source '$ROOT/scripts/install-sentinel.sh' --import && declare -F test_
 start "install-overmind.sh dot-sources cleanly"
 bash -c "source '$ROOT/scripts/install-overmind.sh' --import && declare -F new_truthcert_hmac_key > /dev/null" && ok
 
+# CLI discovery regression: negative controls use only isolated shell fixtures.
+# They cannot certify a pinned Overmind/TruthCert installation.
+start "overmind CLI discovery refuses an exported shell function"
+cli_empty="$SANDBOX/overmind-empty-PATH"
+mkdir -p "$cli_empty"
+overmind() { return 0; }
+export -f overmind
+if ( PATH="$cli_empty"; source "$ROOT/scripts/install-overmind.sh" --import; ! test_overmind_installed ); then
+    ok
+else
+    bad "a shell function without an executable was accepted as Overmind"
+fi
+unset -f overmind
+
+start "overmind CLI discovery accepts an executable PATH fixture"
+cli_bin="$SANDBOX/overmind-cli-PATH"
+mkdir -p "$cli_bin"
+printf '#!/bin/sh\nexit 0\n' > "$cli_bin/overmind"
+chmod 700 "$cli_bin/overmind"
+if ( PATH="$cli_bin"; source "$ROOT/scripts/install-overmind.sh" --import; test_overmind_installed ); then
+    ok
+else
+    bad "the executable fixture was not discovered"
+fi
+
+start "overmind CLI discovery refuses a non-executable PATH entry"
+chmod 600 "$cli_bin/overmind"
+if ( PATH="$cli_bin"; source "$ROOT/scripts/install-overmind.sh" --import; ! test_overmind_installed ); then
+    ok
+else
+    bad "a non-executable file was accepted as Overmind"
+fi
+
 start "new_truthcert_hmac_key produces a 64-hex-char string"
 hex="$(bash -c "source '$ROOT/scripts/install-overmind.sh' --import && new_truthcert_hmac_key")"
 [[ ${#hex} -eq 64 && "$hex" =~ ^[0-9a-f]{64}$ ]] && ok
 
 # Describe: supply-chain pinning (P0 — fresh installs must be reproducible)
+# Retain these test identities for the honest-ratchet, but require the
+# exact release-target commit. A mutable tag alone is not an immutable pin.
 start "sentinel_default_source pins to a tagged release by default"
 default_src="$(bash -c "source '$ROOT/scripts/install-sentinel.sh' --import && sentinel_default_source")"
-[[ "$default_src" == git+https://github.com/mahmood726-cyber/Sentinel.git@v* ]] && ok
+assert_eq "$default_src" "git+https://github.com/mahmood726-cyber/Sentinel.git@5808f2bdc024506fa3d49a367c88b42b15fdf164" && ok
 
 start "sentinel_default_source honours SENTINEL_REF override"
-override_src="$(bash -c "export SENTINEL_REF=main; source '$ROOT/scripts/install-sentinel.sh' --import; sentinel_default_source")"
-assert_eq "$override_src" "git+https://github.com/mahmood726-cyber/Sentinel.git@main" && ok
+override_sha="ffffffffffffffffffffffffffffffffffffffff"
+override_src="$(bash -c "export SENTINEL_REF='$override_sha'; source '$ROOT/scripts/install-sentinel.sh' --import; sentinel_default_source")"
+assert_eq "$override_src" "git+https://github.com/mahmood726-cyber/Sentinel.git@$override_sha" && ok
+
+start "sentinel_default_source refuses mutable or malformed overrides"
+for unsafe in main master HEAD v1.0.0 deadbeef FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF; do
+    if bash -c "export SENTINEL_REF='$unsafe'; source '$ROOT/scripts/install-sentinel.sh' --import; sentinel_default_source" >/dev/null 2>&1; then
+        bad "unsafe SENTINEL_REF was accepted: $unsafe"
+    fi
+done
+[[ "$FAIL" -eq 0 ]] && ok
 
 start "overmind_default_source pins to a SHA-or-tag by default"
 default_src="$(bash -c "source '$ROOT/scripts/install-overmind.sh' --import && overmind_default_source")"
@@ -255,6 +299,28 @@ else
     bad "expected no backup for Sentinel-installed hook"
 fi
 rm -rf "$repo"
+
+# E156 offline capsule profile persistence must treat a target path as data.
+# The isolated path is synthetic; this is installer-integrity failure injection,
+# not a live five-component canary or evidence-synthesis dataset.
+start "E156 capsule shell profiles preserve literal paths without executing them"
+rc_home="$SANDBOX/e156-profile-home"
+mkdir -p "$rc_home"
+: > "$rc_home/.bashrc"
+: > "$rc_home/.zshrc"
+injected_file="$rc_home/path-executed"
+dangerous_path="$SANDBOX/space ' quote \"double\" \$(touch $injected_file) \$HOME"
+if (
+    export HOME="$rc_home"
+    source "$ROOT/scripts/install-e156-capsules.sh" --import
+    persist_e156_path_env "$dangerous_path" >/dev/null
+    bash -c 'source "$1"; [[ "$E156_CAPSULES_PATH" == "$2" ]]' _ "$HOME/.bashrc" "$dangerous_path" &&
+    bash -c 'source "$1"; [[ "$E156_CAPSULES_PATH" == "$2" ]]' _ "$HOME/.zshrc" "$dangerous_path"
+) && [[ ! -e "$injected_file" ]]; then
+    ok
+else
+    bad "profile source executed part of the requested path or changed its value"
+fi
 
 # Summary
 echo

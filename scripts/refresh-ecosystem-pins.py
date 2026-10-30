@@ -20,13 +20,11 @@ Design guarantees:
   * NON-DESTRUCTIVE. Edits tracked files in place; you review the diff. --commit
     makes a normal commit; --push uses fast-forward-only push (rejected, never
     forced, if the remote moved).
-  * Tag-pinned layers are left alone -- only layers carrying a 40-hex SHA are
-    bumped. As of 2026-06-08 every ecosystem layer (sentinel v1.0.0, extractor
-    v1.0.0, overmind v1.0.0, rapidmeta v1.1.0, pairwise70 v1.0.0, aact v1.0.0,
-    aact-kit v1.0.0) is pinned to a signed release tag, so a normal run reports
-    all layers [skip] -- which is the intended steady state. Re-point an
-    installer at a 40-hex SHA only to track an unreleased commit; this tool will
-    then resume bumping it.
+  * Frozen Sentinel v1.0.0 is an exact reviewed Git commit, not an unsigned
+    tag. --check refuses mismatched Bash and PowerShell declarations; --apply
+    cannot silently advance this release to the mutable default-branch HEAD.
+    Other SHA-pinned development layers may be advanced; tag pins are skipped.
+    A frozen commit is not a signature or pip dependency lock.
 
 Usage:
   python scripts/refresh-ecosystem-pins.py            # dry-run: report drift
@@ -45,6 +43,11 @@ import sys
 from pathlib import Path
 
 REPO_OWNER = "mahmood726-cyber"
+
+# Sentinel annotated tag v1.0.0 (UNSIGNED; object
+# 89b8474f355511b0efb9c88b7a17ecf44198bbc4) resolved to this commit
+# on 2026-10-25. Frozen releases are never auto-upgraded to HEAD.
+FROZEN_RELEASES = {"sentinel": "5808f2bdc024506fa3d49a367c88b42b15fdf164"}
 
 # One entry per pinned install layer. `files` are relative to the repo root; the
 # first must be the .sh installer (the authoritative source of the current pin).
@@ -115,6 +118,25 @@ def process_layer(layer: dict, apply: bool, root: Path) -> dict:
     sh_path = root / sh_rel
     if not sh_path.exists():
         return {"name": layer["name"], "status": "missing", "detail": sh_rel}
+    frozen = FROZEN_RELEASES.get(layer["name"])
+    if frozen is not None:
+        # Check actual defaults in both installers, not incidental hex strings.
+        # This path must remain offline even when --apply was requested.
+        declarations = (
+            (layer["files"][0], r'''(?m)^SENTINEL_DEFAULT_REF=["']([0-9a-f]{40})["']\s*$'''),
+            (layer["files"][1], r'''(?m)^\$script:SentinelDefaultRef\s*=\s*["']([0-9a-f]{40})["']\s*$'''),
+        )
+        for rel, pattern in declarations:
+            path = root / rel
+            if not path.is_file():
+                return {"name": layer["name"], "status": "error",
+                        "detail": f"frozen release mirror missing: {rel}"}
+            matches = re.findall(pattern, path.read_text(encoding="utf-8"))
+            if matches != [frozen]:
+                return {"name": layer["name"], "status": "error",
+                        "detail": f"frozen release mismatch/unsafe ref in {rel}"}
+        return {"name": layer["name"], "status": "skip",
+                "detail": f"frozen release commit {frozen[:12]} (not advanced to HEAD)"}
     old = extract_pin(sh_path.read_text(encoding="utf-8", errors="replace"))
     if old is None:
         return {"name": layer["name"], "status": "skip", "detail": "no 40-hex pin (tag-pinned?)"}

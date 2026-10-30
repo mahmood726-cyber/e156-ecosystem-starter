@@ -29,7 +29,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 test_overmind_installed() {
-    command -v overmind >/dev/null 2>&1
+    # command -v also accepts shell functions/aliases, even without a CLI.
+    # Require a real executable file on PATH. This is only a discovery check,
+    # not proof of a verified Overmind revision or TruthCert canary.
+    local cli
+    cli="$(type -P overmind 2>/dev/null)" || return 1
+    [[ -n "$cli" && -f "$cli" && -x "$cli" ]]
 }
 
 # Resolve python3 / python (modern Linux defaults to python3 only)
