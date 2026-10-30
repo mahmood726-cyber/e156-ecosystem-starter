@@ -250,11 +250,11 @@ Path(sys.argv[-1]).write_text('<svg xmlns="http://www.w3.org/2000/svg"><rect/><l
     }
 
     It "refuses a valid SVG root with no chart primitives" {
-        Set-Content -Path (Join-Path $script:CapsulesDir 'chartkit.py') -Value @'
+        Set-Content -Path (Join-Path $script:CapsulesDir 'chartkit.py') -Encoding UTF8 -Value @'
 from pathlib import Path
 import sys
 Path(sys.argv[-1]).write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
-'@ -Encoding UTF8
+'@
         Test-E156Chartkit -TargetDir $script:CapsulesDir | Should -BeFalse
     }
 
