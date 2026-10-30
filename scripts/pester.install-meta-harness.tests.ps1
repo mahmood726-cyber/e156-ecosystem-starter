@@ -59,6 +59,38 @@ Describe "Test-MetaHarnessAsset is fail-closed" {
         $zip = New-TestRelease -Dir $d -SumsLine ("a" * 64 + "  other.zip")
         { Test-MetaHarnessAsset -ZipPath $zip -SumsPath (Join-Path $d 'SHA256SUMS') } | Should -Throw '*no line*'
     }
+    It "refuses duplicate checksum entries even when both digests agree" {
+        $d = Join-Path $TestDrive 'same-digest-duplicate'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $line = [IO.File]::ReadAllText($sums).Trim()
+        [IO.File]::AppendAllText($sums, "$line`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*multiple entries*'
+    }
+    It "refuses mixed text and GNU binary-marker checksum entries for one asset" {
+        $d = Join-Path $TestDrive 'binary-marker-duplicate'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $digest = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant()
+        [IO.File]::AppendAllText($sums, "$digest *meta-harness-v9.9.9-test.zip`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*multiple entries*'
+    }
+    It "refuses a malformed matching checksum rather than silently skipping it" {
+        $d = Join-Path $TestDrive 'malformed'; $zip = New-TestRelease -Dir $d -SumsLine 'invalid-sha  meta-harness-v9.9.9-test.zip'
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath (Join-Path $d 'SHA256SUMS') } |
+            Should -Throw '*malformed entry*'
+    }
+    It "refuses a malformed duplicate following a valid checksum" {
+        $d = Join-Path $TestDrive 'malformed-after-valid'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        [IO.File]::AppendAllText($sums, "invalid-sha  meta-harness-v9.9.9-test.zip`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*multiple entries*'
+    }
+    It "accepts a single GNU binary-marker checksum and an unrelated line" {
+        $d = Join-Path $TestDrive 'binary-single'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $digest = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant()
+        [IO.File]::WriteAllText($sums, "$digest *meta-harness-v9.9.9-test.zip`n$('0' * 64)  different.zip`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Not -Throw
+    }
 }
 
 Describe "Expand-MetaHarness" {
