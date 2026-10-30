@@ -17,10 +17,18 @@ and `scripts/install-meta-harness.{sh,ps1}` can fetch and verify that release fo
 | Fetch and verify it from this starter | `bash scripts/install-meta-harness.sh` (Windows: `.\scripts\install-meta-harness.ps1`) |
 | Repository (clone, full history) | https://github.com/mahmood726-cyber/meta-harness |
 
-The fetch script downloads `meta-harness-v1.0.0.zip` and the release's `SHA256SUMS`, checks the zip's sha256,
-and unpacks it into `~/code/meta-harness-v1.0.0` only if the digest matches. It refuses a mismatch, a missing
-`SHA256SUMS` line, an unsafe path in the archive, or a non-empty target folder. Use `--ref` / `-Ref` to choose
-another tag.
+The installer first verifies that the downloaded **v1.0.0 `SHA256SUMS` itself** has the starter-reviewed SHA-256
+`3bf1d1f9eaa6f423f3130ca5f6413b05dcf2994833a9fce038e1ee8e9ad00ddb` (90 bytes; source: public
+release metadata). Only then does it fetch the 609,134,873-byte ZIP and check its SHA-256 against that manifest:
+`694dc82f51fcde9040a8e1a5f0172978cb1a6f3eeade237fcd81df61185c2d0d`. This prevents a quiet
+replacement of **both** assets at the release URL from passing with self-consistent checksums. It refuses
+mismatches, unsafe archive paths, and non-empty destinations before publication. Remote refs other than v1.0.0
+are **not admitted** until their manifest digest has been separately reviewed and pinned; `--ref` / `-Ref`
+currently accepts such refs only with an explicitly local `file://` fixture base for isolated tests.
+
+**This is a reviewed content pin, not signature verification.** The published v1.0.0 release does not provide a
+separate signature asset, so neither provenance of the original ZIP nor scientific/clinical correctness is
+independently authenticated by this installer's green result.
 
 ## Reproduce one review
 
