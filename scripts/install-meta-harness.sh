@@ -166,8 +166,9 @@ with zipfile.ZipFile(zp) as z:
         sys.exit("REFUSED: empty meta-harness archive")
     seen = set()
     # Refuse filenames unusable or ambiguous on supported Windows hosts.
+    # Microsoft also reserves COM¹/²/³ and LPT¹/²/³, including extensions.
     reserved_device = re.compile(
-        r"(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?", re.IGNORECASE
+        r"(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(?:\..*)?", re.IGNORECASE
     )
     for info in infos:
         name = info.filename
