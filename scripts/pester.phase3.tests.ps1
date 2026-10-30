@@ -285,3 +285,28 @@ Path(sys.argv[-1]).write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
         }
     }
 }
+
+
+Describe 'E156 capsule copy safety (synthetic local files)' {
+    BeforeAll {
+        . (Join-Path $PSScriptRoot 'install-e156-capsules.ps1') -Import
+        $script:E156CapsuleTemplate = Join-Path (Split-Path -Parent $PSScriptRoot) 'templates/e156-capsule'
+    }
+
+    It 'refuses overwriting human-owned content in an existing destination' {
+        $dst = Join-Path $TestDrive 'owned-capsules'
+        New-Item -ItemType Directory -Path $dst -Force | Out-Null
+        $owned = Join-Path $dst 'chartkit.py'
+        Set-Content -LiteralPath $owned -Value 'owned chartkit -- do not overwrite'
+        { Copy-E156Template -Src $script:E156CapsuleTemplate -Dst $dst } | Should -Throw '*REFUSED*'
+        (Get-Content -LiteralPath $owned -Raw).Trim() | Should -BeExactly 'owned chartkit -- do not overwrite'
+        @(Get-ChildItem -LiteralPath $dst -Force).Count | Should -Be 1
+    }
+
+    It 'copies the actual bundled files to a fresh destination' {
+        $dst = Join-Path $TestDrive 'clean-capsules'
+        Copy-E156Template -Src $script:E156CapsuleTemplate -Dst $dst
+        Test-Path -LiteralPath (Join-Path $dst 'chartkit.py') -PathType Leaf | Should -BeTrue
+        Test-Path -LiteralPath (Join-Path $dst 'sample.capsule.json') -PathType Leaf | Should -BeTrue
+    }
+}
