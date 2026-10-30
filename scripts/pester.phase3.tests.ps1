@@ -68,6 +68,44 @@ Describe "Overmind: Set-TruthCertHmacKey" {
     }
 }
 
+Describe "Overmind: explicit blank signing-key rotation is refused" {
+    # Execute the shipped entrypoint in a fresh Windows PowerShell 5.1 host,
+    # not a copied helper. EncodedCommand preserves an intentionally empty
+    # argument across the pwsh -> powershell.exe native-process boundary.
+    It "refuses explicit <Label> -HmacKey before any installer side effects" -ForEach @(
+        @{ Label = 'empty'; Key = '' },
+        @{ Label = 'whitespace'; Key = '   ' }
+    ) {
+        $userKeyBefore = [Environment]::GetEnvironmentVariable('TRUTHCERT_HMAC_KEY', 'User')
+        # Use .NET's native argument list to preserve even a zero-length
+        # argument in a real -File invocation on Windows. Redirect output at
+        # the OS process boundary so Write-Host is included in assertions.
+        $info = [System.Diagnostics.ProcessStartInfo]::new()
+        $info.FileName = (Get-Command powershell.exe).Source
+        $info.UseShellExecute = $false
+        $info.RedirectStandardOutput = $true
+        $info.RedirectStandardError = $true
+        foreach ($arg in @('-NoProfile', '-NonInteractive', '-File',
+                            $script:OvermindScript, '-SkipPipInstall', '-HmacKey', $Key)) {
+            [void]$info.ArgumentList.Add([string]$arg)
+        }
+        $child = [System.Diagnostics.Process]::Start($info)
+        try {
+            $output = $child.StandardOutput.ReadToEnd() + $child.StandardError.ReadToEnd()
+            $child.WaitForExit()
+            $exitCode = $child.ExitCode
+        } finally {
+            $child.Dispose()
+        }
+        $exitCode | Should -Be 2
+        $output | Should -Match 'REFUSED: -HmacKey was explicitly empty or whitespace'
+        $output | Should -Not -Match 'Overmind \\+ TruthCert ready'
+        $output | Should -Not -Match 'Installing overmind'
+        [Environment]::GetEnvironmentVariable('TRUTHCERT_HMAC_KEY', 'User') |
+            Should -Be $userKeyBefore
+    }
+}
+
 Describe "Overmind: Get-OvermindDefaultSource pins the supply chain (P0)" {
     BeforeEach { Remove-Item Env:OVERMIND_REF -ErrorAction SilentlyContinue }
     AfterEach  { Remove-Item Env:OVERMIND_REF -ErrorAction SilentlyContinue }

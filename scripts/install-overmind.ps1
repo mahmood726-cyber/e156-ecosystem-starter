@@ -124,6 +124,15 @@ function Set-TruthCertHmacKey {
 
 if ($Import) { return }
 
+# An explicitly empty rotation key is not the same as omitting -HmacKey.
+# Refuse before installation, key persistence or the verification canary.
+# Without this preflight, a blank argument could silently reuse or replace
+# the signing key and still report that setup succeeded.
+if ($PSBoundParameters.ContainsKey('HmacKey') -and [string]::IsNullOrWhiteSpace($HmacKey)) {
+    Write-Host 'REFUSED: -HmacKey was explicitly empty or whitespace; TruthCert signing key unchanged.' -ForegroundColor Red
+    exit 2
+}
+
 # === Real flow =============================================================
 
 function Write-Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
