@@ -6,16 +6,18 @@
       "id": ".github/workflows/test.yml#jobs.pester",
       "kind": "ci-job",
       "name": "Pester (Windows)",
-      "stops": "A failing assertion in any of the 11 Pester suites named in the job's $files list (installer helpers, redaction, supply-chain pinning, SHA gate), run under pwsh on windows-latest.",
+      "stops": "The Windows pwsh 7 job refuses a missing or duplicate required suite path, a required suite with zero discovered tests, or any of its 11 named suites reporting failed, skipped, not-run or incomplete in-memory Pester test counts. It also refuses a missing or empty per-suite NUnit XML file and refuses an artifact upload with no matching files.",
       "would_not_stop": [
-        "A Pester suite that exists but is not in the hard-coded $files list: a new scripts/pester.*.tests.ps1 is silently never run.",
-        "Behaviour that differs under Windows PowerShell 5.1, which many students run: the job uses pwsh 7.",
-        "Real installs over the network: the suites test wrapper logic, not that Sentinel / Overmind / the extractor actually install.",
-        "Any behaviour no suite asserts."
+        "Malformed but nonempty NUnit XML, or XML testcase identities/counters that disagree with Pester in-memory results: the Windows job checks file existence and nonzero length, not XML parsing or count agreement.",
+        "The Windows job itself does not discover newly added, unlisted *.tests.ps1 files; a separate Ubuntu pytest suite-inventory test rejects these when the full CI runs.",
+        "Differences in Windows PowerShell 5.1 behaviour: this job runs PowerShell 7.",
+        "A live installation of pinned Sentinel, Overmind/TruthCert, E156 or Meta-Harness: the Pester suites exercise local wrapper/fixture behaviour only.",
+        "Independent signature verification, source SHA authentication and complete multi-repository ecosystem canaries.",
+        "Behaviour absent from the explicitly listed test assertions."
       ],
-      "source": ".github/workflows/test.yml header comment and the job's $files list.",
+      "source": ".github/workflows/test.yml Pester job and upload step; tests/test_pester_suite_inventory.py (separate Ubuntu inventory guard).",
       "seal": {
-        ".github/workflows/test.yml#jobs.pester": "890466c0ab813436912330e6769f79451a8d10677753a009b3fad1289a9ad26d"
+        ".github/workflows/test.yml#jobs.pester": "56cd8985e2079e462a75dfbf0e6f52c789fdd23c0015a33fd482e36200687fe0"
       }
     },
     {
@@ -30,7 +32,7 @@
       ],
       "source": ".github/workflows/test.yml header comment; tests/ listing.",
       "seal": {
-        ".github/workflows/test.yml#jobs.bash-tests": "fca438b2ce88689e51640eb7d5e4a7e0a18f81b465b2aa33fb02715707d9c19f"
+        ".github/workflows/test.yml#jobs.bash-tests": "0ab71c125cc96322ef100a83a33f81757562533372e4c804db47d3ef7386326b"
       }
     },
     {
@@ -48,7 +50,7 @@
       ],
       "source": ".github/workflows/test.yml python-tests job; scripts/ listing. Port S-D report (requirements-ci.lock, tests/test_ci_lock.py).",
       "seal": {
-        ".github/workflows/test.yml#jobs.python-tests": "92e83e3d085dab0a8ddd344d9058a21abbf3e4fd6c8f2d74f5ca2407102f6652"
+        ".github/workflows/test.yml#jobs.python-tests": "8f518b727ceb33f149fa69bea13cc8062b748a477ed312895cc37573847457de"
       }
     },
     {
@@ -63,7 +65,7 @@
       ],
       "source": "scripts/regen-hashes.sh header; .github/workflows/test.yml hash-check job.",
       "seal": {
-        ".github/workflows/test.yml#jobs.hash-check": "9c0dbdbd2c8fc352bbf350084c22e46885ddfe37d68e5ceadba565efe78aa8f2",
+        ".github/workflows/test.yml#jobs.hash-check": "3ce76350ca4021d66ca2d21da9088baf51997b881a060a37ee25baa5ed2caebb",
         "scripts/regen-hashes.sh": "b1125b2ed6edf33a0b098fc04cceac5e139e9a29bf181154665bc2c29209f693"
       }
     },
@@ -79,7 +81,7 @@
       ],
       "source": "scripts/check-i18n-parity.sh header ('We don't validate translation quality') and its langs=(fr pt ar ur) list.",
       "seal": {
-        ".github/workflows/test.yml#jobs.i18n-parity": "ce6b56c3a14b541b396993fdb965af3576b22b0f88a56064e00914f3200c7476",
+        ".github/workflows/test.yml#jobs.i18n-parity": "5f425065856ff0cdd938af00e59fa4921f739049064974442892a49bf0155861",
         "scripts/check-i18n-parity.sh": "ef1e3ff1cd12dee383e868036cc74e73ee9abc55292270ad3716cb1cbb72e8ca"
       }
     },
@@ -95,7 +97,7 @@
       ],
       "source": ".github/workflows/test.yml link-check job comments and args.",
       "seal": {
-        ".github/workflows/test.yml#jobs.link-check": "011866fddf3ab550c5ec417fb8ad1fa29e0feeb8267caf4e8d2ed2209b3151a2"
+        ".github/workflows/test.yml#jobs.link-check": "ea2246c11f5af8ddd152fdad2e70db8e87bba5cf82d0eac30e1b3408352e7e48"
       }
     },
     {
@@ -111,21 +113,24 @@
       ],
       "source": ".github/workflows/test.yml lint job comments and file list.",
       "seal": {
-        ".github/workflows/test.yml#jobs.lint": "d16c9f291ff1fa959557f5d9c2b64917930820d27adf43a892536ce3d2cbcc5b"
+        ".github/workflows/test.yml#jobs.lint": "a6e8967838ff609a1d67dc441b2259a644a4f656508cf4af9ba8f91d33a430dd"
       }
     },
     {
       "id": ".github/workflows/test.yml#jobs.sentinel-rule-list-drift",
-      "kind": "declared-gap",
-      "name": "Teaching 1-pager Sentinel list matches Sentinel repo (DISABLED: if: false)",
-      "stops": "Nothing. The job is `if: false`: it never runs, on any push or PR. It exists to make the dependency visible.",
+      "kind": "ci-job",
+      "name": "Sentinel source rule-list drift (pinned CI)",
+      "stops": "CI refuses a mismatch between the teaching page's generated rule list and Sentinel source at its exact reviewed Git SHA. Missing or incorrect fetch and generated-page drift are failures.",
       "would_not_stop": [
-        "Drift between the auto-generated Sentinel rule list in docs/teaching/intro-1pager.md and the real Sentinel repo -- the exact error (fabricated rule IDs) the generator was written to prevent -- unless a maintainer runs `bash scripts/regen-sentinel-rule-list.sh --check` locally before the PR.",
-        "Anything at all: a green CI run says nothing about this check."
+        "Whether Sentinel actually loads or executes rules: this job checks source filenames, not runtime scan results.",
+        "Changes upstream after the reviewed SHA; the pin must be advanced deliberately.",
+        "Incorrect descriptions or claims outside the auto-generated section.",
+        "Cross-platform runtime behavior and actual research accuracy."
       ],
-      "source": ".github/workflows/test.yml comment above `if: false`; scripts/regen-sentinel-rule-list.sh header.",
+      "source": ".github/workflows/test.yml enabled pinned Sentinel job; scripts/regen-sentinel-rule-list.sh generator.",
       "seal": {
-        ".github/workflows/test.yml#jobs.sentinel-rule-list-drift": "9bbbf051c818775aeec6c722573ff2f2fb98cbe37f6ba033c0256db6656bfd13"
+        ".github/workflows/test.yml#jobs.sentinel-rule-list-drift": "2a7349c4873934a5de33c88c9636fd387b12955140cf0d264b545409346715e7",
+        "scripts/regen-sentinel-rule-list.sh": "6daf7ed9b7f8c63869b55fb8b48bb13db14ffe3736471ed5cf31943e61e77a8f"
       }
     },
     {
@@ -231,15 +236,17 @@
       "id": "scripts/refresh-ecosystem-pins.py",
       "kind": "script",
       "name": "refresh-ecosystem-pins --check",
-      "stops": "A 40-hex install-layer pin that lags its source repo's remote HEAD, or a layer whose ls-remote failed (exit 1 in --check).",
+      "stops": "For frozen Sentinel and Overmind v1.0.0 source commits, --check rejects missing, tagged, divergent or malformed Bash and PowerShell defaults without querying HEAD. Nonfrozen development SHA pins still check remote drift and failed ls-remote.",
       "would_not_stop": [
-        "Tag-pinned layers: they are skipped. As of 2026-06-08 every layer is tag-pinned, so --check reports all [skip] and passes by construction.",
-        "Whether the remote commit it would move to is trustworthy: it moves pins forward, it does not review them.",
-        "Anything in CI: it needs the network and no CI job runs it."
+        "A coordinated change to the expected frozen SHA and both installers: local consistency is not independent source review or signature authentication.",
+        "Explicit SENTINEL_REF or OVERMIND_REF overrides: they opt out of the frozen default and cannot establish a certified install.",
+        "The source identity or trust of unsigned v1.0.0 tag objects, pip dependency drift, or runtime behavior of Sentinel, Overmind and TruthCert.",
+        "Real signed cross-component Windows/Linux installation, failure propagation, private-memory custody or independently validated evidence.",
+        "This script is not a live networked CI gate: tests exercise the local frozen-release and negative/refusal behavior only."
       ],
-      "source": "scripts/refresh-ecosystem-pins.py docstring 'Design guarantees'.",
+      "source": "scripts/refresh-ecosystem-pins.py frozen-release branch and tests/test_{sentinel,overmind}_frozen_release.py.",
       "seal": {
-        "scripts/refresh-ecosystem-pins.py": "ab426c33f31691f1c032939860a9364113f68c08062f084bc72e7a03cbf46247"
+        "scripts/refresh-ecosystem-pins.py": "45fc19420a935265332f3caeac90b78209078d305f6818a6a2270c0443cb068f"
       }
     },
     {
@@ -260,14 +267,15 @@
       "id": "scripts/regen-sentinel-rule-list.sh",
       "kind": "script",
       "name": "regen-sentinel-rule-list --check",
-      "stops": "The Sentinel rule list in docs/teaching/intro-1pager.md drifting from a local Sentinel checkout (exit 1 in --check).",
+      "stops": "Comparison of generated Sentinel YAML and plugin source filenames with the supplied checkout. A mismatching page fails, and a missing checkout is inconclusive rather than a pass.",
       "would_not_stop": [
-        "Drift when no Sentinel checkout is found: exit 2, and the only CI job that would run it is `if: false` (see the declared gap above).",
-        "A stale local Sentinel checkout: it compares against whatever copy it finds first, not the published repo."
+        "A stale or unreviewed clone when run locally; CI instead pins a reviewed Git revision.",
+        "Rule registration, successful execution, severity, and sensitivity are not measured by this source census.",
+        "Discrepancies in material outside the generated rules section."
       ],
       "source": "scripts/regen-sentinel-rule-list.sh header 'Source of truth' and 'Exit codes'.",
       "seal": {
-        "scripts/regen-sentinel-rule-list.sh": "abfa15daaaf9f999e48bd97434cb7181cfbfa88300a7359771930fa7a972aa5e"
+        "scripts/regen-sentinel-rule-list.sh": "6daf7ed9b7f8c63869b55fb8b48bb13db14ffe3736471ed5cf31943e61e77a8f"
       }
     },
     {
@@ -340,17 +348,32 @@
       "id": "scripts/verify-local.py",
       "kind": "script",
       "name": "verify-local (one local standard mirroring CI; opt-in pre-commit/pre-push hooks)",
-      "stops": "Where a clone has opted in (git config core.hooksPath .githooks): a commit/push when any CI-mirrored limb fails, or cannot execute (a missing tool is COULD-NOT-EXECUTE, exit 2, never a silent skip). In CI, tests/test_verify_local.py refuses a new or changed CI step in .github/workflows/test.yml that has no verify-local limb or CI-only reason, so local and CI cannot drift apart unnoticed.",
+      "stops": "The local opt-in verifier executes mapped CI checks and fails visibly for absent prerequisites, including a Sentinel source checkout at the wrong commit. CI parity tests refuse newly disabled or unmapped checks.",
       "would_not_stop": [
-        "Anything in a clone that did not opt in: core.hooksPath is local config, and a fresh clone has no hook.",
-        "`git commit --no-verify`, which skips client-side hooks entirely; CI remains the enforcement.",
-        "A limb the user waived with --allow-missing / e156.verifyAllowMissing (printed as NOT RUN, but not run).",
-        "Differences between the local OS and the CI runners (Windows vs Ubuntu paths, interpreters, PowerShell 5.1 vs 7): a local PASS is not a CI PASS.",
-        "Checks that need tools not installed locally (lychee, ShellCheck, PSScriptAnalyzer) unless installed."
+        "Clones without the locally configured verification hook; CI remains authoritative.",
+        "An explicitly identified check which could not execute and was separately recorded as NOT RUN.",
+        "Behavioral errors in Sentinel rules, despite correct pinned filenames.",
+        "Operating-system differences and checks outside the mapped workflows."
       ],
       "source": "scripts/verify-local.py docstring; docs/VERIFY-LOCAL.md; port S-A report.",
       "seal": {
-        "scripts/verify-local.py": "0e84f25270001a58129538d20ed7fbfe3ac4f5118fb6c5589631f5ba88b81aff"
+        "scripts/verify-local.py": "450a55b56def3f84e48a0af303b0c3350ff0bc60a7906ee96f98f9f52201194c"
+      }
+    },
+    {
+      "id": ".github/workflows/test.yml#jobs.meta-harness-unpack-windows",
+      "kind": "ci-job",
+      "name": "Meta-Harness archive installer (Windows Git Bash)",
+      "stops": "A failing success/refusal assertion in tests/test_install_meta_harness.py when it exercises the real Bash release installer using local ZIP archives on Windows Server 2022 and hash-pinned pytest.",
+      "would_not_stop": [
+        "A bad real published Meta-Harness release: local ZIP test inputs are constructed fixtures, not a downloaded production release.",
+        "The separate PowerShell Meta-Harness installer: only the Bash installer is executed end to end here.",
+        "A complete live Sentinel, Overmind/TruthCert, E156 and Meta-Harness certification chain, or independent clinical accuracy.",
+        "Failures only on macOS, Windows PowerShell 5.1 or an untested Python version; this job uses Git Bash and Python 3.11 on Windows Server 2022."
+      ],
+      "source": ".github/workflows/test.yml meta-harness-unpack-windows job and tests/test_install_meta_harness.py.",
+      "seal": {
+        ".github/workflows/test.yml#jobs.meta-harness-unpack-windows": "3cc33294e1d32074b8418a25737507244563799f5acc11c44920d3e1924a5795"
       }
     }
   ]

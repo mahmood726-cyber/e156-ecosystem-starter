@@ -68,7 +68,11 @@ copy_e156_template() {
 persist_e156_path_env() {
     local target="$1"
     export E156_CAPSULES_PATH="$target"
-    local line="export E156_CAPSULES_PATH=\"$target\""
+    # Shell profiles execute on startup. Quote the target as literal data so
+    # a path containing quotes, $(), or shell metacharacters cannot run code.
+    # POSIX single-quote escaping works in both Bash and Zsh profile files.
+    local escaped="${target//\'/\'\\\'\'}"
+    local line="export E156_CAPSULES_PATH='$escaped'"
     local rc
     for rc in "${HOME}/.bashrc" "${HOME}/.zshrc"; do
         [[ -e "$rc" ]] || continue

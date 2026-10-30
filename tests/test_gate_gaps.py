@@ -135,7 +135,7 @@ def test_real_enumeration_finds_the_gates_the_brief_names(rgg):
         assert gid in census, gid
     assert census["scripts/protect-test-config.py"]["allowed_kinds"] == ("hook",)
     drift = census[".github/workflows/test.yml#jobs.sentinel-rule-list-drift"]
-    assert drift["allowed_kinds"] == ("declared-gap",), "the if: false job must be a declared gap, not a gate"
+    assert drift["allowed_kinds"] == ("ci-job",), "enabled Sentinel drift check must be counted as a CI gate"
     assert "scripts/install-sentinel.sh" not in census, "a shellcheck ARGUMENT is not a CI-run gate"
 
 

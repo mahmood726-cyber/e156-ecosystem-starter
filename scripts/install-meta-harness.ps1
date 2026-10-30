@@ -26,6 +26,9 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $script:MetaHarnessDefaultRef = 'v1.0.0'
+# Reviewed checksum of the *separate* v1.0.0 SHA256SUMS release asset.
+# Release assets are mutable; change only with independent release review.
+$script:MetaHarnessV1ManifestSha = '3bf1d1f9eaa6f423f3130ca5f6413b05dcf2994833a9fce038e1ee8e9ad00ddb'
 function Get-MetaHarnessDefaultRef {
     if ($env:META_HARNESS_REF) { return $env:META_HARNESS_REF }
     return $script:MetaHarnessDefaultRef
@@ -40,19 +43,51 @@ function Get-MetaHarnessDefaultTarget { param([string]$Tag) return (Join-Path $e
 
 function Test-MetaHarnessPresent {
     param([string]$Dir)
-    return [bool]($Dir -and (Test-Path (Join-Path $Dir 'scripts\replay_offline.py')))
+    # A directory named replay_offline.py is not an executable replay entry point.
+    return [bool]($Dir -and (Test-Path -LiteralPath (Join-Path $Dir 'scripts\replay_offline.py') -PathType Leaf))
+}
+
+# Reject a changed release manifest before fetching the 609 MB ZIP.
+# SHA256SUMS and the ZIP are hosted together; validating only one against the
+# other would not detect a coordinated replacement of both release assets.
+function Assert-MetaHarnessReleaseManifest {
+    [CmdletBinding()]
+    param([string]$SumsPath, [string]$Tag, [string]$BaseUrl)
+    if ($Tag -ceq $script:MetaHarnessDefaultRef) {
+        $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $SumsPath).Hash.ToLowerInvariant()
+        if ($actual -cne $script:MetaHarnessV1ManifestSha) {
+            throw "REFUSED: meta-harness v1.0.0 SHA256SUMS differs from reviewed pinned digest"
+        }
+        Write-Host "  pinned meta-harness v1.0.0 SHA256SUMS OK" -ForegroundColor DarkGray
+    } elseif ($BaseUrl -like 'file://*') {
+        Write-Warning "LOCAL TEST FIXTURE: unpinned release $Tag (not an authenticated distribution)"
+    } else {
+        throw "REFUSED: unreviewed meta-harness release ref '$Tag'; no pinned SHA256SUMS trust anchor"
+    }
 }
 
 # The digest SHA256SUMS records for $Name, or $null.
 function Get-MetaHarnessExpectedSha {
     param([string]$SumsPath, [string]$Name)
+    # Match Bash: never select the first of ambiguous or malformed
+    # SHA256SUMS entries for this asset.
+    $found = $false
+    $digest = $null
     foreach ($line in (Get-Content -LiteralPath $SumsPath)) {
         $parts = ($line.TrimEnd("`r")) -split '\s+', 2
-        if ($parts.Count -eq 2 -and $parts[0] -match '^[0-9a-f]{64}$' -and ($parts[1] -eq $Name -or $parts[1] -eq "*$Name")) {
-            return $parts[0]
+        if ($parts.Count -ne 2 -or ($parts[1] -cne $Name -and $parts[1] -cne "*$Name")) {
+            continue
         }
+        if ($found) {
+            throw "REFUSED: SHA256SUMS has multiple entries for $Name"
+        }
+        if ($parts[0] -cnotmatch '^[0-9a-f]{64}$') {
+            throw "REFUSED: SHA256SUMS has malformed entry for $Name"
+        }
+        $found = $true
+        $digest = $parts[0]
     }
-    return $null
+    return $digest
 }
 
 function Test-MetaHarnessAsset {
@@ -65,19 +100,81 @@ function Test-MetaHarnessAsset {
     Write-Host "  sha256 OK: $actual  $name" -ForegroundColor DarkGray
 }
 
+# Reject unsafe ZIP member names before Expand-Archive touches the filesystem.
+# A matching SHA256SUMS digest alone does not make archive paths safe.
+function Assert-MetaHarnessArchiveSafe {
+    param([string]$ZipPath)
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = [IO.Compression.ZipFile]::OpenRead($ZipPath)
+    try {
+        # Windows paths are case-insensitive. Refuse multiple ZIP records that
+        # would name the same destination before any files are extracted.
+        $seen = @{}
+        foreach ($entry in $archive.Entries) {
+            $name = $entry.FullName
+            if ([string]::IsNullOrEmpty($name) -or
+                $name.StartsWith('/') -or $name.StartsWith([string][char]92) -or
+                $name.Contains([string][char]92) -or $name.Contains(':') -or
+                $name -match '[\x00-\x1f]') {
+                throw "REFUSED: unsafe archive entry path"
+            }
+            foreach ($part in $name.TrimEnd('/').Split('/')) {
+                if (-not $part -or $part -eq '.' -or $part -eq '..' -or
+                    $part -match '[. ]$') {
+                    throw "REFUSED: unsafe archive entry path"
+                }
+                # Device names remain reserved in every Windows directory.
+                if ($part -match '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])([.].*)?$') {
+                    throw "REFUSED: Windows reserved device name in archive"
+                }
+            }
+            # A release that contains NFC/NFD-equivalent names is ambiguous
+            # on normalising filesystems. Mirror the Bash preflight so a ZIP
+            # cannot pass one installer but collide on another platform.
+            $key = $name.TrimEnd('/').ToUpperInvariant().Normalize([Text.NormalizationForm]::FormC)
+            if ($seen.ContainsKey($key)) {
+                throw "REFUSED: duplicate or case-colliding archive entry"
+            }
+            $seen[$key] = $true
+            # ZIP creator's POSIX file type is stored in the high 16 bits.
+            $type = (($entry.ExternalAttributes -shr 16) -band 0xF000)
+            if ($type -eq 0xA000) {
+                throw "REFUSED: symlink entry in archive"
+            }
+        }
+    } finally {
+        $archive.Dispose()
+    }
+}
+
 function Expand-MetaHarness {
     param([string]$ZipPath, [string]$TargetDir)
-    if ((Test-Path $TargetDir) -and (Get-ChildItem -Force $TargetDir | Select-Object -First 1)) {
+    $targetFull = [IO.Path]::GetFullPath($TargetDir)
+    if ((Test-Path -LiteralPath $targetFull) -and
+        (Get-ChildItem -LiteralPath $targetFull -Force | Select-Object -First 1)) {
         throw "REFUSED: $TargetDir exists and is not empty"
     }
-    $tmp = Join-Path ([IO.Path]::GetTempPath()) ("mh-" + [guid]::NewGuid())
-    Expand-Archive -LiteralPath $ZipPath -DestinationPath $tmp
-    $tops = @(Get-ChildItem -Force $tmp)
-    $src = if ($tops.Count -eq 1 -and $tops[0].PSIsContainer) { $tops[0].FullName } else { $tmp }
-    New-Item -ItemType Directory -Force (Split-Path $TargetDir -Parent) | Out-Null
-    if (Test-Path $TargetDir) { Remove-Item -LiteralPath $TargetDir }
-    Move-Item -LiteralPath $src -Destination $TargetDir
-    if (Test-Path $tmp) { Remove-Item -Recurse -Force -LiteralPath $tmp }
+    # Preserve the existing archive-path refusal before any extraction.
+    Assert-MetaHarnessArchiveSafe -ZipPath $ZipPath
+    $parent = Split-Path -Path $targetFull -Parent
+    New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    # Stage beside the destination so the final move stays on the same volume.
+    $tmp = Join-Path $parent (".mh-stage-" + [guid]::NewGuid().ToString('N'))
+    try {
+        Expand-Archive -LiteralPath $ZipPath -DestinationPath $tmp
+        $tops = @(Get-ChildItem -LiteralPath $tmp -Force)
+        $src = if ($tops.Count -eq 1 -and $tops[0].PSIsContainer) { $tops[0].FullName } else { $tmp }
+        # Never publish an archive missing the actual replay *file*.
+        if (-not (Test-MetaHarnessPresent $src)) {
+            throw "REFUSED: scripts/replay_offline.py is missing from staged archive"
+        }
+        if (Test-Path -LiteralPath $targetFull) { Remove-Item -LiteralPath $targetFull }
+        Move-Item -LiteralPath $src -Destination $targetFull -ErrorAction Stop
+    } finally {
+        if (Test-Path -LiteralPath $tmp) {
+            Remove-Item -Recurse -Force -LiteralPath $tmp
+        }
+    }
 }
 
 if ($Import) { return }
@@ -97,6 +194,7 @@ New-Item -ItemType Directory $work | Out-Null
 try {
     $ProgressPreference = 'SilentlyContinue'
     Invoke-WebRequest -UseBasicParsing -Uri "$base/SHA256SUMS" -OutFile (Join-Path $work 'SHA256SUMS')
+    Assert-MetaHarnessReleaseManifest -SumsPath (Join-Path $work 'SHA256SUMS') -Tag $Ref -BaseUrl $base
     Invoke-WebRequest -UseBasicParsing -Uri "$base/$asset" -OutFile (Join-Path $work $asset)
     Write-Host "==> verifying against the release's SHA256SUMS"
     Test-MetaHarnessAsset -ZipPath (Join-Path $work $asset) -SumsPath (Join-Path $work 'SHA256SUMS')

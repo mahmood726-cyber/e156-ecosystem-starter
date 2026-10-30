@@ -48,8 +48,8 @@ WHAT IT DOES NOT CHECK, named rather than implied.
   - Same tool, different host: CI runs Pester on windows-latest pwsh and the
     bash suites on Ubuntu. A local pass on another OS is strong evidence, not
     proof. lychee needs network, as it does in CI.
-  - The sentinel-rule-list-drift job is `if: false` in CI (it needs a Sentinel
-    clone), so it is not a limb; the parity test fails if CI ever enables it.
+  - The Sentinel drift check needs a local clone at the exact CI-pinned SHA.
+    Missing or unpinned clones never count as a passing verification limb.
 
 USAGE
     python scripts/verify-local.py
@@ -117,13 +117,13 @@ CI_ONLY_STEPS = {
     ("bash-tests", "Show bash version"): "diagnostic print only; checks nothing",
     ("python-tests", "uses:actions/setup-python"): "runner set-up: provides Python 3.11; locally you run this with your own Python",
     ("python-tests", "Install pytest"): "runner set-up (pip install); verify-local never installs, a missing pytest is COULD-NOT-EXECUTE",
+    ("meta-harness-unpack-windows", "uses:actions/setup-python"): "Windows runner set-up; locally the installed Python is used",
+    ("meta-harness-unpack-windows", "Install locked test dependencies"): "Windows runner set-up using requirements-ci.lock; local pytest limb checks importability",
 }
-# Whole CI jobs with no limb. Only allowed while the job is disabled in CI
-# (`if: false`); the parity test refuses the entry the moment CI enables it.
-CI_ONLY_JOBS = {
-    "sentinel-rule-list-drift": "`if: false` in CI (needs a Sentinel clone); run "
-                                "`bash scripts/regen-sentinel-rule-list.sh --check` with SENTINEL_REPO set",
-}
+# All currently enabled CI jobs must have local parity limbs. Runtime
+# dependencies are not optional: an unavailable Sentinel clone is NOEXEC.
+CI_ONLY_JOBS = {}
+SENTINEL_PIN = "97273997db160aee99d89af94fcc18bf621b3cb9"
 
 
 class ToolMissing(Exception):
@@ -219,6 +219,18 @@ def limb_i18n_parity(ctx):
     return _verdict(*ctx.run([ctx.bash(), "scripts/check-i18n-parity.sh"]))
 
 
+def limb_sentinel_rule_list(ctx):
+    """Mirror the pinned CI dependency and the generated-page drift check."""
+    source = ctx.env.get("SENTINEL_REPO", "")
+    if not source or not (Path(source) / "sentinel" / "rules").is_dir():
+        raise ToolMissing("SENTINEL_REPO must point to a checked-out Sentinel clone")
+    git = ctx.need("git")
+    rc, out = ctx.run([git, "-C", source, "rev-parse", "HEAD"], timeout=60)
+    if rc != 0 or out.strip() != SENTINEL_PIN:
+        return REFUSED, f"Sentinel clone is not at reviewed commit {SENTINEL_PIN}: {out.strip()}"
+    return _verdict(*ctx.run([ctx.bash(), "scripts/regen-sentinel-rule-list.sh", "--check"]))
+
+
 def limb_pester(ctx):
     _require_module(ctx, "Pester", min_major=5)
     files = ",".join(f"'{f}'" for f in PESTER_FILES)
@@ -263,7 +275,10 @@ class Limb:
 
 
 LIMBS = (
-    Limb("pytest", "pytest tests/", (("python-tests", "Run pytest"),), limb_pytest),
+    Limb("pytest", "pytest tests/",
+         (("python-tests", "Run pytest"),
+          ("meta-harness-unpack-windows", "Run actual Bash installer and negative release cases")),
+         limb_pytest),
     Limb("bash-install-sh", "bash tests/test-install-sh.bash", (("bash-tests", "Run bash test suite"),), limb_bash_install_sh),
     Limb("bash-handoff-locale", "bash tests/test-handoff-locale.bash",
          (("bash-tests", "Run handoff-locale bash tests"),), limb_bash_handoff_locale),
@@ -271,6 +286,9 @@ LIMBS = (
          (("hash-check", "Verify docs/HASH.txt + docs/HASH-linux.txt"),), limb_hash_check),
     Limb("i18n-parity", "check-i18n-parity.sh (<details> parity en/fr/pt/ar/ur)",
          (("i18n-parity", "Verify <details> count parity across en/fr/pt/ar/ur"),), limb_i18n_parity),
+    Limb("sentinel-rule-list-drift", "pinned Sentinel clone and teaching-page rule census",
+         (("sentinel-rule-list-drift", "Verify auto-generated Sentinel list matches source"),),
+         limb_sentinel_rule_list),
     Limb("pester", "Pester 5 suites (same file list as CI)", (("pester", "Run Pester suites"),), limb_pester),
     Limb("shellcheck", "ShellCheck --severity=error on shipped .sh files", (("lint", "ShellCheck"),), limb_shellcheck),
     Limb("psscriptanalyzer", "PSScriptAnalyzer error-level on .ps1", (("lint", "PSScriptAnalyzer"),), limb_psscriptanalyzer),
@@ -407,6 +425,8 @@ def find_drift(workflow_text, limbs=LIMBS, ci_only_steps=None, ci_only_jobs=None
 
     seen = set()
     for job_id, job in jobs.items():
+        if (job["if"] or "").strip() in ("false", "${{ false }}") and job_id not in ci_only_jobs:
+            problems.append(f"CI job {job_id!r} is disabled in CI but is mapped as an active gate")
         if job_id in ci_only_jobs:
             cond = (job["if"] or "").strip()
             if cond not in ("false", "${{ false }}"):
@@ -449,6 +469,9 @@ def find_drift(workflow_text, limbs=LIMBS, ci_only_steps=None, ci_only_jobs=None
         if tuple(local) != tuple(ci):
             problems.append(f"{label} differ: verify-local={list(local)} CI={list(ci)}")
 
+    t_sentinel = step_text("sentinel-rule-list-drift", "Verify auto-generated Sentinel list matches source")
+    if t_sentinel is not None and SENTINEL_PIN not in t_sentinel:
+        problems.append("Sentinel CI checkout pin differs from verify-local SENTINEL_PIN")
     t = step_text("pester", "Run Pester suites")
     if t is not None:
         m = re.search(r"\$files\s*=\s*@\((.*?)\)", t, re.S)
