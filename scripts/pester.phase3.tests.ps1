@@ -84,6 +84,31 @@ Describe "Overmind: Get-OvermindDefaultSource pins the supply chain (P0)" {
     }
 }
 
+Describe "Overmind: strict local verifier-health JSON gate (synthetic fixtures)" {
+    BeforeAll {
+        $script:CanaryChecker = Join-Path $PSScriptRoot 'check-overmind-canary.py'
+        $script:Python = (Get-Command python -ErrorAction Stop).Source
+    }
+
+    It "accepts the pinned Overmind CERTIFIED shape with a 16-hex bundle hash" {
+        '{"passed":true,"verdict":"CERTIFIED","bundle_hash":"0123456789abcdef"}' |
+            & $script:Python $script:CanaryChecker | Out-Null
+        $LASTEXITCODE | Should -Be 0
+    }
+
+    It "refuses a zero-exit CLI payload containing passed=false" {
+        '{"passed":false,"verdict":"REJECT","alarm_written":"alarm.json"}' |
+            & $script:Python $script:CanaryChecker 2>$null | Out-Null
+        $LASTEXITCODE | Should -Not -Be 0
+    }
+
+    It "refuses conflicting duplicate passed members" {
+        '{"passed":false,"passed":true,"verdict":"CERTIFIED","bundle_hash":"0123456789abcdef"}' |
+            & $script:Python $script:CanaryChecker 2>$null | Out-Null
+        $LASTEXITCODE | Should -Not -Be 0
+    }
+}
+
 Describe "ProjectIndex: Get-DefaultProjectIndexRoot" {
     It "returns a filesystem-absolute path" {
         $r = Get-DefaultProjectIndexRoot
