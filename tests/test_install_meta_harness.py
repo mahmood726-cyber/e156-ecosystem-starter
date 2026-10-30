@@ -194,9 +194,9 @@ def test_windows_style_zip_path_is_rejected_on_all_platforms(tmp_path):
         "NUL",
         "COM1.py",
         "lpt9.log",
-        "line\\nbreak",
-        "tab\\tname",
-        "carriage\\rreturn",
+        "line" + chr(10) + "break",
+        "tab" + chr(9) + "name",
+        "carriage" + chr(13) + "return",
     ],
 )
 def test_windows_reserved_or_control_character_zip_paths_refuse_on_all_platforms(
