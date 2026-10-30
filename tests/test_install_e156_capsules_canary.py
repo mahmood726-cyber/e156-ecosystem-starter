@@ -100,3 +100,58 @@ def test_actual_bundled_chartkit_sample_renders_end_to_end(tmp_path: Path):
     assert (target / "sample.capsule.json").is_file()
     assert str(target) in (home / ".bashrc").read_text(encoding="utf-8")
     assert not list(target.glob(".chartkit_check.*"))
+
+
+def test_copy_refuses_nonempty_destination_and_preserves_user_file(tmp_path: Path):
+    home = tmp_path / "home"
+    home.mkdir()
+    target = tmp_path / "capsules"
+    target.mkdir()
+    owned = target / "chartkit.py"
+    owned.write_bytes(b"human-owned chartkit; never overwrite")
+    proc = subprocess.run(
+        ["/usr/bin/bash", str(SCRIPT), "--target", str(target)],
+        env={**os.environ, "HOME": str(home)},
+        text=True, capture_output=True, timeout=30, check=False,
+    )
+    assert proc.returncode != 0, proc.stdout + proc.stderr
+    assert "REFUSED: destination" in proc.stderr
+    assert owned.read_bytes() == b"human-owned chartkit; never overwrite"
+    assert [p.name for p in target.iterdir()] == ["chartkit.py"]
+    assert not (home / ".bashrc").exists()
+
+
+def test_copy_refuses_symlink_destination_without_touching_target(tmp_path: Path):
+    home = tmp_path / "home"
+    home.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    owned = outside / "chartkit.py"
+    owned.write_bytes(b"another directory's private chartkit")
+    destination = tmp_path / "capsules"
+    destination.symlink_to(outside, target_is_directory=True)
+    proc = subprocess.run(
+        ["/usr/bin/bash", str(SCRIPT), "--target", str(destination)],
+        env={**os.environ, "HOME": str(home)},
+        text=True, capture_output=True, timeout=30, check=False,
+    )
+    assert proc.returncode != 0, proc.stdout + proc.stderr
+    assert "REFUSED: destination" in proc.stderr
+    assert owned.read_bytes() == b"another directory's private chartkit"
+    assert not (home / ".bashrc").exists()
+
+
+def test_copy_accepts_existing_empty_directory_using_bundled_chartkit(tmp_path: Path):
+    home = tmp_path / "home"
+    home.mkdir()
+    target = tmp_path / "empty-capsules"
+    target.mkdir()
+    proc = subprocess.run(
+        ["/usr/bin/bash", str(SCRIPT), "--target", str(target)],
+        env={**os.environ, "HOME": str(home)},
+        text=True, capture_output=True, timeout=30, check=False,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "chartkit OK" in proc.stdout
+    assert (target / "chartkit.py").is_file()
+    assert str(target) in (home / ".bashrc").read_text(encoding="utf-8")

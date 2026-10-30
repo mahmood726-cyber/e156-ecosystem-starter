@@ -36,8 +36,20 @@ function Test-E156CapsulesPresent {
 function Copy-E156Template {
     [CmdletBinding()]
     param([string]$Src, [string]$Dst)
-    if (-not (Test-Path $Src)) { throw "bundled template not found at $Src" }
-    if (-not (Test-Path $Dst)) { New-Item -ItemType Directory -Force -Path $Dst | Out-Null }
+    if (-not (Test-Path -LiteralPath $Src -PathType Container)) { throw "bundled template not found at $Src" }
+    # Prevent accidental overwrite of existing capsules. Reparse-point
+    # destinations can redirect the copy outside the requested directory.
+    if (Test-Path -LiteralPath $Dst) {
+        $item = Get-Item -LiteralPath $Dst -Force
+        if (-not $item.PSIsContainer -or ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+            throw "REFUSED: destination $Dst is not a regular directory."
+        }
+        if (Get-ChildItem -LiteralPath $Dst -Force | Select-Object -First 1) {
+            throw "REFUSED: destination $Dst is not empty; use -SkipCopy to verify the existing template."
+        }
+    } else {
+        New-Item -ItemType Directory -Path $Dst -Force | Out-Null
+    }
     Copy-Item -Path (Join-Path $Src '*') -Destination $Dst -Recurse -Force
 }
 
