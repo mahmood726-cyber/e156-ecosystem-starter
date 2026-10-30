@@ -199,7 +199,12 @@ Describe "Expand-MetaHarness refuses ambiguous Windows ZIP member paths" {
         Test-Path -LiteralPath $target | Should -BeFalse
     }
     It "refuses reserved Windows device names at any path depth" {
-        foreach ($bad in @('AUX.txt', 'nul', 'docs/COM1.log', 'docs/lPt9.ext')) {
+        foreach ($bad in @(
+            'AUX.txt', 'nul', 'docs/COM1.log', 'docs/lPt9.ext',
+            ('docs/COM' + [char]0x00B9), ('docs/COM' + [char]0x00B2 + '.log'),
+            ('docs/COM' + [char]0x00B3 + '.txt'), ('docs/LPT' + [char]0x00B9),
+            ('docs/lpt' + [char]0x00B2 + '.dat'), ('docs/LPT' + [char]0x00B3)
+        )) {
             $d = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
             $zip = New-TestRelease -Dir $d
             $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
@@ -217,6 +222,7 @@ Describe "Expand-MetaHarness refuses ambiguous Windows ZIP member paths" {
         try {
             $archive.CreateEntry('meta-harness-v9.9.9-test/COM10.txt') | Out-Null
             $archive.CreateEntry('meta-harness-v9.9.9-test/docs/console.txt') | Out-Null
+            $archive.CreateEntry("meta-harness-v9.9.9-test/docs/README$([char]0x00B9).md") | Out-Null
         } finally { $archive.Dispose() }
         $target = Join-Path $d 'published'
         { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Not -Throw

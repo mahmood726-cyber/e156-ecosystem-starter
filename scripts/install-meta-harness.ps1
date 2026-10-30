@@ -124,7 +124,102 @@ function Assert-MetaHarnessArchiveSafe {
                     throw "REFUSED: unsafe archive entry path"
                 }
                 # Device names remain reserved in every Windows directory.
-                if ($part -match '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])([.].*)?$') {
+                # .NET regex escapes keep the PowerShell 5.1 source ASCII-safe.
+                # Windows reserves superscript 1/2/3 in COM and LPT device names.
+                if ($part -match '^(CON|PRN|AUX|NUL|COM[1-9\u00B9\u00B2\u00B3]|LPT[1-9\u00B9\u00B2\u00B3])([.].*)?
+                    throw "REFUSED: Windows reserved device name in archive"
+                }
+            }
+            # A release that contains NFC/NFD-equivalent names is ambiguous
+            # on normalising filesystems. Mirror the Bash preflight so a ZIP
+            # cannot pass one installer but collide on another platform.
+            $key = $name.TrimEnd('/').ToUpperInvariant().Normalize([Text.NormalizationForm]::FormC)
+            if ($seen.ContainsKey($key)) {
+                throw "REFUSED: duplicate or case-colliding archive entry"
+            }
+            $seen[$key] = $true
+            # ZIP creator's POSIX file type is stored in the high 16 bits.
+            $type = (($entry.ExternalAttributes -shr 16) -band 0xF000)
+            if ($type -eq 0xA000) {
+                throw "REFUSED: symlink entry in archive"
+            }
+        }
+    } finally {
+        $archive.Dispose()
+    }
+}
+
+function Expand-MetaHarness {
+    param([string]$ZipPath, [string]$TargetDir)
+    $targetFull = [IO.Path]::GetFullPath($TargetDir)
+    if ((Test-Path -LiteralPath $targetFull) -and
+        (Get-ChildItem -LiteralPath $targetFull -Force | Select-Object -First 1)) {
+        throw "REFUSED: $TargetDir exists and is not empty"
+    }
+    # Preserve the existing archive-path refusal before any extraction.
+    Assert-MetaHarnessArchiveSafe -ZipPath $ZipPath
+    $parent = Split-Path -Path $targetFull -Parent
+    New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    # Stage beside the destination so the final move stays on the same volume.
+    $tmp = Join-Path $parent (".mh-stage-" + [guid]::NewGuid().ToString('N'))
+    try {
+        Expand-Archive -LiteralPath $ZipPath -DestinationPath $tmp
+        $tops = @(Get-ChildItem -LiteralPath $tmp -Force)
+        $src = if ($tops.Count -eq 1 -and $tops[0].PSIsContainer) { $tops[0].FullName } else { $tmp }
+        # Never publish an archive missing the actual replay *file*.
+        if (-not (Test-MetaHarnessPresent $src)) {
+            throw "REFUSED: scripts/replay_offline.py is missing from staged archive"
+        }
+        if (Test-Path -LiteralPath $targetFull) { Remove-Item -LiteralPath $targetFull }
+        Move-Item -LiteralPath $src -Destination $targetFull -ErrorAction Stop
+    } finally {
+        if (Test-Path -LiteralPath $tmp) {
+            Remove-Item -Recurse -Force -LiteralPath $tmp
+        }
+    }
+}
+
+if ($Import) { return }
+
+# === Real flow =============================================================
+if (-not $Ref) { $Ref = Get-MetaHarnessDefaultRef }
+$asset = Get-MetaHarnessAssetName -Tag $Ref
+$base = Get-MetaHarnessBaseUrl -Tag $Ref
+if (-not $Target) { $Target = Get-MetaHarnessDefaultTarget -Tag $Ref }
+
+Write-Host ''
+Write-Host 'meta-harness release fetch (optional layer; nothing is vendored into the starter)'
+Write-Host "==> release ${Ref}: $base/$asset"
+
+$work = Join-Path ([IO.Path]::GetTempPath()) ("mh-dl-" + [guid]::NewGuid())
+New-Item -ItemType Directory $work | Out-Null
+try {
+    $ProgressPreference = 'SilentlyContinue'
+    Invoke-WebRequest -UseBasicParsing -Uri "$base/SHA256SUMS" -OutFile (Join-Path $work 'SHA256SUMS')
+    Assert-MetaHarnessReleaseManifest -SumsPath (Join-Path $work 'SHA256SUMS') -Tag $Ref -BaseUrl $base
+    Invoke-WebRequest -UseBasicParsing -Uri "$base/$asset" -OutFile (Join-Path $work $asset)
+    Write-Host "==> verifying against the release's SHA256SUMS"
+    Test-MetaHarnessAsset -ZipPath (Join-Path $work $asset) -SumsPath (Join-Path $work 'SHA256SUMS')
+    Write-Host "==> unpacking into $Target"
+    Expand-MetaHarness -ZipPath (Join-Path $work $asset) -TargetDir $Target
+} finally {
+    Remove-Item -Recurse -Force -LiteralPath $work -ErrorAction SilentlyContinue
+}
+if (-not (Test-MetaHarnessPresent $Target)) {
+    Write-Host "REFUSED: unpacked, but $Target\scripts\replay_offline.py is missing." -ForegroundColor Red; exit 1
+}
+
+Write-Host ''
+Write-Host '====================================================='
+Write-Host "  meta-harness $Ref unpacked at $Target (sha256 verified)"
+Write-Host '  This is a download without git history: replay a review OFFLINE with'
+Write-Host "    cd `"$Target`""
+Write-Host '    python -m pip install --require-hashes -r docs/offline/requirements.lock'
+Write-Host '    python scripts/replay_offline.py dpp4-mace-t2d'
+Write-Host '  (scripts/reproduce_review.py needs a git clone -- see docs\meta-harness.md.)'
+Write-Host '====================================================='
+exit 0
+) {
                     throw "REFUSED: Windows reserved device name in archive"
                 }
             }
