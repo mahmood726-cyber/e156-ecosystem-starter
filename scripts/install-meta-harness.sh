@@ -107,7 +107,7 @@ fetch_url() {
 unpack_meta_harness() {
     local zip="$1" target="$2"
     "$PYTHON" - "$zip" "$target" <<'PY'
-import pathlib, re, shutil, stat, sys, tempfile, zipfile
+import pathlib, re, shutil, stat, sys, tempfile, unicodedata, zipfile
 
 zp, target = sys.argv[1], pathlib.Path(sys.argv[2])
 if target.exists():
@@ -131,7 +131,9 @@ with zipfile.ZipFile(zp) as z:
         )
         if unsafe:
             sys.exit(f"REFUSED: unsafe path in archive: {name}")
-        folded = name.rstrip("/").casefold()
+        # Unicode NFC/NFD aliases can target the same file on normalising
+        # filesystems (notably macOS). Refuse them before extracting any bytes.
+        folded = unicodedata.normalize("NFC", name.rstrip("/").casefold())
         if folded in seen:
             sys.exit(f"REFUSED: duplicate archive path (case-insensitive): {name}")
         seen.add(folded)

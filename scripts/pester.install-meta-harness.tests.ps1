@@ -223,3 +223,34 @@ Describe "Expand-MetaHarness refuses ambiguous Windows ZIP member paths" {
         Test-MetaHarnessPresent $target | Should -BeTrue
     }
 }
+
+Describe "Expand-MetaHarness rejects canonically equivalent Unicode names" {
+    It "refuses NFC/NFD aliases without modifying an empty target" {
+        $d = Join-Path $TestDrive 'unicode-alias'; $zip = New-TestRelease -Dir $d
+        $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+        try {
+            # Two different UTF-8 archive names that normalise to the same path.
+            $nfc = "meta-harness-v9.9.9-test/notes/caf$([char]0x00E9).txt"
+            $nfd = "meta-harness-v9.9.9-test/notes/cafe$([char]0x0301).txt"
+            $archive.CreateEntry($nfc) | Out-Null
+            $archive.CreateEntry($nfd) | Out-Null
+        } finally { $archive.Dispose() }
+        $target = Join-Path $d 'published'
+        New-Item -ItemType Directory -Path $target | Out-Null
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Throw '*duplicate or case-colliding*'
+        Test-Path -LiteralPath $target -PathType Container | Should -BeTrue
+        @(Get-ChildItem -LiteralPath $target -Force).Count | Should -Be 0
+        @(Get-ChildItem -LiteralPath $d -Filter '.mh-stage-*' -Force).Count | Should -Be 0
+    }
+    It "still installs a release with one decomposed Unicode filename" {
+        $d = Join-Path $TestDrive 'unicode-single'; $zip = New-TestRelease -Dir $d
+        $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Update)
+        try {
+            $name = "meta-harness-v9.9.9-test/notes/cafe$([char]0x0301).txt"
+            $archive.CreateEntry($name) | Out-Null
+        } finally { $archive.Dispose() }
+        $target = Join-Path $d 'published'
+        { Expand-MetaHarness -ZipPath $zip -TargetDir $target } | Should -Not -Throw
+        Test-MetaHarnessPresent $target | Should -BeTrue
+    }
+}

@@ -193,6 +193,37 @@ def test_case_colliding_zip_members_are_rejected_before_extraction(tmp_path):
     assert not target.exists()
 
 
+@pytest.mark.parametrize("first,second", [
+    ("caf\u00e9.txt", "cafe\u0301.txt"),       # NFC versus NFD
+    ("FO\u00d6.txt", "foO\u0308.txt"),          # case plus canonical equivalence
+])
+def test_unicode_equivalent_zip_names_refuse_before_extraction(tmp_path, first, second):
+    # A matching SHA256SUMS alone cannot make colliding filenames portable.
+    # The real installer must preflight *all* names, without publishing either.
+    rel = _release(tmp_path / "rel", {
+        **GOOD,
+        f"meta-harness-{TAG}/notes/{first}": b"one",
+        f"meta-harness-{TAG}/notes/{second}": b"two",
+    })
+    target = tmp_path / "out" / "mh"
+    target.mkdir(parents=True)
+    result = _run(rel, target)
+    assert result.returncode != 0, result.stdout + result.stderr
+    assert "duplicate archive path" in (result.stdout + result.stderr)
+    assert target.is_dir() and not list(target.iterdir()), "empty pre-existing target changed"
+    assert not list(target.parent.glob(".meta-harness-stage-*")), "temporary extraction leaked"
+
+
+def test_single_unicode_named_member_is_still_installable(tmp_path):
+    rel = _release(tmp_path / "rel", {
+        **GOOD, f"meta-harness-{TAG}/notes/cafe\u0301.txt": b"note"
+    })
+    target = tmp_path / "out" / "mh"
+    result = _run(rel, target)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (target / "scripts" / "replay_offline.py").is_file()
+
+
 def test_e156_capsule_profile_path_is_literal_on_windows_git_bash_and_ubuntu(tmp_path):
     """Cross-platform installer integrity: do not execute a path on shell startup.
 
