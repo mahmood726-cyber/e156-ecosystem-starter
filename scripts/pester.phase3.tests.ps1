@@ -74,8 +74,7 @@ Describe "Overmind: Get-OvermindDefaultSource pins the supply chain (P0)" {
 
     It "defaults to a SHA-or-tag (not bare main)" {
         $src = Get-OvermindDefaultSource
-        $src | Should -Match '^git\+https://github\.com/mahmood726-cyber/overmind\.git@[A-Za-z0-9._-]+$'
-        $src | Should -Not -Match '@main$'
+        $src | Should -Be 'git+https://github.com/mahmood726-cyber/overmind.git@d3d2de5f84d852f27d64d1686f1e105e190ac375'
     }
 
     It "honours OVERMIND_REF override (rollback / bleeding-edge)" {

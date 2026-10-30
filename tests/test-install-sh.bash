@@ -183,8 +183,8 @@ done
 [[ "$FAIL" -eq 0 ]] && ok
 
 start "overmind_default_source pins to a SHA-or-tag by default"
-default_src="$(bash -c "source '$ROOT/scripts/install-overmind.sh' --import && overmind_default_source")"
-[[ "$default_src" =~ ^git\+https://github\.com/mahmood726-cyber/overmind\.git@[a-zA-Z0-9._-]+$ ]] && ok
+default_src="$(bash -c "unset OVERMIND_REF; source '$ROOT/scripts/install-overmind.sh' --import && overmind_default_source")"
+assert_eq "$default_src" "git+https://github.com/mahmood726-cyber/overmind.git@d3d2de5f84d852f27d64d1686f1e105e190ac375" && ok
 
 start "overmind_default_source honours OVERMIND_REF override"
 override_src="$(bash -c "export OVERMIND_REF=main; source '$ROOT/scripts/install-overmind.sh' --import; overmind_default_source")"

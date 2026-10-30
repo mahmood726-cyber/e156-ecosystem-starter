@@ -58,12 +58,15 @@ function Test-OvermindInstalled {
     return ($null -ne $command)
 }
 
-$script:OvermindDefaultRef = 'v1.0.0'   # 2026-06-08: first stable tag (was ec23ccb, broken on fresh installs because cryptography was undeclared). v1.0.0 declares cryptography as a core dep -> clean fresh install (758 passed / 0 failed on isolated venv). Tag-pinned, so refresh-ecosystem-pins.py leaves it stable. Override with $env:OVERMIND_REF=master.
+# v1.0.0 is an unsigned, movable annotated tag (object
+# fdde5606f5ba8810fb253c943e8fb3bfd4ba1593), resolved on 2026-10-30.
+# Freeze source identity, not pip dependencies or signatures. Explicit
+# OVERMIND_REF overrides opt out of this identity pin.
+$script:OvermindDefaultRef = 'd3d2de5f84d852f27d64d1686f1e105e190ac375'
 
 function Get-OvermindDefaultSource {
-    # Pinned to a known-good commit by default so fresh installs are reproducible.
-    # Override with $env:OVERMIND_REF=main (or any branch/tag/SHA) to opt into
-    # bleeding-edge or to roll back if a release breaks something.
+    # Frozen release commit by default; explicit overrides are not
+    # source-authenticated or certified.
     $ref = if ($env:OVERMIND_REF) { $env:OVERMIND_REF } else { $script:OvermindDefaultRef }
     return "git+https://github.com/mahmood726-cyber/overmind.git@$ref"
 }

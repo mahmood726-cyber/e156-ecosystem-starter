@@ -236,16 +236,17 @@
       "id": "scripts/refresh-ecosystem-pins.py",
       "kind": "script",
       "name": "refresh-ecosystem-pins --check",
-      "stops": "For frozen Sentinel v1.0.0, --check rejects missing/mismatched Bash or PowerShell default commit declarations rather than tracking HEAD; for nonfrozen development SHA pins it checks remote drift and failed ls-remote.",
+      "stops": "For frozen Sentinel and Overmind v1.0.0 source commits, --check rejects missing, tagged, divergent or malformed Bash and PowerShell defaults without querying HEAD. Nonfrozen development SHA pins still check remote drift and failed ls-remote.",
       "would_not_stop": [
-        "A coordinated, unreviewed change to the trusted frozen SHA and both installers: the local consistency check is not independent source verification.",
-        "An explicit SENTINEL_REF override: that install opts out of the frozen default.",
-        "Pip dependency drift, live Sentinel hook behavior, third-party signatures or an end-to-end certified ecosystem canary.",
-        "This script is not invoked as a live networked CI gate; pytest checks only offline freeze/refusal behavior."
+        "A coordinated change to the expected frozen SHA and both installers: local consistency is not independent source review or signature authentication.",
+        "Explicit SENTINEL_REF or OVERMIND_REF overrides: they opt out of the frozen default and cannot establish a certified install.",
+        "The source identity or trust of unsigned v1.0.0 tag objects, pip dependency drift, or runtime behavior of Sentinel, Overmind and TruthCert.",
+        "Real signed cross-component Windows/Linux installation, failure propagation, private-memory custody or independently validated evidence.",
+        "This script is not a live networked CI gate: tests exercise the local frozen-release and negative/refusal behavior only."
       ],
-      "source": "scripts/refresh-ecosystem-pins.py docstring 'Design guarantees'.",
+      "source": "scripts/refresh-ecosystem-pins.py frozen-release branch and tests/test_{sentinel,overmind}_frozen_release.py.",
       "seal": {
-        "scripts/refresh-ecosystem-pins.py": "b15845647edc2062e7a6d2ad38282ae576e8d4c59d99b3815eb111a458fb870c"
+        "scripts/refresh-ecosystem-pins.py": "45fc19420a935265332f3caeac90b78209078d305f6818a6a2270c0443cb068f"
       }
     },
     {
