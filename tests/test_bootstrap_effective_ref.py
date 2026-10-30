@@ -23,6 +23,9 @@ BOOTSTRAP = ROOT / "docs" / "e156-setup.sh"
         ([], "main", True, "/refs/heads/main.zip"),
         ([], "v0.8.0", False, "/refs/tags/v0.8.0.zip"),
         (["--ref", "review-candidate"], "v0.8.0", True, "/refs/heads/review-candidate.zip"),
+        (["--ref", "v1notarelease"], "v0.8.0", True, "/refs/tags/v1notarelease.zip"),
+        (["--ref", "v0.8.0-rc1"], "v0.8.0", True, "/refs/tags/v0.8.0-rc1.zip"),
+        (["--ref", "v10.2.3"], "main", False, "/refs/tags/v10.2.3.zip"),
     ],
 )
 def test_release_warning_matches_requested_download(
