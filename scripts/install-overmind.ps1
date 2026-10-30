@@ -52,8 +52,10 @@ aliases > toggle off python.exe and python3.exe
 }
 
 function Test-OvermindInstalled {
-    $null = Get-Command overmind -ErrorAction SilentlyContinue
-    return $?
+    # A successful assignment does not prove that Get-Command found anything.
+    # Require the pip-installed CLI executable, not a shell alias/function.
+    $command = Get-Command overmind -CommandType Application -ErrorAction SilentlyContinue
+    return ($null -ne $command)
 }
 
 $script:OvermindDefaultRef = 'v1.0.0'   # 2026-06-08: first stable tag (was ec23ccb, broken on fresh installs because cryptography was undeclared). v1.0.0 declares cryptography as a core dep -> clean fresh install (758 passed / 0 failed on isolated venv). Tag-pinned, so refresh-ecosystem-pins.py leaves it stable. Override with $env:OVERMIND_REF=master.
