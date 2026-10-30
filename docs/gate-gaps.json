@@ -6,16 +6,18 @@
       "id": ".github/workflows/test.yml#jobs.pester",
       "kind": "ci-job",
       "name": "Pester (Windows)",
-      "stops": "A failing assertion in any of the 11 Pester suites named in the job's $files list (installer helpers, redaction, supply-chain pinning, SHA gate), run under pwsh on windows-latest.",
+      "stops": "The Windows pwsh 7 job refuses a missing or duplicate required suite path, a required suite with zero discovered tests, or any of its 11 named suites reporting failed, skipped, not-run or incomplete in-memory Pester test counts. It also refuses a missing or empty per-suite NUnit XML file and refuses an artifact upload with no matching files.",
       "would_not_stop": [
-        "A Pester suite that exists but is not in the hard-coded $files list: a new scripts/pester.*.tests.ps1 is silently never run.",
-        "Behaviour that differs under Windows PowerShell 5.1, which many students run: the job uses pwsh 7.",
-        "Real installs over the network: the suites test wrapper logic, not that Sentinel / Overmind / the extractor actually install.",
-        "Any behaviour no suite asserts."
+        "Malformed but nonempty NUnit XML, or XML testcase identities/counters that disagree with Pester in-memory results: the Windows job checks file existence and nonzero length, not XML parsing or count agreement.",
+        "The Windows job itself does not discover newly added, unlisted *.tests.ps1 files; a separate Ubuntu pytest suite-inventory test rejects these when the full CI runs.",
+        "Differences in Windows PowerShell 5.1 behaviour: this job runs PowerShell 7.",
+        "A live installation of pinned Sentinel, Overmind/TruthCert, E156 or Meta-Harness: the Pester suites exercise local wrapper/fixture behaviour only.",
+        "Independent signature verification, source SHA authentication and complete multi-repository ecosystem canaries.",
+        "Behaviour absent from the explicitly listed test assertions."
       ],
-      "source": ".github/workflows/test.yml header comment and the job's $files list.",
+      "source": ".github/workflows/test.yml Pester job and upload step; tests/test_pester_suite_inventory.py (separate Ubuntu inventory guard).",
       "seal": {
-        ".github/workflows/test.yml#jobs.pester": "d4b6996aeec1d50e9ce70304a0b91fb9a299958ff562bb7ddba5b8e8b537982b"
+        ".github/workflows/test.yml#jobs.pester": "56cd8985e2079e462a75dfbf0e6f52c789fdd23c0015a33fd482e36200687fe0"
       }
     },
     {
@@ -48,7 +50,7 @@
       ],
       "source": ".github/workflows/test.yml python-tests job; scripts/ listing. Port S-D report (requirements-ci.lock, tests/test_ci_lock.py).",
       "seal": {
-        ".github/workflows/test.yml#jobs.python-tests": "f9ff5458422fae3e9b2083b17404dda4f95dd7baa12ef97b57f2562837f65cf1"
+        ".github/workflows/test.yml#jobs.python-tests": "8f518b727ceb33f149fa69bea13cc8062b748a477ed312895cc37573847457de"
       }
     },
     {
@@ -234,15 +236,17 @@
       "id": "scripts/refresh-ecosystem-pins.py",
       "kind": "script",
       "name": "refresh-ecosystem-pins --check",
-      "stops": "A 40-hex install-layer pin that lags its source repo's remote HEAD, or a layer whose ls-remote failed (exit 1 in --check).",
+      "stops": "For frozen Sentinel and Overmind v1.0.0 source commits, --check rejects missing, tagged, divergent or malformed Bash and PowerShell defaults without querying HEAD. Nonfrozen development SHA pins still check remote drift and failed ls-remote.",
       "would_not_stop": [
-        "Tag-pinned layers: they are skipped. As of 2026-06-08 every layer is tag-pinned, so --check reports all [skip] and passes by construction.",
-        "Whether the remote commit it would move to is trustworthy: it moves pins forward, it does not review them.",
-        "Anything in CI: it needs the network and no CI job runs it."
+        "A coordinated change to the expected frozen SHA and both installers: local consistency is not independent source review or signature authentication.",
+        "Explicit SENTINEL_REF or OVERMIND_REF overrides: they opt out of the frozen default and cannot establish a certified install.",
+        "The source identity or trust of unsigned v1.0.0 tag objects, pip dependency drift, or runtime behavior of Sentinel, Overmind and TruthCert.",
+        "Real signed cross-component Windows/Linux installation, failure propagation, private-memory custody or independently validated evidence.",
+        "This script is not a live networked CI gate: tests exercise the local frozen-release and negative/refusal behavior only."
       ],
-      "source": "scripts/refresh-ecosystem-pins.py docstring 'Design guarantees'.",
+      "source": "scripts/refresh-ecosystem-pins.py frozen-release branch and tests/test_{sentinel,overmind}_frozen_release.py.",
       "seal": {
-        "scripts/refresh-ecosystem-pins.py": "ab426c33f31691f1c032939860a9364113f68c08062f084bc72e7a03cbf46247"
+        "scripts/refresh-ecosystem-pins.py": "45fc19420a935265332f3caeac90b78209078d305f6818a6a2270c0443cb068f"
       }
     },
     {
@@ -369,7 +373,7 @@
       ],
       "source": ".github/workflows/test.yml meta-harness-unpack-windows job and tests/test_install_meta_harness.py.",
       "seal": {
-        ".github/workflows/test.yml#jobs.meta-harness-unpack-windows": "4f27fa20083104d9184e64107823286e1a73a45e94bc44a01ec20cd96bf85ecb"
+        ".github/workflows/test.yml#jobs.meta-harness-unpack-windows": "3cc33294e1d32074b8418a25737507244563799f5acc11c44920d3e1924a5795"
       }
     }
   ]
