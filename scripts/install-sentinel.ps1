@@ -117,8 +117,30 @@ function Backup-ExistingPrePushHook {
     $existing = Get-Content -Raw -Path $hookPath -ErrorAction SilentlyContinue
     if ($existing -and $existing -match 'sentinel\s+(scan|run-pre-push)') { return $null }
     $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
-    $backup = "$hookPath.user-$ts"
-    Copy-Item -Path $hookPath -Destination $backup -Force
+    # Timestamp resolution is one second; a rapid reinstall must never
+    # overwrite a previous user hook backup. CreateNew closes the race between
+    # checking for an existing path and writing the new backup.
+    $base = "$hookPath.user-$ts"
+    $backup = $base
+    $suffix = 1
+    while (Test-Path -LiteralPath $backup) {
+        $backup = "$base.$suffix"
+        $suffix++
+    }
+    $inputStream = [System.IO.File]::OpenRead($hookPath)
+    try {
+        $outputStream = [System.IO.File]::Open(
+            $backup, [System.IO.FileMode]::CreateNew,
+            [System.IO.FileAccess]::Write, [System.IO.FileShare]::None
+        )
+        try {
+            $inputStream.CopyTo($outputStream)
+        } finally {
+            $outputStream.Dispose()
+        }
+    } finally {
+        $inputStream.Dispose()
+    }
     return $backup
 }
 

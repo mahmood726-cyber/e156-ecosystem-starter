@@ -89,6 +89,19 @@ Describe "Backup-ExistingPrePushHook (P0 - researcher's existing hook)" {
         (Get-Content -Raw $backup) | Should -Match 'my custom lint'
     }
 
+    It "preserves successive user hooks when backup timestamps collide" {
+        $hook = Join-Path $script:hookTmp '.git\hooks\pre-push'
+        Mock Get-Date { '20261026-020000' } -ParameterFilter { $Format -eq 'yyyyMMdd-HHmmss' }
+        Set-Content -LiteralPath $hook -Value "#!/bin/sh`nfirst user hook" -NoNewline
+        $first = Backup-ExistingPrePushHook -RepoPath $script:hookTmp
+        Set-Content -LiteralPath $hook -Value "#!/bin/sh`nsecond user hook" -NoNewline
+        $second = Backup-ExistingPrePushHook -RepoPath $script:hookTmp
+        $first | Should -Be "$hook.user-20261026-020000"
+        $second | Should -Be "$hook.user-20261026-020000.1"
+        (Get-Content -Raw -LiteralPath $first) | Should -Match 'first user hook'
+        (Get-Content -Raw -LiteralPath $second) | Should -Match 'second user hook'
+    }
+
     It "skips backup when the hook is already a Sentinel-installed hook" {
         $hook = Join-Path $script:hookTmp '.git\hooks\pre-push'
         Set-Content -Path $hook -Value "#!/bin/sh`nsentinel run-pre-push --repo ." -NoNewline
