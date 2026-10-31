@@ -154,6 +154,15 @@ class EstimatorTests(unittest.TestCase):
                          ["status"], "CONSISTENT")
 
 
+
+def or_inputs(literal):
+    """Synthetic attestations, NOT authenticated source evidence."""
+    return dict(source_effect_measure="UNADJUSTED_ODDS_RATIO",
+                effect_measure_verified=True, source_counts_verified=True,
+                reported_or_text=literal, reported_rounding_rule="NEAREST_DECIMAL",
+                reported_precision_verified=True)
+
+
 class DeterministicTests(unittest.TestCase):
     def test_ci_reversal(self):
         self.assertEqual(m.ci_order(-586, -351, -821, "TWO_SIDED")["status"], "REVIEW")
@@ -199,23 +208,23 @@ class DeterministicTests(unittest.TestCase):
 
     def test_crude_odds_ratio(self):
         self.assertEqual(m.crude_or(24, 43, 15, 53, 3.2, raw_estimator=True,
-                                     population_match=True, endpoint_match=True, time_match=True)["status"], "CONSISTENT")
+                                     population_match=True, endpoint_match=True, time_match=True, **or_inputs("3.2"))["status"], "CONSISTENT")
 
     def test_crude_not_adjusted_estimator(self):
         self.assertEqual(m.crude_or(24, 43, 15, 53, 3.2, raw_estimator=False,
-                                     population_match=True, endpoint_match=True, time_match=True)["status"], "NOT_COMPARABLE")
+                                     population_match=True, endpoint_match=True, time_match=True, **or_inputs("3.2"))["status"], "NOT_COMPARABLE")
 
     def test_crude_or_warn_only(self):
         self.assertEqual(m.crude_or(24, 43, 15, 53, 1.2, raw_estimator=True,
-                                     population_match=True, endpoint_match=True, time_match=True)["status"], "REVIEW")
+                                     population_match=True, endpoint_match=True, time_match=True, **or_inputs("1.2"))["status"], "REVIEW")
 
     def test_zero_event_abstains(self):
         self.assertEqual(m.crude_or(0, 43, 15, 53, 0.0, raw_estimator=True,
-                                     population_match=True, endpoint_match=True, time_match=True)["status"], "NOT_COMPARABLE")
+                                     population_match=True, endpoint_match=True, time_match=True, **or_inputs("0.0"))["status"], "NOT_COMPARABLE")
 
     def test_fractional_count_invalid(self):
         self.assertEqual(m.crude_or(1.1, 43, 15, 53, 1.0, raw_estimator=True,
-                                     population_match=True, endpoint_match=True, time_match=True)["status"], "INVALID")
+                                     population_match=True, endpoint_match=True, time_match=True, **or_inputs("1.0"))["status"], "INVALID")
 
     def test_normal_z(self):
         self.assertEqual(m.p_from_normal_z(2, 1, 0.0455, test_name="NORMAL_Z",
@@ -550,6 +559,64 @@ class CleanPaperControlMetricTests(unittest.TestCase):
         self.assertIsNone(out["false_alert_papers_per_100_clean_papers"])
         self.assertEqual(out["eligible_complete_clean_papers"], 0)
 
+
+
+
+class CrudeORPrecisionTests(unittest.TestCase):
+    def test_benign_one_decimal_rounding_old_false_alert(self):
+        # 35/100 vs 20/100: exact OR=2.153846..., correctly printed as 2.2.
+        # Old absolute tolerance 0.02 would incorrectly REVIEW.
+        self.assertEqual(m.crude_or(35, 100, 20, 100, 2.2,
+            raw_estimator=True, population_match=True, endpoint_match=True,
+            time_match=True, **or_inputs("2.2"))["status"], "CONSISTENT")
+
+    def test_injected_two_decimal_inaccuracy_old_tolerance_missed(self):
+        # Correct OR=2.153846... -> 2.15, not the injected 2.17.
+        # Old absolute tolerance 0.02 incorrectly accepted this report.
+        self.assertEqual(m.crude_or(35, 100, 20, 100, 2.17,
+            raw_estimator=True, population_match=True, endpoint_match=True,
+            time_match=True, **or_inputs("2.17"))["status"], "REVIEW")
+
+    def test_risk_ratio_is_not_a_crude_odds_ratio(self):
+        # 35/100 divided by 20/100 gives RR=1.75, a legitimate alternate
+        # estimand; comparing it against crude OR=2.153846 is inappropriate.
+        evidence = or_inputs("1.75")
+        evidence["source_effect_measure"] = "RISK_RATIO"
+        self.assertEqual(m.crude_or(35, 100, 20, 100, 1.75,
+            raw_estimator=True, population_match=True, endpoint_match=True,
+            time_match=True, **evidence)["status"], "NOT_COMPARABLE")
+
+    def test_missing_source_effect_measure_abstains(self):
+        evidence = or_inputs("2.17")
+        evidence["source_effect_measure"] = None
+        self.assertEqual(m.crude_or(35, 100, 20, 100, 2.17,
+            raw_estimator=True, population_match=True, endpoint_match=True,
+            time_match=True, **evidence)["status"], "NOT_COMPARABLE")
+
+    def test_unknown_rounding_rule_abstains(self):
+        evidence = or_inputs("2.17")
+        evidence["reported_rounding_rule"] = "UNKNOWN"
+        self.assertEqual(m.crude_or(35, 100, 20, 100, 2.17,
+            raw_estimator=True, population_match=True, endpoint_match=True,
+            time_match=True, **evidence)["status"], "NOT_COMPARABLE")
+
+    def test_ocr_ambiguous_literal_abstains(self):
+        evidence = or_inputs("2,l7")
+        self.assertEqual(m.crude_or(35, 100, 20, 100, 2.17,
+            raw_estimator=True, population_match=True, endpoint_match=True,
+            time_match=True, **evidence)["status"], "NOT_COMPARABLE")
+
+    def test_source_literal_numeric_mismatch_is_invalid(self):
+        evidence = or_inputs("2.15")
+        self.assertEqual(m.crude_or(35, 100, 20, 100, 2.17,
+            raw_estimator=True, population_match=True, endpoint_match=True,
+            time_match=True, **evidence)["status"], "INVALID")
+
+    def test_fixed_tolerance_override_cannot_bypass_precision(self):
+        self.assertEqual(m.crude_or(35, 100, 20, 100, 2.17,
+            raw_estimator=True, population_match=True, endpoint_match=True,
+            time_match=True, tolerance=0.2, **or_inputs("2.17"))["status"],
+            "NOT_COMPARABLE")
 
 
 if __name__ == "__main__":
