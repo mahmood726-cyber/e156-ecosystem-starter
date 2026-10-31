@@ -109,3 +109,37 @@ Seven synthetic tests include a positive planted-error paper alongside an unchan
 **Scientific provenance:** Crossref documents publisher-supplied status via [Crossmark](https://www.crossref.org/crossmark/) and [registering updates](https://www.crossref.org/documentation/register-maintain-records/maintaining-your-metadata/registering-updates/). Separate notice DOIs and in-place changes exist; a missing Crossmark entry does NOT prove absence of a correction. Audit exact current publisher text, supplements, notices and claim spans directly. Preserve current/old version identifiers and exact source/notice locators privately.
 
 **Required next gates:** exact-head scoped CI; separate adversarial review; non-leaking real-paper blinded evaluation of flagged and sampled unflagged claims, including appropriately corrected and unchanged controls. No change to v1.2 Standard, PR #60, frozen samples or contacts.
+
+
+## 31 October 2026 — full-analysis-identity gate for cross-document numerical comparisons
+
+**Root-cause development ID:** `SYN-METHODS-20261031-CROSS-DOC-ANALYSIS-IDENTITY-010`.
+Previously `cross_document()` protected five core target-question fields (population, endpoint,
+time window, effect measure and estimand), while model, covariate adjustment, multiplicity,
+missingness, censoring, variance method and test-statistic identity were only mandatory
+when explicitly requested by the caller. A caller specifying just `("endpoint",)` could
+therefore produce a `REVIEW` alert for different but legitimate adjusted and crude outputs.
+
+**Falsifiable change:** require the complete existing 12-field `ESTIMATOR_FIELDS`
+signature in every `cross_document()` comparison, in addition to the already required
+source-attested numeric unit and representation. Missing or mismatched fields return
+`NOT_COMPARABLE`. The supplied source attestations are not independently authenticated.
+
+**Paired synthetic regression controls:** ten new tests cover a deliberately different
+same-analysis value (retains `REVIEW`), unchanged matched value (retains `CONSISTENT`),
+and benign/uncertain differences in adjusted vs crude, model, multiplicity, missingness,
+censoring, variance method, statistic identity and unknown adjustment (all abstain).
+Thus 97 -> 107 synthetic methods if the entire scoped test suite passes. These are
+constructed cases, not adjudicated claims or fresh held-out accuracy evidence.
+
+**Scientific rationale:** ICH E9(R1), FDA final guidance (May 2021),
+https://www.fda.gov/regulatory-information/search-fda-guidance-documents/e9r1-statistical-principles-clinical-trials-addendum-estimands-and-sensitivity-analysis-clinical
+and Cochrane Handbook Chapter 24,
+https://www.cochrane.org/authors/handbooks-and-manuals/handbook/current/chapter-24
+support distinguishing target estimands, analysis estimators and adjusted from unadjusted
+effects. A mismatch in analysis method is not by itself a published error.
+
+**Adversarial limitation:** this may over-abstain when two estimators yield the same
+legitimately comparable point estimand; flag recall and coverage could fall. Require
+independent source extraction, exact-head full-repo CI, adversarial review and prespecified
+blinded real-paper measurement before promotion, parity claims or merge.
