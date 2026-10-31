@@ -352,3 +352,77 @@ def outcome_counts(rows: Sequence[Mapping]) -> dict:
                     "abstentions, paper-level unchanged controls and clustered intervals. "
                     "Independent masked adjudication and complete sampling required.")
     }
+def unchanged_control_false_alerts(papers: Sequence[Mapping], claims: Sequence[Mapping]) -> dict:
+    """Bookkeep false flags on explicitly clean, unchanged control papers.
+
+    A declared unchanged paper is NOT automatically a clean paper: an unmodified
+    publication may contain genuine errors. This function trusts supplied labels
+    and must not be described as independent verification or held-out accuracy.
+    Incomplete inventories and unresolved truth hold papers out of the rate.
+    """
+    if not isinstance(papers, (list, tuple)) or not isinstance(claims, (list, tuple)):
+        raise ValueError("paper and claim manifests must be sequences")
+    paper_map = {}
+    for p in papers:
+        if not isinstance(p, Mapping):
+            raise ValueError("paper manifest entries must be mappings")
+        pid = p.get("paper_id")
+        if not isinstance(pid, str) or not pid or pid in paper_map:
+            raise ValueError("paper IDs must be nonempty and unique")
+        if p.get("control_status") not in {"CLEAN_UNCHANGED", "OTHER", "UNKNOWN"}:
+            raise ValueError("unknown control status")
+        paper_map[pid] = p
+    by_paper: dict[str, dict[str, Mapping]] = defaultdict(dict)
+    seen = set()
+    for c in claims:
+        if not isinstance(c, Mapping):
+            raise ValueError("claim entries must be mappings")
+        pid, cid = c.get("paper_id"), c.get("claim_id")
+        if pid not in paper_map or not isinstance(cid, str) or not cid or cid in seen:
+            raise ValueError("orphaned, duplicate or empty claim ID")
+        seen.add(cid)
+        if c.get("prediction") not in {"FLAG", "NO_FLAG", "HOLD"}:
+            raise ValueError("unknown prediction")
+        if c.get("reference") not in {"ERROR", "NO_ERROR", "UNDETERMINED"}:
+            raise ValueError("unknown reference")
+        by_paper[pid][cid] = c
+    declared = eligible = held = alert_papers = false_flags = evaluated_claims = 0
+    hold_reasons = defaultdict(int)
+    for pid, p in paper_map.items():
+        if p["control_status"] != "CLEAN_UNCHANGED":
+            continue
+        declared += 1
+        ids = p.get("claim_ids")
+        if (p.get("inventory_complete") is not True or not isinstance(ids, (list, tuple))
+                or not ids or any(not isinstance(c, str) or not c for c in ids)
+                or len(set(ids)) != len(ids) or set(ids) != set(by_paper[pid])):
+            held += 1
+            hold_reasons["claim_inventory_missing_or_incomplete"] += 1
+            continue
+        entries = list(by_paper[pid].values())
+        if any(c["reference"] != "NO_ERROR" for c in entries):
+            held += 1
+            hold_reasons["clean_reference_unresolved_or_contradicted"] += 1
+            continue
+        eligible += 1
+        evaluated_claims += len(entries)
+        n_false = sum(c["prediction"] == "FLAG" for c in entries)
+        false_flags += n_false
+        alert_papers += bool(n_false)
+    rate = lambda n, d: 100 * n / d if d else None
+    return {
+        "declared_clean_unchanged_papers": declared,
+        "eligible_complete_clean_papers": eligible,
+        "held_clean_papers": held,
+        "hold_reasons": dict(sorted(hold_reasons.items())),
+        "eligible_clean_claims": evaluated_claims,
+        "false_alert_flags": false_flags,
+        "clean_papers_with_at_least_one_false_alert": alert_papers,
+        "false_alert_papers_per_100_clean_papers": rate(alert_papers, eligible),
+        "false_alert_flags_per_100_clean_papers": rate(false_flags, eligible),
+        "false_alert_flags_per_100_clean_claims": rate(false_flags, evaluated_claims),
+        "warning": ("Caller-labelled bookkeeping only; CLEAN_UNCHANGED, complete inventory, "
+                    "and NO_ERROR labels require independent verification for a real held-out "
+                    "performance claim. An unchanged publication can contain real errors. "
+                    "Held/unknown papers are not negative controls."),
+    }
