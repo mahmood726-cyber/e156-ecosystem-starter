@@ -263,6 +263,54 @@ class GovernanceTests(unittest.TestCase):
         self.assertEqual((out["HOLD"], out["UNKNOWN_REFERENCE"]), (1, 1))
         self.assertEqual(out["false_alerts_per_100_adjudicated"], 25)
 
+    def test_abstained_known_errors_not_hidden_from_flag_recall(self):
+        # Injected known error deliberately held; one genuine flag alone does not
+        # imply 100% automatic recall across known errors.
+        rows = [{"claim_id": "a", "prediction": "FLAG", "reference": "ERROR"},
+                {"claim_id": "b", "prediction": "HOLD", "reference": "ERROR"},
+                {"claim_id": "c", "prediction": "NO_FLAG", "reference": "NO_ERROR"},
+                {"claim_id": "d", "prediction": "HOLD", "reference": "NO_ERROR"},
+                {"claim_id": "e", "prediction": "HOLD", "reference": "UNDETERMINED"},
+                {"claim_id": "f", "prediction": "FLAG", "reference": "UNDETERMINED"}]
+        out = m.outcome_counts(rows)
+        self.assertEqual(out["sensitivity"], 1.0)  # legacy conditional metric
+        self.assertEqual(out["flag_recall_including_abstentions"], .5)
+        self.assertEqual(out["HOLD_ERROR"], 1)
+        self.assertEqual(out["HOLD_NO_ERROR"], 1)
+        self.assertEqual(out["HOLD_UNDETERMINED"], 1)
+        self.assertEqual(out["FLAG_UNDETERMINED"], 1)
+        self.assertEqual(out["reference_undetermined_total"], 2)
+        self.assertEqual(out["reference_known_claims"], 4)
+        self.assertAlmostEqual(out["reference_label_coverage"], 4/6)
+
+    def test_false_alert_denominators_disclose_clean_abstentions(self):
+        # One injected false alert plus two benign claims, one held.
+        rows = [{"claim_id": "a", "prediction": "FLAG", "reference": "NO_ERROR"},
+                {"claim_id": "b", "prediction": "HOLD", "reference": "NO_ERROR"},
+                {"claim_id": "c", "prediction": "NO_FLAG", "reference": "NO_ERROR"}]
+        out = m.outcome_counts(rows)
+        self.assertEqual(out["false_alerts_per_100_adjudicated"], 50.0)
+        self.assertAlmostEqual(out["false_alerts_per_100_reference_known"], 100/3)
+        self.assertAlmostEqual(out["nonabstention_coverage"], 2/3)
+
+    def test_unknown_references_do_not_imply_zero_performance(self):
+        rows = [{"claim_id": "a", "prediction": "FLAG", "reference": "UNDETERMINED"},
+                {"claim_id": "b", "prediction": "HOLD", "reference": "UNDETERMINED"}]
+        out = m.outcome_counts(rows)
+        self.assertIsNone(out["precision"])
+        self.assertIsNone(out["flag_recall_including_abstentions"])
+        self.assertIsNone(out["false_alerts_per_100_reference_known"])
+        self.assertEqual(out["reference_undetermined_total"], 2)
+        self.assertEqual(out["reference_label_coverage"], 0.0)
+
+    def test_all_known_errors_held_not_counted_as_detected(self):
+        rows = [{"claim_id": "a", "prediction": "HOLD", "reference": "ERROR"},
+                {"claim_id": "b", "prediction": "NO_FLAG", "reference": "NO_ERROR"}]
+        out = m.outcome_counts(rows)
+        self.assertIsNone(out["sensitivity"])
+        self.assertEqual(out["flag_recall_including_abstentions"], 0.0)
+        self.assertEqual(out["known_error_claims"], 1)
+
     def test_duplicate_claim_id_rejected(self):
         rows = [{"claim_id": "1", "prediction": "FLAG", "reference": "ERROR"}]*2
         with self.assertRaises(ValueError):
