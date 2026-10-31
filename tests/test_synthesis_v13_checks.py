@@ -93,7 +93,60 @@ class DeterministicTests(unittest.TestCase):
                                      population_match=True, endpoint_match=True, time_match=True)["status"], "INVALID")
 
     def test_normal_z(self):
-        self.assertEqual(m.p_from_normal_z(2, 1, 0.0455, test_name="NORMAL_Z", multiplicity="NONE")["status"], "CONSISTENT")
+        self.assertEqual(m.p_from_normal_z(2, 1, 0.0455, test_name="NORMAL_Z",
+            multiplicity="NONE", null_value=0, alternative="TWO_SIDED",
+            estimate_scale="LINEAR", se_scale="LINEAR",
+            test_identity_verified=True)["status"], "CONSISTENT")
+
+    def test_injected_wrong_p_is_review(self):
+        self.assertEqual(m.p_from_normal_z(2, 1, 0.25, test_name="NORMAL_Z",
+            multiplicity="NONE", null_value=0, alternative="TWO_SIDED",
+            estimate_scale="LINEAR", se_scale="LINEAR",
+            test_identity_verified=True)["status"], "REVIEW")
+
+    def test_nonzero_null_benign(self):
+        # P=0.0455 corresponds to (3 - H0:1)/1, not 3/1.
+        self.assertEqual(m.p_from_normal_z(3, 1, 0.0455, test_name="NORMAL_Z",
+            multiplicity="NONE", null_value=1, alternative="TWO_SIDED",
+            estimate_scale="LINEAR", se_scale="LINEAR",
+            test_identity_verified=True)["status"], "CONSISTENT")
+
+    def test_one_sided_benign(self):
+        self.assertEqual(m.p_from_normal_z(2, 1, 0.02275, test_name="NORMAL_Z",
+            multiplicity="NONE", null_value=0, alternative="GREATER",
+            estimate_scale="LINEAR", se_scale="LINEAR",
+            test_identity_verified=True)["status"], "CONSISTENT")
+
+    def test_ratio_with_log_se_abstains(self):
+        # Raw OR and SE(log OR) must not be treated as same-scale.
+        self.assertEqual(m.p_from_normal_z(1.5, 0.2, 0.0426, test_name="NORMAL_Z",
+            multiplicity="NONE", null_value=1, alternative="TWO_SIDED",
+            estimate_scale="LINEAR", se_scale="LOG_RATIO",
+            test_identity_verified=True)["status"], "NOT_COMPARABLE")
+
+    def test_log_ratio_correct_scale(self):
+        import math
+        self.assertEqual(m.p_from_normal_z(math.log(1.5), 0.2, 0.0426,
+            test_name="NORMAL_Z", multiplicity="NONE", null_value=0,
+            alternative="TWO_SIDED", estimate_scale="LOG_RATIO",
+            se_scale="LOG_RATIO", test_identity_verified=True)["status"], "CONSISTENT")
+
+    def test_missing_null_abstains(self):
+        self.assertEqual(m.p_from_normal_z(2, 1, 0.0455, test_name="NORMAL_Z",
+            multiplicity="NONE", alternative="TWO_SIDED",
+            estimate_scale="LINEAR", se_scale="LINEAR",
+            test_identity_verified=True)["status"], "NOT_COMPARABLE")
+
+    def test_unverified_test_identity_abstains(self):
+        self.assertEqual(m.p_from_normal_z(2, 1, 0.0455, test_name="NORMAL_Z",
+            multiplicity="NONE", null_value=0, alternative="TWO_SIDED",
+            estimate_scale="LINEAR", se_scale="LINEAR")["status"], "NOT_COMPARABLE")
+
+    def test_missing_tail_abstains(self):
+        self.assertEqual(m.p_from_normal_z(2, 1, 0.0455, test_name="NORMAL_Z",
+            multiplicity="NONE", null_value=0,
+            estimate_scale="LINEAR", se_scale="LINEAR",
+            test_identity_verified=True)["status"], "NOT_COMPARABLE")
 
     def test_tukey_not_comparable(self):
         self.assertEqual(m.p_from_normal_z(2, 1, 0.15, test_name="NORMAL_Z", multiplicity="TUKEY")["status"], "NOT_COMPARABLE")
