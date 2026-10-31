@@ -16,6 +16,11 @@ ESTIMATOR_FIELDS = (
     "model", "adjustment", "multiplicity", "missingness", "censoring",
     "variance_method", "test_statistic_identity",
 )
+
+# Always compare the minimum target question before cross-document numeric flags.
+# Caller-chosen narrow fields are additive, never a bypass of clinical identity.
+CROSS_DOCUMENT_CORE_FIELDS = ("population", "endpoint", "time_window",
+                              "effect_measure", "estimand")
 SEVERITIES = {"S1", "S2", "S3", "S4", "S5"}
 
 
@@ -231,7 +236,17 @@ def factor_shift(original: Any, observed: Any, *, verified_r_factor_conversion: 
 
 def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
                    required_fields: Sequence[str], tolerance: Any = 0) -> dict:
-    match = compatible(left_sig, right_sig, required_fields)
+    """Compare numbers only after matching a minimum clinical estimand identity.
+
+    A caller listing only endpoint/test fields cannot override population,
+    timepoint, effect measure or estimand checks. Provenance and current-source
+    identity still require external inspection; REVIEW is never a paper verdict.
+    """
+    if not isinstance(required_fields, (list, tuple)) or not required_fields or any(
+            field not in ESTIMATOR_FIELDS for field in required_fields):
+        return result("INVALID", "unknown or empty requested identity fields")
+    fields = tuple(dict.fromkeys((*CROSS_DOCUMENT_CORE_FIELDS, *required_fields)))
+    match = compatible(left_sig, right_sig, fields)
     if match["status"] != "MATCHED":
         return match
     try:
