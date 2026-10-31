@@ -341,4 +341,20 @@ Describe "Assert-RequiredCoreInstallerPresent (Windows fail-closed core chains)"
         Assert-RequiredCoreInstallerPresent -Component 'Sentinel' -ScriptPath $path |
             Should -BeTrue
     }
+
+
+    It "refuses a glob-shaped missing path even when a matching decoy exists" {
+        $decoy = Join-Path $tmpRoot 'core-0.ps1'
+        $missing = Join-Path $tmpRoot 'core-[0].ps1'
+        Set-Content -LiteralPath $decoy -Value 'throw "decoy must never execute"' -Encoding UTF8
+        { Assert-RequiredCoreInstallerPresent -Component 'Sentinel' -ScriptPath $missing } |
+            Should -Throw '*REFUSED: requested Sentinel installer is missing*'
+    }
+
+    It "accepts a literal filename with bracket characters without executing it" {
+        $path = Join-Path $tmpRoot 'present-[1].ps1'
+        Set-Content -LiteralPath $path -Value 'throw "should never execute this file"' -Encoding UTF8
+        Assert-RequiredCoreInstallerPresent -Component 'Sentinel' -ScriptPath $path |
+            Should -BeTrue
+    }
 }
