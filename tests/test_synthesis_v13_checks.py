@@ -28,7 +28,9 @@ def candidate(**overrides):
             "source_locator": "Table 2", "source_support": "CONTRADICTED",
             "maturity": "SOURCE_BACKED", "alternative": "different population",
             "alternative_locator": "Methods 2.1", "alternative_result": "REFUTED",
-            "estimator_status": "MATCHED", "root_cause_id": "CODE-001"}
+            "estimator_status": "MATCHED", "root_cause_id": "CODE-001",
+            "current_claim_verified": True,
+            "current_correction_status": "NO_RELEVANT_CORRECTION"}
     base.update(overrides)
     return base
 
@@ -272,6 +274,41 @@ class GovernanceTests(unittest.TestCase):
 
     def test_unmatched_estimator_holds(self):
         self.assertEqual(m.gate(candidate(estimator_status="NOT_COMPARABLE"))["status"], "HOLD")
+
+    def test_stale_claim_in_corrected_vor_reconciles(self):
+        # Injected historical claim; current publisher correction removes it.
+        out = m.gate(candidate(
+            version="CORRECTED_LATEST", current_claim_verified=False,
+            current_correction_status="RESOLVED_IN_PUBLISHED_VERSION",
+            correction_locator="Current VoR correction notice, Table 2, test DOI",
+            correction_source_verified=True))
+        self.assertEqual(out["status"], "RECONCILED")
+
+    def test_current_claim_in_corrected_vor_still_reviewable(self):
+        # An injected contradiction persists after a different correction.
+        out = m.gate(candidate(
+            version="CORRECTED_LATEST", current_claim_verified=True,
+            current_correction_status="CORRECTION_REVIEWED_CLAIM_PERSISTS"))
+        self.assertEqual(out["status"], "FLAG_CANDIDATE")
+
+    def test_unchecked_current_claim_holds(self):
+        self.assertEqual(m.gate(candidate(current_claim_verified=False))["status"], "HOLD")
+
+    def test_unknown_correction_history_holds(self):
+        self.assertEqual(m.gate(candidate(current_correction_status="UNKNOWN"))["status"], "HOLD")
+
+    def test_claimed_correction_without_source_holds(self):
+        self.assertEqual(m.gate(candidate(
+            version="CORRECTED_LATEST", current_claim_verified=False,
+            current_correction_status="RESOLVED_IN_PUBLISHED_VERSION",
+            correction_locator="unverified note",
+            correction_source_verified=False))["status"], "HOLD")
+
+    def test_claimed_correction_without_exact_locator_holds(self):
+        self.assertEqual(m.gate(candidate(
+            version="CORRECTED_LATEST", current_claim_verified=False,
+            current_correction_status="RESOLVED_IN_PUBLISHED_VERSION",
+            correction_locator="", correction_source_verified=True))["status"], "HOLD")
 
     def test_group_one_root_multiple_outputs(self):
         rows = [{"claim_id": "A", "root_cause_id": "R1"}, {"claim_id": "B", "root_cause_id": "R1"},
