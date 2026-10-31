@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 import math
+import re
 from typing import Mapping, Sequence, Any
 
 ESTIMATOR_FIELDS = (
@@ -92,15 +93,75 @@ def crude_or(a: Any, n1: Any, c: Any, n0: Any, reported: Any, *,
                   expected=expected, reported=claimed, difference=delta)
 
 
+
+_P_LITERAL_RE = re.compile(
+    r"^\s*(?:[pP]\s*)?(<=|>=|<|>|=|≤|≥)?\s*((?:\d+(?:\.\d+)?|\.\d+))\s*$"
+)
+
+
+def _printed_p_comparison(expected: float, reported: float, literal: str | None,
+                          source_input_precision: str | None,
+                          expected_p_bounds: Sequence[float] | None) -> dict:
+    """Conservative printed-P compatibility; never certifies a paper error.
+
+    Exact inputs must be source-verified. For rounded test statistics, externally
+    verified P bounds must reflect *all* compatible source rounding values.
+    """
+    if not isinstance(literal, str):
+        return result("NOT_COMPARABLE", "verbatim published P notation unavailable")
+    match = _P_LITERAL_RE.fullmatch(literal)
+    if not match:
+        return result("NOT_COMPARABLE", "P notation/OCR not reliably parsed")
+    comparator, value_text = match.groups()
+    comparator = comparator or "="
+    value = float(value_text)
+    if not 0 <= value <= 1:
+        return result("INVALID", "reported P outside [0,1]")
+    if abs(value - reported) > 1e-12:
+        return result("INVALID", "source P text and numeric supplied P disagree")
+    if source_input_precision == "EXACT":
+        lo = hi = expected
+    elif source_input_precision == "P_BOUNDS_VERIFIED":
+        if not isinstance(expected_p_bounds, (tuple, list)) or len(expected_p_bounds) != 2:
+            return result("NOT_COMPARABLE", "rounded source-statistic P bounds unverified")
+        try:
+            lo, hi = map(finite, expected_p_bounds)
+        except ValueError as exc:
+            return result("INVALID", str(exc))
+        if not 0 <= lo <= expected <= hi <= 1:
+            return result("INVALID", "P bounds must contain recomputation and lie in [0,1]")
+    else:
+        return result("NOT_COMPARABLE", "source statistic precision not established")
+
+    if comparator == "=":
+        if "." not in value_text:
+            return result("NOT_COMPARABLE", "equality has no published decimal precision")
+        half = 0.5 * 10 ** (-len(value_text.split(".")[1]))
+        low = max(0.0, value - half)
+        high = min(1.0, value + half)
+        overlap = hi >= low and (lo < high or high == 1.0 and lo <= high)
+    elif comparator in ("<", "<=", "≤"):
+        overlap = lo < value if comparator == "<" else lo <= value
+    else:
+        overlap = hi > value if comparator == ">" else hi >= value
+
+    return result("CONSISTENT" if overlap else "REVIEW",
+                  "P notation compatible with verified reporting precision"
+                  if overlap else "P notation outside verified precision range; check sources",
+                  reported_literal=literal, recomputed_p_range=(lo, hi))
+
+
 def p_from_normal_z(estimate: Any, se: Any, reported: Any, *,
                     test_name: str, multiplicity: str, null_value: Any = None,
                     alternative: str | None = None, estimate_scale: str | None = None,
                     se_scale: str | None = None, test_identity_verified: bool = False,
-                    tolerance: Any = 0.01) -> dict:
-    """Check a declared normal z test, not an inferred test from paper numbers.
+                    reported_p_text: str | None = None,
+                    source_input_precision: str | None = None,
+                    expected_p_bounds: Sequence[float] | None = None) -> dict:
+    """Compare an identified normal-z P with its exact *published notation*.
 
-    The null, test direction, effect/SE scale and source statistic identity must
-    be corroborated separately. Ratio effects normally require a log-scale SE.
+    No P comparison is attempted without source-verbatim notation and verified
+    exact inputs or a source-derived interval covering printed-statistic rounding.
     """
     if test_name != "NORMAL_Z" or multiplicity != "NONE":
         return result("NOT_COMPARABLE", "adjusted, t-based or alternative P-value method")
@@ -111,9 +172,9 @@ def p_from_normal_z(estimate: Any, se: Any, reported: Any, *,
     if estimate_scale not in {"LINEAR", "LOG_RATIO"} or se_scale != estimate_scale:
         return result("NOT_COMPARABLE", "estimate and SE scales not established as identical")
     try:
-        est, err, p, null, tol = map(finite, (estimate, se, reported, null_value, tolerance))
-        if err <= 0 or not 0 <= p <= 1 or tol < 0:
-            raise ValueError("invalid SE, P or tolerance")
+        est, err, p, null = map(finite, (estimate, se, reported, null_value))
+        if err <= 0 or not 0 <= p <= 1:
+            raise ValueError("invalid SE or P")
     except ValueError as exc:
         return result("INVALID", str(exc))
     z = (est - null) / err
@@ -123,11 +184,11 @@ def p_from_normal_z(estimate: Any, se: Any, reported: Any, *,
         expected = 0.5 * math.erfc(z / math.sqrt(2))
     else:
         expected = 0.5 * math.erfc(-z / math.sqrt(2))
-    return result("CONSISTENT" if abs(expected-p) <= tol else "REVIEW",
-                  "declared normal P comparable" if abs(expected-p) <= tol
-                  else "P mismatch; verify hypothesis, scale and statistic identity",
-                  expected=expected, reported=p, null_value=null,
-                  alternative=alternative, scale=estimate_scale)
+    check = _printed_p_comparison(expected, p, reported_p_text,
+                                  source_input_precision, expected_p_bounds)
+    return {**check, "expected": expected, "reported": p, "null_value": null,
+            "alternative": alternative, "scale": estimate_scale}
+
 
 def statistic_identity(reported_source: str, expected_source: str) -> dict:
     """TOPCHILD-type error: Q-test P mistakenly attached to pooled effect."""
