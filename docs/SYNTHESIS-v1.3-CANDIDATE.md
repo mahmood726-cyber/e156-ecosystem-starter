@@ -143,3 +143,33 @@ effects. A mismatch in analysis method is not by itself a published error.
 legitimately comparable point estimand; flag recall and coverage could fall. Require
 independent source extraction, exact-head full-repo CI, adversarial review and prespecified
 blinded real-paper measurement before promotion, parity claims or merge.
+
+
+## 31 October 2026 — large exact-integer cross-document precision gate
+
+**Root-cause development ID:** `SYN-METHODS-20261031-LOSSY-COUNT-011`. Previously,
+`cross_document()` converted all numbers to binary floats through `finite()`. In
+Python, `float(2**53 + 1) == float(2**53)`, so two distinct source-attested integer
+counts could silently become `CONSISTENT`. This is a deterministic software
+failure, not a claim of an actual scientific-paper error.
+
+**Reversible change:** when both numbers and the tolerance are native integers,
+compare with arbitrary-precision integer arithmetic. When a large integer is mixed
+with a float, or large floating values may already be rounded, return
+`NOT_COMPARABLE` rather than asserting consistency or disagreement. Preserve the
+prior small-float path and its explicit estimator/unit/representation gates.
+Callers must still verify original source values and source precision.
+
+**Synthetic paired witnesses:** the injected `2**53+1` vs `2**53` exact-count
+discrepancy now produces `REVIEW`, while an unchanged `2**53+1` pair remains
+`CONSISTENT`. Nine new tests cover exact tolerances, mixed/large-float abstention,
+ordinary float continuity, booleans and invalid negative tolerance. If passing,
+the scoped suite grows from 107 to 116 synthetic tests; this is NOT a measured
+improvement in clinical recall or precision.
+
+**Source/rationale:** Python numeric documentation, https://docs.python.org/3/library/stdtypes.html
+(ints have arbitrary precision, floats generally binary64). No public dataset or
+third-party code was imported. **Potential disadvantage:** extra abstentions on
+large float values may hide true discrepancies. External, independent source-level
+review and held-out matched-budget testing are required before promotion. Keep the
+v1.2 Standard, frozen cohorts, correspondence and protected branch policies intact.
