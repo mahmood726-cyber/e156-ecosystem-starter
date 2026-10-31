@@ -85,17 +85,65 @@ function Test-ExtractorPresent {
 function Install-ExtractorClone {
     [CmdletBinding()]
     param([string]$TargetDir, [string]$Ref)
+    # Git ref arguments must never be interpreted as command-line options.
+    if ([string]::IsNullOrWhiteSpace($Ref) -or
+        $Ref -cnotmatch '^[A-Za-z0-9][A-Za-z0-9._/-]*$') {
+        throw "REFUSED: invalid extractor Git ref"
+    }
+
     $url = Get-ExtractorRepoUrl
-    if (Test-Path (Join-Path $TargetDir '.git')) {
-        Write-Host "  existing checkout: $TargetDir (fetch + checkout $Ref)" -ForegroundColor DarkGray
-        & git -C $TargetDir fetch --quiet origin $Ref 2>$null
-        if ($LASTEXITCODE -ne 0) { & git -C $TargetDir fetch --quiet origin 2>$null }
-        & git -C $TargetDir checkout --quiet $Ref 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
-    } else {
-        Write-Host "  cloning $url" -ForegroundColor DarkGray
-        & git clone --quiet $url $TargetDir 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
-        if ($LASTEXITCODE -ne 0) { throw "git clone failed (exit $LASTEXITCODE)" }
-        & git -C $TargetDir checkout --quiet $Ref 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+    $targetFull = [IO.Path]::GetFullPath($TargetDir)
+    $hasGit = Test-Path -LiteralPath (Join-Path $targetFull '.git') -PathType Container
+    $stage = $null
+    if (-not $hasGit -and (Test-Path -LiteralPath $targetFull)) {
+        throw "REFUSED: extractor target exists but is not a Git checkout: $targetFull"
+    }
+
+    try {
+        if ($hasGit) {
+            $checkout = $targetFull
+            Write-Host "  existing checkout: $checkout (fetch + verify $Ref)" -ForegroundColor DarkGray
+        } else {
+            # An unavailable ref must not leave an apparently installed clone.
+            $parent = Split-Path -Parent $targetFull
+            New-Item -ItemType Directory -Force -Path $parent | Out-Null
+            $stage = Join-Path $parent ('.extractor-stage-' + [guid]::NewGuid().ToString('N'))
+            Write-Host "  cloning $url into temporary checkout" -ForegroundColor DarkGray
+            & git clone --quiet --no-checkout $url $stage 2>$null
+            if ($LASTEXITCODE -ne 0) { throw "REFUSED: git clone failed (exit $LASTEXITCODE)" }
+            $checkout = $stage
+        }
+
+        # FETCH_HEAD refers to the exact newly fetched request, not a
+        # potentially stale local tag/branch in an existing installation.
+        & git -C $checkout fetch --quiet origin $Ref 2>$null
+        if ($LASTEXITCODE -ne 0) { throw "REFUSED: requested extractor Git ref unavailable: $Ref" }
+
+        $resolved = (& git -C $checkout rev-parse --verify 'FETCH_HEAD^{commit}' 2>$null)
+        if ($LASTEXITCODE -ne 0 -or
+            -not $resolved -or
+            ([string]$resolved).Trim() -cnotmatch '^[0-9a-fA-F]{40}$') {
+            throw "REFUSED: requested extractor ref did not resolve to a commit: $Ref"
+        }
+        $resolved = ([string]$resolved).Trim()
+        & git -C $checkout checkout --quiet --detach $resolved 2>$null
+        if ($LASTEXITCODE -ne 0) { throw "REFUSED: extractor checkout failed for $resolved" }
+        $actual = (& git -C $checkout rev-parse --verify HEAD 2>$null)
+        if ($LASTEXITCODE -ne 0 -or
+            -not $actual -or
+            ([string]$actual).Trim() -ne $resolved) {
+            throw "REFUSED: extractor HEAD did not match requested commit $resolved"
+        }
+
+        if ($stage) {
+            Move-Item -LiteralPath $stage -Destination $targetFull -ErrorAction Stop
+            $stage = $null
+        }
+        Write-Host "  verified extractor commit: $resolved" -ForegroundColor DarkGray
+    } finally {
+        if ($stage -and (Test-Path -LiteralPath $stage)) {
+            Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 }
 
