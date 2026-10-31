@@ -260,6 +260,19 @@ def gate(record: Mapping) -> dict:
         return result("HOLD", "severity or current publication version not established")
     if record.get("source_access") != "ACCESSIBLE" or not record.get("source_locator"):
         return result("HOLD", "source access or exact locator incomplete")
+    # Source support is version-scoped: a valid contradiction in an earlier
+    # edition must not be flagged against a subsequently corrected article.
+    correction = record.get("current_correction_status")
+    if correction == "RESOLVED_IN_PUBLISHED_VERSION":
+        if (record.get("correction_source_verified") is True
+                and isinstance(record.get("correction_locator"), str)
+                and record["correction_locator"].strip()):
+            return result("RECONCILED", "verified published correction resolves prior claim")
+        return result("HOLD", "published correction lacks verified exact locator")
+    if record.get("current_claim_verified") is not True:
+        return result("HOLD", "exact disputed claim not verified in current published version")
+    if correction not in {"NO_RELEVANT_CORRECTION", "CORRECTION_REVIEWED_CLAIM_PERSISTS"}:
+        return result("HOLD", "current correction/claim status not independently established")
     if record.get("source_support") == "SUPPORTED" and record.get("alternative_result") == "SUPPORTED":
         return result("RECONCILED", "documented benign explanation")
     if record.get("source_support") != "CONTRADICTED":
