@@ -1,0 +1,32 @@
+name: Synthesis preflight regression (development candidate)
+on:
+  pull_request:
+    paths:
+      - 'docs/SYNTHESIS-PREFLIGHT-*.md'
+      - 'scripts/synthesis_preflight.py'
+      - 'examples/synthetic_packet.json'
+      - 'tests/test_synthesis_preflight.py'
+      - 'tests/fixtures/coverage_map.json'
+      - '.github/workflows/synthesis-preflight.yml'
+  push:
+    paths:
+      - 'docs/SYNTHESIS-PREFLIGHT-*.md'
+      - 'scripts/synthesis_preflight.py'
+      - 'examples/synthetic_packet.json'
+      - 'tests/test_synthesis_preflight.py'
+      - 'tests/fixtures/coverage_map.json'
+      - '.github/workflows/synthesis-preflight.yml'
+permissions:
+  contents: read
+jobs:
+  offline-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Run synthetic safe-classification tests
+        run: python3 -m unittest discover -s tests -p 'test_synthesis_preflight.py' -v
+      - name: Check exact prompt binding and receipt generation
+        run: |
+          python3 scripts/synthesis_preflight.py --prompt docs/SYNTHESIS-PREFLIGHT-v1.1.md --packet examples/synthetic_packet.json --output-dir /tmp/synthesis-preflight-receipt
+          python3 -c 'import json; d=json.load(open("/tmp/synthesis-preflight-receipt/receipt.json")); assert d["intake_valid"] and d["claim_count"]==2 and d["checks"][0]["status"]=="REVIEW" and d["checks"][1]["status"]=="NOT_COMPARABLE"'
