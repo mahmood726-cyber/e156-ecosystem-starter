@@ -25,7 +25,9 @@ The initial `scripts/synthesis_v13_checks.py` implements conservative, bounded p
 
 `population`, `endpoint`, `time_window`, `effect_measure`, `estimand`, `model`, `adjustment`, `multiplicity`, `missingness`, `censoring`, `variance_method`, `test_statistic_identity`.
 
-Material unknowns or differences produce `NOT_COMPARABLE` unless the particular checking function explicitly limits the necessary signature. Crude event ratios must not be substituted for Kaplan–Meier/Cox estimates, adjusted models, ITT permutations or time-varying analyses. A heterogeneity Q-test P value does not verify a meta-analysis pooled effect P value. Correction notices and version provenance must be checked before treating a discrepancy as current.
+Material unknowns or differences produce `NOT_COMPARABLE` unless the particular checking function explicitly limits the necessary signature. Crude event ratios must not be substituted for Kaplan–Meier/Cox estimates, adjusted models, ITT permutations or time-varying analyses.
+
+**Normal-z false-alert control (31 October 2026 candidate delta).** A reported P value must not be recomputed as if the null were zero, the test two-sided, or the estimate and SE on the same scale by default. The `p_from_normal_z` primitive now requires separately verified normal-z test identity, explicit null, one-/two-sided direction, and identical declared effect and SE scales (linear or log-ratio); incomplete inputs return `NOT_COMPARABLE`. Paired synthetic regressions cover a deliberately wrong P versus valid nonzero-null, one-sided and log-ratio controls. The previous 35 synthetic tests are not evidence of prospective accuracy; newly added tests are mechanism checks only. Rounding-precision-aware P tolerances, historical-source replay, external review and independent held-out assessment remain outstanding. A heterogeneity Q-test P value does not verify a meta-analysis pooled effect P value. Correction notices and version provenance must be checked before treating a discrepancy as current.
 
 ## Independent evidence fields
 
