@@ -154,6 +154,65 @@ class EstimatorTests(unittest.TestCase):
                          ["status"], "CONSISTENT")
 
 
+    def test_crossdocument_crude_vs_adjusted_benign(self):
+        # Same endpoint/population/time, but two legitimate analysis models.
+        out = m.cross_document(0.75, 0.68, sig(adjustment="none"),
+                               sig(adjustment="site and age"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("adjustment", out["fields"])
+
+    def test_crossdocument_model_mismatch_benign(self):
+        out = m.cross_document(0.75, 0.68, sig(model="log-binomial"),
+                               sig(model="Poisson robust"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("model", out["fields"])
+
+    def test_crossdocument_multiplicity_adjustment_benign(self):
+        out = m.cross_document(0.75, 0.68, sig(multiplicity="none"),
+                               sig(multiplicity="Holm"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("multiplicity", out["fields"])
+
+    def test_crossdocument_missingness_mismatch_benign(self):
+        out = m.cross_document(0.75, 0.68, sig(missingness="complete case"),
+                               sig(missingness="multiple imputation"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("missingness", out["fields"])
+
+    def test_crossdocument_censoring_mismatch_benign(self):
+        out = m.cross_document(0.12, 0.15, sig(censoring="administrative"),
+                               sig(censoring="IPCW"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("censoring", out["fields"])
+
+    def test_crossdocument_variance_mismatch_benign(self):
+        out = m.cross_document(0.75, 0.68, sig(variance_method="sandwich"),
+                               sig(variance_method="cluster robust"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("variance_method", out["fields"])
+
+    def test_crossdocument_statistic_identity_mismatch_benign(self):
+        out = m.cross_document(0.75, 0.68, sig(test_statistic_identity="primary RR"),
+                               sig(test_statistic_identity="subgroup RR"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("test_statistic_identity", out["fields"])
+
+    def test_crossdocument_unknown_adjustment_abstains(self):
+        out = m.cross_document(0.75, 0.68, sig(adjustment="UNKNOWN"),
+                               sig(adjustment="none"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("adjustment", out["fields"])
+
+    def test_crossdocument_complete_identity_injected_discrepancy(self):
+        # A deliberate synthetic mismatch still enters REVIEW, not a paper verdict.
+        out = m.cross_document(0.75, 0.68, sig(), sig(), ("endpoint",))
+        self.assertEqual(out["status"], "REVIEW")
+
+    def test_crossdocument_complete_identity_clean_match(self):
+        out = m.cross_document(0.75, 0.75, sig(), sig(), ("endpoint",))
+        self.assertEqual(out["status"], "CONSISTENT")
+
+
 
 def or_inputs(literal):
     """Synthetic attestations, NOT authenticated source evidence."""
