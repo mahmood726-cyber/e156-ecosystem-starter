@@ -443,7 +443,7 @@ def test_unsafe_release_ref_is_refused_before_download_or_publication(tmp_path, 
     # Git for Windows may re-tokenise a newline embedded in an argv value.
     # Both the ref validator and unknown-argument parser must refuse before
     # any fetch/publication; this exception is ONLY for that Windows case.
-    if via_cli and "\\n" in bad_ref and os.name == "nt":
+    if via_cli and chr(10) in bad_ref and os.name == "nt":
         assert ("invalid Meta-Harness release ref" in p.stderr
                 or "unknown arg: extra" in p.stderr), p.stderr
     else:
