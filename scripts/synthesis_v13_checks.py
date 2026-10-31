@@ -272,10 +272,20 @@ def root_cause_summary(rows: Sequence[Mapping]) -> dict:
 
 
 def outcome_counts(rows: Sequence[Mapping]) -> dict:
-    """Keep abstentions/unknown references; do not claim prospective accuracy."""
-    counts = {k: 0 for k in ("TP", "FP", "TN", "FN", "HOLD", "UNKNOWN_REFERENCE")}
+    """Synthetic bookkeeping only; caller-supplied references are not validated.
+
+    Report conditional performance on non-abstained, labelled claims separately
+    from automatic flag recall on *all* labelled errors, including abstentions.
+    Preserve unknown references and distinguish their predictions. No score is a
+    held-out estimate without independent, masked sampling and adjudication.
+    """
     names = {("FLAG", "ERROR"): "TP", ("FLAG", "NO_ERROR"): "FP",
              ("NO_FLAG", "NO_ERROR"): "TN", ("NO_FLAG", "ERROR"): "FN"}
+    counts = {k: 0 for k in (
+        "TP", "FP", "TN", "FN", "HOLD", "UNKNOWN_REFERENCE",
+        "HOLD_ERROR", "HOLD_NO_ERROR", "HOLD_UNDETERMINED",
+        "FLAG_UNDETERMINED", "NO_FLAG_UNDETERMINED"
+    )}
     seen: set[str] = set()
     for row in rows:
         cid, pred, truth = row.get("claim_id"), row.get("prediction"), row.get("reference")
@@ -286,16 +296,43 @@ def outcome_counts(rows: Sequence[Mapping]) -> dict:
             raise ValueError("unknown prediction or adjudication label")
         if pred == "HOLD":
             counts["HOLD"] += 1
+            counts[{"ERROR": "HOLD_ERROR", "NO_ERROR": "HOLD_NO_ERROR",
+                    "UNDETERMINED": "HOLD_UNDETERMINED"}[truth]] += 1
         elif truth == "UNDETERMINED":
             counts["UNKNOWN_REFERENCE"] += 1
+            counts[pred + "_UNDETERMINED"] += 1
         else:
             counts[names[(pred, truth)]] += 1
-    n = sum(counts[k] for k in ("TP", "FP", "TN", "FN"))
+
+    n_nonabstained_labelled = sum(counts[k] for k in ("TP", "FP", "TN", "FN"))
+    n_labelled = n_nonabstained_labelled + counts["HOLD_ERROR"] + counts["HOLD_NO_ERROR"]
+    n_known_error = counts["TP"] + counts["FN"] + counts["HOLD_ERROR"]
+    n_unknown = counts["UNKNOWN_REFERENCE"] + counts["HOLD_UNDETERMINED"]
     ratio = lambda a, b: a / b if b else None
-    return {**counts, "all_claims": len(rows), "adjudicated_nonabstained": n,
-            "sensitivity": ratio(counts["TP"], counts["TP"]+counts["FN"]),
-            "precision": ratio(counts["TP"], counts["TP"]+counts["FP"]),
-            "specificity": ratio(counts["TN"], counts["TN"]+counts["FP"]),
-            "false_alerts_per_100_adjudicated": 100*counts["FP"]/n if n else None,
-            "abstention_rate": ratio(counts["HOLD"], len(rows)),
-            "warning": "Bookkeeping only; requires independent complete adjudication and cluster CIs"}
+    conditional_recall = ratio(counts["TP"], counts["TP"] + counts["FN"])
+    return {
+        **counts,
+        "all_claims": len(rows),
+        "adjudicated_nonabstained": n_nonabstained_labelled,
+        "reference_known_claims": n_labelled,
+        "reference_undetermined_total": n_unknown,
+        "known_error_claims": n_known_error,
+        "known_no_error_claims": counts["FP"] + counts["TN"] + counts["HOLD_NO_ERROR"],
+        "sensitivity": conditional_recall,  # legacy: excludes abstained known errors
+        "conditional_sensitivity_nonabstained": conditional_recall,
+        "flag_recall_including_abstentions": ratio(counts["TP"], n_known_error),
+        "precision": ratio(counts["TP"], counts["TP"] + counts["FP"]),
+        "specificity": ratio(counts["TN"], counts["TN"] + counts["FP"]),
+        "false_alerts_per_100_adjudicated":
+            100 * counts["FP"] / n_nonabstained_labelled if n_nonabstained_labelled else None,
+        "false_alerts_per_100_reference_known":
+            100 * counts["FP"] / n_labelled if n_labelled else None,
+        "abstention_rate": ratio(counts["HOLD"], len(rows)),
+        "nonabstention_coverage": ratio(len(rows) - counts["HOLD"], len(rows)),
+        "reference_label_coverage": ratio(n_labelled, len(rows)),
+        "warning": ("Bookkeeping only; labels supplied by caller. Legacy sensitivity and "
+                    "false_alerts_per_100_adjudicated exclude holds. For parity use "
+                    "flag_recall_including_abstentions and report reference coverage, "
+                    "abstentions, paper-level unchanged controls and clustered intervals. "
+                    "Independent masked adjudication and complete sampling required.")
+    }
