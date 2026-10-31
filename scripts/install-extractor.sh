@@ -87,6 +87,13 @@ test_extractor_present() {
 
 clone_or_update_extractor() {
     local target="$1" ref="$2" url commit actual
+    # An external ref is data, never an option or shell fragment.  Reject
+    # malformed tokens before network or filesystem mutations.
+    if [[ ! "$ref" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] ||
+       [[ "$ref" == *..* || "$ref" == *//* || "$ref" == */ ]]; then
+        echo "REFUSED: unsafe extractor Git ref" >&2
+        return 2
+    fi
     url="$(extractor_repo_url)"
     if [[ -d "$target/.git" ]]; then
         echo "  existing checkout: $target (fetch + checkout $ref)"

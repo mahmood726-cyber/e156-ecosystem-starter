@@ -56,6 +56,23 @@ clone_or_update_extractor "$TEST_TARGET" "$TEST_REF"
     )
 
 
+def test_unsafe_ref_tokens_refused_before_clone(tmp_path: Path) -> None:
+    """Option-shaped, traversal and shell-fragment refs must never reach git."""
+    for index, ref in enumerate((
+        "--upload-pack=sh",
+        "refs/heads/../main",
+        "refs//heads/main",
+        "v1.0.0/",
+        "$(touch unexpected)",
+        "",
+    )):
+        target = tmp_path / f"invalid-{index}"
+        run = _invoke(tmp_path / "not-a-remote", target, ref)
+        assert run.returncode != 0, (ref, run.stdout, run.stderr)
+        assert "REFUSED: unsafe extractor Git ref" in run.stderr
+        assert not target.exists(), ref
+
+
 def test_valid_tag_fetch_is_checked_out_at_resolved_commit(tmp_path: Path) -> None:
     origin, sha = _make_local_origin(tmp_path)
     target = tmp_path / "installed"
