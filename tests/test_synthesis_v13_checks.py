@@ -19,6 +19,8 @@ def sig(**overrides):
         "adult ITT", "30-day mortality", "day 30", "risk ratio", "ITT", "GLM",
         "none", "none", "complete", "none", "sandwich", "main RR",
     )))
+    base.update({"value_unit": "1", "value_representation": "RAW_RATIO",
+                 "value_identity_verified": True})
     base.update(overrides)
     return base
 
@@ -101,6 +103,55 @@ class EstimatorTests(unittest.TestCase):
     def test_crossdocument_empty_requested_fields_invalid(self):
         self.assertEqual(m.cross_document(40, 50, sig(), sig(), ())["status"],
                          "INVALID")
+
+    def test_crossdocument_equivalent_physical_units_abstain(self):
+        # 1 mg/L equals 1000 micrograms/L: raw values are NOT disagreeing claims.
+        left = sig(effect_measure="mean serum concentration",
+                   value_unit="mg/L", value_representation="RAW")
+        right = sig(effect_measure="mean serum concentration",
+                    value_unit="micrograms/L", value_representation="RAW")
+        out = m.cross_document(1, 1000, left, right, ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("value_unit", out["fields"])
+
+    def test_crossdocument_raw_vs_log_ratio_abstains(self):
+        import math
+        left = sig(value_representation="RAW_RATIO")
+        right = sig(value_representation="LOG_RATIO")
+        out = m.cross_document(2, math.log(2), left, right, ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("value_representation", out["fields"])
+
+    def test_crossdocument_unverified_numeric_identity_abstains(self):
+        self.assertEqual(m.cross_document(
+            1, 2, sig(value_identity_verified=False), sig(), ("endpoint",)
+        )["status"], "NOT_COMPARABLE")
+
+    def test_crossdocument_missing_unit_abstains(self):
+        self.assertEqual(m.cross_document(
+            1, 2, sig(value_unit=None), sig(), ("endpoint",)
+        )["status"], "NOT_COMPARABLE")
+
+    def test_crossdocument_unknown_representation_abstains(self):
+        self.assertEqual(m.cross_document(
+            1, 2, sig(value_representation="UNKNOWN"), sig(), ("endpoint",)
+        )["status"], "NOT_COMPARABLE")
+
+    def test_crossdocument_real_injected_mismatch_still_review(self):
+        left = sig(effect_measure="mean serum concentration",
+                   value_unit="mg/L", value_representation="RAW")
+        right = sig(effect_measure="mean serum concentration",
+                    value_unit="mg/L", value_representation="RAW")
+        self.assertEqual(m.cross_document(1, 2, left, right, ("endpoint",))
+                         ["status"], "REVIEW")
+
+    def test_crossdocument_clean_physical_match_remains_consistent(self):
+        left = sig(effect_measure="mean serum concentration",
+                   value_unit="mg/L", value_representation="RAW")
+        right = sig(effect_measure="mean serum concentration",
+                    value_unit="mg/L", value_representation="RAW")
+        self.assertEqual(m.cross_document(1, 1, left, right, ("endpoint",))
+                         ["status"], "CONSISTENT")
 
 
 class DeterministicTests(unittest.TestCase):
