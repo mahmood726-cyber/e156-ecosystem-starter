@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.1",
+  "run": {
+    "run_id": "SYNTHETIC-DEMO-20261031",
+    "model_id": "none",
+    "model_provider": "manual",
+    "tool_versions": {
+      "python": "3.11+"
+    },
+    "prompt_sha256": "05c9046664137b615652b03fc94b316648961c807b85315c67f1c8dd807bb1e6"
+  },
+  "document": {
+    "identifier": "DEMONSTRATION-ONLY-NOT-A-PUBLICATION",
+    "version": "v1"
+  },
+  "sources": [
+    {
+      "id": "SYN-1",
+      "access": "ACCESSIBLE",
+      "full_text_checked": true,
+      "version": "v1",
+      "retrieval_path": "local synthetic fixture",
+      "retrieved_at": "2026-10-31",
+      "locator": "Synthetic table A"
+    }
+  ],
+  "claims": [
+    {
+      "id": "DEMO-C01",
+      "text": "Synthetic table reports 27.4% of 542, with 168 events",
+      "locator": "Synthetic table A",
+      "source_ids": [
+        "SYN-1"
+      ],
+      "source_support": "CONTRADICTED",
+      "problem_type": "reporting_transcription",
+      "evidence_maturity": "SOURCE_BACKED",
+      "priority": "P2",
+      "impact": "minor",
+      "proposed_disposition": "FLAG",
+      "refutation": {
+        "alternative": "Different denominator/analysis population",
+        "checked_against": "Same synthetic table's declared raw-population label",
+        "result": "NOT_SUPPORTED"
+      }
+    },
+    {
+      "id": "DEMO-C02",
+      "text": "Synthetic comparison of a KM incidence with crude event count",
+      "locator": "Synthetic table B",
+      "source_ids": [
+        "SYN-1"
+      ],
+      "source_support": "SUPPORTED",
+      "problem_type": "none",
+      "evidence_maturity": "SCREENED",
+      "priority": "P4",
+      "impact": "none",
+      "proposed_disposition": "RECONCILED",
+      "refutation": {
+        "alternative": "Published number is Kaplan-Meier estimate",
+        "checked_against": "Synthetic footnote",
+        "result": "SUPPORTED"
+      }
+    }
+  ],
+  "deterministic_checks": [
+    {
+      "id": "DEMO-CHK01",
+      "claim_id": "DEMO-C01",
+      "kind": "count_percent",
+      "same_population": true,
+      "same_time_window": true,
+      "measure": "raw_percent",
+      "events": 168,
+      "denominator": 542,
+      "reported_percent": 27.4,
+      "tolerance": 0.1
+    },
+    {
+      "id": "DEMO-CHK02",
+      "claim_id": "DEMO-C02",
+      "kind": "count_percent",
+      "same_population": true,
+      "same_time_window": true,
+      "measure": "KM_cumulative_incidence",
+      "events": 48,
+      "denominator": 1439,
+      "reported_percent": 1.2
+    }
+  ]
+}
