@@ -95,24 +95,61 @@ def ci_order(estimate: Any, lower: Any, upper: Any, interval_type: str, *,
 
 def crude_or(a: Any, n1: Any, c: Any, n0: Any, reported: Any, *,
              raw_estimator: bool, population_match: bool, endpoint_match: bool,
-             time_match: bool, tolerance: Any = 0.02) -> dict:
-    if not all(x is True for x in (raw_estimator, population_match, endpoint_match, time_match)):
+             time_match: bool, tolerance: Any = None,
+             source_effect_measure: str | None = None,
+             effect_measure_verified: bool = False,
+             source_counts_verified: bool = False,
+             reported_or_text: str | None = None,
+             reported_rounding_rule: str | None = None,
+             reported_precision_verified: bool = False) -> dict:
+    """Unadjusted, uncorrected 2x2 OR only, with source-attested print precision.
+
+    No numerical disagreement is inferred from an RR/adjusted estimate, from a
+    fixed arbitrary tolerance or from ambiguous printed rounding. Exact data
+    provenance is external; a REVIEW is never a verdict about the article.
+    """
+    if not all(x is True for x in
+               (raw_estimator, population_match, endpoint_match, time_match)):
         return result("NOT_COMPARABLE", "exact unadjusted 2x2 analysis identity not established")
+    if source_effect_measure != "UNADJUSTED_ODDS_RATIO" or effect_measure_verified is not True:
+        return result("NOT_COMPARABLE", "published effect measure not verified as crude odds ratio")
+    if source_counts_verified is not True:
+        return result("NOT_COMPARABLE", "source 2x2 event counts not independently checked")
+    if tolerance is not None:
+        return result("NOT_COMPARABLE", "fixed numeric tolerance cannot replace published precision")
+    if (reported_precision_verified is not True
+            or reported_rounding_rule != "NEAREST_DECIMAL"
+            or not isinstance(reported_or_text, str)):
+        return result("NOT_COMPARABLE", "published OR precision/rounding not verified")
+    literal = reported_or_text.strip()
+    if not re.fullmatch(r"(?:\d+\.\d+|\.\d+)", literal):
+        return result("NOT_COMPARABLE", "published OR literal or OCR is ambiguous")
     try:
         a, n1, c, n0 = map(nonnegative_count, (a, n1, c, n0))
-        claimed, tol = finite(reported), finite(tolerance)
-        if not n1 or not n0 or a > n1 or c > n0 or claimed < 0 or tol < 0:
-            raise ValueError("invalid 2x2 table, reported ratio or tolerance")
+        claimed = finite(reported)
+        if not n1 or not n0 or a > n1 or c > n0 or claimed < 0:
+            raise ValueError("invalid 2x2 table or reported ratio")
     except ValueError as exc:
         return result("INVALID", str(exc))
-    if min(a, n1-a, c, n0-c) == 0:
+    from decimal import Decimal
+    printed = Decimal(literal)
+    if printed != Decimal(str(claimed)):
+        return result("INVALID", "source OR text and numeric OR disagree")
+    if min(a, n1 - a, c, n0 - c) == 0:
         return result("NOT_COMPARABLE", "zero cell requires declared correction/exact method")
-    expected = a * (n0-c) / ((n1-a)*c)
-    delta = abs(expected-claimed)
-    return result("CONSISTENT" if delta <= tol else "REVIEW",
-                  "crude OR within tolerance" if delta <= tol else "arithmetic discrepancy requiring source check",
-                  expected=expected, reported=claimed, difference=delta)
-
+    numerator, denominator = a * (n0 - c), (n1 - a) * c
+    places = len(literal.split(".")[1])
+    half_step = Decimal(5).scaleb(-places - 1)
+    low, high = max(Decimal(0), printed - half_step), printed + half_step
+    # Include exact halfway ties conservatively: journal ties-to-even vs
+    # ties-away conventions may differ. Decimal*integer avoids float tolerance.
+    overlaps = low * denominator <= numerator <= high * denominator
+    expected = numerator / denominator
+    return result("CONSISTENT" if overlaps else "REVIEW",
+                  "crude OR compatible with verified displayed rounding"
+                  if overlaps else "crude OR incompatible with printed precision; check source",
+                  expected=expected, reported=claimed, difference=abs(expected - claimed),
+                  printed_rounding_interval=(float(low), float(high)))
 
 
 _P_LITERAL_RE = re.compile(
