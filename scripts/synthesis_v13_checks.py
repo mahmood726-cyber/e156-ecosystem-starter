@@ -17,10 +17,11 @@ ESTIMATOR_FIELDS = (
     "variance_method", "test_statistic_identity",
 )
 
-# Always compare the minimum target question before cross-document numeric flags.
-# Caller-chosen narrow fields are additive, never a bypass of clinical identity.
-CROSS_DOCUMENT_CORE_FIELDS = ("population", "endpoint", "time_window",
-                              "effect_measure", "estimand")
+# Cross-document numerical discrepancies require the complete estimator
+# signature, not only a matching clinical question. Adjustments, models,
+# missingness, censoring, variance and test identities can legitimately change
+# published outputs. A caller-selected field subset can never downgrade this gate.
+CROSS_DOCUMENT_CORE_FIELDS = ESTIMATOR_FIELDS
 SEVERITIES = {"S1", "S2", "S3", "S4", "S5"}
 
 
@@ -273,10 +274,11 @@ def factor_shift(original: Any, observed: Any, *, verified_r_factor_conversion: 
 
 def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
                    required_fields: Sequence[str], tolerance: Any = 0) -> dict:
-    """Compare numbers only after matching a minimum clinical estimand identity.
+    """Compare numbers only after matching the full attested analysis identity.
 
     A caller listing only endpoint/test fields cannot override population,
-    timepoint, effect measure or estimand checks. Explicit, source-attested
+    estimand, model, adjustment, multiplicity, missingness, censoring,
+    variance-method or test-statistic checks. Explicit, source-attested
     numeric unit and representation must also match; no automatic conversion.
     These attestations are not independently verified by this software.
     Provenance and current-source identity still require external inspection;
