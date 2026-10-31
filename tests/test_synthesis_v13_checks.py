@@ -738,5 +738,63 @@ class ExactIntegerPrecisionTests(unittest.TestCase):
             ("endpoint",))["status"], "INVALID")
 
 
+class CrudeORExactCountTests(unittest.TestCase):
+    """Synthetic regression, not a human-adjudicated research claim."""
+
+    @staticmethod
+    def large_counts():
+        # Native integer inputs: every limb matters. True OR is exactly 3.
+        base = 2**53
+        return base+1, base+2, base+1, base+4
+
+    @staticmethod
+    def check(counts, shown):
+        return m.crude_or(*counts, float(shown),
+            raw_estimator=True, population_match=True, endpoint_match=True,
+            time_match=True, **or_inputs(shown))
+
+    def test_correct_large_integer_or_no_longer_false_alert(self):
+        # Prior float(count) gate turned genuine OR 3 into computed OR 2.
+        self.assertEqual(self.check(self.large_counts(), "3.0")["status"], "CONSISTENT")
+
+    def test_injected_wrong_or_no_longer_false_negative(self):
+        # A deliberately misprinted 2.0 previously agreed with lossy count arithmetic.
+        self.assertEqual(self.check(self.large_counts(), "2.0")["status"], "REVIEW")
+
+    def test_native_large_integer_count_is_exact(self):
+        self.assertEqual(m.nonnegative_count(2**53+1), 2**53+1)
+
+    def test_large_floating_count_abstains(self):
+        a, n1, c, n0 = self.large_counts()
+        out = self.check((float(a), n1, c, n0), "3.0")
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("precision", out["reason"])
+
+    def test_even_large_floating_count_abstains(self):
+        a, n1, c, n0 = self.large_counts()
+        self.assertEqual(self.check((a, float(n1), c, n0), "3.0")["status"],
+                         "NOT_COMPARABLE")
+
+    def test_safe_float_counts_remain_accepted(self):
+        self.assertEqual(self.check((35.0, 100.0, 20.0, 100.0), "2.15")["status"],
+                         "CONSISTENT")
+
+    def test_fractional_counts_remain_invalid(self):
+        self.assertEqual(self.check((35.5, 100, 20, 100), "2.15")["status"],
+                         "INVALID")
+
+    def test_negative_counts_remain_invalid(self):
+        self.assertEqual(self.check((-1, 100, 20, 100), "2.15")["status"],
+                         "INVALID")
+
+    def test_bool_counts_remain_invalid(self):
+        self.assertEqual(self.check((True, 100, 20, 100), "2.15")["status"],
+                         "INVALID")
+
+    def test_zero_cell_still_abstains(self):
+        self.assertEqual(self.check((0, 100, 20, 100), "2.15")["status"],
+                         "NOT_COMPARABLE")
+
+
 if __name__ == "__main__":
     unittest.main()
