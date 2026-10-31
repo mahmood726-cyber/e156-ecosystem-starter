@@ -440,7 +440,14 @@ def test_unsafe_release_ref_is_refused_before_download_or_publication(tmp_path, 
         cmd.extend(["--ref", bad_ref])
     p = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=30)
     assert p.returncode == 2, p.stdout + p.stderr
-    assert "invalid Meta-Harness release ref" in p.stderr
+    # Git for Windows may re-tokenise a newline embedded in an argv value.
+    # Both the ref validator and unknown-argument parser must refuse before
+    # any fetch/publication; this exception is ONLY for that Windows case.
+    if via_cli and "\\n" in bad_ref and os.name == "nt":
+        assert ("invalid Meta-Harness release ref" in p.stderr
+                or "unknown arg: extra" in p.stderr), p.stderr
+    else:
+        assert "invalid Meta-Harness release ref" in p.stderr
     assert "could not download" not in p.stderr
     assert "release fetch" not in p.stdout
     assert not target.exists()
