@@ -239,8 +239,11 @@ def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
     """Compare numbers only after matching a minimum clinical estimand identity.
 
     A caller listing only endpoint/test fields cannot override population,
-    timepoint, effect measure or estimand checks. Provenance and current-source
-    identity still require external inspection; REVIEW is never a paper verdict.
+    timepoint, effect measure or estimand checks. Explicit, source-attested
+    numeric unit and representation must also match; no automatic conversion.
+    These attestations are not independently verified by this software.
+    Provenance and current-source identity still require external inspection;
+    REVIEW is never a paper verdict.
     """
     if not isinstance(required_fields, (list, tuple)) or not required_fields or any(
             field not in ESTIMATOR_FIELDS for field in required_fields):
@@ -249,6 +252,26 @@ def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
     match = compatible(left_sig, right_sig, fields)
     if match["status"] != "MATCHED":
         return match
+    # Source-matched estimands can still contain physically equivalent numbers
+    # in different units (mg vs micrograms) or different representations
+    # (raw ratio vs log ratio, proportion vs percentage). No implicit
+    # conversions or comparison without source-verified value identity.
+    if (left_sig.get("value_identity_verified") is not True
+            or right_sig.get("value_identity_verified") is not True):
+        return result("NOT_COMPARABLE", "source unit/representation identity unverified")
+    value_fields = ("value_unit", "value_representation")
+    unknown = [name for name in value_fields
+               if any(not isinstance(sig.get(name), str)
+                      or not sig.get(name).strip()
+                      or sig.get(name).strip().upper() == "UNKNOWN"
+                      for sig in (left_sig, right_sig))]
+    if unknown:
+        return result("NOT_COMPARABLE", "numeric value identity incomplete", fields=unknown)
+    differing = [name for name in value_fields
+                 if left_sig[name] != right_sig[name]]
+    if differing:
+        return result("NOT_COMPARABLE", "different numeric units/representations; verify conversion",
+                      fields=differing)
     try:
         x, y, tol = finite(left), finite(right), finite(tolerance)
         if tol < 0:
