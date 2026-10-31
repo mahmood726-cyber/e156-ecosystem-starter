@@ -69,19 +69,20 @@ function Assert-MetaHarnessReleaseManifest {
 # The digest SHA256SUMS records for $Name, or $null.
 function Get-MetaHarnessExpectedSha {
     param([string]$SumsPath, [string]$Name)
-    # Match Bash: never select the first of ambiguous or malformed
-    # SHA256SUMS entries for this asset.
+    # Enforce one unambiguous checksum record for this asset.
+    # Other assets may have their own GNU text or binary-marker records.
     $found = $false
     $digest = $null
     foreach ($line in (Get-Content -LiteralPath $SumsPath)) {
-        $parts = ($line.TrimEnd("`r")) -split '\s+', 2
-        if ($parts.Count -ne 2 -or ($parts[1] -cne $Name -and $parts[1] -cne "*$Name")) {
+        $parts = @($line.Trim() -split '\s+')
+        if ($parts.Count -lt 2 -or
+            ($parts[1] -cne $Name -and $parts[1] -cne "*$Name")) {
             continue
         }
         if ($found) {
             throw "REFUSED: SHA256SUMS has multiple entries for $Name"
         }
-        if ($parts[0] -cnotmatch '^[0-9a-f]{64}$') {
+        if ($parts.Count -ne 2 -or $parts[0] -cnotmatch '^[0-9a-f]{64}$') {
             throw "REFUSED: SHA256SUMS has malformed entry for $Name"
         }
         $found = $true

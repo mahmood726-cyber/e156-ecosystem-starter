@@ -93,6 +93,59 @@ Describe "Test-MetaHarnessAsset is fail-closed" {
     }
 }
 
+Describe "Meta-Harness Windows checksum-manifest ambiguity" {
+    It "refuses duplicate identical asset checksum records" {
+        $d = Join-Path $TestDrive 'sha-duplicate-same'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $valid = Get-Content -LiteralPath $sums -Raw
+        [IO.File]::WriteAllText($sums, $valid + $valid)
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*multiple entries*'
+    }
+    It "refuses conflicting asset checksum records rather than selecting the first" {
+        $d = Join-Path $TestDrive 'sha-duplicate-conflict'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $valid = (Get-Content -LiteralPath $sums -Raw)
+        [IO.File]::WriteAllText($sums, $valid + ('0' * 64) + '  meta-harness-v9.9.9-test.zip' + "`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*multiple entries*'
+    }
+    It "refuses a malformed matching checksum even when no valid digest exists" {
+        $d = Join-Path $TestDrive 'sha-malformed'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        [IO.File]::WriteAllText($sums, 'not-a-digest  meta-harness-v9.9.9-test.zip' + "`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*malformed entry*'
+    }
+    It "refuses a malformed matching record after a valid checksum" {
+        $d = Join-Path $TestDrive 'sha-malformed-after'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $valid = (Get-Content -LiteralPath $sums -Raw)
+        [IO.File]::WriteAllText($sums, $valid + 'not-a-digest  meta-harness-v9.9.9-test.zip' + "`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*multiple entries*'
+    }
+    It "refuses extra fields on the selected asset checksum" {
+        $d = Join-Path $TestDrive 'sha-extra-token'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $valid = (Get-Content -LiteralPath $sums -Raw).Trim()
+        [IO.File]::WriteAllText($sums, $valid + ' attacker-trailing-field' + "`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Throw '*malformed entry*'
+    }
+    It "accepts one valid target record beside unrelated asset records" {
+        $d = Join-Path $TestDrive 'sha-unrelated'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $valid = (Get-Content -LiteralPath $sums -Raw)
+        [IO.File]::WriteAllText($sums, $valid + ('0' * 64) + '  unrelated.zip' + "`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Not -Throw
+    }
+    It "accepts a single GNU binary-marker checksum record" {
+        $d = Join-Path $TestDrive 'sha-binary'; $zip = New-TestRelease -Dir $d
+        $sums = Join-Path $d 'SHA256SUMS'
+        $valid = (Get-Content -LiteralPath $sums -Raw).Trim()
+        $sha = ($valid -split '\s+')[0]
+        [IO.File]::WriteAllText($sums, "$sha *meta-harness-v9.9.9-test.zip" + "`n")
+        { Test-MetaHarnessAsset -ZipPath $zip -SumsPath $sums } | Should -Not -Throw
+    }
+}
+
+
 Describe "Expand-MetaHarness" {
     It "unpacks the single top-level folder as the target, with the entry point" {
         $d = Join-Path $TestDrive 'unpack'; $zip = New-TestRelease -Dir $d
