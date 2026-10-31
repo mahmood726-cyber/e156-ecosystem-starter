@@ -1,0 +1,219 @@
+"""Synthesis v1.3 experimental, deterministic candidate gates.
+
+This module does not read research papers, verify medical conclusions, send
+messages, or certify scientific errors. It extends rather than replaces the
+separate v1.1 preflight module; all outputs require source-based review.
+"""
+from __future__ import annotations
+
+from collections import defaultdict
+import math
+from typing import Mapping, Sequence, Any
+
+ESTIMATOR_FIELDS = (
+    "population", "endpoint", "time_window", "effect_measure", "estimand",
+    "model", "adjustment", "multiplicity", "missingness", "censoring",
+    "variance_method", "test_statistic_identity",
+)
+SEVERITIES = {"S1", "S2", "S3", "S4", "S5"}
+
+
+def result(status: str, reason: str, **extra: Any) -> dict:
+    return {"status": status, "reason": reason, **extra}
+
+
+def finite(value: Any) -> float:
+    if type(value) not in (float, int):
+        raise ValueError("not a numeric value")
+    try:
+        n = float(value)
+    except (OverflowError, ValueError) as exc:
+        raise ValueError("numeric input out of range") from exc
+    if not math.isfinite(n):
+        raise ValueError("nonfinite input")
+    return n
+
+
+def nonnegative_count(value: Any) -> int:
+    n = finite(value)
+    if n < 0 or not n.is_integer():
+        raise ValueError("counts must be nonnegative integers")
+    return int(n)
+
+
+def compatible(left: Mapping, right: Mapping, fields: Sequence[str] = ESTIMATOR_FIELDS) -> dict:
+    """Unknown or differing analysis definitions cannot support a numerical allegation."""
+    if not isinstance(left, Mapping) or not isinstance(right, Mapping):
+        return result("INVALID", "signatures must be mappings")
+    if not fields or any(f not in ESTIMATOR_FIELDS for f in fields):
+        return result("INVALID", "unknown required estimator field")
+    unknown = [k for k in fields if left.get(k) in (None, "", "UNKNOWN")
+               or right.get(k) in (None, "", "UNKNOWN")]
+    if unknown:
+        return result("NOT_COMPARABLE", "estimator signature incomplete", fields=unknown)
+    mismatch = [k for k in fields if left[k] != right[k]]
+    if mismatch:
+        return result("NOT_COMPARABLE", "different estimators, endpoints or populations", fields=mismatch)
+    return result("MATCHED", "required estimator fields match")
+
+
+def ci_order(estimate: Any, lower: Any, upper: Any, interval_type: str) -> dict:
+    if interval_type not in {"TWO_SIDED", "ONE_SIDED_LOWER", "ONE_SIDED_UPPER"}:
+        return result("NOT_COMPARABLE", "interval definition not established")
+    try:
+        e, lo, hi = finite(estimate), finite(lower), finite(upper)
+    except ValueError as exc:
+        return result("INVALID", str(exc))
+    if lo > hi:
+        return result("REVIEW", "confidence interval bounds reversed")
+    if interval_type == "TWO_SIDED" and not lo <= e <= hi:
+        return result("REVIEW", "estimate outside reported two-sided interval")
+    return result("CONSISTENT", "interval ordering compatible")
+
+
+def crude_or(a: Any, n1: Any, c: Any, n0: Any, reported: Any, *,
+             raw_estimator: bool, population_match: bool, endpoint_match: bool,
+             time_match: bool, tolerance: Any = 0.02) -> dict:
+    if not all(x is True for x in (raw_estimator, population_match, endpoint_match, time_match)):
+        return result("NOT_COMPARABLE", "exact unadjusted 2x2 analysis identity not established")
+    try:
+        a, n1, c, n0 = map(nonnegative_count, (a, n1, c, n0))
+        claimed, tol = finite(reported), finite(tolerance)
+        if not n1 or not n0 or a > n1 or c > n0 or claimed < 0 or tol < 0:
+            raise ValueError("invalid 2x2 table, reported ratio or tolerance")
+    except ValueError as exc:
+        return result("INVALID", str(exc))
+    if min(a, n1-a, c, n0-c) == 0:
+        return result("NOT_COMPARABLE", "zero cell requires declared correction/exact method")
+    expected = a * (n0-c) / ((n1-a)*c)
+    delta = abs(expected-claimed)
+    return result("CONSISTENT" if delta <= tol else "REVIEW",
+                  "crude OR within tolerance" if delta <= tol else "arithmetic discrepancy requiring source check",
+                  expected=expected, reported=claimed, difference=delta)
+
+
+def p_from_normal_z(estimate: Any, se: Any, reported: Any, *,
+                    test_name: str, multiplicity: str, tolerance: Any = 0.01) -> dict:
+    if test_name != "NORMAL_Z" or multiplicity != "NONE":
+        return result("NOT_COMPARABLE", "adjusted, t-based or alternative P-value method")
+    try:
+        est, err, p, tol = finite(estimate), finite(se), finite(reported), finite(tolerance)
+        if err <= 0 or not 0 <= p <= 1 or tol < 0:
+            raise ValueError("invalid SE, P or tolerance")
+    except ValueError as exc:
+        return result("INVALID", str(exc))
+    expected = math.erfc(abs(est/err)/math.sqrt(2))
+    return result("CONSISTENT" if abs(expected-p) <= tol else "REVIEW",
+                  "normal P comparable" if abs(expected-p) <= tol else "P mismatch; verify statistic identity",
+                  expected=expected, reported=p)
+
+
+def statistic_identity(reported_source: str, expected_source: str) -> dict:
+    """TOPCHILD-type error: Q-test P mistakenly attached to pooled effect."""
+    if not reported_source or not expected_source or "UNKNOWN" in {reported_source, expected_source}:
+        return result("NOT_COMPARABLE", "P-value source statistic unknown")
+    return result("CONSISTENT" if reported_source == expected_source else "REVIEW",
+                  "statistic identity matches" if reported_source == expected_source else "P value belongs to different test")
+
+
+def factor_shift(original: Any, observed: Any, *, verified_r_factor_conversion: bool) -> dict:
+    if verified_r_factor_conversion is not True:
+        return result("NOT_COMPARABLE", "paper-time code conversion unverified")
+    if not isinstance(original, list) or not isinstance(observed, list) or len(original) != len(observed) or not original:
+        return result("INVALID", "nonempty equal-length category vectors required")
+    if any(type(x) is not int for x in original+observed):
+        return result("INVALID", "noninteger category labels")
+    if set(original) != {0, 1}:
+        return result("NOT_COMPARABLE", "not a binary 0/1 factor")
+    if observed == [v+1 for v in original]:
+        return result("REVIEW", "verified factor-to-integer shift; investigate affected results")
+    return result("CONSISTENT" if observed == original else "REVIEW",
+                  "no numeric shift" if observed == original else "unexpected recoding needs review")
+
+
+def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
+                   required_fields: Sequence[str], tolerance: Any = 0) -> dict:
+    match = compatible(left_sig, right_sig, required_fields)
+    if match["status"] != "MATCHED":
+        return match
+    try:
+        x, y, tol = finite(left), finite(right), finite(tolerance)
+        if tol < 0:
+            raise ValueError("negative tolerance")
+    except ValueError as exc:
+        return result("INVALID", str(exc))
+    return result("CONSISTENT" if abs(x-y) <= tol else "REVIEW",
+                  "matched document values agree" if abs(x-y) <= tol else "matched source values disagree")
+
+
+def version(status: str) -> dict:
+    if status in {"PREPRINT_STALE", "MANUSCRIPT_STALE", "UNKNOWN"}:
+        return result("HOLD", "verify final typeset article and corrections")
+    if status in {"FINAL_CURRENT", "CORRECTED_LATEST"}:
+        return result("CURRENT", "known publication edition")
+    return result("INVALID", "unknown version state")
+
+
+def gate(record: Mapping) -> dict:
+    """At most a source-backed flag *candidate*, never a confirmed error."""
+    if not isinstance(record, Mapping):
+        return result("INVALID", "candidate must be a mapping")
+    if record.get("severity") not in SEVERITIES or version(record.get("version", "UNKNOWN"))["status"] != "CURRENT":
+        return result("HOLD", "severity or current publication version not established")
+    if record.get("source_access") != "ACCESSIBLE" or not record.get("source_locator"):
+        return result("HOLD", "source access or exact locator incomplete")
+    if record.get("source_support") == "SUPPORTED" and record.get("alternative_result") == "SUPPORTED":
+        return result("RECONCILED", "documented benign explanation")
+    if record.get("source_support") != "CONTRADICTED":
+        return result("HOLD", "source does not establish contradiction")
+    if record.get("maturity") not in {"SOURCE_BACKED", "REPRODUCED", "INDEPENDENTLY_ADJUDICATED"}:
+        return result("HOLD", "insufficient evidence maturity")
+    if not record.get("alternative") or not record.get("alternative_locator") or record.get("alternative_result") != "REFUTED":
+        return result("HOLD", "benign explanation not tested or remains plausible")
+    if record.get("estimator_status") != "MATCHED" or not record.get("root_cause_id"):
+        return result("HOLD", "analysis identity or root-cause record incomplete")
+    return result("FLAG_CANDIDATE", "source-backed, refuted candidate; independent adjudication required")
+
+
+def root_cause_summary(rows: Sequence[Mapping]) -> dict:
+    groups: dict[str, set[str]] = defaultdict(set)
+    for row in rows:
+        cid, rid = row.get("claim_id"), row.get("root_cause_id")
+        if not isinstance(cid, str) or not cid:
+            raise ValueError("each affected output needs a claim ID")
+        if rid is not None:
+            if not isinstance(rid, str) or not rid:
+                raise ValueError("invalid root cause ID")
+            groups[rid].add(cid)
+    return {"root_causes": len(groups), "affected_outputs": sum(map(len, groups.values())),
+            "groups": {k: sorted(v) for k, v in sorted(groups.items())}}
+
+
+def outcome_counts(rows: Sequence[Mapping]) -> dict:
+    """Keep abstentions/unknown references; do not claim prospective accuracy."""
+    counts = {k: 0 for k in ("TP", "FP", "TN", "FN", "HOLD", "UNKNOWN_REFERENCE")}
+    names = {("FLAG", "ERROR"): "TP", ("FLAG", "NO_ERROR"): "FP",
+             ("NO_FLAG", "NO_ERROR"): "TN", ("NO_FLAG", "ERROR"): "FN"}
+    seen: set[str] = set()
+    for row in rows:
+        cid, pred, truth = row.get("claim_id"), row.get("prediction"), row.get("reference")
+        if not isinstance(cid, str) or not cid or cid in seen:
+            raise ValueError("claim IDs must be unique and nonempty")
+        seen.add(cid)
+        if pred not in {"FLAG", "NO_FLAG", "HOLD"} or truth not in {"ERROR", "NO_ERROR", "UNDETERMINED"}:
+            raise ValueError("unknown prediction or adjudication label")
+        if pred == "HOLD":
+            counts["HOLD"] += 1
+        elif truth == "UNDETERMINED":
+            counts["UNKNOWN_REFERENCE"] += 1
+        else:
+            counts[names[(pred, truth)]] += 1
+    n = sum(counts[k] for k in ("TP", "FP", "TN", "FN"))
+    ratio = lambda a, b: a / b if b else None
+    return {**counts, "all_claims": len(rows), "adjudicated_nonabstained": n,
+            "sensitivity": ratio(counts["TP"], counts["TP"]+counts["FN"]),
+            "precision": ratio(counts["TP"], counts["TP"]+counts["FP"]),
+            "specificity": ratio(counts["TN"], counts["TN"]+counts["FP"]),
+            "false_alerts_per_100_adjudicated": 100*counts["FP"]/n if n else None,
+            "abstention_rate": ratio(counts["HOLD"], len(rows)),
+            "warning": "Bookkeeping only; requires independent complete adjudication and cluster CIs"}
