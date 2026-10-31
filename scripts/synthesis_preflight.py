@@ -105,6 +105,8 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str) -> dict:
         problems.append({"code": code, "claim_id": claim_id, "detail": message})
     if not isinstance(packet, dict):
         return {"intake_valid": False, "problems": [{"code":"INVALID_PACKET","detail":"Root must be object"}]}
+    if packet.get("schema_version") != "1.1":
+        warn("UNSUPPORTED_PACKET_SCHEMA", "Packet schema_version must match validator v1.1")
     run = packet.get("run", {})
     if not isinstance(run, dict):
         run={}
@@ -205,10 +207,13 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str) -> dict:
                 reasons.append("no complete accessible original full-text provenance")
             if not (isinstance(ref,dict) and ref.get("alternative") and ref.get("checked_against") and ref.get("result") == "NOT_SUPPORTED"):
                 reasons.append("source-grounded refutation not completed")
-        if requested in {"RECONCILED","NO_FLAG"} and support=="CONTRADICTED":
-            # A contradiction can be demoted on explanation, but requires a real reconciliation record.
-            if not (isinstance(ref,dict) and ref.get("result") == "SUPPORTED"):
-                reasons.append("contradiction with no recorded reconciliation")
+        if support in {"SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO"} and requested in {"NO_FLAG", "RECONCILED"}:
+            reasons.append("unresolved or inaccessible evidence cannot establish a negative finding")
+        if requested == "NO_FLAG" and support in {"CONTRADICTED", "OVERGENERALIZED", "UNSUPPORTED_CITATION"}:
+            reasons.append("unsupported/contradicted source cannot be classified as verified no-flag")
+        if requested == "RECONCILED" and not (isinstance(ref,dict) and ref.get("result") == "SUPPORTED"
+                                                   and ref.get("alternative") and ref.get("checked_against")):
+            reasons.append("reconciliation requires a specific, source-checked benign explanation")
         if reasons:
             effective="HOLD"
             warn("CLAIM_HELD", "; ".join(reasons),cid)
@@ -238,8 +243,19 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str) -> dict:
         check_results.append(result)
     rank={"P1":0,"P2":1,"P3":2,"P4":3}
     flag_summary=sorted([v for v in views if v["effective"]=="FLAG"],key=lambda v:(rank.get(v["priority"],4),v["id"]))[:5]
-    return {"schema_version":"1.1","intake_valid":not any(p["code"] in
-               {"PROMPT_SHA_MISMATCH","MISSING_RUN_ID","DOCUMENT_VERSION_INCOMPLETE","CLAIMS_MISSING","DUPLICATE_OR_MISSING_CLAIM_ID","INVALID_DISPOSITION","BAD_SOURCE_ID"} for p in problems),
+    structural_faults = {
+        "UNSUPPORTED_PACKET_SCHEMA", "PROMPT_SHA_MISMATCH", "MISSING_RUN_ID",
+        "MODEL_PROVENANCE_INCOMPLETE", "TOOL_PROVENANCE_INCOMPLETE",
+        "DOCUMENT_VERSION_INCOMPLETE", "CLAIMS_MISSING", "BAD_CLAIM",
+        "DUPLICATE_OR_MISSING_CLAIM_ID", "INVALID_SUPPORT", "INVALID_MATURITY",
+        "INVALID_PRIORITY", "INVALID_DISPOSITION", "CLAIM_LOCATOR_MISSING",
+        "BAD_SOURCE_ID", "BAD_SOURCE_ACCESS", "SOURCE_PROVENANCE_INCOMPLETE",
+        "UNKNOWN_SOURCE_REFERENCE", "UNAVAILABLE_WITHOUT_ACCESS_LOG",
+        "INSUFFICIENT_WITHOUT_FULLTEXT_LOG", "UNVERIFIED_INDEPENDENCE",
+        "UNVERIFIED_REPRODUCTION", "CHECKS_NOT_LIST", "BAD_CHECK",
+        "ORPHAN_CHECK", "DUPLICATE_CHECK_ID", "INVALID_CHECK", "SOURCES_NOT_LIST",
+    }
+    return {"schema_version":"1.1","intake_valid":not any(p["code"] in structural_faults for p in problems),
             "prompt_sha256":prompt_sha256,"input_sha256":input_sha256,
             "source_count":len(source_map),"claim_count":len(views),
             "flag_count":sum(v["effective"]=="FLAG" for v in views),
