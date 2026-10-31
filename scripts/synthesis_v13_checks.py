@@ -58,7 +58,17 @@ def compatible(left: Mapping, right: Mapping, fields: Sequence[str] = ESTIMATOR_
     return result("MATCHED", "required estimator fields match")
 
 
-def ci_order(estimate: Any, lower: Any, upper: Any, interval_type: str) -> dict:
+def ci_order(estimate: Any, lower: Any, upper: Any, interval_type: str, *,
+             ci_method: str | None = None,
+             estimator_signature_matched: bool = False,
+             source_input_precision: str | None = None) -> dict:
+    """Geometric interval check only; never a confirmed scientific error.
+
+    An out-of-range estimate is reviewable only when independent source
+    inspection confirms an exact, same-estimand Wald-linear interval.
+    Bootstrap/adjusted/unidentified intervals and rounded printed inputs
+    must not be treated as arithmetic contradictions.
+    """
     if interval_type not in {"TWO_SIDED", "ONE_SIDED_LOWER", "ONE_SIDED_UPPER"}:
         return result("NOT_COMPARABLE", "interval definition not established")
     try:
@@ -68,7 +78,13 @@ def ci_order(estimate: Any, lower: Any, upper: Any, interval_type: str) -> dict:
     if lo > hi:
         return result("REVIEW", "confidence interval bounds reversed")
     if interval_type == "TWO_SIDED" and not lo <= e <= hi:
-        return result("REVIEW", "estimate outside reported two-sided interval")
+        if ci_method != "WALD_LINEAR" or estimator_signature_matched is not True:
+            return result("NOT_COMPARABLE",
+                          "CI method or point/interval estimator identity unverified")
+        if source_input_precision != "EXACT":
+            return result("NOT_COMPARABLE", "published estimate or CI bounds may be rounded")
+        return result("REVIEW",
+                      "verified same-estimand Wald-linear estimate outside CI; check source")
     return result("CONSISTENT", "interval ordering compatible")
 
 
