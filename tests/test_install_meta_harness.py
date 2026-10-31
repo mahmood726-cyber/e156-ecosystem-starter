@@ -422,3 +422,43 @@ def test_e156_capsule_profile_path_is_literal_on_windows_git_bash_and_ubuntu(tmp
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert not (tmp_path / "path-executed").exists()
+
+
+@pytest.mark.parametrize("bad_ref", [
+    "../escape", "tag/../../escape", r"..\..\escape",
+    "v1.0.0?raw=1", "v1.0.0#fragment", "v1.0.0%2Fescape",
+    "v1.0.0 latest", "v1.0.0\nextra", "-unexpected-option",
+])
+@pytest.mark.parametrize("via_cli", [False, True])
+def test_unsafe_release_ref_is_refused_before_download_or_publication(tmp_path, bad_ref, via_cli):
+    """Run the actual Bash installer; test input is synthetic, not a signed release."""
+    target = tmp_path / "published"
+    env = dict(os.environ, META_HARNESS_BASE_URL=(tmp_path / "no-release").resolve().as_uri(),
+               META_HARNESS_REF=(TAG if via_cli else bad_ref))
+    cmd = [_bash(), str(SCRIPT), "--target", str(target)]
+    if via_cli:
+        cmd.extend(["--ref", bad_ref])
+    p = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=30)
+    assert p.returncode == 2, p.stdout + p.stderr
+    # Git for Windows may re-tokenise a newline embedded in an argv value.
+    # Both the ref validator and unknown-argument parser must refuse before
+    # any fetch/publication; this exception is ONLY for that Windows case.
+    if via_cli and chr(10) in bad_ref and os.name == "nt":
+        assert ("invalid Meta-Harness release ref" in p.stderr
+                or "unknown arg: extra" in p.stderr), p.stderr
+    else:
+        assert "invalid Meta-Harness release ref" in p.stderr
+    assert "could not download" not in p.stderr
+    assert "release fetch" not in p.stdout
+    assert not target.exists()
+
+
+def test_safe_explicit_ref_still_fetches_verified_local_fixture(tmp_path):
+    rel = _release(tmp_path / "rel", GOOD)
+    target = tmp_path / "published"
+    env = dict(os.environ, META_HARNESS_BASE_URL=rel.resolve().as_uri(),
+               META_HARNESS_REF="v0-incorrect")
+    p = subprocess.run([_bash(), str(SCRIPT), "--ref", TAG, "--target", str(target)],
+                       capture_output=True, text=True, env=env, timeout=120)
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert (target / "scripts" / "replay_offline.py").is_file()

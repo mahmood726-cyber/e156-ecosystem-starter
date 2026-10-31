@@ -44,6 +44,21 @@ Describe "Get-MetaHarnessDefaultRef pins the published release" {
     It "names the asset after the tag" { Get-MetaHarnessAssetName -Tag 'v1.0.0' | Should -Be 'meta-harness-v1.0.0.zip' }
 }
 
+Describe "Assert-MetaHarnessRef refuses path and URL syntax" {
+    It "allows ordinary version tags and commit tokens" {
+        foreach ($good in @('v1.0.0', 'v9.9.9-test', '5a1bcdef0123456789')) {
+            { Assert-MetaHarnessRef -Tag $good } | Should -Not -Throw
+        }
+    }
+    It "rejects traversal, URI fragments, escaped separators, whitespace and empty refs" {
+        foreach ($bad in @('../escape', 'tag/../../escape', '..\..\escape',
+                            'v1.0.0?x=1', 'v1.0.0#latest', 'v1.0.0%2Ffoo',
+                            'v1.0.0 latest', '-option', '')) {
+            { Assert-MetaHarnessRef -Tag $bad } | Should -Throw '*invalid Meta-Harness release ref*'
+        }
+    }
+}
+
 Describe "Test-MetaHarnessAsset is fail-closed" {
     It "accepts the digest SHA256SUMS records" {
         $d = Join-Path $TestDrive 'ok'; $zip = New-TestRelease -Dir $d

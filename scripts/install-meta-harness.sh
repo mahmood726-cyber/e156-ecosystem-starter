@@ -227,6 +227,12 @@ fi
 command -v curl >/dev/null 2>&1 || { echo "ERROR: curl not found." >&2; exit 1; }
 
 REF="${REF_ARG:-$(meta_harness_default_ref)}"
+# Ref is used in the asset URL, name and default target. Reject unsafe
+# separators, URL syntax and whitespace before downloads or filesystem writes.
+if [[ ! "$REF" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+    echo "REFUSED: invalid Meta-Harness release ref (expected one tag token)" >&2
+    exit 2
+fi
 ASSET="$(meta_harness_asset_name "$REF")"
 BASE="$(meta_harness_base_url "$REF")"
 [[ -n "$TARGET" ]] || TARGET="$(meta_harness_default_target "$REF")"
