@@ -16,12 +16,20 @@ set -euo pipefail
 
 SKIP_PIP=0
 HMAC_KEY=""
+HMAC_KEY_REQUESTED=0
 IMPORT=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --skip-pip-install) SKIP_PIP=1; shift ;;
-        --hmac-key)         HMAC_KEY="$2"; shift 2 ;;
+        --hmac-key)
+            if [[ $# -lt 2 ]]; then
+                echo "REFUSED: --hmac-key requires a 64-character hexadecimal argument." >&2
+                exit 2
+            fi
+            HMAC_KEY_REQUESTED=1
+            HMAC_KEY="$2"
+            shift 2 ;;
         --import)           IMPORT=1; shift ;;
         -h|--help)          grep -E '^#' "$0" | head -20; exit 0 ;;
         *) echo "unknown arg: $1" >&2; exit 2 ;;
@@ -115,9 +123,16 @@ assert_truthcert_key_storage_safe() {
     fi
 }
 
+is_valid_truthcert_hmac_key() {
+    [[ "$1" =~ ^[0-9a-fA-F]{64}$ ]]
+}
+
 store_truthcert_hmac_key() {
     local key="$1"
-    [[ -n "$key" ]] || { echo "ERROR: empty key" >&2; return 1; }
+    if ! is_valid_truthcert_hmac_key "$key"; then
+        echo "REFUSED: TruthCert HMAC key must be exactly 32 bytes as 64 hexadecimal characters." >&2
+        return 1
+    fi
     local cfg_dir="${HOME}/.config/e156"
     local key_file="$cfg_dir/truthcert-hmac-key"
     local tmp
@@ -175,14 +190,22 @@ log_step "Setting TRUTHCERT_HMAC_KEY"
 key_file="${HOME}/.config/e156/truthcert-hmac-key"
 # Existing keys must not be sourced from redirected paths before the canary.
 assert_truthcert_key_storage_safe || exit 1
-if [[ -f "$key_file" && -z "$HMAC_KEY" ]]; then
+if [[ -f "$key_file" && "$HMAC_KEY_REQUESTED" -eq 0 ]]; then
     existing="$(cat "$key_file")"
+    if ! is_valid_truthcert_hmac_key "$existing"; then
+        echo "REFUSED: existing TruthCert HMAC key is malformed; refusing to sign or rotate implicitly." >&2
+        exit 1
+    fi
     log_ok "existing key at $key_file (length: ${#existing})"
     echo "    Use --hmac-key <new> to rotate."
     export TRUTHCERT_HMAC_KEY="$existing"
 else
-    if [[ -n "$HMAC_KEY" ]]; then
+    if [[ "$HMAC_KEY_REQUESTED" -eq 1 ]]; then
         key="$HMAC_KEY"
+        if ! is_valid_truthcert_hmac_key "$key"; then
+            echo "REFUSED: --hmac-key must be exactly 32 bytes as 64 hexadecimal characters." >&2
+            exit 2
+        fi
         stored_at="$(store_truthcert_hmac_key "$key")"
         log_ok "user-provided key saved to $stored_at"
     else
