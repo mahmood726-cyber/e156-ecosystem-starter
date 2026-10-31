@@ -311,14 +311,35 @@ def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
     if differing:
         return result("NOT_COMPARABLE", "different numeric units/representations; verify conversion",
                       fields=differing)
+    # Exact integer counts must not silently collapse at IEEE-754's 53-bit
+    # precision boundary. Preserve arbitrary-precision integer arithmetic
+    # when *all* comparison operands are native integers.
+    if all(type(v) is int for v in (left, right, tolerance)):
+        if tolerance < 0:
+            return result("INVALID", "negative tolerance")
+        agrees = abs(left - right) <= tolerance
+        return result("CONSISTENT" if agrees else "REVIEW",
+                      "matched document values agree" if agrees
+                      else "matched source values disagree")
+    # Mixed integer/float inputs cannot reliably preserve large count
+    # differences; large floating inputs may already have been rounded
+    # upstream. Abstain rather than asserting equality or a contradiction.
+    if any(type(v) is int and abs(v) >= 2**53
+           for v in (left, right, tolerance)):
+        return result("NOT_COMPARABLE",
+                      "large integer mixed with floating input; precision unverified")
     try:
         x, y, tol = finite(left), finite(right), finite(tolerance)
         if tol < 0:
             raise ValueError("negative tolerance")
     except ValueError as exc:
         return result("INVALID", str(exc))
-    return result("CONSISTENT" if abs(x-y) <= tol else "REVIEW",
-                  "matched document values agree" if abs(x-y) <= tol else "matched source values disagree")
+    if max(abs(x), abs(y), abs(tol)) >= 2**53:
+        return result("NOT_COMPARABLE",
+                      "large floating input may conceal distinct exact values")
+    agrees = abs(x-y) <= tol
+    return result("CONSISTENT" if agrees else "REVIEW",
+                  "matched document values agree" if agrees else "matched source values disagree")
 
 
 def version(status: str) -> dict:
