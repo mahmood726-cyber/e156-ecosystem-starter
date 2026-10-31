@@ -678,5 +678,65 @@ class CrudeORPrecisionTests(unittest.TestCase):
             "NOT_COMPARABLE")
 
 
+
+class ExactIntegerPrecisionTests(unittest.TestCase):
+    """Controlled numeric witnesses, not blinded or real-paper findings."""
+
+    @staticmethod
+    def count_sig():
+        return sig(effect_measure="EVENT_COUNT", test_statistic_identity="COUNT",
+                   value_unit="participants", value_representation="INTEGER_COUNT")
+
+    def test_injected_large_one_count_discrepancy_no_longer_hidden(self):
+        # IEEE-754 float(2**53+1) == float(2**53): old code said CONSISTENT.
+        x, y = 2**53 + 1, 2**53
+        self.assertEqual(m.cross_document(
+            x, y, self.count_sig(), self.count_sig(), ("endpoint",))["status"],
+            "REVIEW")
+
+    def test_untouched_large_identical_integer_counts_remain_consistent(self):
+        x = 2**53 + 1
+        self.assertEqual(m.cross_document(
+            x, x, self.count_sig(), self.count_sig(), ("endpoint",))["status"],
+            "CONSISTENT")
+
+    def test_exact_integer_tolerance_one_allows_one_count_difference(self):
+        self.assertEqual(m.cross_document(
+            2**53+1, 2**53, self.count_sig(), self.count_sig(),
+            ("endpoint",), tolerance=1)["status"], "CONSISTENT")
+
+    def test_exact_integer_tolerance_one_still_detects_two_counts(self):
+        self.assertEqual(m.cross_document(
+            2**53+2, 2**53, self.count_sig(), self.count_sig(),
+            ("endpoint",), tolerance=1)["status"], "REVIEW")
+
+    def test_lossy_mixed_float_and_exact_integer_abstains(self):
+        self.assertEqual(m.cross_document(
+            float(2**53), 2**53+1, self.count_sig(), self.count_sig(),
+            ("endpoint",))["status"], "NOT_COMPARABLE")
+
+    def test_large_float_pair_abstains_even_if_equal(self):
+        self.assertEqual(m.cross_document(
+            float(2**53), float(2**53), self.count_sig(), self.count_sig(),
+            ("endpoint",))["status"], "NOT_COMPARABLE")
+
+    def test_small_float_comparisons_preserved(self):
+        s = sig(value_unit="1", value_representation="RAW_RATIO")
+        self.assertEqual(m.cross_document(
+            0.75, 0.75, s, s, ("endpoint",))["status"], "CONSISTENT")
+        self.assertEqual(m.cross_document(
+            0.75, 0.68, s, s, ("endpoint",))["status"], "REVIEW")
+
+    def test_negative_exact_integer_tolerance_invalid(self):
+        self.assertEqual(m.cross_document(
+            10, 10, self.count_sig(), self.count_sig(),
+            ("endpoint",), tolerance=-1)["status"], "INVALID")
+
+    def test_boolean_input_still_invalid(self):
+        self.assertEqual(m.cross_document(
+            True, 1, self.count_sig(), self.count_sig(),
+            ("endpoint",))["status"], "INVALID")
+
+
 if __name__ == "__main__":
     unittest.main()
