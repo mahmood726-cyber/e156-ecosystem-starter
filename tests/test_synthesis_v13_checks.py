@@ -96,26 +96,30 @@ class DeterministicTests(unittest.TestCase):
         self.assertEqual(m.p_from_normal_z(2, 1, 0.0455, test_name="NORMAL_Z",
             multiplicity="NONE", null_value=0, alternative="TWO_SIDED",
             estimate_scale="LINEAR", se_scale="LINEAR",
-            test_identity_verified=True)["status"], "CONSISTENT")
+            test_identity_verified=True, reported_p_text="P=.0455",
+            source_input_precision="EXACT")["status"], "CONSISTENT")
 
     def test_injected_wrong_p_is_review(self):
         self.assertEqual(m.p_from_normal_z(2, 1, 0.25, test_name="NORMAL_Z",
             multiplicity="NONE", null_value=0, alternative="TWO_SIDED",
             estimate_scale="LINEAR", se_scale="LINEAR",
-            test_identity_verified=True)["status"], "REVIEW")
+            test_identity_verified=True, reported_p_text="P=.25",
+            source_input_precision="EXACT")["status"], "REVIEW")
 
     def test_nonzero_null_benign(self):
         # P=0.0455 corresponds to (3 - H0:1)/1, not 3/1.
         self.assertEqual(m.p_from_normal_z(3, 1, 0.0455, test_name="NORMAL_Z",
             multiplicity="NONE", null_value=1, alternative="TWO_SIDED",
             estimate_scale="LINEAR", se_scale="LINEAR",
-            test_identity_verified=True)["status"], "CONSISTENT")
+            test_identity_verified=True, reported_p_text="P=.0455",
+            source_input_precision="EXACT")["status"], "CONSISTENT")
 
     def test_one_sided_benign(self):
         self.assertEqual(m.p_from_normal_z(2, 1, 0.02275, test_name="NORMAL_Z",
             multiplicity="NONE", null_value=0, alternative="GREATER",
             estimate_scale="LINEAR", se_scale="LINEAR",
-            test_identity_verified=True)["status"], "CONSISTENT")
+            test_identity_verified=True, reported_p_text="P=.02275",
+            source_input_precision="EXACT")["status"], "CONSISTENT")
 
     def test_ratio_with_log_se_abstains(self):
         # Raw OR and SE(log OR) must not be treated as same-scale.
@@ -129,7 +133,8 @@ class DeterministicTests(unittest.TestCase):
         self.assertEqual(m.p_from_normal_z(math.log(1.5), 0.2, 0.0426,
             test_name="NORMAL_Z", multiplicity="NONE", null_value=0,
             alternative="TWO_SIDED", estimate_scale="LOG_RATIO",
-            se_scale="LOG_RATIO", test_identity_verified=True)["status"], "CONSISTENT")
+            se_scale="LOG_RATIO", test_identity_verified=True, reported_p_text="P=.0426",
+            source_input_precision="EXACT")["status"], "CONSISTENT")
 
     def test_missing_null_abstains(self):
         self.assertEqual(m.p_from_normal_z(2, 1, 0.0455, test_name="NORMAL_Z",
@@ -165,6 +170,52 @@ class DeterministicTests(unittest.TestCase):
 
     def test_factor_noshift(self):
         self.assertEqual(m.factor_shift([0, 1], [0, 1], verified_r_factor_conversion=True)["status"], "CONSISTENT")
+
+
+
+class PublishedPPrecisionTests(unittest.TestCase):
+    """Injected and untouched synthetic witnesses, not held-out real-paper labels."""
+
+    def _z(self, z, reported, printed, precision="EXACT", bounds=None):
+        return m.p_from_normal_z(z, 1, reported, test_name="NORMAL_Z",
+            multiplicity="NONE", null_value=0, alternative="TWO_SIDED",
+            estimate_scale="LINEAR", se_scale="LINEAR",
+            test_identity_verified=True, reported_p_text=printed,
+            source_input_precision=precision, expected_p_bounds=bounds)
+
+    def test_threshold_crossing_now_review(self):
+        # Old absolute tolerance .01 incorrectly accepted P=.049 at z=1.89.
+        self.assertEqual(self._z(1.89, .049, "P=.049")["status"], "REVIEW")
+
+    def test_nearest_precision_benign(self):
+        self.assertEqual(self._z(1.96, .05, "P=.05")["status"], "CONSISTENT")
+
+    def test_less_than_benign(self):
+        self.assertEqual(self._z(3.5, .001, "P<.001")["status"], "CONSISTENT")
+
+    def test_less_than_incompatible(self):
+        self.assertEqual(self._z(2.5, .001, "P<.001")["status"], "REVIEW")
+
+    def test_unknown_source_precision_abstains(self):
+        self.assertEqual(self._z(1.96, .05, "P=.05", None)["status"], "NOT_COMPARABLE")
+
+    def test_verified_rounded_statistic_range_benign(self):
+        self.assertEqual(self._z(1.94, .05, "P=.05", "P_BOUNDS_VERIFIED",
+                                 (.049, .055))["status"], "CONSISTENT")
+
+    def test_missing_source_rounding_range_abstains(self):
+        self.assertEqual(self._z(1.94, .05, "P=.05", "P_BOUNDS_VERIFIED")
+                         ["status"], "NOT_COMPARABLE")
+
+    def test_ocr_ambiguous_abstains(self):
+        self.assertEqual(self._z(1.96, .05, "P=O.O5")["status"], "NOT_COMPARABLE")
+
+    def test_literal_numeric_conflict_invalid(self):
+        self.assertEqual(self._z(1.96, .25, "P=.05")["status"], "INVALID")
+
+    def test_rounded_zero_not_exact_claim(self):
+        # .000 can result from numerical rounding; journal formatting is separate.
+        self.assertEqual(self._z(3.5, 0, "P=.000")["status"], "CONSISTENT")
 
 
 class GovernanceTests(unittest.TestCase):
