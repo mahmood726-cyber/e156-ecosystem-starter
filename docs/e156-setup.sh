@@ -15,14 +15,6 @@ set -euo pipefail
 
 REF="${REF:-v0.8.0}"
 
-# Warn loudly when REF is a branch / SHA / "main" rather than a release tag.
-# A user who pasted a one-liner with REF=main is opted out of the review window.
-if [[ ! "$REF" =~ ^v[0-9] ]]; then
-    printf '\n\033[33mWARNING:\033[0m \"%s\" is not a release tag (expected vX.Y.Z).\n' "$REF"
-    printf '\033[33m         You are running pre-release / branch code with no review window.\033[0m\n'
-    printf '\033[33m         Press Ctrl+C to abort, or wait 5 seconds to continue.\033[0m\n\n'
-    sleep 5
-fi
 FULL_FLAG=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -33,6 +25,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Warn when effective REF is not a stable vX.Y.Z release (including branch/SHA/prerelease).
+# A user who pasted a one-liner with REF=main is opted out of the review window.
+if [[ ! "$REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    printf '\n\033[33mWARNING:\033[0m \"%s\" is not a stable release tag (expected vX.Y.Z).\n' "$REF"
+    printf '\033[33m         You are running pre-release / branch code with no review window.\033[0m\n'
+    printf '\033[33m         Press Ctrl+C to abort, or wait 5 seconds to continue.\033[0m\n\n'
+    sleep 5
+fi
 say() { printf '\n==> %s\n' "$1"; }
 
 say "E156 Ecosystem Starter -- one-command installer"

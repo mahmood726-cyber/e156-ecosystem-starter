@@ -33,7 +33,8 @@ def _invoke(tmp_path: Path, *args: str, existing: str | None = None):
     fake_overmind.write_text(
         "#!/bin/sh\n"
         'printf "called\\n" >> "$OVERMIND_TEST_MARKER"\n'
-        '[ "$1" = "meta-verify" ]\n',
+        '[ "$1" = "meta-verify" ] || exit 1\n'
+        'printf \'{"passed":true,"verdict":"CERTIFIED","bundle_hash":"0123456789abcdef"}\\n\'\n',
         encoding="ascii",
     )
     fake_overmind.chmod(0o755)

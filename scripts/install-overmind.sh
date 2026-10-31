@@ -37,7 +37,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 test_overmind_installed() {
-    command -v overmind >/dev/null 2>&1
+    # command -v also accepts shell functions/aliases, even without a CLI.
+    # Require a real executable file on PATH. This is only a discovery check,
+    # not proof of a verified Overmind revision or TruthCert canary.
+    local cli
+    cli="$(type -P overmind 2>/dev/null)" || return 1
+    [[ -n "$cli" && -f "$cli" && -x "$cli" ]]
 }
 
 # Resolve python3 / python (modern Linux defaults to python3 only)
@@ -57,12 +62,15 @@ assert_real_python() {
     fi
 }
 
-OVERMIND_DEFAULT_REF="v1.0.0"   # 2026-06-08: first stable tag (was ec23ccb, broken on fresh installs because cryptography was undeclared). v1.0.0 declares cryptography as a core dep -> clean fresh install (758 passed / 0 failed on isolated venv). Tag-pinned, so refresh-ecosystem-pins.py leaves it stable. Override with OVERMIND_REF=master.
+# v1.0.0 is an unsigned, movable annotated tag (object
+# fdde5606f5ba8810fb253c943e8fb3bfd4ba1593), resolved on 2026-10-30.
+# Freeze its exact reviewed commit identity, not the tag. Explicit OVERMIND_REF
+# overrides are not source-authenticated. Pip dependencies remain un-hashed.
+OVERMIND_DEFAULT_REF="d3d2de5f84d852f27d64d1686f1e105e190ac375"
 
 overmind_default_source() {
-    # Pinned to a known-good commit so fresh installs are reproducible. Override
-    # with OVERMIND_REF=main (or any branch/tag/SHA) for bleeding edge or
-    # rollback if a release breaks something.
+    # Frozen release commit by default. OVERMIND_REF deliberately opts out
+    # of the identity pin and cannot be described as certified.
     local ref="${OVERMIND_REF:-$OVERMIND_DEFAULT_REF}"
     printf 'git+https://github.com/mahmood726-cyber/overmind.git@%s' "$ref"
 }
@@ -103,6 +111,18 @@ new_truthcert_hmac_key() {
     fi
 }
 
+# Do not read through existing symlinks or publish secrets into redirected
+# config paths. The key is security-sensitive even when its format is valid.
+assert_truthcert_key_storage_safe() {
+    local cfg_root="${HOME}/.config"
+    local cfg_dir="$cfg_root/e156"
+    local key_file="$cfg_dir/truthcert-hmac-key"
+    if [[ -L "$cfg_root" || -L "$cfg_dir" || -L "$key_file" || -d "$key_file" ]]; then
+        echo "REFUSED: TruthCert key storage path is a symlink or directory." >&2
+        return 1
+    fi
+}
+
 is_valid_truthcert_hmac_key() {
     [[ "$1" =~ ^[0-9a-fA-F]{64}$ ]]
 }
@@ -114,10 +134,25 @@ store_truthcert_hmac_key() {
         return 1
     fi
     local cfg_dir="${HOME}/.config/e156"
-    mkdir -p "$cfg_dir"
     local key_file="$cfg_dir/truthcert-hmac-key"
-    printf '%s\n' "$key" > "$key_file"
-    chmod 600 "$key_file"
+    local tmp
+    assert_truthcert_key_storage_safe || return 1
+    (umask 077; mkdir -p "$cfg_dir") || return 1
+
+    # A new key must never exist at default-umask (often 0644) permissions,
+    # even briefly. Stage with mktemp (0600) and publish by same-dir rename.
+    tmp="$(umask 077; mktemp "$cfg_dir/.truthcert-hmac-key.XXXXXXXX")" || return 1
+    if ! printf '%s\n' "$key" > "$tmp" || ! chmod 600 "$tmp"; then
+        rm -f -- "$tmp"
+        echo "REFUSED: could not stage TruthCert key securely." >&2
+        return 1
+    fi
+    assert_truthcert_key_storage_safe || { rm -f -- "$tmp"; return 1; }
+    if ! mv -f -- "$tmp" "$key_file"; then
+        rm -f -- "$tmp"
+        echo "REFUSED: could not publish TruthCert key securely." >&2
+        return 1
+    fi
     printf '%s' "$key_file"
 }
 
@@ -153,6 +188,8 @@ fi
 
 log_step "Setting TRUTHCERT_HMAC_KEY"
 key_file="${HOME}/.config/e156/truthcert-hmac-key"
+# Existing keys must not be sourced from redirected paths before the canary.
+assert_truthcert_key_storage_safe || exit 1
 if [[ -f "$key_file" && "$HMAC_KEY_REQUESTED" -eq 0 ]]; then
     existing="$(cat "$key_file")"
     if ! is_valid_truthcert_hmac_key "$existing"; then
@@ -183,9 +220,20 @@ else
     echo "      export TRUTHCERT_HMAC_KEY=\"\$(cat $key_file)\""
 fi
 
-log_step "overmind meta-verify (canary)"
-overmind meta-verify 2>&1 | head -5 | sed 's/^/  /' || \
-    log_warn "overmind meta-verify returned non-zero (review above)"
+log_step "overmind meta-verify (verifier-health canary)"
+# Overmind's CLI can exit zero after emitting {"passed":false}. Never treat
+# process success, the first five lines, or a warning as certification.
+assert_real_python || exit 1
+canary_checker="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/check-overmind-canary.py"
+[[ -f "$canary_checker" ]] || {
+    echo "REFUSED: mandatory Overmind canary checker is missing." >&2
+    exit 1
+}
+# pipefail propagates both Overmind's exit status and the JSON verdict gate.
+if ! overmind meta-verify | "$PYTHON" "$canary_checker"; then
+    echo "REFUSED: Overmind verifier-health canary failed; not reporting ready." >&2
+    exit 1
+fi
 
 echo
 echo "====================================================="
