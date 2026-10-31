@@ -1,0 +1,169 @@
+"""Synthetic-only tests of conservative Synthesis v1.3 candidate gates.
+
+Passing these tests does not establish real-world error-detection accuracy.
+"""
+import unittest
+
+import importlib.util
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location(
+    "synthesis_v13_checks", Path(__file__).resolve().parents[1] / "scripts" / "synthesis_v13_checks.py"
+)
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+
+
+def sig(**overrides):
+    base = dict(zip(m.ESTIMATOR_FIELDS, (
+        "adult ITT", "30-day mortality", "day 30", "risk ratio", "ITT", "GLM",
+        "none", "none", "complete", "none", "sandwich", "main RR",
+    )))
+    base.update(overrides)
+    return base
+
+
+def candidate(**overrides):
+    base = {"severity": "S3", "version": "FINAL_CURRENT", "source_access": "ACCESSIBLE",
+            "source_locator": "Table 2", "source_support": "CONTRADICTED",
+            "maturity": "SOURCE_BACKED", "alternative": "different population",
+            "alternative_locator": "Methods 2.1", "alternative_result": "REFUTED",
+            "estimator_status": "MATCHED", "root_cause_id": "CODE-001"}
+    base.update(overrides)
+    return base
+
+
+class EstimatorTests(unittest.TestCase):
+    def test_full_match(self):
+        self.assertEqual(m.compatible(sig(), sig())["status"], "MATCHED")
+
+    def test_km_vs_crude(self):
+        self.assertEqual(m.compatible(sig(effect_measure="KM probability"), sig())["status"], "NOT_COMPARABLE")
+
+    def test_mitt_vs_itt(self):
+        self.assertIn("population", m.compatible(sig(population="mITT"), sig())["fields"])
+
+    def test_unknown_statistic(self):
+        self.assertIn("test_statistic_identity", m.compatible(sig(test_statistic_identity="UNKNOWN"), sig())["fields"])
+
+    def test_invalid_signature(self):
+        self.assertEqual(m.compatible([], sig())["status"], "INVALID")
+
+    def test_restricted_crossdocument_equality(self):
+        self.assertEqual(m.cross_document(40, 40, sig(), sig(), ("population", "endpoint"))["status"], "CONSISTENT")
+
+    def test_crossdocument_uses_identity(self):
+        self.assertEqual(m.cross_document(40, 50, sig(endpoint="A"), sig(endpoint="B"), ("endpoint",))["status"], "NOT_COMPARABLE")
+
+    def test_crossdocument_numeric_mismatch(self):
+        self.assertEqual(m.cross_document(40, 50, sig(), sig(), ("endpoint",))["status"], "REVIEW")
+
+
+class DeterministicTests(unittest.TestCase):
+    def test_ci_reversal(self):
+        self.assertEqual(m.ci_order(-586, -351, -821, "TWO_SIDED")["status"], "REVIEW")
+
+    def test_point_outside_interval(self):
+        self.assertEqual(m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED")["status"], "REVIEW")
+
+    def test_valid_interval(self):
+        self.assertEqual(m.ci_order(1.0, 0.8, 1.2, "TWO_SIDED")["status"], "CONSISTENT")
+
+    def test_interval_bad_input(self):
+        self.assertEqual(m.ci_order("1.0", 0.8, 1.2, "TWO_SIDED")["status"], "INVALID")
+
+    def test_crude_odds_ratio(self):
+        self.assertEqual(m.crude_or(24, 43, 15, 53, 3.2, raw_estimator=True,
+                                     population_match=True, endpoint_match=True, time_match=True)["status"], "CONSISTENT")
+
+    def test_crude_not_adjusted_estimator(self):
+        self.assertEqual(m.crude_or(24, 43, 15, 53, 3.2, raw_estimator=False,
+                                     population_match=True, endpoint_match=True, time_match=True)["status"], "NOT_COMPARABLE")
+
+    def test_crude_or_warn_only(self):
+        self.assertEqual(m.crude_or(24, 43, 15, 53, 1.2, raw_estimator=True,
+                                     population_match=True, endpoint_match=True, time_match=True)["status"], "REVIEW")
+
+    def test_zero_event_abstains(self):
+        self.assertEqual(m.crude_or(0, 43, 15, 53, 0.0, raw_estimator=True,
+                                     population_match=True, endpoint_match=True, time_match=True)["status"], "NOT_COMPARABLE")
+
+    def test_fractional_count_invalid(self):
+        self.assertEqual(m.crude_or(1.1, 43, 15, 53, 1.0, raw_estimator=True,
+                                     population_match=True, endpoint_match=True, time_match=True)["status"], "INVALID")
+
+    def test_normal_z(self):
+        self.assertEqual(m.p_from_normal_z(2, 1, 0.0455, test_name="NORMAL_Z", multiplicity="NONE")["status"], "CONSISTENT")
+
+    def test_tukey_not_comparable(self):
+        self.assertEqual(m.p_from_normal_z(2, 1, 0.15, test_name="NORMAL_Z", multiplicity="TUKEY")["status"], "NOT_COMPARABLE")
+
+    def test_wrong_statistic_identity(self):
+        self.assertEqual(m.statistic_identity("HETEROGENEITY_Q", "OVERALL_EFFECT")["status"], "REVIEW")
+
+    def test_unknown_statistic_abstains(self):
+        self.assertEqual(m.statistic_identity("UNKNOWN", "OVERALL_EFFECT")["status"], "NOT_COMPARABLE")
+
+    def test_r_factor_shift(self):
+        self.assertEqual(m.factor_shift([0, 1, 0], [1, 2, 1], verified_r_factor_conversion=True)["status"], "REVIEW")
+
+    def test_code_not_available(self):
+        self.assertEqual(m.factor_shift([0, 1], [1, 2], verified_r_factor_conversion=False)["status"], "NOT_COMPARABLE")
+
+    def test_factor_noshift(self):
+        self.assertEqual(m.factor_shift([0, 1], [0, 1], verified_r_factor_conversion=True)["status"], "CONSISTENT")
+
+
+class GovernanceTests(unittest.TestCase):
+    def test_stale_preprint(self):
+        self.assertEqual(m.version("PREPRINT_STALE")["status"], "HOLD")
+
+    def test_current_corrected(self):
+        self.assertEqual(m.version("CORRECTED_LATEST")["status"], "CURRENT")
+
+    def test_complete_candidate_is_not_confirmed(self):
+        self.assertEqual(m.gate(candidate())["status"], "FLAG_CANDIDATE")
+
+    def test_refuted_by_method_not_a_flag(self):
+        self.assertEqual(m.gate(candidate(source_support="SUPPORTED", alternative_result="SUPPORTED"))["status"], "RECONCILED")
+
+    def test_missing_refutation_holds(self):
+        self.assertEqual(m.gate(candidate(alternative_locator=None))["status"], "HOLD")
+
+    def test_unavailable_source_holds(self):
+        self.assertEqual(m.gate(candidate(source_access="UNAVAILABLE"))["status"], "HOLD")
+
+    def test_corrected_preprint_holds(self):
+        self.assertEqual(m.gate(candidate(version="PREPRINT_STALE"))["status"], "HOLD")
+
+    def test_unmatched_estimator_holds(self):
+        self.assertEqual(m.gate(candidate(estimator_status="NOT_COMPARABLE"))["status"], "HOLD")
+
+    def test_group_one_root_multiple_outputs(self):
+        rows = [{"claim_id": "A", "root_cause_id": "R1"}, {"claim_id": "B", "root_cause_id": "R1"},
+                {"claim_id": "C", "root_cause_id": "R2"}]
+        summary = m.root_cause_summary(rows)
+        self.assertEqual((summary["root_causes"], summary["affected_outputs"]), (2, 3))
+
+    def test_all_claims_in_denominator(self):
+        rows = [{"claim_id": "1", "prediction": "FLAG", "reference": "ERROR"},
+                {"claim_id": "2", "prediction": "FLAG", "reference": "NO_ERROR"},
+                {"claim_id": "3", "prediction": "NO_FLAG", "reference": "ERROR"},
+                {"claim_id": "4", "prediction": "NO_FLAG", "reference": "NO_ERROR"},
+                {"claim_id": "5", "prediction": "HOLD", "reference": "UNDETERMINED"},
+                {"claim_id": "6", "prediction": "NO_FLAG", "reference": "UNDETERMINED"}]
+        out = m.outcome_counts(rows)
+        self.assertEqual(out["all_claims"], 6)
+        self.assertEqual(out["adjudicated_nonabstained"], 4)
+        self.assertEqual((out["TP"], out["FP"], out["FN"], out["TN"]), (1, 1, 1, 1))
+        self.assertEqual((out["HOLD"], out["UNKNOWN_REFERENCE"]), (1, 1))
+        self.assertEqual(out["false_alerts_per_100_adjudicated"], 25)
+
+    def test_duplicate_claim_id_rejected(self):
+        rows = [{"claim_id": "1", "prediction": "FLAG", "reference": "ERROR"}]*2
+        with self.assertRaises(ValueError):
+            m.outcome_counts(rows)
+
+
+if __name__ == "__main__":
+    unittest.main()
