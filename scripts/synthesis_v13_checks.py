@@ -41,10 +41,26 @@ def finite(value: Any) -> float:
     return n
 
 
+class CountPrecisionUnavailable(ValueError):
+    """The original integer cannot be reconstructed from a large float."""
+
+
 def nonnegative_count(value: Any) -> int:
+    """Preserve native integer counts; reject potentially lossy float counts.
+
+    Unlike floating values, Python integers retain exact source counts above
+    2**53. A float at or above that threshold may already represent a
+    different original integer, so no crude-OR comparison is justified.
+    """
+    if type(value) is int:
+        if value < 0:
+            raise ValueError("counts must be nonnegative integers")
+        return value
     n = finite(value)
     if n < 0 or not n.is_integer():
         raise ValueError("counts must be nonnegative integers")
+    if n >= 2**53:
+        raise CountPrecisionUnavailable("large floating count may have lost integer precision")
     return int(n)
 
 
@@ -130,6 +146,8 @@ def crude_or(a: Any, n1: Any, c: Any, n0: Any, reported: Any, *,
         claimed = finite(reported)
         if not n1 or not n0 or a > n1 or c > n0 or claimed < 0:
             raise ValueError("invalid 2x2 table or reported ratio")
+    except CountPrecisionUnavailable as exc:
+        return result("NOT_COMPARABLE", str(exc))
     except ValueError as exc:
         return result("INVALID", str(exc))
     from decimal import Decimal
