@@ -168,7 +168,7 @@ with zipfile.ZipFile(zp) as z:
     # Refuse filenames unusable or ambiguous on supported Windows hosts.
     # Microsoft also reserves COM¹/²/³ and LPT¹/²/³, including extensions.
     reserved_device = re.compile(
-        r"(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(?:\..*)?", re.IGNORECASE
+        r"(?:CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|COM[1-9¹²³]|LPT[1-9¹²³])(?:\..*)?", re.IGNORECASE
     )
     for info in infos:
         name = info.filename

@@ -192,6 +192,8 @@ def test_windows_style_zip_path_is_rejected_on_all_platforms(tmp_path):
         "PRN",
         "AUX.md",
         "NUL",
+        "CONIN$",
+        "conout$.log",
         "COM1.py",
         "lpt9.log",
         "COM¹",
@@ -221,7 +223,7 @@ def test_windows_reserved_or_control_character_zip_paths_refuse_on_all_platforms
     assert not list(target.parent.glob(".meta-harness-stage-*")), "staging directory leaked"
 
 
-@pytest.mark.parametrize("safe_component", ["COM10.txt", "LPT10.log", "README¹.md"])
+@pytest.mark.parametrize("safe_component", ["COM10.txt", "LPT10.log", "README¹.md", "CONINPUT.txt", "CONOUTSIDE.txt"])
 def test_nonreserved_windows_lookalike_names_are_allowed(tmp_path, safe_component):
     # Full checksummed local fixture: don't over-block ordinary filenames.
     rel = _release(tmp_path / "rel", {
