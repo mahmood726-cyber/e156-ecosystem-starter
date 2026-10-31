@@ -196,6 +196,50 @@ class StructuralSafetyTests(unittest.TestCase):
         self.assertFalse(r['intake_valid'])
         self.assertIn('ORPHAN_CHECK',[x['code'] for x in r['problems']])
 
+    def test_wrong_prompt_hash_blocks_even_source_backed_flag(self):
+        p=default_packet();c=p['claims'][0]
+        c.update(source_support='CONTRADICTED',evidence_maturity='SOURCE_BACKED',
+                 proposed_disposition='FLAG',priority='P2',
+                 refutation={'alternative':'different group','checked_against':'original','result':'NOT_SUPPORTED'})
+        p['run']['prompt_sha256']='0'*64
+        r=audit(p)
+        self.assertFalse(r['intake_valid'])
+        self.assertEqual(r['flag_count'],0)
+        self.assertEqual(r['ledger'][0]['effective'],'HOLD')
+
+    def test_malformed_support_list_is_refused_not_crash(self):
+        p=default_packet();p['claims'][0]['source_support']=[{'not':'a support label'}]
+        r=audit(p)
+        self.assertFalse(r['intake_valid'])
+        self.assertEqual(r['ledger'][0]['effective'],'HOLD')
+
+    def test_malformed_priority_list_is_refused_not_crash(self):
+        p=default_packet();p['claims'][0]['priority']=['P1']
+        r=audit(p)
+        self.assertFalse(r['intake_valid'])
+        self.assertEqual(r['ledger'][0]['effective'],'HOLD')
+
+    def test_malformed_source_ids_is_refused_not_crash(self):
+        p=default_packet();p['claims'][0]['source_ids']=[{'id':'S1'}]
+        r=audit(p)
+        self.assertFalse(r['intake_valid'])
+        self.assertEqual(r['ledger'][0]['effective'],'HOLD')
+
+    def test_malformed_check_kind_is_invalid_not_crash(self):
+        p=default_packet();p['deterministic_checks']=[{'id':'C01','claim_id':'C1',
+            'kind':['arm_total'],'same_population':True,'same_time_window':True}]
+        r=audit(p)
+        self.assertFalse(r['intake_valid'])
+        self.assertEqual(r['checks'][0]['status'],'INVALID')
+
+    def test_numeric_overflow_is_invalid_not_crash(self):
+        p=default_packet();p['deterministic_checks']=[{'id':'C01','claim_id':'C1',
+            'kind':'arm_total','same_population':True,'same_time_window':True,
+            'arms':[10**1000],'reported_total':1}]
+        r=audit(p)
+        self.assertFalse(r['intake_valid'])
+        self.assertEqual(r['checks'][0]['status'],'INVALID')
+
     def test_private_case_regression_map_not_a_diagnostic_test(self):
         coverage=json.loads((ROOT/'tests'/'fixtures'/'coverage_map.json').read_text())
         self.assertEqual(coverage['analysis_kind'],'retrospective_issue_to_check_coverage_only')
