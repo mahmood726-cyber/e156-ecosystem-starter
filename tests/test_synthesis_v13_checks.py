@@ -347,5 +347,80 @@ class GovernanceTests(unittest.TestCase):
             m.outcome_counts(rows)
 
 
+
+class CleanPaperControlMetricTests(unittest.TestCase):
+    """Synthetic bookkeeping only; labels are NOT independent human adjudications."""
+
+    @staticmethod
+    def paper(pid, ids, status="CLEAN_UNCHANGED", complete=True):
+        return {"paper_id": pid, "claim_ids": ids, "control_status": status,
+                "inventory_complete": complete}
+
+    @staticmethod
+    def claim(pid, cid, prediction, reference="NO_ERROR"):
+        return {"paper_id": pid, "claim_id": cid,
+                "prediction": prediction, "reference": reference}
+
+    def test_injected_positive_and_clean_benign_control(self):
+        papers = [self.paper("inj", ["a"], "OTHER"),
+                  self.paper("clean", ["b", "c"])]
+        claims = [self.claim("inj", "a", "FLAG", "ERROR"),
+                  self.claim("clean", "b", "NO_FLAG"),
+                  self.claim("clean", "c", "HOLD")]
+        out = m.unchanged_control_false_alerts(papers, claims)
+        self.assertEqual(out["eligible_complete_clean_papers"], 1)
+        self.assertEqual(out["false_alert_papers_per_100_clean_papers"], 0)
+        self.assertEqual(out["eligible_clean_claims"], 2)
+
+    def test_flag_count_and_any_alert_paper_rates_diverge(self):
+        papers = [self.paper("a", ["a1", "a2"]), self.paper("b", ["b1"])]
+        claims = [self.claim("a", "a1", "FLAG"),
+                  self.claim("a", "a2", "FLAG"),
+                  self.claim("b", "b1", "NO_FLAG")]
+        out = m.unchanged_control_false_alerts(papers, claims)
+        self.assertEqual(out["false_alert_papers_per_100_clean_papers"], 50)
+        self.assertEqual(out["false_alert_flags_per_100_clean_papers"], 100)
+        self.assertAlmostEqual(out["false_alert_flags_per_100_clean_claims"], 200/3)
+
+    def test_missing_claim_holds_paper_out_of_denominator(self):
+        out = m.unchanged_control_false_alerts(
+            [self.paper("a", ["1", "2"])],
+            [self.claim("a", "1", "NO_FLAG")])
+        self.assertEqual(out["held_clean_papers"], 1)
+        self.assertIsNone(out["false_alert_papers_per_100_clean_papers"])
+
+    def test_unknown_or_genuine_error_reference_is_not_clean(self):
+        papers = [self.paper("a", ["1"]), self.paper("b", ["2"])]
+        claims = [self.claim("a", "1", "FLAG", "UNDETERMINED"),
+                  self.claim("b", "2", "NO_FLAG", "ERROR")]
+        out = m.unchanged_control_false_alerts(papers, claims)
+        self.assertEqual(out["held_clean_papers"], 2)
+        self.assertEqual(out["eligible_complete_clean_papers"], 0)
+
+    def test_incomplete_inventory_and_unknown_controls_not_silent_negatives(self):
+        papers = [self.paper("a", ["1"]),
+                  self.paper("b", ["2"], complete=False),
+                  self.paper("c", ["3"], status="UNKNOWN")]
+        claims = [self.claim("a", "1", "FLAG"),
+                  self.claim("b", "2", "NO_FLAG"),
+                  self.claim("c", "3", "NO_FLAG")]
+        out = m.unchanged_control_false_alerts(papers, claims)
+        self.assertEqual(out["declared_clean_unchanged_papers"], 2)
+        self.assertEqual(out["held_clean_papers"], 1)
+        self.assertEqual(out["false_alert_papers_per_100_clean_papers"], 100)
+
+    def test_duplicate_claim_rejected(self):
+        paper = [self.paper("a", ["1"])]
+        claim = self.claim("a", "1", "NO_FLAG")
+        with self.assertRaises(ValueError):
+            m.unchanged_control_false_alerts(paper, [claim, claim])
+
+    def test_no_eligible_control_has_undefined_rate(self):
+        out = m.unchanged_control_false_alerts([], [])
+        self.assertIsNone(out["false_alert_papers_per_100_clean_papers"])
+        self.assertEqual(out["eligible_complete_clean_papers"], 0)
+
+
+
 if __name__ == "__main__":
     unittest.main()
