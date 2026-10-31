@@ -43,6 +43,10 @@ for _cand in python3 python; do
 done
 
 META_HARNESS_DEFAULT_REF="v1.0.0"
+# Independent starter-side trust anchor for the public v1.0.0 SHA256SUMS asset.
+# Release assets are mutable: checking a ZIP against the co-hosted sums alone
+# would not detect replacement of both. Review any change to this digest.
+META_HARNESS_V1_MANIFEST_SHA256="3bf1d1f9eaa6f423f3130ca5f6413b05dcf2994833a9fce038e1ee8e9ad00ddb"
 meta_harness_default_ref() { echo "${META_HARNESS_REF:-$META_HARNESS_DEFAULT_REF}"; }
 meta_harness_asset_name() { echo "meta-harness-$1.zip"; }
 meta_harness_base_url() {
@@ -54,10 +58,50 @@ meta_harness_default_target() { echo "${HOME}/code/meta-harness-$1"; }
 test_meta_harness_present() { [[ -n "$1" && -f "$1/scripts/replay_offline.py" ]]; }
 
 meta_harness_sha256() {
+    local output digest
     if command -v sha256sum >/dev/null 2>&1; then
-        sha256sum "$1" | awk '{print $1}'
+        # Hash stdin, not a filename: GNU sha256sum prefixes its digest with
+        # a backslash when a Windows-native path contains backslashes. Splitting
+        # its filename-bearing output previously produced a false mismatch on
+        # Windows Git Bash despite identical bytes.
+        output="$(sha256sum < "$1")" || return 1
+        digest="${output%% *}"
     else
-        "$PYTHON" -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "$1"
+        [[ -n "$PYTHON" ]] || { echo "REFUSED: no SHA256 tool available" >&2; return 1; }
+        # Stream the published ~609 MB archive instead of allocating its full
+        # contents in memory on hosts without sha256sum (including some Windows
+        # setups). A missing/failed Python digest still refuses installation.
+        digest="$("$PYTHON" -c 'import hashlib, sys
+h = hashlib.sha256()
+with open(sys.argv[1], "rb") as stream:
+    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+        h.update(chunk)
+print(h.hexdigest())' "$1")" || return 1
+    fi
+    if [[ ! "$digest" =~ ^[0-9a-f]{64}$ ]]; then
+        echo "REFUSED: invalid SHA256 tool output" >&2
+        return 1
+    fi
+    printf '%s\n' "$digest"
+}
+
+# Verify the independently reviewed release manifest BEFORE downloading the ~609 MB ZIP.
+# A custom local file:// release is permitted solely for isolated fixture tests;
+# an unreviewed remote release must not be silently treated as authenticated.
+verify_meta_harness_release_manifest() {
+    local sums="$1" ref="$2" base="$3" actual
+    if [[ "$ref" == "$META_HARNESS_DEFAULT_REF" ]]; then
+        actual="$(meta_harness_sha256 "$sums")" || return 1
+        if [[ "$actual" != "$META_HARNESS_V1_MANIFEST_SHA256" ]]; then
+            echo "REFUSED: meta-harness v1.0.0 SHA256SUMS differs from reviewed pinned digest (actual: ${actual:-empty})" >&2
+            return 1
+        fi
+        echo "  pinned meta-harness v1.0.0 SHA256SUMS OK"
+    elif [[ "$base" == file://* ]]; then
+        echo "  LOCAL TEST FIXTURE: unpinned release $ref (not an authenticated distribution)" >&2
+    else
+        echo "REFUSED: unreviewed meta-harness release ref '$ref'; no pinned SHA256SUMS trust anchor" >&2
+        return 1
     fi
 }
 
@@ -107,7 +151,7 @@ fetch_url() {
 unpack_meta_harness() {
     local zip="$1" target="$2"
     "$PYTHON" - "$zip" "$target" <<'PY'
-import pathlib, re, shutil, stat, sys, tempfile, zipfile
+import pathlib, re, shutil, stat, sys, tempfile, unicodedata, zipfile
 
 zp, target = sys.argv[1], pathlib.Path(sys.argv[2])
 if target.exists():
@@ -121,17 +165,29 @@ with zipfile.ZipFile(zp) as z:
     if not infos:
         sys.exit("REFUSED: empty meta-harness archive")
     seen = set()
+    # Refuse filenames unusable or ambiguous on supported Windows hosts.
+    # Microsoft also reserves COM¹/²/³ and LPT¹/²/³, including extensions.
+    reserved_device = re.compile(
+        r"(?:CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|COM[1-9¹²³]|LPT[1-9¹²³])(?:\..*)?", re.IGNORECASE
+    )
     for info in infos:
         name = info.filename
         parts = name.rstrip("/").split("/")
         unsafe = (
             not name or name.startswith("/") or "\\" in name
-            or any(not part or part in (".", "..") or ":" in part
-                   or part.endswith((" ", ".")) for part in parts)
+            or any(
+                not part or part in (".", "..") or ":" in part
+                or part.endswith((" ", "."))
+                or re.search(r"[\x00-\x1f]", part) is not None
+                or reserved_device.fullmatch(part) is not None
+                for part in parts
+            )
         )
         if unsafe:
             sys.exit(f"REFUSED: unsafe path in archive: {name}")
-        folded = name.rstrip("/").casefold()
+        # Unicode NFC/NFD aliases can target the same file on normalising
+        # filesystems (notably macOS). Refuse them before extracting any bytes.
+        folded = unicodedata.normalize("NFC", name.rstrip("/").casefold())
         if folded in seen:
             sys.exit(f"REFUSED: duplicate archive path (case-insensitive): {name}")
         seen.add(folded)
@@ -182,6 +238,7 @@ echo "==> release $REF: $BASE/$ASSET"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 fetch_url "$BASE/SHA256SUMS" "$work/SHA256SUMS"
+verify_meta_harness_release_manifest "$work/SHA256SUMS" "$REF" "$BASE"
 fetch_url "$BASE/$ASSET" "$work/$ASSET"
 
 echo "==> verifying against the release's SHA256SUMS"
