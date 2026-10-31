@@ -151,6 +151,51 @@ class StructuralSafetyTests(unittest.TestCase):
         p=default_packet();p['deterministic_checks']=[{'id':'X','claim_id':'MISSING','kind':'ci_bounds','same_population':True,'same_time_window':True,'interval_type':'conventional_two_sided','lower':0.1,'estimate':0.2,'upper':0.3}]
         self.assertIn('ORPHAN_CHECK',[x['code'] for x in audit(p)['problems']])
 
+    def test_unavailable_source_never_becomes_no_flag(self):
+        p=default_packet();p['sources'][0].update(access='UNAVAILABLE',full_text_checked=False,
+            retrieval_path='publisher page attempted',retrieval_failures=['HTTP 403'])
+        p['claims'][0].update(source_support='SOURCE_UNAVAILABLE',proposed_disposition='NO_FLAG')
+        r=audit(p)
+        self.assertEqual(r['ledger'][0]['effective'],'HOLD')
+        self.assertEqual(r['flag_count'],0)
+
+    def test_insufficient_source_never_becomes_no_flag(self):
+        p=default_packet();p['claims'][0].update(source_support='NOT_ENOUGH_INFO',
+            checking_steps=['read text'],stopped_at_step='original code',stalled_reason='not released',
+            proposed_disposition='NO_FLAG')
+        r=audit(p)
+        self.assertEqual(r['ledger'][0]['effective'],'HOLD')
+
+    def test_reconciliation_needs_actual_benign_explanation(self):
+        p=default_packet();p['claims'][0].update(source_support='CONTRADICTED',
+            proposed_disposition='RECONCILED',refutation={'result':'SUPPORTED'})
+        r=audit(p)
+        self.assertEqual(r['ledger'][0]['effective'],'HOLD')
+
+    def test_missing_model_receipt_is_invalid_intake(self):
+        p=default_packet();p['run'].pop('model_provider')
+        r=audit(p)
+        self.assertFalse(r['intake_valid'])
+        self.assertIn('MODEL_PROVENANCE_INCOMPLETE',[x['code'] for x in r['problems']])
+
+    def test_unsupported_schema_is_invalid_intake(self):
+        p=default_packet();p['schema_version']='unrecognised'
+        self.assertFalse(audit(p)['intake_valid'])
+
+    def test_incomplete_source_receipt_is_invalid_intake(self):
+        p=default_packet();p['sources'][0].pop('retrieved_at')
+        r=audit(p)
+        self.assertFalse(r['intake_valid'])
+        self.assertIn('SOURCE_PROVENANCE_INCOMPLETE',[x['code'] for x in r['problems']])
+
+    def test_orphan_calculation_cannot_have_valid_intake(self):
+        p=default_packet();p['deterministic_checks']=[{'id':'BAD','claim_id':'NOT-A-CLAIM',
+            'kind':'arm_total','same_population':True,'same_time_window':True,'arms':[1,1],
+            'reported_total':2}]
+        r=audit(p)
+        self.assertFalse(r['intake_valid'])
+        self.assertIn('ORPHAN_CHECK',[x['code'] for x in r['problems']])
+
     def test_private_case_regression_map_not_a_diagnostic_test(self):
         coverage=json.loads((ROOT/'tests'/'fixtures'/'coverage_map.json').read_text())
         self.assertEqual(coverage['analysis_kind'],'retrospective_issue_to_check_coverage_only')
