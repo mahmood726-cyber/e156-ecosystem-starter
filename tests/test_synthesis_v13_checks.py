@@ -60,6 +60,48 @@ class EstimatorTests(unittest.TestCase):
     def test_crossdocument_numeric_mismatch(self):
         self.assertEqual(m.cross_document(40, 50, sig(), sig(), ("endpoint",))["status"], "REVIEW")
 
+    def test_crossdocument_population_mismatch_fails_closed(self):
+        # Before this gate, requesting endpoint alone would falsely flag a
+        # mismatch between ITT and per-protocol numerators.
+        out = m.cross_document(40, 50, sig(population="ITT"),
+                               sig(population="per-protocol"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("population", out["fields"])
+
+    def test_crossdocument_timepoint_mismatch_fails_closed(self):
+        out = m.cross_document(40, 50, sig(time_window="30 days"),
+                               sig(time_window="90 days"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("time_window", out["fields"])
+
+    def test_crossdocument_estimand_mismatch_fails_closed(self):
+        out = m.cross_document(40, 50, sig(estimand="treatment policy"),
+                               sig(estimand="hypothetical"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("estimand", out["fields"])
+
+    def test_crossdocument_measure_mismatch_fails_closed(self):
+        out = m.cross_document(40, 50, sig(effect_measure="risk ratio"),
+                               sig(effect_measure="risk difference"), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("effect_measure", out["fields"])
+
+    def test_crossdocument_missing_core_field_fails_closed(self):
+        self.assertEqual(m.cross_document(
+            40, 50, sig(population="UNKNOWN"), sig(), ("endpoint",)
+        )["status"], "NOT_COMPARABLE")
+
+    def test_crossdocument_extra_requested_field_remains_binding(self):
+        out = m.cross_document(40, 50, sig(adjustment="none"),
+                               sig(adjustment="site-stratified"),
+                               ("endpoint", "adjustment"))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("adjustment", out["fields"])
+
+    def test_crossdocument_empty_requested_fields_invalid(self):
+        self.assertEqual(m.cross_document(40, 50, sig(), sig(), ())["status"],
+                         "INVALID")
+
 
 class DeterministicTests(unittest.TestCase):
     def test_ci_reversal(self):
