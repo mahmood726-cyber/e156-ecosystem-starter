@@ -93,20 +93,41 @@ def crude_or(a: Any, n1: Any, c: Any, n0: Any, reported: Any, *,
 
 
 def p_from_normal_z(estimate: Any, se: Any, reported: Any, *,
-                    test_name: str, multiplicity: str, tolerance: Any = 0.01) -> dict:
+                    test_name: str, multiplicity: str, null_value: Any = None,
+                    alternative: str | None = None, estimate_scale: str | None = None,
+                    se_scale: str | None = None, test_identity_verified: bool = False,
+                    tolerance: Any = 0.01) -> dict:
+    """Check a declared normal z test, not an inferred test from paper numbers.
+
+    The null, test direction, effect/SE scale and source statistic identity must
+    be corroborated separately. Ratio effects normally require a log-scale SE.
+    """
     if test_name != "NORMAL_Z" or multiplicity != "NONE":
         return result("NOT_COMPARABLE", "adjusted, t-based or alternative P-value method")
+    if test_identity_verified is not True:
+        return result("NOT_COMPARABLE", "published test-statistic identity unverified")
+    if null_value is None or alternative not in {"TWO_SIDED", "GREATER", "LESS"}:
+        return result("NOT_COMPARABLE", "null hypothesis or test direction unknown")
+    if estimate_scale not in {"LINEAR", "LOG_RATIO"} or se_scale != estimate_scale:
+        return result("NOT_COMPARABLE", "estimate and SE scales not established as identical")
     try:
-        est, err, p, tol = finite(estimate), finite(se), finite(reported), finite(tolerance)
+        est, err, p, null, tol = map(finite, (estimate, se, reported, null_value, tolerance))
         if err <= 0 or not 0 <= p <= 1 or tol < 0:
             raise ValueError("invalid SE, P or tolerance")
     except ValueError as exc:
         return result("INVALID", str(exc))
-    expected = math.erfc(abs(est/err)/math.sqrt(2))
+    z = (est - null) / err
+    if alternative == "TWO_SIDED":
+        expected = math.erfc(abs(z) / math.sqrt(2))
+    elif alternative == "GREATER":
+        expected = 0.5 * math.erfc(z / math.sqrt(2))
+    else:
+        expected = 0.5 * math.erfc(-z / math.sqrt(2))
     return result("CONSISTENT" if abs(expected-p) <= tol else "REVIEW",
-                  "normal P comparable" if abs(expected-p) <= tol else "P mismatch; verify statistic identity",
-                  expected=expected, reported=p)
-
+                  "declared normal P comparable" if abs(expected-p) <= tol
+                  else "P mismatch; verify hypothesis, scale and statistic identity",
+                  expected=expected, reported=p, null_value=null,
+                  alternative=alternative, scale=estimate_scale)
 
 def statistic_identity(reported_source: str, expected_source: str) -> dict:
     """TOPCHILD-type error: Q-test P mistakenly attached to pooled effect."""
