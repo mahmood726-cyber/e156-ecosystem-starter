@@ -26,9 +26,15 @@ def digest_bytes(b: bytes) -> str:
 
 
 def _safe_num(v: Any) -> float:
-    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
-        raise ValueError("nonfinite or nonnumeric input")
-    return float(v)
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        raise ValueError("nonnumeric or boolean input")
+    try:
+        n = float(v)
+    except (ValueError, OverflowError):
+        raise ValueError("numeric input cannot be represented finitely") from None
+    if not math.isfinite(n):
+        raise ValueError("nonfinite input")
+    return n
 
 
 def _check_one(check: dict) -> dict:
@@ -36,7 +42,7 @@ def _check_one(check: dict) -> dict:
     kind = check.get("kind")
     result = {"check_id": check.get("id"), "claim_id": check.get("claim_id"),
               "kind": kind, "status": "INVALID", "detail": ""}
-    if kind not in CALC_KINDS:
+    if not isinstance(kind, str) or kind not in CALC_KINDS:
         result["detail"] = "Unknown deterministic check"
         return result
     # Every check needs matching analysis populations/timepoint and compatible estimator.
@@ -156,15 +162,16 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str) -> dict:
         priority=claim.get("priority")
         effective=requested
         reasons=[]
-        if support not in SUPPORT:
+        if not isinstance(support, str) or support not in SUPPORT:
             warn("INVALID_SUPPORT", "Must choose one source-support label",cid)
             reasons.append("invalid source-support label")
-        if maturity not in MATURITY:
+        if not isinstance(maturity, str) or maturity not in MATURITY:
             warn("INVALID_MATURITY", "Must choose an evidence maturity label",cid)
             reasons.append("invalid evidence maturity")
-        if priority not in PRIORITIES:
+        if not isinstance(priority, str) or priority not in PRIORITIES:
             warn("INVALID_PRIORITY", "Use P1/P2/P3/P4",cid)
-        if requested not in DISPOSITIONS:
+            reasons.append("invalid priority")
+        if not isinstance(requested, str) or requested not in DISPOSITIONS:
             warn("INVALID_DISPOSITION", "Unknown proposed disposition",cid)
             effective="HOLD"
         if not claim.get("locator") or not claim.get("text"):
@@ -172,8 +179,10 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str) -> dict:
             reasons.append("claim or locator missing")
         ids=claim.get("source_ids", [])
         if not isinstance(ids,list):
+            warn("BAD_SOURCE_IDS", "source_ids must be a list of source identifiers",cid)
+            reasons.append("source_ids is not a list")
             ids=[]
-        selected=[source_map[sid] for sid in ids if sid in source_map]
+        selected=[source_map[sid] for sid in ids if isinstance(sid,str) and sid in source_map]
         if len(selected)!=len(ids):
             warn("UNKNOWN_SOURCE_REFERENCE", "One or more cited source IDs unavailable",cid)
             reasons.append("unresolved source reference")
@@ -199,17 +208,17 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str) -> dict:
                 reasons.append("reproduction receipt missing")
         ref=claim.get("refutation")
         if requested=="FLAG":
-            if maturity not in {"SOURCE_BACKED", "REPRODUCED", "INDEPENDENTLY_ADJUDICATED"}:
+            if not isinstance(maturity,str) or maturity not in {"SOURCE_BACKED", "REPRODUCED", "INDEPENDENTLY_ADJUDICATED"}:
                 reasons.append("flag has no source-backed maturity")
-            if support not in {"CONTRADICTED", "OVERGENERALIZED", "UNSUPPORTED_CITATION"}:
+            if not isinstance(support,str) or support not in {"CONTRADICTED", "OVERGENERALIZED", "UNSUPPORTED_CITATION"}:
                 reasons.append("source-support verdict does not justify error flag")
             if not any(s.get("access")=="ACCESSIBLE" and s.get("full_text_checked") is True and s.get("locator") and s.get("version") and s.get("retrieval_path") and s.get("retrieved_at") for s in selected):
                 reasons.append("no complete accessible original full-text provenance")
             if not (isinstance(ref,dict) and ref.get("alternative") and ref.get("checked_against") and ref.get("result") == "NOT_SUPPORTED"):
                 reasons.append("source-grounded refutation not completed")
-        if support in {"SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO"} and requested in {"NO_FLAG", "RECONCILED"}:
+        if isinstance(support,str) and support in {"SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO"} and isinstance(requested,str) and requested in {"NO_FLAG", "RECONCILED"}:
             reasons.append("unresolved or inaccessible evidence cannot establish a negative finding")
-        if requested == "NO_FLAG" and support in {"CONTRADICTED", "OVERGENERALIZED", "UNSUPPORTED_CITATION"}:
+        if requested == "NO_FLAG" and isinstance(support,str) and support in {"CONTRADICTED", "OVERGENERALIZED", "UNSUPPORTED_CITATION"}:
             reasons.append("unsupported/contradicted source cannot be classified as verified no-flag")
         if requested == "RECONCILED" and not (isinstance(ref,dict) and ref.get("result") == "SUPPORTED"
                                                    and ref.get("alternative") and ref.get("checked_against")):
@@ -231,18 +240,18 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str) -> dict:
         if not isinstance(check,dict):
             warn("BAD_CHECK", "Deterministic check must be an object")
             continue
-        if check.get("claim_id") not in claim_ids:
+        if not isinstance(check.get("claim_id"),str) or check.get("claim_id") not in claim_ids:
             warn("ORPHAN_CHECK", "Deterministic check must reference a recorded claim",str(check.get("claim_id")))
         check_id=check.get("id")
-        if not check_id or check_id in seen_check_ids:
-            warn("DUPLICATE_CHECK_ID", "Deterministic checks need unique IDs",str(check.get("claim_id")))
-        seen_check_ids.add(check_id)
+        if not isinstance(check_id,str) or not check_id or check_id in seen_check_ids:
+            warn("DUPLICATE_CHECK_ID", "Deterministic checks need unique string IDs",str(check.get("claim_id")))
+        else:
+            seen_check_ids.add(check_id)
         result=_check_one(check)
         if result["status"]=="INVALID":
             warn("INVALID_CHECK", result["detail"],str(check.get("claim_id")))
         check_results.append(result)
     rank={"P1":0,"P2":1,"P3":2,"P4":3}
-    flag_summary=sorted([v for v in views if v["effective"]=="FLAG"],key=lambda v:(rank.get(v["priority"],4),v["id"]))[:5]
     structural_faults = {
         "UNSUPPORTED_PACKET_SCHEMA", "PROMPT_SHA_MISMATCH", "MISSING_RUN_ID",
         "MODEL_PROVENANCE_INCOMPLETE", "TOOL_PROVENANCE_INCOMPLETE",
@@ -253,9 +262,20 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str) -> dict:
         "UNKNOWN_SOURCE_REFERENCE", "UNAVAILABLE_WITHOUT_ACCESS_LOG",
         "INSUFFICIENT_WITHOUT_FULLTEXT_LOG", "UNVERIFIED_INDEPENDENCE",
         "UNVERIFIED_REPRODUCTION", "CHECKS_NOT_LIST", "BAD_CHECK",
-        "ORPHAN_CHECK", "DUPLICATE_CHECK_ID", "INVALID_CHECK", "SOURCES_NOT_LIST",
+        "ORPHAN_CHECK", "DUPLICATE_CHECK_ID", "INVALID_CHECK", "SOURCES_NOT_LIST", "BAD_SOURCE_IDS",
     }
-    return {"schema_version":"1.1","intake_valid":not any(p["code"] in structural_faults for p in problems),
+    intake_valid = not any(p["code"] in structural_faults for p in problems)
+    if not intake_valid:
+        # Invalid input cannot emit an actionable positive OR definitive negative.
+        # Keep original proposed dispositions and all evidence for repair/audit.
+        for v in views:
+            if v["effective"] in {"FLAG", "RECONCILED", "NO_FLAG"}:
+                v["effective"] = "HOLD"
+                v["reasons"].append("global intake invalid; all decisive outcomes are held")
+                warn("GLOBAL_HOLD", "Intake validation failed; no decisive outcome may be promoted",v["id"])
+    flag_summary = sorted([v for v in views if v["effective"]=="FLAG"],
+                          key=lambda v:(rank.get(v["priority"],4),v["id"]))[:5]
+    return {"schema_version":"1.1","intake_valid":intake_valid,
             "prompt_sha256":prompt_sha256,"input_sha256":input_sha256,
             "source_count":len(source_map),"claim_count":len(views),
             "flag_count":sum(v["effective"]=="FLAG" for v in views),
