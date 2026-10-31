@@ -311,3 +311,50 @@ Describe "Self-SHA gate exits 0 under -DryRun" {
         ($r -join ' ') | Should -Match 'Dry run'
     }
 }
+
+# A full/requested install must NEVER treat an absent Sentinel/Overmind script as
+# a successful skip. These deliberately use isolated temporary paths and never
+# execute Sentinel, Overmind, pip, a hook, or the full user-profile installer.
+Describe "Assert-RequiredCoreInstallerPresent (Windows fail-closed core chains)" {
+    It "refuses a requested Sentinel script that is missing" {
+        $path = Join-Path $tmpRoot 'missing-sentinel.ps1'
+        { Assert-RequiredCoreInstallerPresent -Component 'Sentinel' -ScriptPath $path } |
+            Should -Throw '*REFUSED: requested Sentinel installer is missing*'
+    }
+
+    It "refuses a requested Overmind/TruthCert script that is missing" {
+        $path = Join-Path $tmpRoot 'missing-overmind.ps1'
+        { Assert-RequiredCoreInstallerPresent -Component 'Overmind/TruthCert' -ScriptPath $path } |
+            Should -Throw '*REFUSED: requested Overmind/TruthCert installer is missing*'
+    }
+
+    It "refuses a directory masquerading as a component script" {
+        $dir = Join-Path $tmpRoot 'not-a-script.ps1'
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        { Assert-RequiredCoreInstallerPresent -Component 'Sentinel' -ScriptPath $dir } |
+            Should -Throw '*REFUSED: requested Sentinel installer is missing*'
+    }
+
+    It "accepts a genuine existing script file without executing it" {
+        $path = Join-Path $tmpRoot 'present-sentinel.ps1'
+        Set-Content -LiteralPath $path -Value 'throw "should never execute this file"' -Encoding UTF8
+        Assert-RequiredCoreInstallerPresent -Component 'Sentinel' -ScriptPath $path |
+            Should -BeTrue
+    }
+
+
+    It "refuses a glob-shaped missing path even when a matching decoy exists" {
+        $decoy = Join-Path $tmpRoot 'core-0.ps1'
+        $missing = Join-Path $tmpRoot 'core-[0].ps1'
+        Set-Content -LiteralPath $decoy -Value 'throw "decoy must never execute"' -Encoding UTF8
+        { Assert-RequiredCoreInstallerPresent -Component 'Sentinel' -ScriptPath $missing } |
+            Should -Throw '*REFUSED: requested Sentinel installer is missing*'
+    }
+
+    It "accepts a literal filename with bracket characters without executing it" {
+        $path = Join-Path $tmpRoot 'present-[1].ps1'
+        Set-Content -LiteralPath $path -Value 'throw "should never execute this file"' -Encoding UTF8
+        Assert-RequiredCoreInstallerPresent -Component 'Sentinel' -ScriptPath $path |
+            Should -BeTrue
+    }
+}
