@@ -124,7 +124,9 @@ function Assert-MetaHarnessArchiveSafe {
                     throw "REFUSED: unsafe archive entry path"
                 }
                 # Device names remain reserved in every Windows directory.
-                if ($part -match '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])([.].*)?$') {
+                # .NET regex escapes keep the PowerShell 5.1 source ASCII-safe.
+                # Windows reserves superscript 1/2/3 in COM and LPT device names.
+                if ($part -match '^(CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|COM[1-9\u00B9\u00B2\u00B3]|LPT[1-9\u00B9\u00B2\u00B3])([.].*)?\z') {
                     throw "REFUSED: Windows reserved device name in archive"
                 }
             }

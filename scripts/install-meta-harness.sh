@@ -165,13 +165,23 @@ with zipfile.ZipFile(zp) as z:
     if not infos:
         sys.exit("REFUSED: empty meta-harness archive")
     seen = set()
+    # Refuse filenames unusable or ambiguous on supported Windows hosts.
+    # Microsoft also reserves COM¹/²/³ and LPT¹/²/³, including extensions.
+    reserved_device = re.compile(
+        r"(?:CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|COM[1-9¹²³]|LPT[1-9¹²³])(?:\..*)?", re.IGNORECASE
+    )
     for info in infos:
         name = info.filename
         parts = name.rstrip("/").split("/")
         unsafe = (
             not name or name.startswith("/") or "\\" in name
-            or any(not part or part in (".", "..") or ":" in part
-                   or part.endswith((" ", ".")) for part in parts)
+            or any(
+                not part or part in (".", "..") or ":" in part
+                or part.endswith((" ", "."))
+                or re.search(r"[\x00-\x1f]", part) is not None
+                or reserved_device.fullmatch(part) is not None
+                for part in parts
+            )
         )
         if unsafe:
             sys.exit(f"REFUSED: unsafe path in archive: {name}")
