@@ -64,7 +64,37 @@ class DeterministicTests(unittest.TestCase):
         self.assertEqual(m.ci_order(-586, -351, -821, "TWO_SIDED")["status"], "REVIEW")
 
     def test_point_outside_interval(self):
-        self.assertEqual(m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED")["status"], "REVIEW")
+        # Deliberately injected discrepancy with method, signature and exactness verified.
+        self.assertEqual(m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=True,
+            source_input_precision="EXACT")["status"], "REVIEW")
+
+    def test_ci_unknown_method_abstains(self):
+        # Old logic would falsely label this a discrepancy without CI method evidence.
+        self.assertEqual(m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED")["status"],
+                         "NOT_COMPARABLE")
+
+    def test_ci_bootstrap_bca_benign_challenger(self):
+        # A non-Wald interval cannot be challenged using the Wald-linear gate.
+        self.assertEqual(m.ci_order(1.0, 1.08, 1.20, "TWO_SIDED",
+            ci_method="BOOTSTRAP_BCA", estimator_signature_matched=True,
+            source_input_precision="EXACT")["status"], "NOT_COMPARABLE")
+
+    def test_ci_rounded_source_abstains(self):
+        # Apparent printed bound conflict may disappear with source rounding.
+        self.assertEqual(m.ci_order(10.205, 10.21, 11.0, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=True,
+            source_input_precision="ROUNDED")["status"], "NOT_COMPARABLE")
+
+    def test_ci_mismatched_estimand_abstains(self):
+        self.assertEqual(m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=False,
+            source_input_precision="EXACT")["status"], "NOT_COMPARABLE")
+
+    def test_ci_known_wald_clean_control(self):
+        self.assertEqual(m.ci_order(10.0, 9.0, 11.0, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=True,
+            source_input_precision="EXACT")["status"], "CONSISTENT")
 
     def test_valid_interval(self):
         self.assertEqual(m.ci_order(1.0, 0.8, 1.2, "TWO_SIDED")["status"], "CONSISTENT")
