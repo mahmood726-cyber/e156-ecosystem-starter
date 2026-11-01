@@ -621,6 +621,51 @@ class GovernanceTests(unittest.TestCase):
         summary = m.root_cause_summary(rows)
         self.assertEqual((summary["root_causes"], summary["affected_outputs"]), (2, 3))
 
+    def test_one_claim_two_root_causes_is_one_affected_output(self):
+        # Injected accounting failure: two genuine mechanisms on one claim
+        # are two links, not two distinct affected outputs.
+        out = m.root_cause_summary([
+            {"claim_id": "claim-A", "root_cause_id": "R1"},
+            {"claim_id": "claim-A", "root_cause_id": "R2"}])
+        self.assertEqual((out["root_causes"], out["affected_outputs"],
+                          out["root_cause_claim_assignments"]), (2, 1, 2))
+        self.assertEqual(out["all_claims"], 1)
+
+    def test_one_root_two_distinct_claims_remains_two_outputs(self):
+        # Benign control: legitimate multiple outputs still count separately.
+        out = m.root_cause_summary([
+            {"claim_id": "claim-A", "root_cause_id": "R1"},
+            {"claim_id": "claim-B", "root_cause_id": "R1"}])
+        self.assertEqual((out["root_causes"], out["affected_outputs"],
+                          out["root_cause_claim_assignments"]), (1, 2, 2))
+
+    def test_repeated_identical_root_claim_link_deduplicates(self):
+        link = {"claim_id": "claim-A", "root_cause_id": "R1"}
+        out = m.root_cause_summary([link, link])
+        self.assertEqual(out["affected_outputs"], 1)
+        self.assertEqual(out["root_cause_claim_assignments"], 1)
+
+    def test_unattributed_claim_remains_in_full_claim_denominator(self):
+        out = m.root_cause_summary([
+            {"claim_id": "claim-A", "root_cause_id": None},
+            {"claim_id": "claim-B", "root_cause_id": "R1"}])
+        self.assertEqual((out["all_claims"], out["affected_outputs"],
+                          out["unattributed_claims"]), (2, 1, 1))
+
+    def test_later_attributed_claim_not_still_unattributed(self):
+        out = m.root_cause_summary([
+            {"claim_id": "claim-A", "root_cause_id": None},
+            {"claim_id": "claim-A", "root_cause_id": "R1"}])
+        self.assertEqual((out["all_claims"], out["affected_outputs"],
+                          out["unattributed_claims"]), (1, 1, 0))
+
+    def test_empty_root_summary_has_zero_denominator_not_inferred_accuracy(self):
+        out = m.root_cause_summary([])
+        self.assertEqual((out["root_causes"], out["affected_outputs"],
+                          out["root_cause_claim_assignments"],
+                          out["all_claims"], out["unattributed_claims"]),
+                         (0, 0, 0, 0, 0))
+
     def test_all_claims_in_denominator(self):
         rows = [{"claim_id": "1", "prediction": "FLAG", "reference": "ERROR"},
                 {"claim_id": "2", "prediction": "FLAG", "reference": "NO_ERROR"},
