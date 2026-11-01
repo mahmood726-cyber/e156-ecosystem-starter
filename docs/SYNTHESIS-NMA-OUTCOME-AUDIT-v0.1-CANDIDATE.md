@@ -522,3 +522,24 @@ This is not automatically an error: a relative-effect threshold may be applied o
 Required checks: retrieve protocol and CINeMA worksheet; reproduce each outcome-specific imprecision judgement using the exact prespecified margin; repeat using a clinically justified HR margin and both null-crossing and clinical-decision thresholds; record comparison-specific confidence changes. Status `IMPRECISION_MARGIN_SCALE_AND_CLINICAL_THRESHOLD_UNCLEAR`, not a proven calculation error. Do not allege OR and HR are mathematically incompatible merely because both are ratio measures.
 
 Sources: JACC 2025 full Methods indexed in `turn694229search0`; predecessor Tromp et al. 2022, DOI 10.1016/j.jchf.2021.09.004, PDF `turn601948view0` lines 141–144, 163–164.
+
+
+## Drug-specific counterchecks and run-in selection controls — 1 November 2026
+
+### PARADIGM-HF run-in: applicability concern, not automatic RoB 2 high risk
+
+PARADIGM-HF used sequential active run-in phases with enalapril and then sacubitril/valsartan; 2,079/10,513 (19.8%) did not complete run-in. A 2016 inverse-probability-weighted reanalysis of PARADIGM-HF, weighting randomized participants to resemble non-completers, found that the benefit of LCZ696 over enalapril for the primary CV death/HF hospitalisation endpoint and additional key endpoints was not altered. This is an important negative-control counterexample: do not claim run-in alone invalidates the randomized HR or establishes that ARNI is no better than ACEi. Preserve the applicability/generalizability concern because lower BP, lower eGFR and higher NT-proBNP predicted run-in noncompletion; apply the external-validity question to patients unable to tolerate target doses, but retain the randomized effect for patients meeting trial criteria. Source: PMID 27296397 (JACC HF 2016).
+
+### DAPA-HF: distinguish molecule-level evidence from SGLT2 class inference
+
+DAPA-HF randomized dapagliflozin vs placebo in HFrEF on background therapy and reported primary composite HR 0.74 (95% CI 0.65–0.85). The effect was consistent across baseline treatment subgroups; among patients receiving RAS blocker + BB + MRA it was HR 0.72 (0.61–0.86) versus 0.77 (0.63–0.94) without all three (interaction P=0.64). A dedicated DAPA-HF subgroup analysis found no evidence the benefit differed by background ARNI use (HR 0.75 [0.50–1.13] in the ARNI subgroup; HR 0.74 [0.65–0.86] without ARNI). This supports dapagliflozin as an effective add-on to background therapy; it does **not** prove dapagliflozin is superior to empagliflozin or other SGLT2i. When an NMA pools a class node or uses component-level class effects, do not infer a molecule ranking without direct or robust indirect molecule-level comparisons. Sources: PMID 32221582; DAPA-HF main trial; ACC trial summary.
+
+### MRA class versus individual agents and phenotype-specific evidence
+
+Do not use a class-level MRA node to make an unsupported claim that spironolactone or eplerenone is individually more effective. The major HFrEF RCTs differ in disease severity and endpoint: RALES spironolactone in NYHA III–IV reduced all-cause mortality (RR 0.70, 95% CI 0.60–0.82); EMPHASIS-HF eplerenone in NYHA II reduced CV death/HF hospitalization (HR 0.63, 95% CI 0.54–0.74); EPHESUS is post-MI and may be excluded under the JACC review's entire-population post-MI exclusion. HFpEF TOPCAT (spironolactone; primary HR 0.89, 0.77–1.04) is a different phenotype and should not be pooled uncritically with HFrEF evidence. Compare only compatible estimands and populations. A 2025 MRA review summarizes these contrasts but is not a head-to-head spironolactone vs eplerenone RCT. Sources: RALES; EMPHASIS-HF; JACC HF 2025 DOI 10.1016/j.jchf.2025.102637; TOPCAT.
+
+### Negative controls added
+
+25. Active run-in excludes patients who cannot tolerate target doses; do not automatically label the randomized treatment effect high RoB. Check trial-specific noncompletion predictors, estimand/applicability, and available IP-weighted sensitivity. If weighting does not change the HR, record the result as a countercheck.
+26. A placebo-controlled SGLT2i trial showing consistent benefit across baseline ARNI/RASi/BB/MRA subgroups does not establish superiority of one SGLT2i molecule over another. Maintain separate `CLASS_EFFECT` and `MOLECULE_SPECIFIC` estimands.
+27. A pooled MRA class result spanning RALES/EMPHASIS-HF and other different severities/endpoints does not establish individual-agent comparative superiority. Require head-to-head or valid within-network contrast and compatible outcome/population data.
