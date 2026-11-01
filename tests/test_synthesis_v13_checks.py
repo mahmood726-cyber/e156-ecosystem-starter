@@ -477,7 +477,7 @@ class DeterministicTests(unittest.TestCase):
             multiplicity="NONE", null_value=0, alternative="TWO_SIDED",
             estimate_scale="LINEAR", se_scale="LINEAR",
             test_identity_verified=True, reported_p_text="P=.25",
-            source_input_precision="EXACT")["status"], "REVIEW")
+            source_input_precision="EXACT", **p_source_attested())["status"], "REVIEW")
 
     def test_nonzero_null_benign(self):
         # P=0.0455 corresponds to (3 - H0:1)/1, not 3/1.
@@ -690,15 +690,81 @@ class PaperCodeFactorFidelityTests(unittest.TestCase):
                          "NOT_COMPARABLE")
 
 
+def p_source_attested(**overrides):
+    """Synthetic caller attestations, never independent source verification."""
+    evidence = {
+        "paper_version_verified": True,
+        "correction_history_verified": True,
+        "current_correction_status": "NO_RELEVANT_CORRECTION",
+        "current_claim_verified": True,
+        "analysis_identity_source_verified": True,
+        "statistic_source_verified": True,
+        "reported_p_source_verified": True,
+        "statistic_source_locator": "synthetic current VoR Table 2: estimate and SE",
+        "reported_p_locator": "synthetic current VoR Table 2: printed P",
+        "test_method_locator": "synthetic current VoR Methods: unadjusted normal z",
+    }
+    evidence.update(overrides)
+    return evidence
+
+
 class PublishedPPrecisionTests(unittest.TestCase):
     """Injected and untouched synthetic witnesses, not held-out real-paper labels."""
 
-    def _z(self, z, reported, printed, precision="EXACT", bounds=None):
+    def _z(self, z, reported, printed, precision="EXACT", bounds=None, source=None):
+        evidence = p_source_attested()
+        if source:
+            evidence.update(source)
         return m.p_from_normal_z(z, 1, reported, test_name="NORMAL_Z",
             multiplicity="NONE", null_value=0, alternative="TWO_SIDED",
             estimate_scale="LINEAR", se_scale="LINEAR",
             test_identity_verified=True, reported_p_text=printed,
-            source_input_precision=precision, expected_p_bounds=bounds)
+            source_input_precision=precision, expected_p_bounds=bounds,
+            **evidence)
+
+    def test_missing_current_published_version_abstains(self):
+        self.assertEqual(self._z(1.89, .049, "P=.049",
+            source={"paper_version_verified": False})["status"], "NOT_COMPARABLE")
+
+    def test_corrected_p_value_not_reflagged(self):
+        self.assertEqual(self._z(1.89, .049, "P=.049",
+            source={"current_correction_status": "RESOLVED_IN_PUBLISHED_VERSION"})["status"],
+            "NOT_COMPARABLE")
+
+    def test_unchecked_corrections_abstain(self):
+        self.assertEqual(self._z(1.89, .049, "P=.049",
+            source={"correction_history_verified": False})["status"], "NOT_COMPARABLE")
+
+    def test_unverified_current_claim_abstains(self):
+        self.assertEqual(self._z(1.89, .049, "P=.049",
+            source={"current_claim_verified": False})["status"], "NOT_COMPARABLE")
+
+    def test_different_analysis_row_abstains(self):
+        self.assertEqual(self._z(1.89, .049, "P=.049",
+            source={"analysis_identity_source_verified": False})["status"], "NOT_COMPARABLE")
+
+    def test_unverified_statistic_or_p_text_abstains(self):
+        for field in ("statistic_source_verified", "reported_p_source_verified"):
+            with self.subTest(field=field):
+                self.assertEqual(self._z(1.89, .049, "P=.049",
+                    source={field: False})["status"], "NOT_COMPARABLE")
+
+    def test_missing_source_locators_abstain(self):
+        for field in ("statistic_source_locator", "reported_p_locator",
+                      "test_method_locator"):
+            with self.subTest(field=field):
+                self.assertEqual(self._z(1.89, .049, "P=.049",
+                    source={field: " "})["status"], "NOT_COMPARABLE")
+
+    def test_source_attested_planted_discrepancy_still_reviewable(self):
+        out = self._z(1.89, .049, "P=.049")
+        self.assertEqual(out["status"], "REVIEW")
+        self.assertIn("VoR Table 2", out["reported_p_locator"])
+
+    def test_benign_rounded_p_still_consistent_with_missing_attestation(self):
+        self.assertEqual(self._z(1.96, .05, "P=.05",
+            source={"paper_version_verified": False})["status"], "CONSISTENT")
+
 
     def test_threshold_crossing_now_review(self):
         # Old absolute tolerance .01 incorrectly accepted P=.049 at z=1.89.
