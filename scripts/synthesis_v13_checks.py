@@ -275,7 +275,21 @@ def statistic_identity(reported_source: str, expected_source: str) -> dict:
                   "statistic identity matches" if reported_source == expected_source else "P value belongs to different test")
 
 
-def factor_shift(original: Any, observed: Any, *, verified_r_factor_conversion: bool) -> dict:
+def factor_shift(original: Any, observed: Any, *, verified_r_factor_conversion: bool,
+                 paper_claim_code_conflict_verified: bool = False,
+                 paper_source_locator: str | None = None,
+                 code_source_locator: str | None = None,
+                 analysis_identity_verified: bool = False,
+                 affected_output_verified: bool = False) -> dict:
+    """A factor-code shift alone is not a paper-versus-code discrepancy.
+
+    In R, factor levels have one-based internal integer codes; this conversion
+    may be intentional and harmless. Even a witnessed numeric shift cannot be
+    reported as a scientific inconsistency without an attested same-version,
+    same-analysis conflict with the published claim and affected output.
+    Caller attestations are not independent verification. REVIEW is a
+    candidate for human source review, never a code-bug verdict.
+    """
     if verified_r_factor_conversion is not True:
         return result("NOT_COMPARABLE", "paper-time code conversion unverified")
     if not isinstance(original, list) or not isinstance(observed, list) or len(original) != len(observed) or not original:
@@ -284,10 +298,22 @@ def factor_shift(original: Any, observed: Any, *, verified_r_factor_conversion: 
         return result("INVALID", "noninteger category labels")
     if set(original) != {0, 1}:
         return result("NOT_COMPARABLE", "not a binary 0/1 factor")
-    if observed == [v+1 for v in original]:
-        return result("REVIEW", "verified factor-to-integer shift; investigate affected results")
-    return result("CONSISTENT" if observed == original else "REVIEW",
-                  "no numeric shift" if observed == original else "unexpected recoding needs review")
+    if observed == original:
+        return result("CONSISTENT", "no numeric shift")
+    if (paper_claim_code_conflict_verified is not True
+            or analysis_identity_verified is not True
+            or affected_output_verified is not True
+            or not isinstance(paper_source_locator, str)
+            or not paper_source_locator.strip()
+            or not isinstance(code_source_locator, str)
+            or not code_source_locator.strip()):
+        return result("NOT_COMPARABLE",
+                      "factor recoding alone does not establish an affected paper-code contradiction")
+    if observed == [v + 1 for v in original]:
+        return result("REVIEW",
+                      "source-attested paper-code conflict involving factor codes; human review required")
+    return result("REVIEW",
+                  "source-attested unexpected recoding conflicts with affected published result; review")
 
 
 def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
