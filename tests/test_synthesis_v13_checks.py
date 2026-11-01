@@ -285,6 +285,16 @@ class DeterministicTests(unittest.TestCase):
         evidence.update(overrides)
         return evidence
 
+    @classmethod
+    def attested_ci_point(cls, **overrides):
+        # Synthetic-only source attestations; these are not real-paper locators.
+        evidence = cls.attested_ci_bounds()
+        evidence.update(point_source_verified=True,
+                        point_locator="Synthetic current VoR Table 2, estimate",
+                        ci_method_locator="Synthetic current VoR Methods, Wald interval")
+        evidence.update(overrides)
+        return evidence
+
     def test_ci_reversal(self):
         # Injected genuine reversal with all required evidence identities.
         out = m.ci_order(-586, -351, -821, "TWO_SIDED",
@@ -339,10 +349,68 @@ class DeterministicTests(unittest.TestCase):
                          ["status"], "REVIEW")
 
     def test_point_outside_interval(self):
-        # Deliberately injected discrepancy with method, signature and exactness verified.
-        self.assertEqual(m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED",
+        # Synthetic planted error: all caller-attested current-version source locators.
+        out = m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED",
             ci_method="WALD_LINEAR", estimator_signature_matched=True,
-            source_input_precision="EXACT")["status"], "REVIEW")
+            source_input_precision="EXACT", **self.attested_ci_point())
+        self.assertEqual(out["status"], "REVIEW")
+        self.assertIn("point_locator", out)
+        self.assertIn("ci_method_locator", out)
+
+    def test_ci_outside_without_current_source_abstains(self):
+        # Previously REVIEW despite no published point, CI, or version locators.
+        out = m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=True,
+            source_input_precision="EXACT")
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_ci_outside_stale_version_abstains(self):
+        out = m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=True,
+            source_input_precision="EXACT",
+            **self.attested_ci_point(paper_version_verified=False))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_ci_outside_ocr_uncertain_abstains(self):
+        out = m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=True,
+            source_input_precision="EXACT",
+            **self.attested_ci_point(bounds_source_verified=False))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_ci_outside_unrelated_interval_abstains(self):
+        out = m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=True,
+            source_input_precision="EXACT",
+            **self.attested_ci_point(same_interval_verified=False))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_ci_outside_point_unverified_abstains(self):
+        out = m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=True,
+            source_input_precision="EXACT",
+            **self.attested_ci_point(point_source_verified=False))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_ci_outside_point_locator_missing_abstains(self):
+        out = m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=True,
+            source_input_precision="EXACT",
+            **self.attested_ci_point(point_locator=" "))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_ci_outside_method_locator_missing_abstains(self):
+        out = m.ci_order(10.5, 9.9, 10.2, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=True,
+            source_input_precision="EXACT",
+            **self.attested_ci_point(ci_method_locator=None))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_ci_outside_attested_clean_negative_control(self):
+        out = m.ci_order(10.0, 9.0, 11.0, "TWO_SIDED",
+            ci_method="WALD_LINEAR", estimator_signature_matched=True,
+            source_input_precision="EXACT", **self.attested_ci_point())
+        self.assertEqual(out["status"], "CONSISTENT")
 
     def test_ci_unknown_method_abstains(self):
         # Old logic would falsely label this a discrepancy without CI method evidence.
