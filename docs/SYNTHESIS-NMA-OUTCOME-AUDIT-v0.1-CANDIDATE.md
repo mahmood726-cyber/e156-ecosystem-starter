@@ -345,3 +345,25 @@ The article says PROSPERO CRD420251054997, with MEDLINE, Embase and CENTRAL sear
 ### 6. No false denominator alarms
 
 The counts 89 (overall), 84 (all-cause mortality), 55 (CV death), and 21 (composite) refer to different outcome-availability sets and cannot be compared as if all trials necessarily contribute to every outcome. The 103,754 overall sample and 102,489 all-cause mortality population can differ when five studies do not report mortality; no error should be alleged unless the trial-level table proves a mismatch.
+
+
+## H-ISDN external-validity and Figure 2 cross-reference findings (continuation)
+
+### Figure 2 cross-reference reversal
+
+The JACC 2025 Results section refers the CV death/HF-hospitalisation composite paragraph to Figure 2B and the standalone CV mortality paragraph to Figure 2C. The Figure 2 caption labels B as CV mortality and C as the composite. These two in-text references are reversed. Status `CONFIRMED_REPORTING_CROSS_REFERENCE_ERROR`; do not infer numerical model errors from this alone.
+
+### H-ISDN class estimate: important generalisability warning
+
+JACC's component NMA reports H-ISDN as the individual class with the lowest all-cause mortality estimate (HR 0.68, 95% CI 0.54–0.86); after removing A-HeFT, the estimate remains 0.72 (0.55–0.95). This is not evidence that H-ISDN is generally the most effective treatment for all HFrEF patients. The contributing trials have major effect-modifier differences:
+- V-HeFT I: 642 men, predominantly old-era digoxin/diuretic background, no ACEI or beta-blocker; three arms including placebo and prazosin, mean follow-up approximately 2.3 years.
+- V-HeFT II: direct active-comparator H-ISDN versus enalapril; enalapril had lower 2-year mortality (18% vs 25%, p=0.016). It is not another placebo-controlled H-ISDN estimate.
+- A-HeFT: 1,050 self-identified Black patients with NYHA III–IV HF added to standard therapy; fixed-dose H-ISDN improved mortality (6.2% vs 10.2%; HR 0.57, 95% CI 0.37–0.89) and reduced HF hospitalisation; early stopping after median ~10 months. Its primary outcome was a composite score including quality of life, death and HF hospitalization.
+
+Guideline evidence positions H-ISDN primarily for selected patients (not a universal all-HFrEF class recommendation), especially self-identified Black patients with symptomatic NYHA III–IV on optimal therapy, or where RAS inhibitors cannot be used. The aggregate component estimate should therefore be interpreted in context. A-HeFT-exclusion sensitivity is useful but does not resolve old-era background-treatment, active-comparator, race, sex and severity transportability. Required analysis: show trial-by-trial contrast/data contributions to H-ISDN coefficient; separate placebo-controlled V-HeFT I/A-HeFT evidence from V-HeFT II active-comparator evidence; run trial-specific and population-restricted analyses; test whether the coefficient remains stable when V-HeFT II is not treated as a placebo-equivalent comparison; report uncertainty of the H-ISDN component outside its studied populations. Status `COMPONENT_TRANSPORTABILITY_REQUIRES_REANALYSIS`, not a proven arithmetic error.
+
+Sources: JACC 2025 DOI 10.1016/j.jacc.2025.08.054; A-HeFT NEJM DOI 10.1056/NEJMoa042934; V-HeFT II NEJM 1991; 2008 ESC HF guideline evidence summary; current 2026 ESC CKD/HF recommendation context.
+
+### Do not overstate the concern
+
+The A-HeFT signal itself is a valid randomized result in its enrolled population. V-HeFT I and II remain randomized clinical evidence but represent different eras, populations, background regimens and comparators. The critique is transportability of a single common H-ISDN component coefficient to all HFrEF and the interpretation of a network ranking, not denial of H-ISDN benefit where indicated.
