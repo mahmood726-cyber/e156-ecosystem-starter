@@ -102,7 +102,10 @@ def ci_order(estimate: Any, lower: Any, upper: Any, interval_type: str, *,
              bounds_source_verified: bool = False,
              bound_labels_verified: bool = False,
              same_interval_verified: bool = False,
-             bounds_locator: str | None = None) -> dict:
+             bounds_locator: str | None = None,
+             point_source_verified: bool = False,
+             point_locator: str | None = None,
+             ci_method_locator: str | None = None) -> dict:
     """Geometric interval check only; never a confirmed scientific error.
 
     An out-of-range estimate is reviewable only when independent source
@@ -110,7 +113,7 @@ def ci_order(estimate: Any, lower: Any, upper: Any, interval_type: str, *,
     Bootstrap/adjusted/unidentified intervals and rounded printed inputs
     must not be treated as arithmetic contradictions. Reversed limits require
     source-attested labelled bounds from the SAME two-sided interval and the
-    current published version; OCR or cross-panel extraction alone is not enough.
+    current published version; OCR or cross-panel extraction alone is not enough.\n    Out-of-interval point claims also need the exact current-version point,\n    bound and Wald-method source locations, not just caller-selected numbers.
     """
     if interval_type not in {"TWO_SIDED", "ONE_SIDED_LOWER", "ONE_SIDED_UPPER"}:
         return result("NOT_COMPARABLE", "interval definition not established")
@@ -140,8 +143,20 @@ def ci_order(estimate: Any, lower: Any, upper: Any, interval_type: str, *,
                           "CI method or point/interval estimator identity unverified")
         if source_input_precision != "EXACT":
             return result("NOT_COMPARABLE", "published estimate or CI bounds may be rounded")
+        if (paper_version_verified is not True
+                or bounds_source_verified is not True
+                or bound_labels_verified is not True
+                or same_interval_verified is not True
+                or point_source_verified is not True
+                or not isinstance(bounds_locator, str) or not bounds_locator.strip()
+                or not isinstance(point_locator, str) or not point_locator.strip()
+                or not isinstance(ci_method_locator, str) or not ci_method_locator.strip()):
+            return result("NOT_COMPARABLE",
+                          "current-version point, CI and Wald-method source locations unverified")
         return result("REVIEW",
-                      "verified same-estimand Wald-linear estimate outside CI; check source")
+                      "source-attested same-estimand exact Wald-linear estimate outside CI; check source",
+                      bounds_locator=bounds_locator, point_locator=point_locator,
+                      ci_method_locator=ci_method_locator)
     return result("CONSISTENT", "interval ordering compatible")
 
 
