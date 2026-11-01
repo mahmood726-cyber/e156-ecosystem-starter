@@ -647,11 +647,14 @@ def unchanged_control_false_alerts(papers: Sequence[Mapping], claims: Sequence[M
     Incomplete inventories and unresolved truth hold papers out of the rate.
     Claim IDs are local to each paper; the unique claim key is
     (paper_id, claim_id). Reused local IDs across distinct papers must never
-    truncate a complete negative-control denominator.
+    truncate a complete negative-control denominator. Optional caller-supplied
+    DOI/version pairs reject exact source aliases, not different-DOI aliases
+    or unverified publication/trial-family identities.
     """
     if not isinstance(papers, (list, tuple)) or not isinstance(claims, (list, tuple)):
         raise ValueError("paper and claim manifests must be sequences")
     paper_map = {}
+    source_dois = set()
     for p in papers:
         if not isinstance(p, Mapping):
             raise ValueError("paper manifest entries must be mappings")
@@ -660,6 +663,31 @@ def unchanged_control_false_alerts(papers: Sequence[Mapping], claims: Sequence[M
             raise ValueError("paper IDs must be nonempty and unique")
         if p.get("control_status") not in {"CLEAN_UNCHANGED", "OTHER", "UNKNOWN"}:
             raise ValueError("unknown control status")
+        # Optional caller-supplied DOI/version metadata: never count the same
+        # DOI twice under different paper IDs, even for different versions.
+        # This cannot detect distinct DOIs aliasing one work, and does not
+        # independently authenticate the DOI or establish a clean reference.
+        raw_doi, version = p.get("source_doi"), p.get("source_version")
+        if raw_doi is not None or version is not None:
+            if (not isinstance(raw_doi, str) or not raw_doi.strip()
+                    or not isinstance(version, str) or not version.strip()):
+                raise ValueError("source DOI and publication version must be supplied together")
+            doi = raw_doi.strip()
+            for prefix in ("https://doi.org/", "http://doi.org/",
+                           "https://dx.doi.org/", "http://dx.doi.org/", "doi:"):
+                if doi[:len(prefix)].lower() == prefix:
+                    doi = doi[len(prefix):]
+                    break
+            if not re.fullmatch(r"10\\.[0-9]+(?:\\.[0-9]+)*/[^\\x00-\\x1f]+", doi):
+                raise ValueError("source DOI must contain a valid bare 10.x/prefix-and-suffix name")
+            # DOI Handbook equivalence only folds ASCII A-Z, not non-Latin
+            # code points; str.casefold() would collapse legitimate distinct names.
+            ascii_lower = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                                        "abcdefghijklmnopqrstuvwxyz")
+            doi_key = doi.translate(ascii_lower)
+            if doi_key in source_dois:
+                raise ValueError("duplicate source DOI across paper IDs or publication versions")
+            source_dois.add(doi_key)
         paper_map[pid] = p
     by_paper: dict[str, dict[str, Mapping]] = defaultdict(dict)
     seen = set()
