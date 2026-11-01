@@ -7,6 +7,7 @@ separate v1.1 preflight module; all outputs require source-based review.
 from __future__ import annotations
 
 from collections import defaultdict
+import json
 import math
 import re
 from typing import Mapping, Sequence, Any
@@ -542,27 +543,52 @@ def gate(record: Mapping) -> dict:
 
 
 def root_cause_summary(rows: Sequence[Mapping]) -> dict:
-    """Count distinct affected claims separately from root-cause/claim links.
+    """Count affected paper-claims and root causes without namespace collisions.
 
-    Several independent mechanisms can affect one claim, while one mechanism
-    may affect several outputs. Summing per-root set lengths therefore counts
-    *links*, not unique outputs. Caller-supplied identifiers are not evidence
-    that root causes were independently verified or trial families deduplicated.
+    Legacy, single-source fixtures may use globally unique claim/root IDs.
+    For multi-paper manifests, every row MUST have paper_id. Claim identity is
+    then (paper_id, claim_id), and a root ID is scoped to its paper unless an
+    explicit root_scope_id (for example, an attested trial family) is supplied.
+    The two-part identifiers in 'groups' are JSON-encoded arrays so delimiters
+    embedded in source IDs cannot cause collisions. Source/trial identities are
+    caller-supplied and NOT authenticated; no scientific accuracy is inferred.
     """
+    if not isinstance(rows, (list, tuple)):
+        raise ValueError("root-cause rows must be a sequence")
+    if any(not isinstance(row, Mapping) for row in rows):
+        raise ValueError("root-cause rows must be mappings")
+    scoped = any("paper_id" in row for row in rows)
+    if scoped and any("paper_id" not in row for row in rows):
+        raise ValueError("mixed source-scoped and legacy claim IDs are not comparable")
+
     groups: dict[str, set[str]] = defaultdict(set)
     all_claims: set[str] = set()
     unattributed: set[str] = set()
     for row in rows:
         cid, rid = row.get("claim_id"), row.get("root_cause_id")
-        if not isinstance(cid, str) or not cid:
+        if not isinstance(cid, str) or not cid.strip():
             raise ValueError("each affected output needs a claim ID")
-        all_claims.add(cid)
-        if rid is not None:
-            if not isinstance(rid, str) or not rid:
-                raise ValueError("invalid root cause ID")
-            groups[rid].add(cid)
+        if rid is not None and (not isinstance(rid, str) or not rid.strip()):
+            raise ValueError("invalid root cause ID")
+        if scoped:
+            pid = row["paper_id"]
+            if not isinstance(pid, str) or not pid.strip():
+                raise ValueError("paper ID must be nonempty for scoped claims")
+            scope = row.get("root_scope_id", pid)
+            if not isinstance(scope, str) or not scope.strip():
+                raise ValueError("invalid source/trial-family root scope ID")
+            claim_key = json.dumps([pid, cid], ensure_ascii=True, separators=(",", ":"))
+            root_key = (json.dumps([scope, rid], ensure_ascii=True, separators=(",", ":"))
+                        if rid is not None else None)
         else:
-            unattributed.add(cid)
+            if "root_scope_id" in row:
+                raise ValueError("root scope requires paper-scoped claim identities")
+            claim_key, root_key = cid, rid
+        all_claims.add(claim_key)
+        if root_key is not None:
+            groups[root_key].add(claim_key)
+        else:
+            unattributed.add(claim_key)
     attributed = set().union(*groups.values()) if groups else set()
     unattributed -= attributed
     return {"root_causes": len(groups),
@@ -570,6 +596,7 @@ def root_cause_summary(rows: Sequence[Mapping]) -> dict:
             "root_cause_claim_assignments": sum(map(len, groups.values())),
             "all_claims": len(all_claims),
             "unattributed_claims": len(unattributed),
+            "id_namespace": "source_scoped_json_pair" if scoped else "legacy_global",
             "groups": {k: sorted(v) for k, v in sorted(groups.items())}}
 
 
