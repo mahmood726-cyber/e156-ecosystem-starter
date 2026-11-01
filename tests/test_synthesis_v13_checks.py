@@ -1096,6 +1096,43 @@ class CleanPaperControlMetricTests(unittest.TestCase):
         self.assertIsNone(out["clean_papers_with_abstentions_per_100"])
         self.assertIsNone(out["false_alert_flags_per_100_nonabstained_clean_claims"])
 
+    def test_reused_local_claim_id_across_clean_papers_counts_both(self):
+        # Injected false alert on p1; "primary" is local, not a global claim ID.
+        # Before the fix this raised ValueError and prevented a valid denominator.
+        papers = [self.paper("p1", ["primary"]), self.paper("p2", ["primary"])]
+        claims = [self.claim("p1", "primary", "FLAG"),
+                  self.claim("p2", "primary", "NO_FLAG")]
+        out = m.unchanged_control_false_alerts(papers, claims)
+        self.assertEqual(out["eligible_complete_clean_papers"], 2)
+        self.assertEqual(out["eligible_clean_claims"], 2)
+        self.assertEqual(out["false_alert_flags"], 1)
+        self.assertEqual(out["false_alert_papers_per_100_clean_papers"], 50)
+        self.assertEqual(out["false_alert_flags_per_100_clean_claims"], 50)
+
+    def test_reused_local_id_on_nonclean_paper_does_not_pollute_control(self):
+        # Benign control: known injected ERROR in OTHER paper is not a clean
+        # negative, even if its local label equals the clean paper's label.
+        papers = [self.paper("inj", ["primary"], status="OTHER"),
+                  self.paper("clean", ["primary"])]
+        claims = [self.claim("inj", "primary", "FLAG", "ERROR"),
+                  self.claim("clean", "primary", "NO_FLAG")]
+        out = m.unchanged_control_false_alerts(papers, claims)
+        self.assertEqual(out["eligible_complete_clean_papers"], 1)
+        self.assertEqual(out["eligible_clean_claims"], 1)
+        self.assertEqual(out["false_alert_flags"], 0)
+
+    def test_reused_local_id_preserves_holds_and_nonabstained_rate(self):
+        # The repaired paper-scoped namespace must not drop abstentions.
+        papers = [self.paper("p1", ["primary"]), self.paper("p2", ["primary"])]
+        claims = [self.claim("p1", "primary", "HOLD"),
+                  self.claim("p2", "primary", "FLAG")]
+        out = m.unchanged_control_false_alerts(papers, claims)
+        self.assertEqual(out["eligible_clean_claims"], 2)
+        self.assertEqual(out["eligible_clean_abstained_claims"], 1)
+        self.assertEqual(out["false_alert_flags_per_100_clean_claims"], 50)
+        self.assertEqual(out["false_alert_flags_per_100_nonabstained_clean_claims"], 100)
+        self.assertEqual(out["abstentions_per_100_clean_claims"], 50)
+
     def test_duplicate_claim_rejected(self):
         paper = [self.paper("a", ["1"])]
         claim = self.claim("a", "1", "NO_FLAG")
