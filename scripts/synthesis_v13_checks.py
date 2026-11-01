@@ -542,6 +542,7 @@ def unchanged_control_false_alerts(papers: Sequence[Mapping], claims: Sequence[M
             raise ValueError("unknown reference")
         by_paper[pid][cid] = c
     declared = eligible = held = alert_papers = false_flags = evaluated_claims = 0
+    abstained_claims = abstaining_papers = 0
     hold_reasons = defaultdict(int)
     for pid, p in paper_map.items():
         if p["control_status"] != "CLEAN_UNCHANGED":
@@ -562,8 +563,11 @@ def unchanged_control_false_alerts(papers: Sequence[Mapping], claims: Sequence[M
         eligible += 1
         evaluated_claims += len(entries)
         n_false = sum(c["prediction"] == "FLAG" for c in entries)
+        n_abstained = sum(c["prediction"] == "HOLD" for c in entries)
         false_flags += n_false
         alert_papers += bool(n_false)
+        abstained_claims += n_abstained
+        abstaining_papers += bool(n_abstained)
     rate = lambda n, d: 100 * n / d if d else None
     return {
         "declared_clean_unchanged_papers": declared,
@@ -571,13 +575,23 @@ def unchanged_control_false_alerts(papers: Sequence[Mapping], claims: Sequence[M
         "held_clean_papers": held,
         "hold_reasons": dict(sorted(hold_reasons.items())),
         "eligible_clean_claims": evaluated_claims,
+        "eligible_clean_nonabstained_claims": evaluated_claims - abstained_claims,
+        "eligible_clean_abstained_claims": abstained_claims,
+        "eligible_clean_papers_with_abstentions": abstaining_papers,
         "false_alert_flags": false_flags,
         "clean_papers_with_at_least_one_false_alert": alert_papers,
         "false_alert_papers_per_100_clean_papers": rate(alert_papers, eligible),
         "false_alert_flags_per_100_clean_papers": rate(false_flags, eligible),
         "false_alert_flags_per_100_clean_claims": rate(false_flags, evaluated_claims),
+        "false_alert_flags_per_100_nonabstained_clean_claims":
+            rate(false_flags, evaluated_claims - abstained_claims),
+        "abstentions_per_100_clean_claims": rate(abstained_claims, evaluated_claims),
+        "clean_papers_with_abstentions_per_100": rate(abstaining_papers, eligible),
         "warning": ("Caller-labelled bookkeeping only; CLEAN_UNCHANGED, complete inventory, "
                     "and NO_ERROR labels require independent verification for a real held-out "
                     "performance claim. An unchanged publication can contain real errors. "
-                    "Held/unknown papers are not negative controls."),
+                    "Held/unknown papers are not negative controls. The operational "
+                    "false-alert denominator includes abstentions; inspect the "
+                    "nonabstained rate and abstention coverage together to prevent "
+                    "apparent improvement by holding more claims."),
     }
