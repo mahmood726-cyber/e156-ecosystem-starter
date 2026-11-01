@@ -215,3 +215,45 @@ These additions follow a deeper source check of van Essen et al. (JACC 2025; DOI
 - **Source verified:** conventional ESC/Universal Definition categories identify HFrEF as LVEF ≤40% and HFmrEF as 41–49%; a JACC network described as HFrEF needs an explicit interpretation if its eligibility threshold extends to ≤50%.
 - **High-priority unresolved:** exact CIBIS III endpoint/estimand used for the composite network; exact VICTORIA and GALACTIC-HF mortality outcome rows used in the fitted network; precise registry-to-NMA outcome mapping for each of the 21 composite trials.
 - **Not demonstrated:** that any of these discrepancies changed the JACC NMA coefficients or that all regimen estimates are wrong. Author extraction workbook, supplement model inputs and reproducible code are still required for exact replay.
+
+
+## JACC 2025 HFrEF NMA — deeper source reconciliation (1 November 2026, continuation 2)
+
+### 1. CIBIS III is not an endpoint-equivalent reference without a documented transformation
+
+The JACC article states that CIBIS III served as a reference for analysing the CV-death/HF-hospitalisation composite in earlier trials. Primary-source reconciliation shows:
+
+- CIBIS III's randomized strategy was bisoprolol-first versus enalapril-first: 6 months of open-label monotherapy, then both agents in combination for 6–24 months. It enrolled 1,010 stable patients, mean LVEF about 28.8%, aged ≥65 years, previously not receiving ACEI, BB or ARB.
+- Its primary outcome was **all-cause death or hospitalisation from any cause**, not CV death or HF hospitalisation (main RCT HR 0.94, 95% CI 0.77–1.16).
+- A post-hoc analysis examined mortality or cardiovascular hospitalisation; this is still not equivalent to CV death or HF hospitalisation. It reported that 60% of endpoints occurred during the monotherapy phase, and treatment initiated during that phase was not a predictor of the assessed outcomes.
+- Separate reporting gives 63 vs 51 patients hospitalised for worsening HF (HR 1.25, 95% CI 0.87–1.81) and overall deaths 65 vs 73 (HR 0.88, 95% CI 0.63–1.22), but the whole trial remains a sequential treatment-strategy RCT rather than a fixed chronic regimen comparison.
+
+Sources: PMID 16143696 (main randomized CIBIS III); PMID 21551161 (post-hoc strategy/outcome analysis); PMID 20528880 (mode-of-death analysis). The JACC authors' phrase “served as a reference” does not identify whether CIBIS III was a data source, calibration, proxy, or bridge. Therefore classify this as `ENDPOINT_AND_ESTIMAND_BRIDGE_UNRESOLVED`, not a confirmed model-input error. Require the exact CIBIS III row, source report, outcome definition, follow-up and transformation. Do not accept all-cause mortality/any-cause or CV hospitalization as interchangeable with CV death/HF hospitalization.
+
+### 2. GALACTIC-HF has separate broad and narrow outcomes; exact NMA row is decisive
+
+ClinicalTrials.gov NCT02929329 and FDA source documents define the primary event as CV death or first HF event. HF event includes urgent clinic visit, emergency-department visit, or hospital admission with worsening HF requiring treatment intensification. The registry separately reports **time to first HF hospitalization** and **time to CV death**. It is not automatically invalid for the JACC composite network: the audit must identify whether the NMA used the broader primary event, the separately reported narrow hospitalization endpoint, or a documented harmonized source. A narrow composite of CV death OR HF hospitalization is not identical to the broader primary composite. Because first HF hospitalization and CV death may occur in the same participant, analysts must not simply add marginal counts or HRs to create a composite without joint-time-to-event data.
+
+Sources: ClinicalTrials.gov NCT02929329; FDA GALACTIC-HF clinical trial overview; NEJM GALACTIC-HF primary publication. Required status: `OUTCOME_ROW_NOT_YET_RECONCILED` pending the exact JACC supplement input.
+
+### 3. VICTOR trial-level multiplicity must remain visible in NMA certainty
+
+ClinicalTrials.gov NCT05093933 specifies the primary outcome as time to first CV death or HF hospitalization. The trial report gives 549/3,053 versus 584/3,052 events, HR 0.93 (95% CI 0.83–1.04; p=0.22). The authors state that, per protocol, after failure of the primary endpoint, all secondary/exploratory endpoint analyses are nominal. The mortality analysis reports CV death HR 0.83 (0.71–0.97) and all-cause mortality HR 0.84 (0.74–0.97); it describes CV death as a prespecified secondary endpoint and independently powered, but the protocol's multiplicity/hierarchical statement still governs confirmatory interpretation. This is not grounds to exclude the result from a secondary synthesis, but it must inform outcome-specific selective-reporting/certainty appraisal and clinical language.
+
+JACC outcome pattern: the estimated quintuple-versus-quadruple contrast is significant for all-cause death (HR 0.88, 95% CI 0.79–0.98) and standalone CV death (HR 0.87, 95% CI 0.77–0.98), but **not** for the CV-death/HF-hospitalisation composite (HR 0.93, 95% CI 0.85–1.02). The latter is the closest of the three to VICTOR's neutral primary endpoint. This discordance is not proof of error, but it makes the incremental mortality-only ranking more dependent on a single secondary mortality signal. Required sensitivities: remove VICTOR; report no estimable quintuple node if disconnected; preserve nominal endpoint status; compare fixed vs random effects and outcome definitions.
+
+Sources: ClinicalTrials.gov NCT05093933; PMID 40897189 (VICTOR primary trial); PMID 40884032 (VICTOR mortality analysis); JACC DOI 10.1016/j.jacc.2025.08.054.
+
+### 4. Quintuple regimen estimate is model-implied, not an observed randomized five-drug arm
+
+JACC reports HR 0.35 (0.27–0.45) for quintuple therapy and 0.39 (0.32–0.49) for quadruple therapy vs placebo. The authors' own text and correspondence clarify that component background exposure was coded at trial-arm level (e.g. whether ≥50% of each arm used each individual component), not by observed joint exposure in the same individual participants. VICTOR is the sole trial supporting the quintuple node. Thus HR 0.35 is a CNMA extrapolation from trial-level marginal component classification plus additivity—not the observed HR from a trial randomizing patients to ARNI+BB+MRA+SGLT2i+vericiguat as a complete combination. The estimated incremental benefit is exploratory and must be described accordingly. The 50%, 70%, and 90% coding sensitivity changes the leading regimen; this is evidence of model-specification sensitivity. It is not an error by itself.
+
+### 5. Counterfactual life-years and NNT require a model audit separate from the NMA
+
+The 2025 paper projects 5.3 life-years for quadruple therapy and 6.0 for quintuple therapy at age 70 vs “no treatment”; the underlying BIOSTAT-CHF/ASIAN-HF survival sample includes 7,376 patients, 77% on ACEI/ARB, 82% on beta-blockers and 55% on MRA at baseline. The earlier 2021 NMA from the same programme explicitly distinguished gains vs actual care and gains vs hypothetical placebo/no treatment, adjusting each patient's baseline regimen. The 2025 update must be checked for the same explicit counterfactual construction. Verify how observed treated survival was converted to untreated baseline, whether the NMA HR is applied conditionally on the individual's existing background treatment, and whether no-treatment absolute risks avoid double-counting existing therapy. Treat this as `COUNTERFACTUAL_MODEL_REPRODUCTION_REQUIRED`, not as a proven double-counting error.
+
+The reported two-year NNTs (6.3 [6.2–6.4] for quadruple; 5.8 [5.8–5.9] for quintuple) require independent reproduction from patient-level baseline hazards and joint bootstrap draws. Do not derive an incremental NNT by subtracting marginal NNTs. Obtain the paired difference distribution, its CI, and bootstrap design/covariance. Authors have stated that bootstrapping addressed uncertainty; exact executable implementation and paired estimand remain to be checked.
+
+### Status update
+
+New source-verified facts: CIBIS III endpoint/strategy definitions; GALACTIC-HF's separate broad primary and narrower registered hospitalisation outcomes; VICTOR's neutral primary, protocol-defined nominal secondary analyses; JACC's differing incremental results across all-cause mortality, CV mortality and the composite. Unresolved: exact CIBIS and GALACTIC rows fitted by JACC; whether VICTORIA/GALACTIC mislabelled counts entered models; whether the no-treatment baseline reconstruction and paired NNT uncertainty are correctly implemented. No claim of a complete NMA reproduction or proven change in JACC model coefficients is permitted until the exact supplement inputs and code are obtained.
