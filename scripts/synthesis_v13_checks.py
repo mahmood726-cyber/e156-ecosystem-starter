@@ -70,8 +70,22 @@ def compatible(left: Mapping, right: Mapping, fields: Sequence[str] = ESTIMATOR_
         return result("INVALID", "signatures must be mappings")
     if not fields or any(f not in ESTIMATOR_FIELDS for f in fields):
         return result("INVALID", "unknown required estimator field")
-    unknown = [k for k in fields if left.get(k) in (None, "", "UNKNOWN")
-               or right.get(k) in (None, "", "UNKNOWN")]
+    # Source-provided "UNKNOWN " / "not reported" must not match another
+    # unknown value just because both are textually identical. Required
+    # estimator fields must contain meaningful *textual* identities.
+    missing_labels = {
+        "", "unknown", "not_enough_info", "source_limited",
+        "not_reported", "not_available", "unavailable",
+        "n/a", "na", "unclear", "tbd",
+    }
+
+    def missing(value: Any) -> bool:
+        if not isinstance(value, str):
+            return True
+        label = "_".join(value.strip().casefold().replace("-", " ").split())
+        return label in missing_labels
+
+    unknown = [k for k in fields if missing(left.get(k)) or missing(right.get(k))]
     if unknown:
         return result("NOT_COMPARABLE", "estimator signature incomplete", fields=unknown)
     mismatch = [k for k in fields if left[k] != right[k]]
