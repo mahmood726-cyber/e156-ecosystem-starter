@@ -50,6 +50,57 @@ class EstimatorTests(unittest.TestCase):
     def test_unknown_statistic(self):
         self.assertIn("test_statistic_identity", m.compatible(sig(test_statistic_identity="UNKNOWN"), sig())["fields"])
 
+    def test_both_estimator_signatures_same_whitespace_unknown_abstain(self):
+        # Prior implementation silently MATCHED these missing identities.
+        left = sig(estimand=" UNKNOWN ")
+        right = sig(estimand=" UNKNOWN ")
+        out = m.compatible(left, right)
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("estimand", out["fields"])
+
+    def test_unknown_padded_estimator_blocks_numerical_review(self):
+        # Synthetic ungrounded disagreement must not become a paper flag.
+        left = sig(estimand=" unknown ")
+        right = sig(estimand=" unknown ")
+        out = m.cross_document(18, 23, left, right, ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertIn("estimand", out["fields"])
+
+    def test_uninformative_estimator_status_sentinels_abstain(self):
+        # Source-limited, NR, N/A and incomplete entries are not estimands.
+        for label in (" not reported ", "NOT_ENOUGH_INFO", "source limited",
+                      "N/A", " unavailable ", "Unclear", "TBD", "  "):
+            with self.subTest(label=label):
+                out = m.compatible(sig(model=label), sig(model=label))
+                self.assertEqual(out["status"], "NOT_COMPARABLE")
+                self.assertIn("model", out["fields"])
+
+    def test_nontextual_estimator_identity_abstains(self):
+        # Repeated numeric or boolean placeholders must not satisfy identity.
+        for value in (0, False, None, []):
+            with self.subTest(value=value):
+                out = m.compatible(sig(estimand=value), sig(estimand=value))
+                self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_complete_matching_analysis_still_reviews_injected_disagreement(self):
+        out = m.cross_document(18, 23, sig(), sig(), ("endpoint",))
+        self.assertEqual(out["status"], "REVIEW")
+
+    def test_complete_matching_clean_values_remain_consistent(self):
+        out = m.cross_document(18, 18, sig(), sig(), ("endpoint",))
+        self.assertEqual(out["status"], "CONSISTENT")
+
+    def test_concrete_none_adjustment_not_mistaken_for_unknown(self):
+        # 'none' is a meaningful adjustment label, unlike missing information.
+        out = m.compatible(sig(adjustment="none"), sig(adjustment="none"))
+        self.assertEqual(out["status"], "MATCHED")
+
+    def test_unknown_multiple_dimensions_preserve_all_missing_fields(self):
+        out = m.compatible(sig(model="UNKNOWN ", missingness="NOT REPORTED"),
+                           sig(model="unknown", missingness="not reported"))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertEqual(set(out["fields"]), {"model", "missingness"})
+
     def test_invalid_signature(self):
         self.assertEqual(m.compatible([], sig())["status"], "INVALID")
 
