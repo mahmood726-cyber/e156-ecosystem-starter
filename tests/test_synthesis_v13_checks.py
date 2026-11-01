@@ -867,6 +867,68 @@ class GovernanceTests(unittest.TestCase):
         summary = m.root_cause_summary(rows)
         self.assertEqual((summary["root_causes"], summary["affected_outputs"]), (2, 3))
 
+    def test_different_papers_reusing_local_claim_and_root_ids_count_twice(self):
+        # Injected collision: two paper-local primary claims are two outputs,
+        # not one; distinct root namespaces are separate without a family link.
+        rows = [
+            {"paper_id": "paper-A", "claim_id": "primary", "root_cause_id": "R1"},
+            {"paper_id": "paper-B", "claim_id": "primary", "root_cause_id": "R1"}]
+        out = m.root_cause_summary(rows)
+        self.assertEqual((out["root_causes"], out["affected_outputs"],
+                          out["root_cause_claim_assignments"], out["all_claims"]),
+                         (2, 2, 2, 2))
+        self.assertEqual(out["id_namespace"], "source_scoped_json_pair")
+
+    def test_one_paper_two_outputs_one_root_is_preserved(self):
+        out = m.root_cause_summary([
+            {"paper_id": "paper-A", "claim_id": "primary", "root_cause_id": "R1"},
+            {"paper_id": "paper-A", "claim_id": "safety", "root_cause_id": "R1"}])
+        self.assertEqual((out["root_causes"], out["affected_outputs"]), (1, 2))
+
+    def test_attested_shared_trial_family_root_spans_two_reports(self):
+        # Explicit linkage may identify one mechanism impacting two papers.
+        out = m.root_cause_summary([
+            {"paper_id": "report-A", "claim_id": "primary", "root_cause_id": "R1",
+             "root_scope_id": "trial-family-X"},
+            {"paper_id": "report-B", "claim_id": "primary", "root_cause_id": "R1",
+             "root_scope_id": "trial-family-X"}])
+        self.assertEqual((out["root_causes"], out["affected_outputs"],
+                          out["root_cause_claim_assignments"]), (1, 2, 2))
+
+    def test_two_causes_same_paper_claim_remain_one_affected_output(self):
+        out = m.root_cause_summary([
+            {"paper_id": "report-A", "claim_id": "primary", "root_cause_id": "R1"},
+            {"paper_id": "report-A", "claim_id": "primary", "root_cause_id": "R2"}])
+        self.assertEqual((out["root_causes"], out["affected_outputs"],
+                          out["root_cause_claim_assignments"]), (2, 1, 2))
+
+    def test_scoped_unattributed_claim_stays_in_complete_denominator(self):
+        out = m.root_cause_summary([
+            {"paper_id": "p", "claim_id": "primary", "root_cause_id": None},
+            {"paper_id": "q", "claim_id": "primary", "root_cause_id": "R1"}])
+        self.assertEqual((out["all_claims"], out["affected_outputs"],
+                          out["unattributed_claims"]), (2, 1, 1))
+
+    def test_mixed_scoped_and_legacy_rows_refuse_silent_collapse(self):
+        with self.assertRaisesRegex(ValueError, "mixed source-scoped"):
+            m.root_cause_summary([
+                {"paper_id": "p", "claim_id": "primary", "root_cause_id": "R1"},
+                {"claim_id": "primary", "root_cause_id": "R2"}])
+
+    def test_empty_or_invalid_paper_or_root_scope_rejected(self):
+        for row in [
+            {"paper_id": "", "claim_id": "c", "root_cause_id": "R"},
+            {"paper_id": "p", "claim_id": "c", "root_cause_id": "R", "root_scope_id": ""},
+            {"paper_id": None, "claim_id": "c", "root_cause_id": "R"}]:
+            with self.subTest(row=row), self.assertRaises(ValueError):
+                m.root_cause_summary([row])
+
+    def test_delimiter_containing_scoped_ids_do_not_collide(self):
+        out = m.root_cause_summary([
+            {"paper_id": "a::b", "claim_id": "c", "root_cause_id": "r"},
+            {"paper_id": "a", "claim_id": "b::c", "root_cause_id": "r"}])
+        self.assertEqual((out["root_causes"], out["affected_outputs"]), (2, 2))
+
     def test_one_claim_two_root_causes_is_one_affected_output(self):
         # Injected accounting failure: two genuine mechanisms on one claim
         # are two links, not two distinct affected outputs.
