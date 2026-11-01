@@ -83,13 +83,20 @@ def compatible(left: Mapping, right: Mapping, fields: Sequence[str] = ESTIMATOR_
 def ci_order(estimate: Any, lower: Any, upper: Any, interval_type: str, *,
              ci_method: str | None = None,
              estimator_signature_matched: bool = False,
-             source_input_precision: str | None = None) -> dict:
+             source_input_precision: str | None = None,
+             paper_version_verified: bool = False,
+             bounds_source_verified: bool = False,
+             bound_labels_verified: bool = False,
+             same_interval_verified: bool = False,
+             bounds_locator: str | None = None) -> dict:
     """Geometric interval check only; never a confirmed scientific error.
 
     An out-of-range estimate is reviewable only when independent source
     inspection confirms an exact, same-estimand Wald-linear interval.
     Bootstrap/adjusted/unidentified intervals and rounded printed inputs
-    must not be treated as arithmetic contradictions.
+    must not be treated as arithmetic contradictions. Reversed limits require
+    source-attested labelled bounds from the SAME two-sided interval and the
+    current published version; OCR or cross-panel extraction alone is not enough.
     """
     if interval_type not in {"TWO_SIDED", "ONE_SIDED_LOWER", "ONE_SIDED_UPPER"}:
         return result("NOT_COMPARABLE", "interval definition not established")
@@ -98,7 +105,21 @@ def ci_order(estimate: Any, lower: Any, upper: Any, interval_type: str, *,
     except ValueError as exc:
         return result("INVALID", str(exc))
     if lo > hi:
-        return result("REVIEW", "confidence interval bounds reversed")
+        # Caller attestations only, never independent source verification.
+        if interval_type != "TWO_SIDED":
+            return result("NOT_COMPARABLE",
+                          "one-sided interval has no verified pair of finite bounds")
+        if (paper_version_verified is not True
+                or bounds_source_verified is not True
+                or bound_labels_verified is not True
+                or same_interval_verified is not True
+                or not isinstance(bounds_locator, str)
+                or not bounds_locator.strip()):
+            return result("NOT_COMPARABLE",
+                          "reversed CI bounds lack current-version, same-interval source attestation")
+        return result("REVIEW",
+                      "source-attested current two-sided CI lower bound exceeds upper bound",
+                      bounds_locator=bounds_locator)
     if interval_type == "TWO_SIDED" and not lo <= e <= hi:
         if ci_method != "WALD_LINEAR" or estimator_signature_matched is not True:
             return result("NOT_COMPARABLE",

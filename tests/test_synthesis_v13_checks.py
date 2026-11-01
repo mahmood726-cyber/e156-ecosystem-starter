@@ -223,8 +223,69 @@ def or_inputs(literal):
 
 
 class DeterministicTests(unittest.TestCase):
+    @staticmethod
+    def attested_ci_bounds(**overrides):
+        # Fabricated version/locator for synthetic only; never a real-paper source.
+        evidence = dict(paper_version_verified=True,
+                        bounds_source_verified=True,
+                        bound_labels_verified=True,
+                        same_interval_verified=True,
+                        bounds_locator="Synthetic current VoR Table 2, CI (lower, upper)")
+        evidence.update(overrides)
+        return evidence
+
     def test_ci_reversal(self):
-        self.assertEqual(m.ci_order(-586, -351, -821, "TWO_SIDED")["status"], "REVIEW")
+        # Injected genuine reversal with all required evidence identities.
+        out = m.ci_order(-586, -351, -821, "TWO_SIDED",
+                         **self.attested_ci_bounds())
+        self.assertEqual(out["status"], "REVIEW")
+        self.assertIn("bounds_locator", out)
+
+    def test_ci_reversal_unverified_source_abstains(self):
+        self.assertEqual(m.ci_order(-586, -351, -821, "TWO_SIDED")["status"],
+                         "NOT_COMPARABLE")
+
+    def test_ci_reversal_stale_version_abstains(self):
+        self.assertEqual(m.ci_order(-586, -351, -821, "TWO_SIDED",
+                         **self.attested_ci_bounds(paper_version_verified=False))
+                         ["status"], "NOT_COMPARABLE")
+
+    def test_ci_reversal_ocr_uncertain_abstains(self):
+        self.assertEqual(m.ci_order(-586, -351, -821, "TWO_SIDED",
+                         **self.attested_ci_bounds(bounds_source_verified=False))
+                         ["status"], "NOT_COMPARABLE")
+
+    def test_ci_reversal_swapped_column_labels_abstains(self):
+        self.assertEqual(m.ci_order(-586, -351, -821, "TWO_SIDED",
+                         **self.attested_ci_bounds(bound_labels_verified=False))
+                         ["status"], "NOT_COMPARABLE")
+
+    def test_ci_reversal_different_intervals_abstains(self):
+        self.assertEqual(m.ci_order(-586, -351, -821, "TWO_SIDED",
+                         **self.attested_ci_bounds(same_interval_verified=False))
+                         ["status"], "NOT_COMPARABLE")
+
+    def test_ci_reversal_missing_source_span_abstains(self):
+        self.assertEqual(m.ci_order(-586, -351, -821, "TWO_SIDED",
+                         **self.attested_ci_bounds(bounds_locator="  "))
+                         ["status"], "NOT_COMPARABLE")
+
+    def test_ci_reversal_one_sided_placeholder_abstains(self):
+        self.assertEqual(m.ci_order(-586, -351, -821, "ONE_SIDED_LOWER",
+                         **self.attested_ci_bounds())
+                         ["status"], "NOT_COMPARABLE")
+
+    def test_ci_clean_bound_order_unchanged(self):
+        self.assertEqual(m.ci_order(-586, -821, -351, "TWO_SIDED",
+                         **self.attested_ci_bounds())
+                         ["status"], "CONSISTENT")
+
+    def test_ci_reversal_verified_printed_rounding_remains_reviewable(self):
+        # Monotonic nearest rounding cannot reverse clearly separated bounds.
+        self.assertEqual(m.ci_order(-586, -351, -821, "TWO_SIDED",
+                         source_input_precision="ROUNDED",
+                         **self.attested_ci_bounds())
+                         ["status"], "REVIEW")
 
     def test_point_outside_interval(self):
         # Deliberately injected discrepancy with method, signature and exactness verified.
