@@ -367,3 +367,18 @@ Sources: JACC 2025 DOI 10.1016/j.jacc.2025.08.054; A-HeFT NEJM DOI 10.1056/NEJMo
 ### Do not overstate the concern
 
 The A-HeFT signal itself is a valid randomized result in its enrolled population. V-HeFT I and II remain randomized clinical evidence but represent different eras, populations, background regimens and comparators. The critique is transportability of a single common H-ISDN component coefficient to all HFrEF and the interpretation of a network ranking, not denial of H-ISDN benefit where indicated.
+
+
+## JACC 2025 eligibility and sparse-node exclusion checks (continuation)
+
+### HFrEF eligibility definition extends beyond conventional HFrEF
+
+The article explicitly defines HFrEF eligibility as LVEF ≤50%. Contemporary phenotype definitions conventionally distinguish HFrEF (≤40%), HFmrEF (41–49%) and HFpEF (≥50%). Thus the stated eligibility rule potentially includes HFmrEF and EF exactly 50%; this may be a deliberate broad LV systolic dysfunction population, but it should not be described without qualification as a pure HFrEF network. Required: give actual trial-level EF distribution and participants from 41–49% and EF=50%; show sensitivity limited to EF≤40%; retain 41–49% as a separate network/stratum where possible. This is a population-definition/reporting issue; whether any actual enrolled patients are in those ranges depends on trial entry criteria and extraction.
+
+### Exclusion of GLP-1 agonist trials for sparse mortality
+
+The Results say 3 GLP-1 agonist articles with 619 patients and only 36 mortality events were identified, but excluded because the authors considered this too few for meaningful estimates. This may be statistically defensible for an all-cause mortality network with very sparse data and a disconnected class node, but it narrows the review's apparent pharmacological scope. The supplement should show those trials, eligibility, endpoints, deaths, and any safety/clinical outcomes. The authors should state whether GLP-1 agonist evidence was excluded from all outcomes or only mortality, and avoid implying that this review evaluated all possible drug classes. Consider a separate descriptive/pairwise synthesis with uncertainty rather than forcing an unstable node into the NMA. Status `SPARSE_COMPONENT_EXCLUSION_REQUIRES_TRANSPARENT_REPORTING`, not necessarily an error.
+
+### Egger test and network reporting-bias appraisal
+
+The article reports three Egger P values (all-cause mortality 0.072; CV death/HF-hospitalisation 0.705; CV death 0.177) as evidence of no significant reporting bias. The main text does not specify whether these were comparison-adjusted funnel/regression procedures, how multi-arm and correlated contrasts were handled, or whether sparse treatment nodes/unequal comparison distribution affect power. Obtain Supplemental Figure 4 and code to identify the precise test. A nonsignificant Egger result does not establish absence of reporting bias, especially for the 21-study composite network. This is a methods transparency and test-power concern, not a confirmed calculation error.
