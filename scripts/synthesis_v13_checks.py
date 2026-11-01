@@ -678,7 +678,7 @@ def unchanged_control_false_alerts(papers: Sequence[Mapping], claims: Sequence[M
                 if doi[:len(prefix)].lower() == prefix:
                     doi = doi[len(prefix):]
                     break
-            if not re.fullmatch(r"10\\.[0-9]+(?:\\.[0-9]+)*/[^\\x00-\\x1f]+", doi):
+            if not re.fullmatch(r"10\.[0-9]+(?:\.[0-9]+)*/[^\x00-\x1f]+", doi):
                 raise ValueError("source DOI must contain a valid bare 10.x/prefix-and-suffix name")
             # DOI Handbook equivalence only folds ASCII A-Z, not non-Latin
             # code points; str.casefold() would collapse legitimate distinct names.
