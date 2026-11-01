@@ -284,7 +284,17 @@ def p_from_normal_z(estimate: Any, se: Any, reported: Any, *,
                     se_scale: str | None = None, test_identity_verified: bool = False,
                     reported_p_text: str | None = None,
                     source_input_precision: str | None = None,
-                    expected_p_bounds: Sequence[float] | None = None) -> dict:
+                    expected_p_bounds: Sequence[float] | None = None,
+                    paper_version_verified: bool = False,
+                    correction_history_verified: bool = False,
+                    current_correction_status: str | None = None,
+                    current_claim_verified: bool = False,
+                    analysis_identity_source_verified: bool = False,
+                    statistic_source_verified: bool = False,
+                    reported_p_source_verified: bool = False,
+                    statistic_source_locator: str | None = None,
+                    reported_p_locator: str | None = None,
+                    test_method_locator: str | None = None) -> dict:
     """Compare an identified normal-z P with its exact *published notation*.
 
     No P comparison is attempted without source-verbatim notation and verified
@@ -313,6 +323,28 @@ def p_from_normal_z(estimate: Any, se: Any, reported: Any, *,
         expected = 0.5 * math.erfc(-z / math.sqrt(2))
     check = _printed_p_comparison(expected, p, reported_p_text,
                                   source_input_precision, expected_p_bounds)
+    # A mathematical disagreement does not establish a publication error.
+    # Caller attestations are not independent verification of source contents.
+    if check["status"] == "REVIEW":
+        if (paper_version_verified is not True
+                or correction_history_verified is not True
+                or current_correction_status not in {
+                    "NO_RELEVANT_CORRECTION", "CORRECTION_REVIEWED_CLAIM_PERSISTS"}
+                or current_claim_verified is not True
+                or analysis_identity_source_verified is not True
+                or statistic_source_verified is not True
+                or reported_p_source_verified is not True
+                or any(not isinstance(v, str) or not v.strip()
+                       for v in (statistic_source_locator,
+                                 reported_p_locator, test_method_locator))):
+            check = result("NOT_COMPARABLE",
+                           "current-version, same-analysis P/statistic/method source evidence incomplete",
+                           reported_literal=reported_p_text,
+                           recomputed_p_range=check.get("recomputed_p_range"))
+        else:
+            check = {**check, "statistic_source_locator": statistic_source_locator,
+                     "reported_p_locator": reported_p_locator,
+                     "test_method_locator": test_method_locator}
     return {**check, "expected": expected, "reported": p, "null_value": null,
             "alternative": alternative, "scale": estimate_scale}
 
