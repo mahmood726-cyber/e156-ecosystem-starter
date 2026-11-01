@@ -313,3 +313,35 @@ JACC's JACC 2025 manuscript history records received 29 July, revised 21 August 
 This chronology does not imply improper use of unpublished data; trial investigators and sponsor may share valid results before publication. It creates a mandatory reproducibility requirement: record the exact VICTOR dataset cut/version, endpoint definitions and source tables supplied to the NMA, and reconcile each outcome against the final registry record, primary paper, mortality paper and June 2026 correction. Do not assume the primary composite counts can validate the mortality rows or vice versa. Classify as `SPONSOR_SUPPLIED_DATA_VERSION_RECONCILIATION_REQUIRED` until the exact JACC workbook is inspected.
 
 ClinicalTrials.gov outcome identity must preserve distinct fields: primary CV death or first HF hospitalization; secondary time to CV death; time to first HF hospitalization; time to total/recurrent HF hospitalisations; time to all-cause mortality; and first-event composite of all-cause mortality or HF hospitalization. Do not use a broad combined outcome or event-rate count as a substitute for another estimand.
+
+
+## JACC 2025 detailed text, outcome denominator and component-specific checks (1 November 2026)
+
+### 1. Outcome-specific study counts reconcile as availability, not automatically as an error
+
+The main article reports 89 included RCTs overall; all-cause mortality in 84 studies (102,489 participants; 18,520 deaths); CV death in 55 studies; and the CV death/HF hospitalisation composite in 21 studies. The difference between the overall roster and each outcome network may simply reflect absence of that outcome, so do not call it a denominator inconsistency without reconciling the 5, 34 and 68 outcome-nonreporting trials respectively. The supplementary xlsx is identified by JACC as mmc2.xlsx (198.75 KB), but the current retrieval route returned publisher 403/access failure; the exact workbook remains an outstanding requirement.
+
+### 2. Figure 2 panel cross-reference reversal — source-verified editorial error
+
+The article's Results text points the composite endpoint paragraph to Figure 2B and the standalone CV mortality paragraph to Figure 2C. The Figure 2 caption explicitly defines panel A as all-cause mortality, B as cardiovascular mortality and C as the CV death/HF hospitalisation composite. Therefore the two Results cross-references (B/C) are reversed. The numeric result paragraphs and endpoint study counts are otherwise separately described; classify as `FIGURE_CROSS_REFERENCE_ERROR`, not proof the network calculations are wrong. Verify panels against the figure image before any assertion about plotted data.
+
+### 3. H-ISDN all-cause mortality component estimate — significant population transportability question
+
+JACC reports H-ISDN as the individual drug class associated with the lowest estimated all-cause mortality (HR 0.68, 95% CI 0.54–0.86); after excluding A-HeFT, estimate remains 0.72 (0.55–0.95). The source RCT populations are highly distinct:
+- V-HeFT I randomized 642 men, in a pre-ACEI/pre-beta-blocker background era (placebo/prazosin/H-ISDN; background digoxin/diuretic).
+- V-HeFT II compared enalapril directly with H-ISDN; enalapril lowered mortality at 2 years (18% vs 25%, p=0.016), so this is not evidence for H-ISDN vs placebo and is a direct active-comparator edge.
+- A-HeFT randomized 1,050 self-identified Black patients with NYHA III–IV HF on standard background therapy; mortality difference 6.2% vs 10.2% (HR 0.57, 95% CI 0.37–0.89), stopped early after median ~10 months. The primary outcome was a composite score including quality of life, death and HF hospitalisation.
+
+The leave-A-HeFT-out analysis does not address transportability of V-HeFT I/II from older male/pre-GDMT populations to contemporary diverse patients receiving ARNI/BB/MRA/SGLT2i. The component effect may also be sensitive to the V-HeFT II direct enalapril-vs-H-ISDN edge and to differences in background therapy. Required: show the contributing RCTs/contrast rows and network weights; inspect direct vs indirect decomposition; run A-HeFT-only, V-HeFT-only and leave-one-trial-out; compare old-era versus contemporary background therapy and sex/race/NYHA subgroup where available; do not present HR 0.68 as a general class-wide ranking without explicit population qualification. Status `COMPONENT_TRANSPORTABILITY_REQUIRES_REANALYSIS`; not yet a confirmed arithmetic error. Sources: NEJM A-HeFT DOI 10.1056/NEJMoa042934; V-HeFT II ACC summary / NEJM 1991; V-HeFT I NEJM 1986; JACC 2025 DOI 10.1016/j.jacc.2025.08.054.
+
+### 4. The paper's Egger test and risk-of-bias statements need comparison-adjusted scrutiny
+
+The main text reports Egger tests for mortality (p=0.072), CV death/HF hospitalisation composite (p=0.705), and CV death alone (p=0.177), with overall low risk of bias, low-to-moderate heterogeneity and no incoherence. In a multi-arm, multi-treatment NMA with dependent contrasts and outcome networks of only 21, 55 and 84 studies, a conventional Egger test is not automatically an adequate network-level reporting-bias assessment. Inspect Supplement Figure 4 and Methods to determine whether the test is comparison-adjusted and whether its unit of analysis handles multi-arm and shared-control dependency. A nonsignificant result is not evidence that reporting bias is absent. Also determine whether RoB assessment is outcome/result-specific or one study-level label, and whether lack of blinding/reporting bias was assigned to the actual estimand used. This remains a method appraisal question until supplement is obtained.
+
+### 5. Search/protocol chronology remains unresolved
+
+The article says PROSPERO CRD420251054997, with MEDLINE, Embase and CENTRAL search through April 2025; initial manuscript received 29 July, accepted 22 August 2025; VICTOR sponsor data were incorporated before its peer-reviewed paper appeared online on 30 August. Do not call this retrospective registration without retrieving PROSPERO's first-submission and registration dates. The protocol's availability/registration timing, dated database search logs, sponsor data cut and any post hoc amendments must be compared. The trial data may legitimately have been supplied before publication. Status `PROSPERO_AND_SEARCH_CHRONOLOGY_UNVERIFIED`.
+
+### 6. No false denominator alarms
+
+The counts 89 (overall), 84 (all-cause mortality), 55 (CV death), and 21 (composite) refer to different outcome-availability sets and cannot be compared as if all trials necessarily contribute to every outcome. The 103,754 overall sample and 102,489 all-cause mortality population can differ when five studies do not report mortality; no error should be alleged unless the trial-level table proves a mismatch.
