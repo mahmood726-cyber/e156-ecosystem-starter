@@ -276,3 +276,31 @@ NET-COST-HFrEF (DOI 10.1093/ejhf/xuag233; published 16 July 2026) primary analys
 ### Registry search and selection protocol
 
 When an NMA claims a treatment effect or eligibility restriction, compare its trial search not only with journal database searches but with registry records and their history. For vericiguat, distinguish VICTORIA (recent worsening HF) from VICTOR (stable ambulatory without recent worsening). For omecamtiv, compare primary endpoint and separately reported HF hospitalization, CV death, urgent HF visits. Search and screen the protocol/SAP amendments, result-posting history, publications and post hoc subgroup reports. Registry presence alone does not prove selective reporting; absent registry search in the methods is a missing-search-reporting flag, not proof of omitted studies.
+
+
+## CIBIS III reference-method lineage and NMA-version propagation (1 November 2026)
+
+The phrase that CIBIS III was used as a “reference” for composite outcomes is present in both the 2021 predecessor NMA by the same research programme (JACC Heart Failure DOI 10.1016/j.jchf.2021.09.004) and the 2025 update (JACC DOI 10.1016/j.jacc.2025.08.054). This establishes methodological lineage across review versions, but not by itself that erroneous numerical data were copied or that the fitted network is wrong.
+
+Original CIBIS III RCT (PMID 16143696): 1,010 patients with mild-to-moderate CHF and LVEF ≤35%, not receiving ACEI, BB or ARB, randomized open-label to bisoprolol-first or enalapril-first for 6 months, followed by the combination for 6–24 months. The primary endpoint was all-cause death or hospitalization from any cause; primary HR 0.94 (95% CI 0.77–1.16). The trial was not a fixed-regimen parallel comparison of stable background therapy.
+
+Post-hoc CIBIS III report (PMID 21551161; DOI 10.1093/eurjhf/hfr051) analysed endpoints including mortality or cardiovascular hospitalization; 60% of endpoints occurred during monotherapy, and treatment during monotherapy was not a predictor of those outcomes. This remains different from CV death OR HF hospitalization. Another CIBIS III report (PMID 20528880) assessed mode of death, but does not transform the original sequence design into a fixed chronic treatment contrast.
+
+Required methods disclosure from each NMA version:
+- Which exact CIBIS III endpoint and report were treated as the “reference” (primary all-cause death/any hospitalization, mortality/CV hospitalization, or a separate HF-hospitalization measure)?
+- Was it used as a direct edge, network anchor, calibration/bridging estimate, or to derive missing composite data for other trials?
+- What event definition, analysis set, treatment phase, follow-up and HR were entered?
+- If a derived composite was created, what exact method combined components and accounted for participants experiencing both events?
+- Did 2025 retain the same CIBIS III row from 2021, or re-extract/redefine it? Require version-to-version line-by-line source and model-input provenance.
+
+Until those are provided, status is `REFERENCE-TRIAL-ESTIMAND-AND-LINEAGE-UNRESOLVED`. This is a serious, repeat-across-versions methodological concern, but is not yet a demonstrated fitted-data error.
+
+## Independent cross-NMA comparison — important qualification
+
+NET-COST-HFrEF (DOI 10.1093/ejhf/xuag233; 2026) is not an independent refutation of JACC's quintuple regimen. Its guideline-oriented primary analysis excluded VICTOR because its stable, non-recent-worsening population does not match the current vericiguat-recommended recent-worsening setting. Its scenario analysis including VICTOR yielded quintuple therapy as most effective for both all-cause mortality and total HF hospitalizations. The correct inference is that target population and VICTOR inclusion materially change the leading regimen. Preserve both base and VICTOR-inclusion scenario and avoid claiming contradictory independent results.
+
+## Additional GALACTIC-HF source checks
+
+FDA's GALACTIC-HF clinical trial overview identifies primary endpoint as time to CV death or first HF event; an HF event includes urgent, unscheduled office/clinic/ED visit or hospital admission with objective new/worsening HF and treatment initiation/intensification. Separate secondary endpoints include time to first HF hospitalization and CV death. The exact event row in the JACC network must therefore be mapped to the correct narrow or broad source estimand. A broader primary endpoint must not be labelled HF hospitalization alone. Source: FDA clinical overview, NDA 207620, and NCT02929329.
+
+A post-hoc GALACTIC-HF severe-HF analysis (PMID 34643642) found treatment-effect heterogeneity for omecamtiv mecarbil: primary composite HR 0.80 (0.71–0.90) with severe HF versus 0.99 (0.91–1.08) without severe HF, interaction P=0.005; CV death HR 0.88 (0.75–1.03) versus 1.10 (0.97–1.25), interaction P=0.03. Severe HF required NYHA III–IV, LVEF ≤30%, and prior HF hospitalization within six months. This is a concrete plausible effect modifier that study-level mean EF/NYHA meta-regression cannot necessarily resolve. It does not automatically invalidate the overall randomized estimate; it motivates subgroup-aware transitivity sensitivity if compatible subgroup data exist across other trials.
