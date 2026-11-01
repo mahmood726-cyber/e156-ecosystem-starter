@@ -682,6 +682,60 @@ class CleanPaperControlMetricTests(unittest.TestCase):
         self.assertEqual(out["held_clean_papers"], 1)
         self.assertEqual(out["false_alert_papers_per_100_clean_papers"], 100)
 
+
+    def test_one_false_flag_with_three_abstentions_exposes_rate_gap(self):
+        # Synthetic injection: one known false flag, three clean claims held.
+        p = [self.paper("a", ["1", "2", "3", "4"])]
+        c = [self.claim("a", "1", "FLAG")] + [
+            self.claim("a", k, "HOLD") for k in ("2", "3", "4")]
+        out = m.unchanged_control_false_alerts(p, c)
+        self.assertEqual(out["eligible_clean_claims"], 4)
+        self.assertEqual(out["eligible_clean_nonabstained_claims"], 1)
+        self.assertEqual(out["eligible_clean_abstained_claims"], 3)
+        self.assertEqual(out["eligible_clean_papers_with_abstentions"], 1)
+        self.assertEqual(out["false_alert_flags_per_100_clean_claims"], 25)
+        self.assertEqual(out["false_alert_flags_per_100_nonabstained_clean_claims"], 100)
+        self.assertEqual(out["abstentions_per_100_clean_claims"], 75)
+        self.assertEqual(out["clean_papers_with_abstentions_per_100"], 100)
+
+    def test_same_operational_false_rate_without_holds_is_distinct(self):
+        # Benign comparison: no held claims with the same single false flag.
+        p = [self.paper("a", ["1", "2", "3", "4"])]
+        c = [self.claim("a", "1", "FLAG")] + [
+            self.claim("a", k, "NO_FLAG") for k in ("2", "3", "4")]
+        out = m.unchanged_control_false_alerts(p, c)
+        self.assertEqual(out["false_alert_flags_per_100_clean_claims"], 25)
+        self.assertEqual(out["false_alert_flags_per_100_nonabstained_clean_claims"], 25)
+        self.assertEqual(out["eligible_clean_abstained_claims"], 0)
+        self.assertEqual(out["clean_papers_with_abstentions_per_100"], 0)
+
+    def test_all_held_clean_claims_do_not_imply_good_conditional_precision(self):
+        p = [self.paper("a", ["1", "2"])]
+        c = [self.claim("a", "1", "HOLD"), self.claim("a", "2", "HOLD")]
+        out = m.unchanged_control_false_alerts(p, c)
+        self.assertEqual(out["false_alert_flags_per_100_clean_claims"], 0)
+        self.assertIsNone(out["false_alert_flags_per_100_nonabstained_clean_claims"])
+        self.assertEqual(out["abstentions_per_100_clean_claims"], 100)
+
+    def test_incomplete_or_unknown_control_excluded_from_abstention_counts(self):
+        p = [self.paper("a", ["1"], complete=False),
+             self.paper("b", ["2"], status="UNKNOWN"),
+             self.paper("c", ["3"])]
+        c = [self.claim("a", "1", "HOLD"),
+             self.claim("b", "2", "HOLD"),
+             self.claim("c", "3", "NO_FLAG")]
+        out = m.unchanged_control_false_alerts(p, c)
+        self.assertEqual(out["held_clean_papers"], 1)
+        self.assertEqual(out["eligible_clean_claims"], 1)
+        self.assertEqual(out["eligible_clean_abstained_claims"], 0)
+        self.assertEqual(out["false_alert_flags_per_100_nonabstained_clean_claims"], 0)
+
+    def test_empty_clean_corpus_has_unknown_abstention_rates(self):
+        out = m.unchanged_control_false_alerts([], [])
+        self.assertIsNone(out["abstentions_per_100_clean_claims"])
+        self.assertIsNone(out["clean_papers_with_abstentions_per_100"])
+        self.assertIsNone(out["false_alert_flags_per_100_nonabstained_clean_claims"])
+
     def test_duplicate_claim_rejected(self):
         paper = [self.paper("a", ["1"])]
         claim = self.claim("a", "1", "NO_FLAG")
