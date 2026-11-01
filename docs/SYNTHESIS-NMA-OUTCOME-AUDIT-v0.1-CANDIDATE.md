@@ -417,3 +417,26 @@ The 2025 article explicitly defines its eligible population as LVEF ≤50%. At t
 ### 7. What has not been verified
 
 The 198.75 KB JACC supplement `mmc2.xlsx` is listed on the article page but could not be retrieved through accessible publisher/download routes in this session (publisher 403 and container DNS failure). Therefore we still do not know exact trial-level source rows, all endpoint definitions, CIBIS III's precise 2025 role, or whether the VICTORIA/GALACTIC-HF count labels entered the fitted models. No full 84- or 21-study model reproduction has been completed. Do not state otherwise.
+
+
+## Further CIBIS III and survival projection checks (continuation)
+
+### CIBIS III exact endpoint: what is and is not verified
+
+The original CIBIS III randomized report (Circulation 2005; PMID 16143696; DOI 10.1161/CIRCULATIONAHA.105.582320) explicitly defines its primary endpoint as **all-cause mortality or hospitalization from any cause**. It randomized 1,010 patients, 505 per arm, to open-label bisoprolol-first or enalapril-first for six months, then combination treatment for 6–24 months. The original Results report 178 vs 186 primary endpoint events (HR 0.94, 95% CI 0.77–1.16), all-cause deaths 65 vs 73 (HR 0.88, 0.63–1.22), all-cause hospitalised patients 151 vs 157 (HR 0.95, 0.76–1.19), and patients with worsening HF requiring hospitalisation 63 vs 51 (HR 1.25, 0.87–1.81). The CIBIS III report describes secondary total and CV mortality, hospitalisations and worsening HF, but its primary composite is not CV death or HF hospitalisation.
+
+A 2006 CIBIS III results overview confirms that secondary endpoints included total/CV mortality, hospitalisations and worsening CHF requiring hospitalisation; it does not identify a prespecified composite exactly matching CV death OR HF hospitalisation. The NMA predecessor (Tromp et al. JACC Heart Failure 2022; DOI 10.1016/j.jchf.2021.09.004) states that CIBIS III was used as a “reference” for the composite analysis, because early trials often did not report such a composite. This phrase may mean an anchor or bridge rather than that CIBIS III's primary composite was incorrectly substituted. The 2025 main text does not repeat the CIBIS III detail, and its exact supplement inputs were not retrieved. Therefore the correct status is `CIBIS_REFERENCE_ROLE_AND_OUTCOME_UNRESOLVED`; require the 2025 workbook and authors' definition before alleging a fitted endpoint mismatch. Do not call CIBIS III's all-cause death/all-cause hospitalization a CV death/HF hospitalisation composite.
+
+Sources: PMID 16143696; DOI 10.1093/eurheartj/sul013 (2006 CIBIS III overview); predecessor NMA DOI 10.1016/j.jchf.2021.09.004.
+
+### Survival/NNT output: current uncertainty gap is specifically paired incremental effect
+
+The 2025 Methods say two-year NNTs were estimated from survival differences vs placebo and CIs calculated by nonparametric bootstrap. This should not be described as an absence of any NNT CI. The paper provides narrow marginal NNT CIs (quadruple 6.3, 95% CI 6.2–6.4; quintuple 5.8, 95% CI 5.8–5.9) and marginal life-year CIs (5.3 [2.8–7.7] vs 6.0 [3.7–8.4] at age 70). What is not provided in the main text is a **paired CI for the incremental 0.7 life-years** or an incremental NNT comparing quintuple directly with quadruple. Earlier author correspondence says no covariance was estimated for the incremental life-year difference. Because scenarios share the baseline cohort and NMA inputs, the uncertainty of their difference cannot be obtained by subtracting marginal CIs. Require joint bootstrap draws or equivalent joint coefficient covariance and a paired contrast interval. Until then, say the incremental estimate is a point difference without reported paired uncertainty; do not claim all NNT CIs are invalid.
+
+### EF definition: historical and current classification nuance
+
+The 2025 NMA explicitly uses LVEF ≤50% as its eligible population. At the time of its protocol/publication, the 2021 ESC/2022 AHA/ACC phenotype classification generally defined HFrEF as LVEF ≤40%, with HFmrEF at 41–49%; so the NMA's cohort is broader than conventional HFrEF and includes a sizeable HFmrEF range where trials permitted. The 2026 ESC guideline now describes HFrEF as LVEF <50%, reflecting a newer categorization. Do not make a categorical claim that ≤50% is intrinsically a current phenotype error; document the temporal framework, inclusion threshold (≤50 vs current <50) and request EF-stratified sensitivities, particularly for LVEF 41–49 and exactly 50%.
+
+### Full-text source confirmation and supplement access
+
+The University of Groningen research portal confirms the final publisher PDF is 798 KB and CC BY-NC-ND, and the JACC page lists Supplemental Material mmc1.docx (5.72 MB) and mmc2.xlsx (198.75 KB). Direct publisher/supplement retrieval still failed during this session. The main article full text is recoverable via JACC search indexing, but this is not a substitute for the workbook. Continue to request or retrieve the workbook from the publisher/author/PROSPERO record before exact replay.
