@@ -3,6 +3,38 @@
   "port_version": "1.0.0",
   "gates": [
     {
+      "id": ".github/workflows/synthesis-preflight.yml#jobs.offline-regression",
+      "kind": "ci-job",
+      "name": "Synthesis preflight synthetic regression (development only)",
+      "stops": "The Ubuntu regression job fails when a named synthetic preflight unit assertion fails or when the example receipt lacks the expected prompt binding, two-claim intake and conservative REVIEW/NOT_COMPARABLE statuses.",
+      "would_not_stop": [
+        "Incorrect extraction, source identity, paper version or source-to-claim interpretation: its example packet and tests use synthetic caller-supplied evidence.",
+        "A false positive or missed substantive error in an unseen published paper: no masked real-paper evaluation or human adjudication is performed.",
+        "Failures in the repository's other Python, Windows, Bash, link, hash or Sentinel jobs: this narrow workflow is not the full repository CI.",
+        "An altered prompt and packet that are both consistently rehashed: the receipt checks internal binding, not independent scientific provenance."
+      ],
+      "source": ".github/workflows/synthesis-preflight.yml offline-regression job; tests/test_synthesis_preflight.py and examples/synthetic_packet.json.",
+      "seal": {
+        ".github/workflows/synthesis-preflight.yml#jobs.offline-regression": "39d97dcc5a14b199f9561c344f2594440f365c4ebc43ff1c8bcfef3bad6ba942"
+      }
+    },
+    {
+      "id": "scripts/synthesis_preflight.py",
+      "kind": "script",
+      "name": "Synthesis local packet validator (experimental)",
+      "stops": "Malformed or incomplete v1.1 claim/source packets, unbound prompt SHA-256, specified missing provenance fields, and bounded arithmetic inconsistencies under explicitly declared compatible estimator conditions; unsupported comparisons are held or NOT_COMPARABLE.",
+      "would_not_stop": [
+        "Fabricated but internally consistent source attestations: the validator has no independent retrieval or authenticity check.",
+        "Statistically valid alternative methods, adjusted or survival estimators, and complex meta-analysis pipelines outside its five narrow calculation kinds.",
+        "Missed paper errors in unflagged claims or incorrect human interpretation of reported source text: these require separate review and held-out assessment.",
+        "Incorrect human adjudication, false claims of author confirmation or bias in how papers were selected; none are adjudicated by this script."
+      ],
+      "source": "scripts/synthesis_preflight.py review_packet and _check_one; prompt v1.1 and synthetic regression suite.",
+      "seal": {
+        "scripts/synthesis_preflight.py": "81cb4bcebbde4ca9ef7c16ccc2969bb6a217cb74fc2afd1744aea59c965c823f"
+      }
+    },
+    {
       "id": ".github/workflows/test.yml#jobs.pester",
       "kind": "ci-job",
       "name": "Pester (Windows)",
