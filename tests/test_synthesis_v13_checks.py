@@ -355,8 +355,11 @@ class DeterministicTests(unittest.TestCase):
     def test_unknown_statistic_abstains(self):
         self.assertEqual(m.statistic_identity("UNKNOWN", "OVERALL_EFFECT")["status"], "NOT_COMPARABLE")
 
-    def test_r_factor_shift(self):
-        self.assertEqual(m.factor_shift([0, 1, 0], [1, 2, 1], verified_r_factor_conversion=True)["status"], "REVIEW")
+    def test_r_factor_shift_alone_does_not_establish_paper_error(self):
+        # R's factor codes are normally 1-based. Merely observing a shift is
+        # not proof of a discrepancy with the article or affected output.
+        self.assertEqual(m.factor_shift([0, 1, 0], [1, 2, 1],
+                         verified_r_factor_conversion=True)["status"], "NOT_COMPARABLE")
 
     def test_code_not_available(self):
         self.assertEqual(m.factor_shift([0, 1], [1, 2], verified_r_factor_conversion=False)["status"], "NOT_COMPARABLE")
@@ -364,6 +367,78 @@ class DeterministicTests(unittest.TestCase):
     def test_factor_noshift(self):
         self.assertEqual(m.factor_shift([0, 1], [0, 1], verified_r_factor_conversion=True)["status"], "CONSISTENT")
 
+
+
+class PaperCodeFactorFidelityTests(unittest.TestCase):
+    """Synthetic paper-code contrasts; none represent a verified journal error."""
+
+    @staticmethod
+    def evidence(**overrides):
+        # Fabricated test provenance: paper version, specific source span,
+        # paper-time code line and affected output are ALL only caller-attested.
+        args = dict(verified_r_factor_conversion=True,
+                    paper_claim_code_conflict_verified=True,
+                    paper_source_locator="Synthetic VoR Methods sec 2; Table 3 row 1",
+                    code_source_locator="Synthetic commit abc123 analysis.R:18",
+                    analysis_identity_verified=True, affected_output_verified=True)
+        args.update(overrides)
+        return args
+
+    def test_injected_source_backed_difference_is_review_candidate(self):
+        # Deliberately planted: exact paper says outcome remains binary 0/1;
+        # attested code numeric factor codes are used in incompatible output.
+        out = m.factor_shift([0, 1, 0], [1, 2, 1], **self.evidence())
+        self.assertEqual(out["status"], "REVIEW")
+
+    def test_harmless_factor_level_display_is_not_a_paper_claim(self):
+        # A common legal R representation; no asserted affected-result conflict.
+        args = self.evidence(paper_claim_code_conflict_verified=False,
+                             affected_output_verified=False)
+        self.assertEqual(m.factor_shift([0, 1, 0], [1, 2, 1], **args)["status"],
+                         "NOT_COMPARABLE")
+
+    def test_paper_code_conflict_without_affected_output_abstains(self):
+        args = self.evidence(affected_output_verified=False)
+        self.assertEqual(m.factor_shift([0, 1], [1, 2], **args)["status"],
+                         "NOT_COMPARABLE")
+
+    def test_different_analysis_or_version_abstains(self):
+        args = self.evidence(analysis_identity_verified=False)
+        self.assertEqual(m.factor_shift([0, 1], [1, 2], **args)["status"],
+                         "NOT_COMPARABLE")
+
+    def test_missing_paper_span_abstains(self):
+        args = self.evidence(paper_source_locator="  ")
+        self.assertEqual(m.factor_shift([0, 1], [1, 2], **args)["status"],
+                         "NOT_COMPARABLE")
+
+    def test_missing_code_span_abstains(self):
+        args = self.evidence(code_source_locator=None)
+        self.assertEqual(m.factor_shift([0, 1], [1, 2], **args)["status"],
+                         "NOT_COMPARABLE")
+
+    def test_other_recoding_requires_paper_code_evidence_too(self):
+        # Downstream numbers changed; without a paper conflict this remains
+        # a code observation, not a proven publication discrepancy.
+        self.assertEqual(m.factor_shift([0, 1, 0], [2, 1, 2],
+                         verified_r_factor_conversion=True)["status"],
+                         "NOT_COMPARABLE")
+        self.assertEqual(m.factor_shift([0, 1, 0], [2, 1, 2],
+                         **self.evidence())["status"], "REVIEW")
+
+    def test_unmodified_factor_data_remains_benign(self):
+        self.assertEqual(m.factor_shift([0, 1, 0], [0, 1, 0],
+                         verified_r_factor_conversion=True)["status"],
+                         "CONSISTENT")
+
+    def test_invalid_category_inputs_still_invalid(self):
+        self.assertEqual(m.factor_shift([0, True], [1, 2],
+                         verified_r_factor_conversion=True)["status"], "INVALID")
+
+    def test_nonbinary_source_abstains(self):
+        self.assertEqual(m.factor_shift([0, 2], [1, 3],
+                         verified_r_factor_conversion=True)["status"],
+                         "NOT_COMPARABLE")
 
 
 class PublishedPPrecisionTests(unittest.TestCase):
