@@ -1133,6 +1133,75 @@ class CleanPaperControlMetricTests(unittest.TestCase):
         self.assertEqual(out["false_alert_flags_per_100_nonabstained_clean_claims"], 100)
         self.assertEqual(out["abstentions_per_100_clean_claims"], 50)
 
+    @staticmethod
+    def sourced(p, doi, version="VoR-2026-11-01"):
+        return {**p, "source_doi": doi, "source_version": version}
+
+    def test_same_doi_under_two_paper_ids_refuses_inflated_denominator(self):
+        # Injected alias: before this guard one paper masquerading as two
+        # eligible clean controls inflated both paper and claim counts.
+        p = [self.sourced(self.paper("local-a", ["primary"]), "10.9999/SYNTH-EXAMPLE"),
+             self.sourced(self.paper("local-b", ["primary"]), "doi:10.9999/synth-example")]
+        c = [self.claim("local-a", "primary", "FLAG"),
+             self.claim("local-b", "primary", "NO_FLAG")]
+        with self.assertRaisesRegex(ValueError, "duplicate source DOI"):
+            m.unchanged_control_false_alerts(p, c)
+
+    def test_distinct_dois_and_reused_local_claim_id_still_count_both(self):
+        # Benign control: two separately labelled source objects.
+        p = [self.sourced(self.paper("a", ["primary"]), "10.9999/syn-a"),
+             self.sourced(self.paper("b", ["primary"]), "10.9999/syn-b")]
+        c = [self.claim("a", "primary", "FLAG"),
+             self.claim("b", "primary", "NO_FLAG")]
+        o = m.unchanged_control_false_alerts(p, c)
+        self.assertEqual((o["eligible_complete_clean_papers"],
+                          o["eligible_clean_claims"], o["false_alert_flags"]),
+                         (2, 2, 1))
+
+    def test_same_doi_two_versions_not_independent_papers(self):
+        # Same source object in two versions is not two unchanged papers.
+        p = [self.sourced(self.paper("a", ["primary"]), "10.9999/syn-a", "early"),
+             self.sourced(self.paper("b", ["primary"]), "10.9999/syn-a", "corrected")]
+        c = [self.claim("a", "primary", "NO_FLAG"),
+             self.claim("b", "primary", "NO_FLAG")]
+        with self.assertRaisesRegex(ValueError, "duplicate source DOI"):
+            m.unchanged_control_false_alerts(p, c)
+
+    def test_canonical_doi_url_and_bare_name_cannot_mask_duplicate(self):
+        p = [self.sourced(self.paper("a", ["x"]), "https://doi.org/10.9999/SYN-A"),
+             self.sourced(self.paper("b", ["y"]), "10.9999/syn-a")]
+        c = [self.claim("a", "x", "NO_FLAG"), self.claim("b", "y", "NO_FLAG")]
+        with self.assertRaisesRegex(ValueError, "duplicate source DOI"):
+            m.unchanged_control_false_alerts(p, c)
+
+    def test_partial_source_identity_fails_closed(self):
+        p = [self.paper("a", ["1"])]
+        p[0]["source_doi"] = "10.9999/syn-a"
+        with self.assertRaisesRegex(ValueError, "DOI and publication version"):
+            m.unchanged_control_false_alerts(p, [self.claim("a", "1", "NO_FLAG")])
+
+    def test_malformed_source_doi_is_not_a_credible_unique_identity(self):
+        p = [self.sourced(self.paper("a", ["1"]), "not-a-doi")]
+        with self.assertRaisesRegex(ValueError, "source DOI must contain"):
+            m.unchanged_control_false_alerts(p, [self.claim("a", "1", "NO_FLAG")])
+
+    def test_doi_unicode_case_not_over_normalized(self):
+        # DOI Handbook equates ASCII A-Z only, not accented variants.
+        p = [self.sourced(self.paper("a", ["x"]), "10.9999/Á"),
+             self.sourced(self.paper("b", ["x"]), "10.9999/á")]
+        c = [self.claim("a", "x", "NO_FLAG"), self.claim("b", "x", "NO_FLAG")]
+        out = m.unchanged_control_false_alerts(p, c)
+        self.assertEqual(out["eligible_complete_clean_papers"], 2)
+
+    def test_doi_alias_across_clean_and_injected_paper_fails_closed(self):
+        # One source cannot count as both independent injected and untouched.
+        p = [self.sourced(self.paper("inj", ["x"], "OTHER"), "10.9999/a"),
+             self.sourced(self.paper("clean", ["x"]), "10.9999/a")]
+        c = [self.claim("inj", "x", "FLAG", "ERROR"),
+             self.claim("clean", "x", "NO_FLAG")]
+        with self.assertRaisesRegex(ValueError, "duplicate source DOI"):
+            m.unchanged_control_false_alerts(p, c)
+
     def test_duplicate_claim_rejected(self):
         paper = [self.paper("a", ["1"])]
         claim = self.claim("a", "1", "NO_FLAG")
