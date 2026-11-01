@@ -23,6 +23,7 @@ For each outcome, retain the complete original claimed denominator: all included
 |---|---|
 | `review_doi`, `review_version`, `reported_result_locator` | Exact current published edition; section, table, figure, supplement cell, date and any correction history. |
 | `predecessor_review_doi`, `shared_registration_id`, `cross_review_cell_lineage` | Identify earlier versions of a review and repeated table entries (including anomalous Ns, endpoint codes and design labels). Mark `REUSED_REPORTING` separately from `MODEL_DATA_REUSED`, which requires proof from exact input rows. Do not imply that an explicitly updated review improperly used its earlier extraction. |
+| `search_cutoff`, `source_publication_date`, `post_cutoff_capture_log` | Check the dated search/PRISMA trail whenever an included original results report postdates the claimed database publication cutoff. A documented manual capture or revision is a valid explanation; absence of a log requires clarification, not exclusion by assumption. |
 | `outcome_id`, `outcome_definition`, `population_id`, `ef_rule` | Exact outcome, HF subtype, EF eligibility, symptomatic status and target PICO. |
 | `parent_trial_id`, `report_doi`, `registry_id`, `subset_relation` | Registry-linked independent RCT, publication, subgroup/report inclusion and parent–child relationship; do not infer independence from author/year. |
 | `arm_id`, `comparator_id`, `randomized_n`, `analysis_n`, `safety_n` | Exact arm, experimental/reference orientation and denominator type from the original source. |
@@ -50,6 +51,7 @@ Missing essential source/estimand/parent-trial identifiers yields **HOLD**, neve
 6. Cross-check trial extraction tables against original primary reports and supplementary event tables; document both value and **endpoint identity**. A numerically equal count for cardiac admissions is not proof it is HF admissions.
 7. Verify that each named treatment has an observed outcome-specific source edge wherever the review estimates that outcome; reconcile every trial's reported outcome-code availability with network diagrams and Results, retaining `UNRESOLVED` if source inputs are hidden.
 8. For an updated NMA, compare the predecessor's published trial/outcome/denominator/design table **cell by cell** against the new version. Preserve unchanged normal entries and repeated anomalies, source the shared protocol/registration and correction history, and explicitly distinguish **transmission of reported text** from **use of erroneous numbers in the statistical model**. An impossible printed denominator is a reporting error but does not by itself establish a fitted-data error.
+9. Crosswalk every EF-restricted network or subgroup label against original **subgroup-specific arm Ns** and results, distinguishing full trial EF >40% from an EF ≥50% analysis. Audit the original publication date of each included results report against the stated review search cutoff; log trial-results additions made at manuscript revision. Treat one-person randomized-versus-analysis N differences as unresolved until the analysis-set definition is found.
 
 ### Pass 2 — exact original-model reproduction
 
@@ -106,6 +108,7 @@ Include matched counterexamples so the protocol does not train a detector to alw
 12. Current corrected journal version resolves an older table typo — flag as **resolved history**, not an ongoing defect.
 13. A published treatment node with few direct events legitimately gains precision from **specified** hierarchical class borrowing or other independently observed constraints — test the full stated likelihood and structure before alleging impossible precision.
 14. An updated review transparently reuses its predecessor's trial table, including a typographical denominator error, but its **separately verified fitted dataset uses valid Ns** — retain the reporting correction and do not assert a changed clinical effect or misconduct.
+15. A trial report published after the initial database cutoff was appropriately added through a dated review update or peer-review revision — record the chronology and **do not** allege selection bias from the date difference alone.
 
 These are **proposed fixture descriptions only**. No test code or independently sampled validation was executed by publishing this document.
 
