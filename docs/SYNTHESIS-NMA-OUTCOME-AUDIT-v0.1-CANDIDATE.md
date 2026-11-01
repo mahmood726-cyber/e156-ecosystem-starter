@@ -1,0 +1,605 @@
+# Synthesis NMA outcome-by-outcome source-integrity protocol — v0.1 candidate
+
+**Date:** 1 November 2026  
+**Status:** DEVELOPMENT RULE CANDIDATE — **not incorporated into the authoritative Synthesis Evidence Integrity Operating Standard v1.2**  
+**Intended owner:** Synthesis methodological steward with independent statistical/clinical review  
+**Scope:** systematic reviews and network meta-analyses (NMAs) of trials, initially pharmacological heart-failure NMAs; portable to other disease areas.
+
+## Why this candidate exists
+
+The 1 November 2026 HF audit exposed a recurrent combination of problems: distinct reports of one trial presented as distinct randomized trials; event totals mistaken for participant totals; first and recurrent hospitalizations combined as binary events; one-year and entire-follow-up outcomes mixed; cardiac versus HF-specific hospitalizations conflated; safety populations and denominators mixed; effect-modifying trial selection/run-in and background therapy obscured by broad drug-class nodes; masking/comparator and numerical transcription errors persisting across review updates; effect-measure estimates labelled against a wrong reference comparator; EF-defined networks silently containing broader EF cohorts; treatment *assigned* versus *actually received* dose after pharmacy/dispensing anomalies; and ranking claims exceeding the reported comparative intervals.
+
+The methodology should catch these **without equating a suspicious table with a proven model error**, and without assuming that all trial results or NMAs are wrong. A correct source record can disagree with a crude diagnostic because the original outcome is time-to-event, stratified, adjusted, recurrent or differently censored. Every candidate error requires an explicit alternative explanation and a matched-estimator check.
+
+This protocol **extends** the existing [Synthesis Preflight v1.1](SYNTHESIS-PREFLIGHT-v1.1.md) claim-ledger/abstention controls. It **does not replace** Synthesis v1.2, the open v1.3 candidate, Meta-Harness, protected E156 source records or any prospective frozen cohort.
+
+## Mandatory unit and denominator
+
+The atomic audit object is **(review DOI, reported outcome ID, target population/EF subgroup, contrast, follow-up window, estimand, analysis set, effect measure)**. Every claim/figure/table value is recorded, including values that pass checks, and every primary source may contribute multiple outcomes without becoming multiple independent trials.
+
+For each outcome, retain the complete original claimed denominator: all included reports, parent RCTs, arms, available event definitions, missing/unavailable sources and exclusions. Never report an error rate or a number of independently checked outcomes using only detected anomalies as the denominator.
+
+| Required field | Meaning / fail-closed test |
+|---|---|
+| `review_doi`, `review_version`, `reported_result_locator` | Exact current published edition; section, table, figure, supplement cell, date and any correction history. |
+| `predecessor_review_doi`, `shared_registration_id`, `cross_review_cell_lineage` | Identify earlier versions of a review and repeated table entries (including anomalous Ns, endpoint codes and design labels). Mark `REUSED_REPORTING` separately from `MODEL_DATA_REUSED`, which requires proof from exact input rows. Do not imply that an explicitly updated review improperly used its earlier extraction. |
+| `search_cutoff`, `source_publication_date`, `post_cutoff_capture_log` | Check the dated search/PRISMA trail whenever an included original results report postdates the claimed database publication cutoff. A documented manual capture or revision is a valid explanation; absence of a log requires clarification, not exclusion by assumption. |
+| `outcome_id`, `outcome_definition`, `population_id`, `ef_rule` | Exact outcome, HF subtype, EF eligibility, symptomatic status and target PICO. |
+| `parent_trial_id`, `report_doi`, `registry_id`, `subset_relation` | Registry-linked independent RCT, publication, subgroup/report inclusion and parent–child relationship; do not infer independence from author/year. |
+| `arm_id`, `comparator_id`, `randomized_n`, `analysis_n`, `safety_n` | Exact arm, experimental/reference orientation and denominator type from the original source. |
+| `review_total_n`, `trial_table_total_n`, `baseline_table_total_n`, `sample_balance_by_trial` | Recompute headline sample size from every displayed trial and baseline arm; decompose cross-table differences by trial and reason (sex subgroup vs arm size; randomized, safety, efficacy, per-protocol) rather than presuming a single universal denominator. |
+| `target_dose`, `actual_dose`, `dose_assignment_deviation`, `dose_exposure_n` | Dose planned under randomized assignment, actual titration/dispensing, protocol deviations, onset and number exposed; keep assignment and received-treatment estimands separate. |
+| `endpoint_unit` | `PEOPLE_FIRST_EVENT`, `EVENTS_RECURRENT`, `RATE_PERSON_TIME`, `TIME_TO_FIRST`, `COMPOSITE_PEOPLE`, `CONTINUOUS`, `OTHER`, or `UNRESOLVED`. |
+| `event_count`, `person_count`, `time_origin`, `followup`, `censoring` | Distinguish admissions from people; label first-year versus full follow-up and time at risk. |
+| `outcome_available`, `source_outcome_code`, `outcome_edge_count` | Reconcile the paper's trial-level outcome availability table with every claimed outcome-specific graph, treatment estimate and figure; an absent code needs an explanation, not invented input. |
+| `effect_measure`, `effect_of_interest`, `adjustment`, `model_signature` | HR/RR/OR/rate ratio/mean difference, ITT/assignment or adherence, stratification, repeated-event model, CI method. |
+| `source_url`, `source_locator`, `source_version`, `retrieval_status`, `source_hash` | Original paper/registry/protocol/SAP and what exactly was accessed. Never invent inaccessible files. |
+| `reported_estimate`, `reported_interval`, `authors_input`, `reproduced_estimate` | Keep reported, original-model-replayed, and independently repaired values separately; never substitute approximate crude ORs for author estimates. |
+| `abstract_contrast`, `results_contrast`, `figure_contrast`, `effect_orientation` | Cross-check *exact same RR/HR/OR and CI* across abstract, figures, ranking tables and Results to detect switched placebo/active reference labels. A label error is a verified reporting issue but not necessarily a model error. |
+| `implied_se`, `information_bound`, `precision_explanation` | Compare displayed interval precision to the maximum information in the listed unique populations for an explicitly specified likelihood; check hidden independent data, hierarchical borrowing and shared controls before alleging an impossibility. |
+| `rob2_domains`, `rob_nma_domains`, `transitivity_matrix`, `cinema_domains` | Outcome-specific judgments with exact justification and independent-review status. |
+| `benign_explanation`, `refutation_result`, `severity`, `evidence_maturity`, `outreach_hold` | Strongest plausible non-error explanation, checked answer, materiality, provenance, and communication gate. |
+
+Missing essential source/estimand/parent-trial identifiers yields **HOLD**, never presumed duplicate, assumed model failure or invented data.
+
+## Four-pass auditing protocol, executed for every outcome
+
+### Pass 1 — source and trial-family reconstruction
+
+1. Freeze the review and its supplements at the current publication version. Include appendices, correction notices, protocol/registration and dated changes.
+2. Enumerate each explicitly claimed outcome; group by HF phenotype and estimand, **not** just by a single broad class outcome. Enumerate all conclusions and rankings that depend on those results.
+3. Assign original study publications and subgroup analyses to a source-verified parent RCT (registry ID and arm relationship). Label `SAME_PEOPLE`, `SUBSET_OF_PARENT`, `NONOVERLAPPING_PARTITIONS`, `INDEPENDENT_TRIAL`, or `UNRESOLVED`.
+4. Record **for each arm/outcome** whether a numerator means people, recurrent events, first events or person-time rate. Reject as a standard binomial person-count input any event total exceeding the relevant randomized/at-risk person count. Do not mistake valid recurrent events for fraud; they are valid when analysed appropriately.
+5. Check placebo/active comparator, drug molecule and class-node coding, crossover, factorial/multi-arm shared controls, dose, background therapy and eligibility of every trial (symptomatic HF, EF cut, renal threshold, recent hospitalization, trial era).
+6. Cross-check trial extraction tables against original primary reports and supplementary event tables; document both value and **endpoint identity**. A numerically equal count for cardiac admissions is not proof it is HF admissions.
+7. Verify that each named treatment has an observed outcome-specific source edge wherever the review estimates that outcome; reconcile every trial's reported outcome-code availability with network diagrams and Results, retaining `UNRESOLVED` if source inputs are hidden.
+8. For an updated NMA, compare the predecessor's published trial/outcome/denominator/design table **cell by cell** against the new version. Preserve unchanged normal entries and repeated anomalies, source the shared protocol/registration and correction history, and explicitly distinguish **transmission of reported text** from **use of erroneous numbers in the statistical model**. An impossible printed denominator is a reporting error but does not by itself establish a fitted-data error.
+9. Crosswalk every EF-restricted network or subgroup label against original **subgroup-specific arm Ns** and results, distinguishing full trial EF >40% from an EF ≥50% analysis. Audit the original publication date of each included results report against the stated review search cutoff; log trial-results additions made at manuscript revision. Treat one-person randomized-versus-analysis N differences as unresolved until the analysis-set definition is found.
+10. Read the target phenotype definition *in the authors' own text*, then test whether each included whole-trial arm actually matches. For mismatches, enumerate the **known excluded-band participants** (e.g. original 41–49% EF strata within >40% cohorts) and request separate subgroup event counts, without treating the broader cohort as invalid if the authors' true prespecified PICO was HF with EF >40%. Also cross-check trial's original EF rule against the review's Table 1 eligibility and its internally reported mean EF.
+11. Cross-validate the **comparison reference and direction** wherever a numerical estimate and CI are repeated in the abstract, Results, forest, league table and conclusions. Do not infer that a correct effect size has the claimed placebo comparator merely because its numerical value is plausible.
+12. For dose-finding trials, compare each **target/randomized dose** with actual delivered dose and report any central dispensing or titration error. Reconcile randomized/FAS, treatment-exposed SAF and correctly dosed subsets, ascertain when vital status was measured, and keep deaths after stopping assigned treatment in the assignment estimand unless the original prespecified analysis genuinely differs.
+13. Perform **cross-table sample-size mass balance**: independently sum the review abstract/headline total, study roster, baseline-arm Ns and each outcome's model-specific dataset, recording all differences by parent trial and analysis set. A baseline table's male count accidentally printed as its arm N is a real metadata error; a legitimate trial-analysis-subset N is not automatically one. Keep the claim `MODEL_N_WRONG` blocked until the model row is seen. When phenotype-specific subgroups of the same source appear in *separate, disjoint networks*, verify that their partition total equals the published study count without automatically labelling them repeated RCT information.
+
+### Pass 2 — exact original-model reproduction
+
+1. Obtain the author extraction matrix and runnable code/model specification, including all trial-arm events, covariance for multi-arm/overlapping subsets, zero-cell treatment, heterogeneity estimator, link and likelihood, priors if Bayesian, follow-up, confidence or credible intervals, ranking code and versioned statistical environment.
+2. **First reproduce the printed NMA without repairing it.** Compare every reported effect, CI, treatment rank and network topology. Record any differences from rounding, package version or unidentified input.
+3. If original code is unavailable, reconstruct a **labeled diagnostic** using published data and record all assumptions; do not call it a reproduction, conclude an exact hidden implementation, or present its changed CI as a formally corrected publication.
+4. Before each comparison verify estimator identity: recurrent-event rate model versus people with an event, HR versus risk/odds ratio, adjusted versus crude, Cox/KM versus raw proportions, outcome time horizon, competing terminal events, and analysis population.
+5. For single-edge drug nodes or suspect duplicate clusters, calculate a **conditional information-budget check**: derive the SE implied by the displayed interval and bound plausible binary contrast precision using unique source Ns/events, network geometry and allowed correlation. Record the assumptions and benign alternatives (additional unlisted RCT, adjusted survival likelihood, legitimate hierarchical shrinkage, class borrowing) before treating an overly narrow CI as a source/data problem. A contrast-only bound does **not** apply universally to complex joint NMA models.
+6. For low-count or multi-arm dose-specific mortality/safety outcomes, compute and label an **unadjusted exact/binomial diagnostic** (including the denominator and endpoint as stated in the original safety table); compare the review's implied log-SE and observed result only **conditionally**. Correlated shared placebo arms, network path borrowing, model link and zero-cell corrections must be replayed before making any significance-change claim. A safety-table “AE with outcome death” must not be assumed identical to an ITT all-cause-mortality outcome without checking ascertainment and follow-up.
+
+### Pass 3 — corrected and stress-tested outcome-specific network
+
+Run and archive a delta for each correction **separately**, then jointly when defensible:
+
+1. One independent parent trial contribution per estimand, or valid correlated/joint model of deliberately reused cohorts. Distinguish a true separate RCT with a similar title from multiple publications of the same RCT.
+2. Compatible event units and measures: first event, recurrent HF admissions, CV-death/HF composites, serious versus all adverse events, cardiac versus HF hospitalisations, time-to-event and follow-up windows. Split incompatible networks or use a justified joint likelihood; never relabel recurrent admissions as people.
+3. Correct source arm denominators: randomized/ITT, modified ITT, treatment-exposed safety and per-protocol as required for each outcome. Recheck deaths during run-in and ascertainment before/after randomization without allocating pre-randomization failures to later randomized arms.
+4. Align eligibility and transitivity: EF bands, symptom status, background therapies, trial era, comparator type and run-in selection, geography, baseline renal risk, follow-up, dosing. Evaluate these as potential effect modifiers; **difference in design alone does not prove a biased effect**.
+5. Test drug-class node sensitivity: molecule-specific ACEI/ARB/ARNI/RASi nodes; document network connectivity when nodes split. A disconnected contrast is **not identified**, not a zero effect. Explain class-effect assumptions when needed to keep a network connected.
+6. Handle multi-arm correlations separately from repeated publications. Do not apply a standard multi-arm covariance formula to full parent/subgroup duplicate rows; use compatible dependence models or remove overlap.
+7. Examine heterogeneity, fit, direct–indirect coherence **where identifiable** (do not demand node-splitting in a network with no loops), rank uncertainty, and small-study or missing-evidence concerns. Do not make superiority claims from SUCRA/P-scores without a supported pairwise contrast and interval.
+8. For every reported outcome produce a `PUBLISHED -> EXACT_REPLAY -> ONE_FIX -> ALL_FIXES` evidence trail: effect/CI, direction, statistical significance if relevant, absolute effects where appropriate, network nodes/edges, contributors, influence and robust conclusions. Report when intervals widen and benefits persist, not just changes crossing 1.
+9. For an EF-heterogeneous network, run and clearly distinguish **authors' actual broad target**, the intended strict HFpEF/HFmrEF bands, and *when estimable* cohort-specific sensitivities; if phenotype-specific event data are unavailable, mark the strict comparison **NOT IDENTIFIED FROM PUBLIC DATA**, not an assumed corrected estimate. For randomized target-dose arms affected by dosing errors, record treatment-policy/assignment versus explanatory received-dose sensitivities, including any postrandomization selection bias in a correctly dosed-only comparison.
+
+### Pass 4 — domain-correct risk of bias and release gate
+
+- **RoB 2:** a **trial-result-specific** assessment of randomization, deviations from assigned intervention, missing outcome data, outcome measurement and selective reporting. Record effect of assignment/adherence, source locators and independently adjudicated judgments. Pre-randomization active run-in is usually a **generalizability/indirectness** issue rather than automatically high risk for the randomized post-run-in effect; postrandomization attrition requires separate consideration.
+- **ROBIS:** review-level methods for eligibility, study selection, data collection/appraisal and synthesis; not interchangeable with RoB 2 or RoB NMA.
+- **RoB NMA (2025):** outcome-specific 17-item assessment across network geometry/interventions, effect modifiers and statistical synthesis. Do not mechanically fail a design merely because no direct–indirect test is possible in an acyclic network; retain appropriate `no information` entries.
+- **ROB-MEN/ROB-ME:** missing-evidence/reporting-bias evaluation as applicable; absence of a significant funnel test is not proof of no reporting bias.
+- **CINeMA:** outcome-specific comparison-level confidence (within-study bias, reporting bias, indirectness, imprecision, heterogeneity, incoherence); map exports to the actual outcome; do not count domain concerns as an automatic numerical score.
+
+**External correspondence is HOLD unless all three are documented for that specific paper/outcome:**
+
+1. Every disputed source count/endpoint/denominator independently verified from the actual original report, with a checked benign alternative and second qualified reviewer where appropriate.
+2. Printed NMA exactly reproduced using original settings, then repaired using unique parent populations and compatible estimands, with appropriate outcome-specific RoB 2 and RoB NMA; if code/data are unavailable, clearly state that a full corrected result **cannot yet** be claimed and request the missing data through an approved route.
+3. Changed versus unchanged conclusions documented with code, confidence intervals and sensitivity analyses; a separate source-backed, nonaccusatory author/journal request prepared and approved for **that paper only**, with contact de-duplication and user approval before sending.
+
+Nonresponse is not evidence of intentional wrongdoing; corrections, editorial review and any ethics escalation must be proportional to independently verified reliability problems.
+
+## Falsification / negative controls required in development
+
+Include matched counterexamples so the protocol does not train a detector to always condemn a review:
+
+1. Recurrent hospitalization counts correctly analysed in a negative-binomial/recurrent-event likelihood — **do not flag merely because count > people**.
+2. First-year event numbers explicitly labelled and separately analysed as a prespecified one-year endpoint — **do not flag full-follow-up mismatch if no mixing**.
+3. One trial with subgroup and whole-cohort reports listed in *bibliography* but only one contributes to fitted outcome — **descriptive overlap, not analytical double count**.
+4. Distinct trials with similar names (e.g. prevention versus treatment) and separate randomized populations — **not duplicates**.
+5. Valid multi-arm RCT with a shared control modelled with correlation — **not double-counting**.
+6. Different safety/randomized/per-protocol populations correctly assigned to their intended endpoints — **not an error**.
+7. Run-in exclusions followed by proper randomized ITT estimate and explicit population limitation — **no automatic RoB 2 failure**.
+8. Active-comparator trial correctly connected through a prespecified, clinically justified class node, with transparent sensitivity — **possible assumption, not automatic error**.
+9. Correct but different Cox HR versus crude 2×2 OR — **not comparable**.
+10. NMA with no closed loops and no feasible coherence test — **do not claim missing test proves bias**.
+11. A non-significant head-to-head estimate but numerically highest SUCRA — label rank uncertainty; do not allege computation error without source contradiction.
+12. Current corrected journal version resolves an older table typo — flag as **resolved history**, not an ongoing defect.
+13. A published treatment node with few direct events legitimately gains precision from **specified** hierarchical class borrowing or other independently observed constraints — test the full stated likelihood and structure before alleging impossible precision.
+14. An updated review transparently reuses its predecessor's trial table, including a typographical denominator error, but its **separately verified fitted dataset uses valid Ns** — retain the reporting correction and do not assert a changed clinical effect or misconduct.
+15. A trial report published after the initial database cutoff was appropriately added through a dated review update or peer-review revision — record the chronology and **do not** allege selection bias from the date difference alone.
+16. A review's abstract mislabels the reference treatment while its forest and internal model use the correct active comparator — **a reporting correction is indicated**, not an assertion that the effect was fitted against placebo.
+17. A multi-arm dose-finding RCT has one rare-event safety contrast whose crude Fisher test is nonsignificant, yet a correctly specified joint NMA yields a narrower interval through legitimate information from other independently observed paths — **do not declare an error** from the two-arm P-value alone. Conversely, a randomized target-dose group contains individuals misdosed by the dispensing system: preserve the assignment/ITT deaths even if most occurred after medication cessation; do not silently shift them to per-protocol or erase them.
+18. A review's baseline table sums to fewer than its cohort roster because one source displays an expressly defined per-protocol group while the model uses suitable randomized/safety denominators — report the difference and explanation, **not a proven model error**. Likewise, a correctly reported large trial is split into nonoverlapping EF bands for separate outcome networks; adding the bands for an overall descriptive N is **not** duplicate participant weighting within either fitted network.
+
+These are **proposed fixture descriptions only**. No test code or independently sampled validation was executed by publishing this document.
+
+## Outputs and integration contract
+
+- `source_registry`: exact source IDs, versions, retrieval path, locators, hashes and access failures.
+- `trial_family_map`: independent parent RCT and publications/subgroups; overlap/missing status, source-backed.
+- `cross_review_lineage`: predecessor DOI and registration, exact reused table cells and status, corrected edition, and a separate proof field for **whether the model actually imported a disputed value**.
+- `outcome_ledger`: every reported network/outcome/contrast; no missing unflagged outcomes; source and analysis statuses.
+- `replay_manifest`: author original code/options/input, actual run command, environment and differences; `UNAVAILABLE` if not obtained.
+- `corrected_manifest`: one-at-a-time and joint sensitivity, network topology, estimates and appropriate intervals.
+- `bias_ledger`: RoB 2 per trial/outcome and RoB NMA per review network/outcome, ROBIS/CINeMA as suitable, with independent-review signature/status.
+- `editorial_packet`: only independently verified case-specific concerns, no mass allegations or private correspondence in public git.
+
+**Status vocabulary:** retain Synthesis Preflight v1.1 `SUPPORTED`, `CONTRADICTED`, `OVERGENERALIZED`, `UNSUPPORTED_CITATION`, `SOURCE_UNAVAILABLE`, `NOT_ENOUGH_INFO` and evidence maturity. Add an orthogonal `model_impact_status` with `NOT_TESTED`, `DIAGNOSTIC_ONLY`, `AUTHOR_REPLAYED`, `REPAIRED_SENSITIVITY`, `INDEPENDENTLY_ADJUDICATED`; do not imply scientific validation from passing schema tests.
+
+## Provenance, reuse and hardcode disclosure
+
+| Ingredient | Current status | Reuse or new |
+|---|---|---|
+| Synthesis Evidence Integrity v1.2, Preflight v1.1 and open v1.3 | Existing standards and candidate work; no changes made here | **Reuse** claim enumeration, provenance, abstention and source/estimator gates. |
+| Meta-Harness / E156 provenance and exact-head CI | Existing verification machinery; not invoked or reconfigured by this document | **Reuse** numerical replay, source receipt and protected independent-review controls. |
+| Outcome-specific parent-trial / estimand / bias matrix | Proposed reporting method | **New** explicit ledger and source-to-model-to-conclusion lineage. |
+| Numeric HF examples | No live numeric data or hardcoded clinical result in this public method; all actual findings stay in restricted case dossier | **Neither** fixture nor benchmark. |
+| Frozen Simo/independent cohorts | Unchanged and **not** used to develop/validate this proposal | **Protected**, excluded from changes. |
+
+### Validation and promotion
+
+1. Methodological steward and an independent clinical statistician review proposal; resolve inconsistencies with the canonical v1.2 and the open v1.3 branch before accepting numbered rules.
+2. Implement and test at least the twelve positive/negative fixtures with source-attested metadata, then verify exact-head CI and cross-platform/parity gates; maintain zero private cases in public tests.
+3. Compare prospective sensitivity, precision, false alerts, serious misses, abstentions, sources retrieved and reviewer time on a separate **precommitted unseen sample** with masked independent human adjudication. Do not re-use or modify frozen validation cohorts.
+4. Report adverse results and unchanged conclusions. A proposed protocol, past retrospective case matches or synthetic tests alone do not establish detector performance.
+5. No merge to canonical method, protected record change, schedule change, email, editorial contact or ethics referral is authorized by opening a draft PR.
+
+## Authoritative methods references
+
+- Cochrane Handbook Chapter 11 (NMA transitivity, geometry, estimands): https://www.cochrane.org/authors/handbooks-and-manuals/handbook/current/chapter-11
+- Cochrane RoB 2: https://www.cochrane.org/learn/courses-and-resources/cochrane-methodology/risk-bias/about-risk-bias-2-rob-2
+- RoB NMA development, *BMJ* 2025: https://doi.org/10.1136/bmj-2024-079839
+- ROB-MEN missing evidence: https://pubmed.ncbi.nlm.nih.gov/34809639/
+- ICMJE on correction and major reanalysis: https://www.icmje.org/recommendations/browse/publishing-and-editorial-issues/corrections-and-version-control.html
+
+
+## HF NMA audit additions — 1 November 2026 continuation
+
+The following checks were added after examining Tang et al. (2024), the JACC 2025 HFrEF regimen update, the original VICTOR trial results and the current netmeta P-score definition. These are method rules and audit targets, **not declarations that the corresponding NMA outputs have been independently reproduced**.
+
+### Additional source-to-estimand checks
+
+1. **Follow-up duration and estimand identity.** If a review pools crude risk ratios, record each trial's follow-up duration and time origin. A pooled risk at 2 months and one at 71.8 months are not automatically the same estimand. Verify whether the source is time-to-first-event, fixed-time cumulative risk, rate/person-time, or recurrent-event total. Prefer harmonized time horizons or compatible HR/rate-ratio models where data permit. Run duration-restricted or common-time-point sensitivities; never label a crude RR reconstruction as a reproduction of an adjusted Cox model.
+2. **Endpoint numerator identity.** Record for every trial and outcome whether the numerator is number of people with a first event, people with any event, recurrent event count, rate/person-time, or time-to-first-event. Inspect the original report to establish whether HHF is number of people or number of admissions. If definitions differ, split the network or justify the common estimand.
+3. **Background-regimen ecological classification.** Where a review labels a regimen from trial-level proportions (e.g. a component is considered present if at least 60% of participants used it), record the exact proportion, source, threshold and whether co-therapies were received by the **same individuals**. A trial-level label does not prove all drugs were jointly received by all randomized participants. Treat such an estimate as ecological/trial-level unless participant-level joint exposure or randomized factorial evidence supports a patient-level interpretation. Test continuous exposure proportions and alternate thresholds; threshold sensitivity does not substitute for patient-level overlap.
+4. **Component-NMA assumptions.** Record the CNMA model matrix and component identifiability. Test additivity against prespecified component interactions where the network can identify them; report when interactions are not estimable. Narrower CIs after decomposing combinations are not independent new evidence: trace component contributions and shared trials. Compare standard NMA and CNMA, examine model fit and interaction sensitivity, and do not equate model-implied combinations with directly randomized regimens.
+5. **P-score/SUCRA interpretation.** P-scores are frequentist certainty summaries based on relative estimates and standard errors, averaged over competing treatments; they are **not** probabilities that a treatment is the single best. SUCRA summarizes the cumulative ranking distribution, not proof of comparative superiority. Flag wording that calls a P-score/SUCRA a probability of being best. Require pairwise effects, intervals, clinical magnitude and evidence certainty alongside rankings.
+6. **RoB-tool generation and target.** Record the exact RoB tool/version. Where an NMA used the older Cochrane RoB 1 tool, do not describe it as RoB 2. For a contemporary reappraisal, perform result-specific RoB 2 for each outcome/timepoint/estimand, retain the original judgements as historical, and record what changes. The presence of RoB 1 is an appraisal limitation requiring update, not automatic proof that all RCT estimates are biased.
+7. **Multiplicity and secondary-endpoint hierarchy.** Record each parent RCT's primary endpoint, gatekeeping/multiplicity strategy, secondary endpoints, nominal versus multiplicity-controlled status, and whether a secondary mortality result was independently powered. When a new combination node is driven predominantly by one RCT's nominal secondary endpoint after a failed primary endpoint, flag the incremental component conclusion as exploratory and run leave-one-trial-out and node-removal sensitivities. Do not call a prespecified, independently powered secondary endpoint invalid; preserve its inferential status precisely.
+8. **Life-years-gained extrapolation.** If an NMA transforms relative treatment effects into life-years gained using external cohorts, keep the network HR, baseline survival model, extrapolation horizon, proportional-hazards assumption, treatment-effect transportability, competing risks and cohort-specific baseline hazards as distinct layers. Report modelled absolute benefit as a projection, not observed randomized survival. Reproduce the base survival model before changing the NMA effect.
+9. **Threshold sample-size exclusion.** If eligible RCTs below a minimum sample-size cut (e.g. N<100) are excluded, enumerate all excluded trials, outcomes and event counts. Test whether excluding smaller trials differentially removes older agents or early signals. A size cutoff may be justified, but its influence on the network and missing-evidence assessment must be visible.
+10. **Network inconsistency is local.** When node-splitting finds inconsistency for particular comparisons, record exactly those edges and outcomes. Do not treat a global network as wholly invalid, but do not use a statement that results are generally consistent to erase failed comparisons. Run local influence and direct/indirect decomposition.
+11. **Egger/funnel limits.** In complex multi-treatment networks, record which comparison-adjusted funnel plot and regression were used, the effective number and distribution of independent comparisons, and whether the test has adequate information. A nonsignificant Egger test is not evidence that publication bias is absent.
+
+### New negative controls
+
+19. A review reports cumulative risks at different follow-up horizons but also has a correctly specified survival NMA on a common time-to-event estimand; do not flag solely because trial follow-up varies. Flag only if incompatible risk data were pooled as though they represented the same horizon.
+20. A trial-level background therapy proportion is explicitly described as ecological and used only for study-level meta-regression; do not relabel it as an individual patient's combination effect.
+21. A CNMA uses a prespecified interaction model or reports components as non-identifiable because of insufficient independent variation; do not assume additivity was forced.
+22. P-scores are described as relative certainty summaries, with no claim that they are probabilities of being best; no interpretation flag.
+23. A secondary endpoint is prespecified and adequately powered under its own alpha allocation despite a failed primary endpoint; do not automatically demote it to merely nominal.
+24. A trial's older RoB 1 assessment is retained because it was completed before RoB 2 became available and the review is not being updated; label version and vintage, do not allege misconduct.
+
+### Current audit examples to preserve as distinct statuses
+
+- **Tang et al. 2024 (DOI 10.1186/s12872-024-04339-3):** source-verified methods disclosures show an LVEF eligibility threshold of ≤45%, a 60% trial-level background-treatment rule, aggregate rather than patient-level concomitant-treatment data, nonrandomized background therapies, additive CNMA assumption, outcome risk ratios and follow-up ranging from 2 to 71.8 months, an older six-domain Cochrane RoB assessment, and two local node-splitting failures (ACEI vs H-ISDN for all-cause mortality, p=0.02; BB vs placebo for HHF, p=0.01). The article also describes P-score as the likelihood of being ranked most effective, an incorrect interpretation. These are source-verified methodology/reporting limitations; exact model input and outcome-specific impact remain to be established from the supplement and analysis code.
+- **JACC 2025 updated HFrEF regimen NMA (DOI 10.1016/j.jacc.2025.08.054):** the incremental quintuple-versus-quadruple result is explicitly described by the authors as exploratory because it is derived from a secondary endpoint of one trial. VICTOR's primary composite (CV death or HF hospitalisation) was neutral (HR 0.93, 95% CI 0.83–1.04); the secondary CV death endpoint was favourable (HR 0.83, 0.71–0.97), and the secondary all-cause mortality result was HR 0.84 (0.74–0.97). The prespecified protocol states secondary/exploratory endpoints are nominal after failure of the primary endpoint. The audit must retain this hierarchy and not treat the NMA's quintuple rank as confirmatory evidence of an incremental vericiguat survival benefit. This is a strength-of-evidence limitation, not proof that the underlying VICTOR HR is wrong.
+
+
+## JACC 2025 HFrEF NMA — external registry and reference-trial audit additions (1 November 2026)
+
+These additions follow a deeper source check of van Essen et al. (JACC 2025; DOI 10.1016/j.jacc.2025.08.054). They record **issues to resolve**, not proven errors in the unseen fitted input matrix.
+
+1. **Registry-to-paper endpoint reconciliation is mandatory.** For every contribution to an outcome network, retain the ClinicalTrials.gov/WHO ICTRP record version, original registered primary/secondary outcome, actual registry result posting, protocol/SAP amendment chronology, paper endpoint, and outcome event unit. Distinguish primary composite, separately registered secondary composite, standalone event/time-to-event endpoint, and post hoc endpoint. A trial whose primary CV-death/HF event includes urgent outpatient visits must not be silently represented as CV-death/HF-hospitalisation; if an exact secondary CV-death/HF-hospitalisation outcome exists, verify it was the one used. Example control: DAPA-HF registered both a broad primary (CV death/HF hospitalization/urgent HF visit) and a distinct secondary composite without urgent visits; GALACTIC-HF's primary includes urgent visits/ED or admission, with separately registered CV death and first HF hospitalisation. Neither is categorically ineligible; the exact extracted endpoint must be identified.
+2. **Reference-trial bridge audit.** If authors say an older RCT served as a “reference” to analyse a composite that was not reported in other early trials, identify its exact role: network anchor, imputation, conversion, calibration or actual outcome observation. The reference endpoint must match the target event definition, population, analysis set, follow-up window and treatment estimand. Do not infer a CV-death/HF-hospitalisation result from all-cause death/any-cause hospitalisation. If the reference trial reports only a sequential strategy (e.g. initial 6-month monotherapy followed by combination), it cannot automatically stand for a fixed chronic regimen. A separately reported CV-death/cardiovascular-hospitalisation result may help but must be shown to match exactly.
+3. **CIBIS III control case.** The JACC 2025 paper says CIBIS III served as a reference for composite CV death/HF hospitalisation analyses. CIBIS III's main randomized strategy was bisoprolol-first versus enalapril-first for 6 months, then combination for 6–24 months; its primary endpoint was all-cause death or any-cause hospitalisation. Secondary/post-hoc endpoints include CV death and cardiovascular hospitalisation, but these are not automatically identical to CV death or HF hospitalisation. Require the exact CIBIS III supplement row, endpoint label, time period and source event definition before determining whether it creates an endpoint or treatment-strategy mismatch.
+4. **HFrEF phenotype labelling.** If the review uses LVEF ≤50% for an analysis labelled HFrEF, document that its target includes 41–49% HFmrEF under the 2021 ESC and Universal Definition classifications (HFrEF ≤40%; HFmrEF 41–49%). This may be a deliberate broader inclusion and is not automatically invalid. Require EF≤40 versus 41–49 separate sensitivity analyses or explicit justification; mean LVEF similarity across trials does not replace individual-level subgroup estimates.
+5. **Registry searching and missing evidence.** Search strategy audit must explicitly record whether ClinicalTrials.gov, WHO ICTRP, EU CTIS/older EU Clinical Trials Register, sponsor trial registers, conference abstracts and reference lists were searched. If the paper reports only MEDLINE, Embase and CENTRAL, label `REGISTRY_SEARCH_NOT_REPORTED` rather than assume no registry search was performed. Crosswalk completed/terminated/suspended trials with unpublished results, and assess whether an intervention/outcome is selectively absent. Never infer missing evidence from no registry mention alone.
+6. **Trial-level multiplicity attached to NMA evidence.** For each effect used in an NMA, flag whether the underlying RCT endpoint was its primary endpoint or a nominal secondary/exploratory endpoint after a failed primary endpoint. This does not prohibit using a secondary endpoint in a meta-analysis, but the inference status and certainty must be retained in CINeMA and the clinical interpretation. Example: VICTOR's primary CV death/HF hospitalisation composite was neutral (HR 0.93, 95% CI 0.83–1.04); its protocol describes secondary/exploratory endpoints as nominal. The separate mortality publication's 2026 erratum corrected risk tables/cumulative counts for sudden/HF-related death and anaemia rows, but did **not** change overall CV-death and all-cause mortality HRs; the corrected paper must be used for time-to-event and relevant safety extraction.
+7. **Outcome rows must not be interchanged.** For VICTORIA, distinguish total CV deaths (414/441) and total all-cause deaths (512/534) from deaths counted as the first component event in a composite (e.g. CV deaths 206/225). For GALACTIC-HF, distinguish total CV deaths (808/798) from CV deaths as first primary composite event (346/371); its primary event count includes urgent HF events. If a supplement labels first-event counts as total mortality, flag a verified reporting-table issue, but block `MODEL_INPUT_WRONG` until executed model rows establish what was fitted.
+
+### JACC 2025 audit status (classification, not verdict)
+
+- **Source verified:** JACC's public methods identify MEDLINE, Embase and CENTRAL through April 2025; the public search description retrieved so far does not disclose ClinicalTrials.gov/ICTRP. The paper describes component NMA as additive and background-therapy components as trial-arm-level classifications; its threshold sensitivity (50%, 70%, 90%) changes the top regimen. It explicitly calls the incremental quintuple benefit exploratory and derived from a single trial's secondary endpoint.
+- **Source verified:** conventional ESC/Universal Definition categories identify HFrEF as LVEF ≤40% and HFmrEF as 41–49%; a JACC network described as HFrEF needs an explicit interpretation if its eligibility threshold extends to ≤50%.
+- **High-priority unresolved:** exact CIBIS III endpoint/estimand used for the composite network; exact VICTORIA and GALACTIC-HF mortality outcome rows used in the fitted network; precise registry-to-NMA outcome mapping for each of the 21 composite trials.
+- **Not demonstrated:** that any of these discrepancies changed the JACC NMA coefficients or that all regimen estimates are wrong. Author extraction workbook, supplement model inputs and reproducible code are still required for exact replay.
+
+
+## JACC 2025 HFrEF NMA — deeper source reconciliation (1 November 2026, continuation 2)
+
+### 1. CIBIS III is not an endpoint-equivalent reference without a documented transformation
+
+The JACC article states that CIBIS III served as a reference for analysing the CV-death/HF-hospitalisation composite in earlier trials. Primary-source reconciliation shows:
+
+- CIBIS III's randomized strategy was bisoprolol-first versus enalapril-first: 6 months of open-label monotherapy, then both agents in combination for 6–24 months. It enrolled 1,010 stable patients, mean LVEF about 28.8%, aged ≥65 years, previously not receiving ACEI, BB or ARB.
+- Its primary outcome was **all-cause death or hospitalisation from any cause**, not CV death or HF hospitalisation (main RCT HR 0.94, 95% CI 0.77–1.16).
+- A post-hoc analysis examined mortality or cardiovascular hospitalisation; this is still not equivalent to CV death or HF hospitalisation. It reported that 60% of endpoints occurred during the monotherapy phase, and treatment initiated during that phase was not a predictor of the assessed outcomes.
+- Separate reporting gives 63 vs 51 patients hospitalised for worsening HF (HR 1.25, 95% CI 0.87–1.81) and overall deaths 65 vs 73 (HR 0.88, 95% CI 0.63–1.22), but the whole trial remains a sequential treatment-strategy RCT rather than a fixed chronic regimen comparison.
+
+Sources: PMID 16143696 (main randomized CIBIS III); PMID 21551161 (post-hoc strategy/outcome analysis); PMID 20528880 (mode-of-death analysis). The JACC authors' phrase “served as a reference” does not identify whether CIBIS III was a data source, calibration, proxy, or bridge. Therefore classify this as `ENDPOINT_AND_ESTIMAND_BRIDGE_UNRESOLVED`, not a confirmed model-input error. Require the exact CIBIS III row, source report, outcome definition, follow-up and transformation. Do not accept all-cause mortality/any-cause or CV hospitalization as interchangeable with CV death/HF hospitalization.
+
+### 2. GALACTIC-HF has separate broad and narrow outcomes; exact NMA row is decisive
+
+ClinicalTrials.gov NCT02929329 and FDA source documents define the primary event as CV death or first HF event. HF event includes urgent clinic visit, emergency-department visit, or hospital admission with worsening HF requiring treatment intensification. The registry separately reports **time to first HF hospitalization** and **time to CV death**. It is not automatically invalid for the JACC composite network: the audit must identify whether the NMA used the broader primary event, the separately reported narrow hospitalization endpoint, or a documented harmonized source. A narrow composite of CV death OR HF hospitalization is not identical to the broader primary composite. Because first HF hospitalization and CV death may occur in the same participant, analysts must not simply add marginal counts or HRs to create a composite without joint-time-to-event data.
+
+Sources: ClinicalTrials.gov NCT02929329; FDA GALACTIC-HF clinical trial overview; NEJM GALACTIC-HF primary publication. Required status: `OUTCOME_ROW_NOT_YET_RECONCILED` pending the exact JACC supplement input.
+
+### 3. VICTOR trial-level multiplicity must remain visible in NMA certainty
+
+ClinicalTrials.gov NCT05093933 specifies the primary outcome as time to first CV death or HF hospitalization. The trial report gives 549/3,053 versus 584/3,052 events, HR 0.93 (95% CI 0.83–1.04; p=0.22). The authors state that, per protocol, after failure of the primary endpoint, all secondary/exploratory endpoint analyses are nominal. The mortality analysis reports CV death HR 0.83 (0.71–0.97) and all-cause mortality HR 0.84 (0.74–0.97); it describes CV death as a prespecified secondary endpoint and independently powered, but the protocol's multiplicity/hierarchical statement still governs confirmatory interpretation. This is not grounds to exclude the result from a secondary synthesis, but it must inform outcome-specific selective-reporting/certainty appraisal and clinical language.
+
+JACC outcome pattern: the estimated quintuple-versus-quadruple contrast is significant for all-cause death (HR 0.88, 95% CI 0.79–0.98) and standalone CV death (HR 0.87, 95% CI 0.77–0.98), but **not** for the CV-death/HF-hospitalisation composite (HR 0.93, 95% CI 0.85–1.02). The latter is the closest of the three to VICTOR's neutral primary endpoint. This discordance is not proof of error, but it makes the incremental mortality-only ranking more dependent on a single secondary mortality signal. Required sensitivities: remove VICTOR; report no estimable quintuple node if disconnected; preserve nominal endpoint status; compare fixed vs random effects and outcome definitions.
+
+Sources: ClinicalTrials.gov NCT05093933; PMID 40897189 (VICTOR primary trial); PMID 40884032 (VICTOR mortality analysis); JACC DOI 10.1016/j.jacc.2025.08.054.
+
+### 4. Quintuple regimen estimate is model-implied, not an observed randomized five-drug arm
+
+JACC reports HR 0.35 (0.27–0.45) for quintuple therapy and 0.39 (0.32–0.49) for quadruple therapy vs placebo. The authors' own text and correspondence clarify that component background exposure was coded at trial-arm level (e.g. whether ≥50% of each arm used each individual component), not by observed joint exposure in the same individual participants. VICTOR is the sole trial supporting the quintuple node. Thus HR 0.35 is a CNMA extrapolation from trial-level marginal component classification plus additivity—not the observed HR from a trial randomizing patients to ARNI+BB+MRA+SGLT2i+vericiguat as a complete combination. The estimated incremental benefit is exploratory and must be described accordingly. The 50%, 70%, and 90% coding sensitivity changes the leading regimen; this is evidence of model-specification sensitivity. It is not an error by itself.
+
+### 5. Counterfactual life-years and NNT require a model audit separate from the NMA
+
+The 2025 paper projects 5.3 life-years for quadruple therapy and 6.0 for quintuple therapy at age 70 vs “no treatment”; the underlying BIOSTAT-CHF/ASIAN-HF survival sample includes 7,376 patients, 77% on ACEI/ARB, 82% on beta-blockers and 55% on MRA at baseline. The earlier 2021 NMA from the same programme explicitly distinguished gains vs actual care and gains vs hypothetical placebo/no treatment, adjusting each patient's baseline regimen. The 2025 update must be checked for the same explicit counterfactual construction. Verify how observed treated survival was converted to untreated baseline, whether the NMA HR is applied conditionally on the individual's existing background treatment, and whether no-treatment absolute risks avoid double-counting existing therapy. Treat this as `COUNTERFACTUAL_MODEL_REPRODUCTION_REQUIRED`, not as a proven double-counting error.
+
+The reported two-year NNTs (6.3 [6.2–6.4] for quadruple; 5.8 [5.8–5.9] for quintuple) require independent reproduction from patient-level baseline hazards and joint bootstrap draws. Do not derive an incremental NNT by subtracting marginal NNTs. Obtain the paired difference distribution, its CI, and bootstrap design/covariance. Authors have stated that bootstrapping addressed uncertainty; exact executable implementation and paired estimand remain to be checked.
+
+### Status update
+
+New source-verified facts: CIBIS III endpoint/strategy definitions; GALACTIC-HF's separate broad primary and narrower registered hospitalisation outcomes; VICTOR's neutral primary, protocol-defined nominal secondary analyses; JACC's differing incremental results across all-cause mortality, CV mortality and the composite. Unresolved: exact CIBIS and GALACTIC rows fitted by JACC; whether VICTORIA/GALACTIC mislabelled counts entered models; whether the no-treatment baseline reconstruction and paired NNT uncertainty are correctly implemented. No claim of a complete NMA reproduction or proven change in JACC model coefficients is permitted until the exact supplement inputs and code are obtained.
+
+
+## Cross-trial effect modification and post-publication evidence update (1 November 2026)
+
+### GALACTIC-HF: within-trial effect modification should inform transitivity
+
+A prespecified/secondary subgroup source analysis (post hoc publication) of GALACTIC-HF reported a significant interaction by severe-HF phenotype. Severe HF was defined using NYHA III–IV, LVEF ≤30%, and HF hospitalization in the prior 6 months. The primary composite HR for omecamtiv mecarbil was 0.80 (95% CI 0.71–0.90) in severe HF versus 0.99 (0.91–1.08) in other patients (P interaction=0.005). CV death HRs were 0.88 (0.75–1.03) versus 1.10 (0.97–1.25), P interaction=0.03. This demonstrates plausible patient-level effect modification in one large included trial; a trial-level meta-regression on mean NYHA class/LVEF cannot be assumed to remove it. Required sensitivity: extract compatible subgroup estimates and test whether the JACC omecamtiv-related component/comparator network remains stable in severe versus non-severe disease. Because subgroup evidence is post hoc and not necessarily available across all trials, it is a transitivity concern and not by itself a proven invalid pooled estimate. Sources: PMID 34643642; JAMA Cardiology full text / table 2.
+
+### VICTOR: preserve both the design hierarchy and independent mortality power
+
+The VICTOR design paper states that the trial was designed to accumulate at least 590 CV deaths and was powered to assess CV mortality. It also describes the original frequentist testing hierarchy: the primary composite (CV death or first HHF) is first; its components and other secondary endpoints are subject to conditional/hierarchical testing. The primary trial was neutral (HR 0.93, 95% CI 0.83–1.04), while the later mortality report gives a prespecified secondary CV-death HR 0.83 (0.71–0.97) and uses nominal P-values. Do not simplify this into either “unpowered exploratory outcome” or “fully confirmatory because powered.” The exact protocol/SAP hierarchy and any amendments are needed. A post hoc Bayesian/actuarial analysis published 16 September 2026 explicitly notes that, because the primary endpoint was neutral and the prespecified hierarchy placed the composite first, the powered CV mortality result is formally harder to interpret; the new Bayesian and lifetime survival analyses are supportive/hypothesis-strengthening, not confirmatory. Therefore the JACC NMA may include this endpoint, but its certainty and the fifth-component clinical claim must retain the hierarchy and single-trial dependence. Sources: PMID 39473305 / NCT05093933; PMID 40884032; DOI 10.1093/ejhf/xuag267 (published 16 Sep 2026).
+
+### Correction to cross-NMA comparison interpretation
+
+NET-COST-HFrEF (DOI 10.1093/ejhf/xuag233; published 16 July 2026) primary analysis excluded VICTOR because the authors considered it outside the recent-worsening setting in which vericiguat is recommended. Its primary analysis favoured quadruple ARNI+BB+MRA+SGLT2i. Crucially, a scenario analysis adding VICTOR made the quintuple regimen with vericiguat the most effective strategy for mortality and total HF hospitalizations. Thus do **not** claim NET-COST independently refutes the JACC quintuple result. The more defensible inference is that conclusions depend on the clinical target population and inclusion/coding of VICTOR. This reinforces the need to present separate recent-worsening versus stable-ambulatory populations, not one universal recommendation. Sources: DOI 10.1093/ejhf/xuag233; PubMed PMID 42462167; full article scenario analysis.
+
+### Registry search and selection protocol
+
+When an NMA claims a treatment effect or eligibility restriction, compare its trial search not only with journal database searches but with registry records and their history. For vericiguat, distinguish VICTORIA (recent worsening HF) from VICTOR (stable ambulatory without recent worsening). For omecamtiv, compare primary endpoint and separately reported HF hospitalization, CV death, urgent HF visits. Search and screen the protocol/SAP amendments, result-posting history, publications and post hoc subgroup reports. Registry presence alone does not prove selective reporting; absent registry search in the methods is a missing-search-reporting flag, not proof of omitted studies.
+
+
+## CIBIS III reference-method lineage and NMA-version propagation (1 November 2026)
+
+The phrase that CIBIS III was used as a “reference” for composite outcomes is present in both the 2021 predecessor NMA by the same research programme (JACC Heart Failure DOI 10.1016/j.jchf.2021.09.004) and the 2025 update (JACC DOI 10.1016/j.jacc.2025.08.054). This establishes methodological lineage across review versions, but not by itself that erroneous numerical data were copied or that the fitted network is wrong.
+
+Original CIBIS III RCT (PMID 16143696): 1,010 patients with mild-to-moderate CHF and LVEF ≤35%, not receiving ACEI, BB or ARB, randomized open-label to bisoprolol-first or enalapril-first for 6 months, followed by the combination for 6–24 months. The primary endpoint was all-cause death or hospitalization from any cause; primary HR 0.94 (95% CI 0.77–1.16). The trial was not a fixed-regimen parallel comparison of stable background therapy.
+
+Post-hoc CIBIS III report (PMID 21551161; DOI 10.1093/eurjhf/hfr051) analysed endpoints including mortality or cardiovascular hospitalization; 60% of endpoints occurred during monotherapy, and treatment during monotherapy was not a predictor of those outcomes. This remains different from CV death OR HF hospitalization. Another CIBIS III report (PMID 20528880) assessed mode of death, but does not transform the original sequence design into a fixed chronic treatment contrast.
+
+Required methods disclosure from each NMA version:
+- Which exact CIBIS III endpoint and report were treated as the “reference” (primary all-cause death/any hospitalization, mortality/CV hospitalization, or a separate HF-hospitalization measure)?
+- Was it used as a direct edge, network anchor, calibration/bridging estimate, or to derive missing composite data for other trials?
+- What event definition, analysis set, treatment phase, follow-up and HR were entered?
+- If a derived composite was created, what exact method combined components and accounted for participants experiencing both events?
+- Did 2025 retain the same CIBIS III row from 2021, or re-extract/redefine it? Require version-to-version line-by-line source and model-input provenance.
+
+Until those are provided, status is `REFERENCE-TRIAL-ESTIMAND-AND-LINEAGE-UNRESOLVED`. This is a serious, repeat-across-versions methodological concern, but is not yet a demonstrated fitted-data error.
+
+## Independent cross-NMA comparison — important qualification
+
+NET-COST-HFrEF (DOI 10.1093/ejhf/xuag233; 2026) is not an independent refutation of JACC's quintuple regimen. Its guideline-oriented primary analysis excluded VICTOR because its stable, non-recent-worsening population does not match the current vericiguat-recommended recent-worsening setting. Its scenario analysis including VICTOR yielded quintuple therapy as most effective for both all-cause mortality and total HF hospitalizations. The correct inference is that target population and VICTOR inclusion materially change the leading regimen. Preserve both base and VICTOR-inclusion scenario and avoid claiming contradictory independent results.
+
+## Additional GALACTIC-HF source checks
+
+FDA's GALACTIC-HF clinical trial overview identifies primary endpoint as time to CV death or first HF event; an HF event includes urgent, unscheduled office/clinic/ED visit or hospital admission with objective new/worsening HF and treatment initiation/intensification. Separate secondary endpoints include time to first HF hospitalization and CV death. The exact event row in the JACC network must therefore be mapped to the correct narrow or broad source estimand. A broader primary endpoint must not be labelled HF hospitalization alone. Source: FDA clinical overview, NDA 207620, and NCT02929329.
+
+A post-hoc GALACTIC-HF severe-HF analysis (PMID 34643642) found treatment-effect heterogeneity for omecamtiv mecarbil: primary composite HR 0.80 (0.71–0.90) with severe HF versus 0.99 (0.91–1.08) without severe HF, interaction P=0.005; CV death HR 0.88 (0.75–1.03) versus 1.10 (0.97–1.25), interaction P=0.03. Severe HF required NYHA III–IV, LVEF ≤30%, and prior HF hospitalization within six months. This is a concrete plausible effect modifier that study-level mean EF/NYHA meta-regression cannot necessarily resolve. It does not automatically invalidate the overall randomized estimate; it motivates subgroup-aware transitivity sensitivity if compatible subgroup data exist across other trials.
+
+
+## Sponsor-supplied trial data provenance and publication chronology
+
+JACC's JACC 2025 manuscript history records received 29 July, revised 21 August and accepted 22 August 2025; it states that VICTOR data were incorporated. The VICTOR primary results paper was received 21 July, revised 6 August, accepted 13 August, but published 30 August 2025. The NMA authors previously explained in correspondence that the VICTOR data were supplied by the sponsor before peer-reviewed publication. The final public ClinicalTrials.gov record NCT05093933 now reports the primary CV death/HF-hospitalisation event counts (549/3053 vs 584/3052; HR 0.93, 95% CI 0.83–1.04) and separately specified outcomes: CV death, first HF hospitalisation, recurrent HF hospitalisations and all-cause mortality. The mortality paper reports CV deaths 292 vs 346 (HR 0.83, 0.71–0.97) and all-cause deaths 377 vs 440 (HR 0.84, 0.74–0.97).
+
+This chronology does not imply improper use of unpublished data; trial investigators and sponsor may share valid results before publication. It creates a mandatory reproducibility requirement: record the exact VICTOR dataset cut/version, endpoint definitions and source tables supplied to the NMA, and reconcile each outcome against the final registry record, primary paper, mortality paper and June 2026 correction. Do not assume the primary composite counts can validate the mortality rows or vice versa. Classify as `SPONSOR_SUPPLIED_DATA_VERSION_RECONCILIATION_REQUIRED` until the exact JACC workbook is inspected.
+
+ClinicalTrials.gov outcome identity must preserve distinct fields: primary CV death or first HF hospitalization; secondary time to CV death; time to first HF hospitalization; time to total/recurrent HF hospitalisations; time to all-cause mortality; and first-event composite of all-cause mortality or HF hospitalization. Do not use a broad combined outcome or event-rate count as a substitute for another estimand.
+
+
+## JACC 2025 detailed text, outcome denominator and component-specific checks (1 November 2026)
+
+### 1. Outcome-specific study counts reconcile as availability, not automatically as an error
+
+The main article reports 89 included RCTs overall; all-cause mortality in 84 studies (102,489 participants; 18,520 deaths); CV death in 55 studies; and the CV death/HF hospitalisation composite in 21 studies. The difference between the overall roster and each outcome network may simply reflect absence of that outcome, so do not call it a denominator inconsistency without reconciling the 5, 34 and 68 outcome-nonreporting trials respectively. The supplementary xlsx is identified by JACC as mmc2.xlsx (198.75 KB), but the current retrieval route returned publisher 403/access failure; the exact workbook remains an outstanding requirement.
+
+### 2. Figure 2 panel cross-reference reversal — source-verified editorial error
+
+The article's Results text points the composite endpoint paragraph to Figure 2B and the standalone CV mortality paragraph to Figure 2C. The Figure 2 caption explicitly defines panel A as all-cause mortality, B as cardiovascular mortality and C as the CV death/HF hospitalisation composite. Therefore the two Results cross-references (B/C) are reversed. The numeric result paragraphs and endpoint study counts are otherwise separately described; classify as `FIGURE_CROSS_REFERENCE_ERROR`, not proof the network calculations are wrong. Verify panels against the figure image before any assertion about plotted data.
+
+### 3. H-ISDN all-cause mortality component estimate — significant population transportability question
+
+JACC reports H-ISDN as the individual drug class associated with the lowest estimated all-cause mortality (HR 0.68, 95% CI 0.54–0.86); after excluding A-HeFT, estimate remains 0.72 (0.55–0.95). The source RCT populations are highly distinct:
+- V-HeFT I randomized 642 men, in a pre-ACEI/pre-beta-blocker background era (placebo/prazosin/H-ISDN; background digoxin/diuretic).
+- V-HeFT II compared enalapril directly with H-ISDN; enalapril lowered mortality at 2 years (18% vs 25%, p=0.016), so this is not evidence for H-ISDN vs placebo and is a direct active-comparator edge.
+- A-HeFT randomized 1,050 self-identified Black patients with NYHA III–IV HF on standard background therapy; mortality difference 6.2% vs 10.2% (HR 0.57, 95% CI 0.37–0.89), stopped early after median ~10 months. The primary outcome was a composite score including quality of life, death and HF hospitalisation.
+
+The leave-A-HeFT-out analysis does not address transportability of V-HeFT I/II from older male/pre-GDMT populations to contemporary diverse patients receiving ARNI/BB/MRA/SGLT2i. The component effect may also be sensitive to the V-HeFT II direct enalapril-vs-H-ISDN edge and to differences in background therapy. Required: show the contributing RCTs/contrast rows and network weights; inspect direct vs indirect decomposition; run A-HeFT-only, V-HeFT-only and leave-one-trial-out; compare old-era versus contemporary background therapy and sex/race/NYHA subgroup where available; do not present HR 0.68 as a general class-wide ranking without explicit population qualification. Status `COMPONENT_TRANSPORTABILITY_REQUIRES_REANALYSIS`; not yet a confirmed arithmetic error. Sources: NEJM A-HeFT DOI 10.1056/NEJMoa042934; V-HeFT II ACC summary / NEJM 1991; V-HeFT I NEJM 1986; JACC 2025 DOI 10.1016/j.jacc.2025.08.054.
+
+### 4. The paper's Egger test and risk-of-bias statements need comparison-adjusted scrutiny
+
+The main text reports Egger tests for mortality (p=0.072), CV death/HF hospitalisation composite (p=0.705), and CV death alone (p=0.177), with overall low risk of bias, low-to-moderate heterogeneity and no incoherence. In a multi-arm, multi-treatment NMA with dependent contrasts and outcome networks of only 21, 55 and 84 studies, a conventional Egger test is not automatically an adequate network-level reporting-bias assessment. Inspect Supplement Figure 4 and Methods to determine whether the test is comparison-adjusted and whether its unit of analysis handles multi-arm and shared-control dependency. A nonsignificant result is not evidence that reporting bias is absent. Also determine whether RoB assessment is outcome/result-specific or one study-level label, and whether lack of blinding/reporting bias was assigned to the actual estimand used. This remains a method appraisal question until supplement is obtained.
+
+### 5. Search/protocol chronology remains unresolved
+
+The article says PROSPERO CRD420251054997, with MEDLINE, Embase and CENTRAL search through April 2025; initial manuscript received 29 July, accepted 22 August 2025; VICTOR sponsor data were incorporated before its peer-reviewed paper appeared online on 30 August. Do not call this retrospective registration without retrieving PROSPERO's first-submission and registration dates. The protocol's availability/registration timing, dated database search logs, sponsor data cut and any post hoc amendments must be compared. The trial data may legitimately have been supplied before publication. Status `PROSPERO_AND_SEARCH_CHRONOLOGY_UNVERIFIED`.
+
+### 6. No false denominator alarms
+
+The counts 89 (overall), 84 (all-cause mortality), 55 (CV death), and 21 (composite) refer to different outcome-availability sets and cannot be compared as if all trials necessarily contribute to every outcome. The 103,754 overall sample and 102,489 all-cause mortality population can differ when five studies do not report mortality; no error should be alleged unless the trial-level table proves a mismatch.
+
+
+## H-ISDN external-validity and Figure 2 cross-reference findings (continuation)
+
+### Figure 2 cross-reference reversal
+
+The JACC 2025 Results section refers the CV death/HF-hospitalisation composite paragraph to Figure 2B and the standalone CV mortality paragraph to Figure 2C. The Figure 2 caption labels B as CV mortality and C as the composite. These two in-text references are reversed. Status `CONFIRMED_REPORTING_CROSS_REFERENCE_ERROR`; do not infer numerical model errors from this alone.
+
+### H-ISDN class estimate: important generalisability warning
+
+JACC's component NMA reports H-ISDN as the individual class with the lowest all-cause mortality estimate (HR 0.68, 95% CI 0.54–0.86); after removing A-HeFT, the estimate remains 0.72 (0.55–0.95). This is not evidence that H-ISDN is generally the most effective treatment for all HFrEF patients. The contributing trials have major effect-modifier differences:
+- V-HeFT I: 642 men, predominantly old-era digoxin/diuretic background, no ACEI or beta-blocker; three arms including placebo and prazosin, mean follow-up approximately 2.3 years.
+- V-HeFT II: direct active-comparator H-ISDN versus enalapril; enalapril had lower 2-year mortality (18% vs 25%, p=0.016). It is not another placebo-controlled H-ISDN estimate.
+- A-HeFT: 1,050 self-identified Black patients with NYHA III–IV HF added to standard therapy; fixed-dose H-ISDN improved mortality (6.2% vs 10.2%; HR 0.57, 95% CI 0.37–0.89) and reduced HF hospitalisation; early stopping after median ~10 months. Its primary outcome was a composite score including quality of life, death and HF hospitalization.
+
+Guideline evidence positions H-ISDN primarily for selected patients (not a universal all-HFrEF class recommendation), especially self-identified Black patients with symptomatic NYHA III–IV on optimal therapy, or where RAS inhibitors cannot be used. The aggregate component estimate should therefore be interpreted in context. A-HeFT-exclusion sensitivity is useful but does not resolve old-era background-treatment, active-comparator, race, sex and severity transportability. Required analysis: show trial-by-trial contrast/data contributions to H-ISDN coefficient; separate placebo-controlled V-HeFT I/A-HeFT evidence from V-HeFT II active-comparator evidence; run trial-specific and population-restricted analyses; test whether the coefficient remains stable when V-HeFT II is not treated as a placebo-equivalent comparison; report uncertainty of the H-ISDN component outside its studied populations. Status `COMPONENT_TRANSPORTABILITY_REQUIRES_REANALYSIS`, not a proven arithmetic error.
+
+Sources: JACC 2025 DOI 10.1016/j.jacc.2025.08.054; A-HeFT NEJM DOI 10.1056/NEJMoa042934; V-HeFT II NEJM 1991; 2008 ESC HF guideline evidence summary; current 2026 ESC CKD/HF recommendation context.
+
+### Do not overstate the concern
+
+The A-HeFT signal itself is a valid randomized result in its enrolled population. V-HeFT I and II remain randomized clinical evidence but represent different eras, populations, background regimens and comparators. The critique is transportability of a single common H-ISDN component coefficient to all HFrEF and the interpretation of a network ranking, not denial of H-ISDN benefit where indicated.
+
+
+## JACC 2025 eligibility and sparse-node exclusion checks (continuation)
+
+### HFrEF eligibility definition extends beyond conventional HFrEF
+
+The article explicitly defines HFrEF eligibility as LVEF ≤50%. Contemporary phenotype definitions conventionally distinguish HFrEF (≤40%), HFmrEF (41–49%) and HFpEF (≥50%). Thus the stated eligibility rule potentially includes HFmrEF and EF exactly 50%; this may be a deliberate broad LV systolic dysfunction population, but it should not be described without qualification as a pure HFrEF network. Required: give actual trial-level EF distribution and participants from 41–49% and EF=50%; show sensitivity limited to EF≤40%; retain 41–49% as a separate network/stratum where possible. This is a population-definition/reporting issue; whether any actual enrolled patients are in those ranges depends on trial entry criteria and extraction.
+
+### Exclusion of GLP-1 agonist trials for sparse mortality
+
+The Results say 3 GLP-1 agonist articles with 619 patients and only 36 mortality events were identified, but excluded because the authors considered this too few for meaningful estimates. This may be statistically defensible for an all-cause mortality network with very sparse data and a disconnected class node, but it narrows the review's apparent pharmacological scope. The supplement should show those trials, eligibility, endpoints, deaths, and any safety/clinical outcomes. The authors should state whether GLP-1 agonist evidence was excluded from all outcomes or only mortality, and avoid implying that this review evaluated all possible drug classes. Consider a separate descriptive/pairwise synthesis with uncertainty rather than forcing an unstable node into the NMA. Status `SPARSE_COMPONENT_EXCLUSION_REQUIRES_TRANSPARENT_REPORTING`, not necessarily an error.
+
+### Egger test and network reporting-bias appraisal
+
+The article reports three Egger P values (all-cause mortality 0.072; CV death/HF-hospitalisation 0.705; CV death 0.177) as evidence of no significant reporting bias. The main text does not specify whether these were comparison-adjusted funnel/regression procedures, how multi-arm and correlated contrasts were handled, or whether sparse treatment nodes/unequal comparison distribution affect power. Obtain Supplemental Figure 4 and code to identify the precise test. A nonsignificant Egger result does not establish absence of reporting bias, especially for the 21-study composite network. This is a methods transparency and test-power concern, not a confirmed calculation error.
+
+
+## Full-text extraction update — 1 November 2026 (JACC 2025)
+
+Full searchable article text was recovered from JACC search indexing (the publisher page itself still blocks direct open). This resolves several issues more accurately:
+
+### 1. Outcome counts and figure cross-references
+
+The Results text explicitly reports 84 studies/102,489 participants/18,520 deaths for all-cause mortality; 21 studies for CV death or HF hospitalization; and 55 studies for standalone CV death. These are distinct outcome-availability sets and are not a denominator error by themselves. The Figure 2 caption labels A=all-cause mortality, B=CV mortality, C=CV death/HF hospitalisation. However, the Results text cites Figure 2B for the composite and Figure 2C for standalone CV mortality. The cross-references are reversed: a confirmed editorial/reporting error, not evidence of wrong numerical coefficients.
+
+The actual contrasts are stated: quintuple vs quadruple HR 0.88 (0.79–0.98) for all-cause death; 0.87 (0.77–0.98) for CV death; and 0.93 (0.85–1.02) for CV death/HF hospitalization. The article explicitly says the quintuple node is a single-trial (VICTOR) secondary-endpoint result and labels it exploratory. The composite contrast is not statistically significant. Thus the incremental signal is outcome-dependent, not a uniform mortality-and-morbidity advantage.
+
+### 2. Sensitivity analysis is reported transparently
+
+The full text explicitly reports that excluding VICTOR leaves quadruple ARNi+BB+MRA+SGLT2i as the most effective all-cause mortality regimen (HR 0.36, 95% CI 0.29–0.46). With a 70% background-drug threshold, quadruple therapy ranks first (HR 0.39, 0.32–0.49), while at 90% two triple regimens are similar (ARNi+BB+MRA HR 0.47, 0.39–0.56; ARNi+BB+vericiguat HR 0.47, 0.39–0.57). This is an explicit reported sensitivity, not a hidden analysis. The interpretation concern is that the fifth-component result is structurally dependent on a single trial and the chosen marginal-exposure threshold; do not call it an undisclosed analysis or data error.
+
+### 3. Life-year/NNT uncertainty is a distinct unresolved reproducibility issue
+
+The article's Methods say NNTs are derived from estimated 2-year survival differences vs placebo and CIs from nonparametric bootstrap resampling. The article reports 70-year life-year gains of 5.3 years (2.8–7.7) for quadruple and 6.0 years (3.7–8.4) for quintuple, then describes the incremental difference as approximately 0.7 years. It does not report a paired 95% CI for this incremental 0.7-year contrast in the main text. The marginal intervals cannot be subtracted or combined to create a paired interval because both scenarios share baseline cohort and network inputs. In earlier correspondence the authors indicated that covariance for this difference was not estimated. Keep this as `INCREMENTAL_LIFE_YEAR_UNCERTAINTY_NOT_QUANTIFIED`, not a claim that the individual 5.3 and 6.0 projections are themselves invalid. Ask for joint bootstrap draws or a paired contrast CI and explicit statement of whether NMA coefficient uncertainty is propagated into each 2-year NNT CI.
+
+### 4. VICTOR sponsor data were disclosed, not a hidden source
+
+The Methods explicitly state that unpublished VICTOR data (NCT05093933) were provided by the trial sponsor before peer-reviewed publication, and state that sponsors had no role in the NMA's design, funding or generation, analysis or interpretation. The manuscript was accepted 22 Aug 2025; VICTOR paper published ahead 29 Aug 2025. The trial registry was updated later. This is transparent disclosure and is not a data integrity allegation. The reproducibility requirement is to reconcile the exact sponsor-provided data cut with final peer-reviewed/registry outcomes and the 2026 correction, especially because the JACC paper uses secondary mortality data after VICTOR's neutral primary endpoint.
+
+### 5. GLP-1 trial exclusion and search scope
+
+The Results explicitly say three GLP-1 agonist articles, 619 participants and 36 mortality events, were identified but excluded because considered too few to generate meaningful estimates. The paper's limitation paragraph also acknowledges this. This is disclosed, not a hidden exclusion. It narrows the review's scope and may merit separate descriptive or pairwise treatment, but cannot be called a selection error without a protocol contradiction. The database search named MEDLINE, Embase and CENTRAL; the authors also obtained VICTOR directly from the sponsor. No CT.gov search is named in the described databases; status remains a search-reporting/coverage query rather than proof of missed RCTs.
+
+### 6. EF inclusion rule requires time-aware interpretation
+
+The 2025 article explicitly defines its eligible population as LVEF ≤50%. At the time of the 2021/2022 guideline nomenclature, classic HFrEF was generally LVEF ≤40%, with HFmrEF 41–49%; hence the 2025 search covers a broader group than the traditional HFrEF label and should be sensitivity-analysed by EF. However, the current 2026 ESC HF guideline uses HFrEF LVEF <50%, so do not describe the ≤50% eligibility as intrinsically erroneous under current definitions. The precise issue is the inclusive endpoint (≤50 vs <50), historical classification at publication, and the need for EF-specific sensitivity, particularly if any trials have EF=50 or mixed HFmrEF participants.
+
+### 7. What has not been verified
+
+The 198.75 KB JACC supplement `mmc2.xlsx` is listed on the article page but could not be retrieved through accessible publisher/download routes in this session (publisher 403 and container DNS failure). Therefore we still do not know exact trial-level source rows, all endpoint definitions, CIBIS III's precise 2025 role, or whether the VICTORIA/GALACTIC-HF count labels entered the fitted models. No full 84- or 21-study model reproduction has been completed. Do not state otherwise.
+
+
+## Further CIBIS III and survival projection checks (continuation)
+
+### CIBIS III exact endpoint: what is and is not verified
+
+The original CIBIS III randomized report (Circulation 2005; PMID 16143696; DOI 10.1161/CIRCULATIONAHA.105.582320) explicitly defines its primary endpoint as **all-cause mortality or hospitalization from any cause**. It randomized 1,010 patients, 505 per arm, to open-label bisoprolol-first or enalapril-first for six months, then combination treatment for 6–24 months. The original Results report 178 vs 186 primary endpoint events (HR 0.94, 95% CI 0.77–1.16), all-cause deaths 65 vs 73 (HR 0.88, 0.63–1.22), all-cause hospitalised patients 151 vs 157 (HR 0.95, 0.76–1.19), and patients with worsening HF requiring hospitalisation 63 vs 51 (HR 1.25, 0.87–1.81). The CIBIS III report describes secondary total and CV mortality, hospitalisations and worsening HF, but its primary composite is not CV death or HF hospitalisation.
+
+A 2006 CIBIS III results overview confirms that secondary endpoints included total/CV mortality, hospitalisations and worsening CHF requiring hospitalisation; it does not identify a prespecified composite exactly matching CV death OR HF hospitalisation. The NMA predecessor (Tromp et al. JACC Heart Failure 2022; DOI 10.1016/j.jchf.2021.09.004) states that CIBIS III was used as a “reference” for the composite analysis, because early trials often did not report such a composite. This phrase may mean an anchor or bridge rather than that CIBIS III's primary composite was incorrectly substituted. The 2025 main text does not repeat the CIBIS III detail, and its exact supplement inputs were not retrieved. Therefore the correct status is `CIBIS_REFERENCE_ROLE_AND_OUTCOME_UNRESOLVED`; require the 2025 workbook and authors' definition before alleging a fitted endpoint mismatch. Do not call CIBIS III's all-cause death/all-cause hospitalization a CV death/HF hospitalisation composite.
+
+Sources: PMID 16143696; DOI 10.1093/eurheartj/sul013 (2006 CIBIS III overview); predecessor NMA DOI 10.1016/j.jchf.2021.09.004.
+
+### Survival/NNT output: current uncertainty gap is specifically paired incremental effect
+
+The 2025 Methods say two-year NNTs were estimated from survival differences vs placebo and CIs calculated by nonparametric bootstrap. This should not be described as an absence of any NNT CI. The paper provides narrow marginal NNT CIs (quadruple 6.3, 95% CI 6.2–6.4; quintuple 5.8, 95% CI 5.8–5.9) and marginal life-year CIs (5.3 [2.8–7.7] vs 6.0 [3.7–8.4] at age 70). What is not provided in the main text is a **paired CI for the incremental 0.7 life-years** or an incremental NNT comparing quintuple directly with quadruple. Earlier author correspondence says no covariance was estimated for the incremental life-year difference. Because scenarios share the baseline cohort and NMA inputs, the uncertainty of their difference cannot be obtained by subtracting marginal CIs. Require joint bootstrap draws or equivalent joint coefficient covariance and a paired contrast interval. Until then, say the incremental estimate is a point difference without reported paired uncertainty; do not claim all NNT CIs are invalid.
+
+### EF definition: historical and current classification nuance
+
+The 2025 NMA explicitly uses LVEF ≤50% as its eligible population. At the time of its protocol/publication, the 2021 ESC/2022 AHA/ACC phenotype classification generally defined HFrEF as LVEF ≤40%, with HFmrEF at 41–49%; so the NMA's cohort is broader than conventional HFrEF and includes a sizeable HFmrEF range where trials permitted. The 2026 ESC guideline now describes HFrEF as LVEF <50%, reflecting a newer categorization. Do not make a categorical claim that ≤50% is intrinsically a current phenotype error; document the temporal framework, inclusion threshold (≤50 vs current <50) and request EF-stratified sensitivities, particularly for LVEF 41–49 and exactly 50%.
+
+### Full-text source confirmation and supplement access
+
+The University of Groningen research portal confirms the final publisher PDF is 798 KB and CC BY-NC-ND, and the JACC page lists Supplemental Material mmc1.docx (5.72 MB) and mmc2.xlsx (198.75 KB). Direct publisher/supplement retrieval still failed during this session. The main article full text is recoverable via JACC search indexing, but this is not a substitute for the workbook. Continue to request or retrieve the workbook from the publisher/author/PROSPERO record before exact replay.
+
+
+## Confirmed 2025 RoB and confidence-assessment framework audit
+
+The full 2025 JACC article text explicitly describes the review's risk-of-bias/confidence method. It uses a **modified Cochrane risk-of-bias tool across six criteria** (examples: allocation concealment, blinding, missing data) and classifies a study as high risk only if **more than three domains** are rated high. It then uses CINeMA for six NMA domains. Reporting bias is assessed by funnel-plot symmetry and Egger test. Incoherence is assessed by a global design-by-treatment interaction model; additive model assumptions are tested separately. This is not documented as the contemporary result-specific Cochrane RoB 2 tool.
+
+This is a verified methodological choice in the 2025 paper and follows the predecessor programme's 2022 approach. It is not, on its own, proof that the effect estimates are wrong. The key methodological concern is that averaging/thresholding six study-level domains into one overall label can allow one critical bias domain (e.g. randomization, selective reporting, missing outcome data) to be outweighed by otherwise low domains. RoB 2 does not use such a majority vote: it issues domain-based and overall judgements for a specific result, outcome and time point, and different outcomes in one RCT may receive different judgements.
+
+Mandatory independent reassessment: perform result-specific RoB 2 for each exact outcome and effect of interest (assignment/ITT as primary for treatment-policy estimand; adherence/deviations as relevant), with supporting evidence for randomization, deviations, missing outcomes, measurement and selection of reported result. Retain the authors' modified six-domain score as a historical appraisal, not a substitute. Then recompute CINeMA within-study-bias and overall certainty per comparison. The three JACC networks (84 all-cause, 55 CV death, 21 composite) need separate risk-of-bias judgments because outcome availability, measurement and reporting differ. This is a confirmed appraisal-method limitation; any impact on treatment estimates or confidence ratings remains to be quantified.
+
+The 2025 article also says indirectness was considered low based on general similarity of study populations, interventions and outcome definitions, and states all included studies enrolled patients with HFrEF. However, its own eligibility definition is LVEF ≤50%, and trial-level heterogeneity includes major setting/population differences. Treat `INDIRECTNESS_JUSTIFICATION_REQUIRES_PATIENT-LEVEL_EFFECT-MODIFIER_REVIEW`: verify trial-specific EF band, severity, prior worsening-HF, background therapy, trial era, renal function, NYHA class, and run-in/selection; do not assert indirectness is high without the matrix. A nonsignificant study-level age/year meta-regression cannot establish no individual-level or treatment-component effect modification.
+
+For reporting bias, the 2025 Methods mention funnel plot symmetry and Egger test, but do not state in accessible main text that a comparison-adjusted network funnel plot/regression was used. Require supplement figure and code to identify whether contrasts and multi-arm dependence were handled. Do not call nonsignificant tests absence of publication bias. For incoherence, the authors use a global design-by-treatment interaction test and themselves acknowledge localized inconsistency may remain undetected in sparse/poorly connected parts. Therefore do not describe the network as proven coherent; use local checks when loops support them and label non-identifiable comparisons.
+
+For additivity, the article says the model assumptions test was nonsignificant (P>0.5 for all outcomes). Record this transparent global test; do not characterize additivity as untested. The key unresolved issue is test power/identifiability for specific component interactions, particularly the single-trial VICTOR quintuple node. Require test statistic/df, model matrix, component-specific interaction identifiability and leave-one-trial/component sensitivity before judging additivity.
+
+
+## Correction to CIBIS III provenance status — 2025 full-text explicitly confirms reference use
+
+A fresh full-text indexed retrieval of the **2025 JACC article itself** (DOI 10.1016/j.jacc.2025.08.054; search-indexed full article text, result `turn876572search0`) confirms the Methods explicitly state: “One of the earliest trials including such an outcome was Cardiac Insufficiency Bisoprolol Study (CIBIS) III, which was used as a reference for the analysis of the composite endpoint.” Thus the CIBIS reference is not only in the 2021 predecessor; it is explicitly repeated in the 2025 update. Earlier note stating that the 2025 main text did not repeat the CIBIS detail is superseded.
+
+The original CIBIS III RCT paper (PMID 16143696; DOI 10.1161/CIRCULATIONAHA.105.582320) defines the randomized primary endpoint as all-cause death or hospitalization from any cause and its treatment strategy as bisoprolol-first versus enalapril-first for 6 months, followed by combination therapy for 6–24 months. The 2025 NMA describes its target composite as CV death or HF hospitalization. The 2025 Methods do not explain in the accessible main text exactly which CIBIS III result/row is used as the reference (whether a distinct secondary endpoint, proxy/bridge or direct outcome). Therefore the concern is now **directly in-scope for the 2025 analysis**, not merely a predecessor-methodology concern, but the precise data transformation and any resulting numerical error remain unresolved until mmc2.xlsx/code or a clear author explanation is available.
+
+Required journal-level technical question for this item: identify the exact CIBIS III report and endpoint entered for the 21-study composite network, specify numerator/denominator or HR and follow-up, explain how any target composite was derived, and demonstrate that it matches CV death OR HF hospitalization rather than all-cause death OR any-cause hospitalization or mortality OR cardiovascular hospitalization. If the reference only anchors/bridges comparisons and does not contribute a mismatched outcome, document the method. Do not label `MODEL_ENDPOINT_MISMATCH_CONFIRMED` until this is shown.
+
+
+## 2022 predecessor NMA: additional explicit methodological misstatements and continuity checks
+
+Full publisher-PDF parsed text for Tromp et al. 2022 (JACC Heart Failure 10:73–84; DOI 10.1016/j.jchf.2021.09.004) identifies two additional statements that should be distinguished from the 2025 update:
+
+1. **Heterogeneity vs incoherence:** the 2022 Methods say I² represents “the amount of inconsistency in the network.” I² is a heterogeneity statistic; network incoherence is disagreement between direct and indirect evidence and was separately assessed by the design-by-treatment interaction model. The wording conflates distinct statistical concepts. The 2025 article reports I² as heterogeneity and global inconsistency separately, so do not carry this exact wording error forward into 2025 unless it appears in the supplement.
+2. **Non-significant test interpretation:** the 2022 Methods state “A nonsignificant P value means that there is no incoherence.” This is too strong: a non-significant global test means no statistically detectable incoherence under that test and available power, not proof of consistency. The 2025 main text is more cautious in wording (“No evidence of incoherence”), and its Limitations explicitly acknowledge localized inconsistencies may remain undetected in poorly connected parts of the network.
+3. **P-score vs SUCRA:** the 2022 text calls SUCRA “also known as the P-Score.” These are related ranking summaries (P-score is a frequentist analogue) but are not identical mathematical quantities. Classify as a terminology/interpretation error; it does not by itself establish wrong treatment ranking calculations. The 2025 article states P-scores without reproducing this exact conflation in its main text.
+
+These predecessor findings establish that some methods/reporting language in the 2022 programme was imprecise. They are useful for lineage auditing but must not be misattributed to the 2025 article where the 2025 text corrects them. Sources: parsed publisher PDF lines 267–356 and 378–397, 2022; JACC 2025 full-text search-index extract `turn177578search0`.
+
+### 2025 appraisal-method continuity
+
+The 2025 article explicitly retains the modified six-criteria Cochrane risk-of-bias framework and the threshold of >3 high domains for an overall high-risk label. It also retains Egger/funnel testing and uses CINeMA. These are verified features of the 2025 article itself. The criticism is not simply “they did not use RoB 2”; it is that a study-level majority threshold can obscure one critical domain and cannot substitute for outcome-/result-specific RoB 2 judgements. Reappraise all-cause death, CV death and the CV death/HF-hospitalisation composite separately, then translate those judgements into CINeMA within-study bias and overall confidence by comparison. Record any domains that were not assessable from publications as `NO_INFORMATION`, not low risk.
+
+### 2025 indirectness/transitivity assessment
+
+The 2025 article states indirectness was considered low because studies enrolled HFrEF populations and used comparable interventions/outcomes. The same article's eligibility defines HFrEF as EF≤50%, and the trial set spans older sequential strategy trials, contemporary parallel add-on trials, acute/recent-worsening HF and stable chronic populations, with markedly different background therapy. Its study-level meta-regression for age and year is not enough to demonstrate absence of individual-level effect modification or balance of all relevant effect modifiers. The article's own Limitations acknowledges variation over 1987–2025 and real-world generalisability. This is a specific justification gap to audit, not automatic proof that indirectness is high. For each important contrast, populate a transitivity table with EF range, NYHA severity, recent HF worsening, baseline risk/NT-proBNP, kidney function, trial era, background medication proportions, run-in enrichment, comparator type and follow-up; show whether effect modifiers are balanced across direct paths.
+
+
+## Risk-of-bias majority-threshold rule — comparison with Cochrane guidance
+
+The 2025 JACC article explicitly says a modified Cochrane tool assessed six criteria and that a study was classified high risk only if **more than three domains** were rated high. The 2022 predecessor uses the same six-domain/majority approach (average the six domains; high risk only when >3 high). The 2025 update therefore retains this appraisal rule.
+
+Cochrane's current Handbook Chapter 8 says overall risk of bias is generally the least favourable assessment across domains for the specific result; a high-risk judgement in any one domain usually implies at least high overall risk, with an override requiring explicit justification. The earlier RoB 1 framework was also domain-based and did not prescribe a numerical majority score. The majority threshold can classify a result as low/acceptable despite a single critical high-risk domain (e.g. inadequate allocation concealment, serious missing outcome data, or selective reporting). This is a concrete methodological concern beyond merely retaining the older tool during an update.
+
+Important qualification: Cochrane says reviews updating an existing review are not automatically required to switch to RoB 2; retaining the original tool may be reasonable when a large pre-existing dataset is updated with relatively few new studies. Therefore do not allege that failure to adopt RoB 2 is inherently noncompliant. The defensible point is the **custom >3-of-6 majority rule**, its difference from domain-based overall judgements, and the need to inspect how each domain fed into CINeMA.
+
+Required reappraisal: obtain the domain-level scores and outcome/estimand mapping; re-score every relevant RCT result (all-cause death, CV death, composite) using the RoB 2 tool if the review is independently updated, while retaining the published tool as historical; run an explicit sensitivity where any critical high-risk domain makes the result high risk and propagate the altered within-study-bias judgements into CINeMA. Quantify which treatment comparisons change confidence category. Status `RISK_OF_BIAS_AGGREGATION_RULE_MAY_UNDERCLASSIFY_CRITICAL_DOMAIN`; verified method as described, material effect on confidence not yet established.
+
+Sources: JACC 2025 Methods, DOI 10.1016/j.jacc.2025.08.054 (`turn177578search0`); Cochrane Handbook Chapter 8 (`turn505742search0`); Cochrane Handbook Chapter 7 on original RoB tool/domain approach (`turn505742search4`); Higgins et al., BMJ 2011 (`turn505742search3`).
+
+
+## CIBIS III original secondary-endpoint reconciliation — 1 November 2026
+
+A further source check of the complete CIBIS III trial results overview (Willenheimer, European Heart Journal Supplements 2006; DOI 10.1093/eurheartj/sul013) clarifies exactly what the trial did and did not report:
+
+- Primary composite: all-cause mortality OR hospitalization for any cause. ITT events 178/505 vs 186/505; HR 0.94 (95% CI 0.77–1.16).
+- Separate secondary outcomes: all-cause deaths 65 vs 73 (HR 0.88, 0.63–1.22); CV deaths 55 vs 56; all-cause hospitalized participants 151 vs 157 (HR 0.95, 0.76–1.19); total hospitalizations 242 vs 249; worsening CHF requiring hospitalization or occurring in hospital (a separate endpoint; a trend toward enalapril-first, not a reported CV-death/HHF composite).
+- Strategy: open-label randomized bisoprolol-first vs enalapril-first for six months, followed by combination therapy for 6–24 months; mean follow-up 1.22 years.
+
+The source report explicitly says no significant between-group difference was found at study end for total/CV mortality, hospitalizations, worsening CHF requiring hospitalization or in hospital. It does not report a direct time-to-first composite exactly defined as CV death OR HF hospitalization in the accessible original publication. This makes the JACC 2022 and 2025 wording that CIBIS III was “used as a reference” for CV death/HF-hospitalisation composite a high-priority provenance question. The phrase still does not reveal whether authors used an exact secondary endpoint, a proxy/bridge, or merely used CIBIS as a reference for endpoint harmonisation. A distinct secondary report may exist, so do not conclude that no compatible data existed anywhere.
+
+An independent 2022 sex-differences meta-analysis lists CIBIS III as “BB followed by ACEi” and reports an unspecified “combined outcome” HR of 0.80 (0.65–1.20) in men and 0.85 (0.65–1.45) in women, but its abstract/methods define its combined outcome as **all-cause mortality and/or HF hospitalization**, not CV death/HF hospitalization. This demonstrates that at least one secondary source has extracted a combined mortality/HF hospitalization measure from CIBIS III, but that measure appears to include all-cause mortality and is therefore not automatically equivalent to the JACC target composite. Source: Danielson et al., ESC Heart Failure 2022; DOI 10.1002/ehf2.13974 (full publisher PDF `turn315466view0`, lines 50–56, 79–87, 91–94; table row in `turn315466search0`).
+
+**New decisive question for JACC:** Did the composite network use the CIBIS III primary endpoint (all-cause death/any-cause hospitalisation), a published secondary combined outcome (all-cause death/HF hospitalisation), an exact CV-death/HF-hospitalisation endpoint from another CIBIS III report, or a constructed bridge? Ask for the original report citation, definition, event numbers/HR, follow-up, analysis set, and the exact code/input row. If a proxy was used, require rationale and a sensitivity excluding CIBIS III. The correct present status is `REFERENCE_ENDPOINT_NOT_PROVEN_EQUIVALENT`, not `PROVEN_WRONG_MODEL_INPUT`.
+
+
+## JACC 2025 imprecision threshold: scale and clinical-importance clarification required
+
+The 2025 Methods state that imprecision was assessed by comparing 95% CIs against a predefined equivalence range described as **OR: 2.0**, although the NMA reports treatment effects as hazard ratios (HRs) for all three time-to-event outcomes. This language is carried from the predecessor 2022 methods, where HRs were likewise reported but the equivalence threshold was described as OR=2.0.
+
+This is not automatically an error: a relative-effect threshold may be applied on a ratio scale to HRs if the authors prespecified and justified an equivalent threshold for HRs. But the article does not make clear whether “OR 2.0” means a generic ratio-scale equivalence interval (e.g. 0.5–2.0), a literal odds-ratio margin, or a clinical decision threshold for each outcome. Since the treatment effects are HRs, the method should specify how this threshold was mapped to HRs, why it is clinically important for mortality and CV death/HF hospitalization, and whether it is symmetric on the log scale. It should also explain how CINeMA judgments account for the clinical importance of an incremental HR 0.88 in the single-trial quintuple-versus-quadruple contrast.
+
+Required checks: retrieve protocol and CINeMA worksheet; reproduce each outcome-specific imprecision judgement using the exact prespecified margin; repeat using a clinically justified HR margin and both null-crossing and clinical-decision thresholds; record comparison-specific confidence changes. Status `IMPRECISION_MARGIN_SCALE_AND_CLINICAL_THRESHOLD_UNCLEAR`, not a proven calculation error. Do not allege OR and HR are mathematically incompatible merely because both are ratio measures.
+
+Sources: JACC 2025 full Methods indexed in `turn694229search0`; predecessor Tromp et al. 2022, DOI 10.1016/j.jchf.2021.09.004, PDF `turn601948view0` lines 141–144, 163–164.
+
+
+## Drug-specific counterchecks and run-in selection controls — 1 November 2026
+
+### PARADIGM-HF run-in: applicability concern, not automatic RoB 2 high risk
+
+PARADIGM-HF used sequential active run-in phases with enalapril and then sacubitril/valsartan; 2,079/10,513 (19.8%) did not complete run-in. A 2016 inverse-probability-weighted reanalysis of PARADIGM-HF, weighting randomized participants to resemble non-completers, found that the benefit of LCZ696 over enalapril for the primary CV death/HF hospitalisation endpoint and additional key endpoints was not altered. This is an important negative-control counterexample: do not claim run-in alone invalidates the randomized HR or establishes that ARNI is no better than ACEi. Preserve the applicability/generalizability concern because lower BP, lower eGFR and higher NT-proBNP predicted run-in noncompletion; apply the external-validity question to patients unable to tolerate target doses, but retain the randomized effect for patients meeting trial criteria. Source: PMID 27296397 (JACC HF 2016).
+
+### DAPA-HF: distinguish molecule-level evidence from SGLT2 class inference
+
+DAPA-HF randomized dapagliflozin vs placebo in HFrEF on background therapy and reported primary composite HR 0.74 (95% CI 0.65–0.85). The effect was consistent across baseline treatment subgroups; among patients receiving RAS blocker + BB + MRA it was HR 0.72 (0.61–0.86) versus 0.77 (0.63–0.94) without all three (interaction P=0.64). A dedicated DAPA-HF subgroup analysis found no evidence the benefit differed by background ARNI use (HR 0.75 [0.50–1.13] in the ARNI subgroup; HR 0.74 [0.65–0.86] without ARNI). This supports dapagliflozin as an effective add-on to background therapy; it does **not** prove dapagliflozin is superior to empagliflozin or other SGLT2i. When an NMA pools a class node or uses component-level class effects, do not infer a molecule ranking without direct or robust indirect molecule-level comparisons. Sources: PMID 32221582; DAPA-HF main trial; ACC trial summary.
+
+### MRA class versus individual agents and phenotype-specific evidence
+
+Do not use a class-level MRA node to make an unsupported claim that spironolactone or eplerenone is individually more effective. The major HFrEF RCTs differ in disease severity and endpoint: RALES spironolactone in NYHA III–IV reduced all-cause mortality (RR 0.70, 95% CI 0.60–0.82); EMPHASIS-HF eplerenone in NYHA II reduced CV death/HF hospitalization (HR 0.63, 95% CI 0.54–0.74); EPHESUS is post-MI and may be excluded under the JACC review's entire-population post-MI exclusion. HFpEF TOPCAT (spironolactone; primary HR 0.89, 0.77–1.04) is a different phenotype and should not be pooled uncritically with HFrEF evidence. Compare only compatible estimands and populations. A 2025 MRA review summarizes these contrasts but is not a head-to-head spironolactone vs eplerenone RCT. Sources: RALES; EMPHASIS-HF; JACC HF 2025 DOI 10.1016/j.jchf.2025.102637; TOPCAT.
+
+### Negative controls added
+
+25. Active run-in excludes patients who cannot tolerate target doses; do not automatically label the randomized treatment effect high RoB. Check trial-specific noncompletion predictors, estimand/applicability, and available IP-weighted sensitivity. If weighting does not change the HR, record the result as a countercheck.
+26. A placebo-controlled SGLT2i trial showing consistent benefit across baseline ARNI/RASi/BB/MRA subgroups does not establish superiority of one SGLT2i molecule over another. Maintain separate `CLASS_EFFECT` and `MOLECULE_SPECIFIC` estimands.
+27. A pooled MRA class result spanning RALES/EMPHASIS-HF and other different severities/endpoints does not establish individual-agent comparative superiority. Require head-to-head or valid within-network contrast and compatible outcome/population data.
+
+
+## Eligibility negative control: EPHESUS post-MI exclusion appears justified
+
+The 2025 JACC Methods explicitly exclude trials where the entire population had comorbidities likely to affect outcomes, giving post-myocardial-infarction trials as an example. EPHESUS enrolled patients 3–14 days after acute MI with LVEF ≤40% and clinical HF or diabetes. It is therefore a post-MI-specific cohort, not an ordinary chronic HFrEF trial, and exclusion is consistent with the stated eligibility rule. Its primary endpoints were all-cause mortality and CV death/CV hospitalization. Do not flag EPHESUS as an unjustified omission merely because it is a large eplerenone mortality trial. This is a negative control confirming at least one explicit exclusion is methodologically coherent. If a mixed post-MI/non-post-MI trial is found, test whether exclusions were based on the entire trial population or whether extractable non-post-MI subgroups were eligible. Sources: JACC 2025 Methods `turn405444search0`; EPHESUS primary report `turn405444search3`; DailyMed trial description `turn405444search5`.
+
+
+## CIBIS III reference — exact original primary/secondary endpoint evidence (additional reconciliation)
+
+The accessible CIBIS III report in European Heart Journal Supplements (Willenheimer 2006; DOI 10.1093/eurheartj/sul013; full indexed source `turn650557search0`) explicitly reports:
+
+- Primary endpoint: **all-cause mortality OR hospitalization due to any cause**, events 178 vs 186; ITT HR 0.94 (95% CI 0.77–1.16).
+- Secondary endpoints were analysed separately, not as the JACC target composite: all-cause deaths (65 vs 73; HR 0.88, 0.63–1.22), CV deaths (55 vs 56), all-cause hospitalized participants (151 vs 157; HR 0.95, 0.76–1.19), total hospitalizations (242 vs 249), and worsening CHF requiring hospitalization or occurring in hospital (no significant between-group difference; trend toward enalapril-first).
+- During the initial six-month monotherapy phase, primary endpoint events were 109 vs 108 (HR 1.02, 0.78–1.33). Over first year, the post-hoc primary composite was 155 vs 165 (HR 0.94, 0.76–1.17); this was still all-cause death/any-cause hospitalization.
+- No CV-death OR HF-hospitalization composite is shown in this accessible report. The study was a strategy comparison (bisoprolol-first vs enalapril-first for six months, followed by combination) rather than two stable parallel chronic regimens.
+
+The 2025 JACC article explicitly states CIBIS III was “used as a reference” for the analysis of CV death/HF hospitalization because early trials did not include such an outcome. This reference role is therefore a clear, direct methodological statement. The exact operation remains unknown: it might mean a link/anchor/bridge, a reference effect for outcome harmonization, or use of a proxy outcome. Required to adjudicate: 2025 Supplementary Table input row/code, precise CIBIS III source, endpoint, analysis period, event definition, arm-level HR/CI and treatment-strategy coding; authors must show why it is valid for the target composite or show a sensitivity removing the reference. If it was literally the primary endpoint (all-cause death/any hospitalization) used as though it were CV death/HF hospitalization, that would be a major endpoint mismatch; if it was only an anchor that establishes graph connectivity and no mismatched data are treated as the target estimand, criticism must be modified. Current status: `REFERENCE_TRIAL_TARGET_OUTCOME_UNRESOLVED`.
+
+Sources: CIBIS III original paper; EHJ Supplements result `turn650557search0`; 2025 JACC Methods `turn650557search2`; 2022 predecessor NMA `turn650557search2` (same reference statement).
+
+
+## Correction to the 2021 predecessor search-cutoff interpretation and prior erratum
+
+The full 2022 predecessor publisher PDF (`turn361449view0`) resolves a possible search gap. Its abstract says the search covered January 1987 to January 2020 (PDF lines 20–22), but the **Methods section explicitly says the actual search ran through 1 January 2021** (PDF lines 69–74). The 2025 update states its search update covered January 2021 to April 2025. Therefore there is no demonstrated calendar-year 2020 gap; the abstract cutoff appears to be a typographical inconsistency with the Methods. Do not allege that EMPEROR-Reduced, VICTORIA or other 2020 RCTs were omitted solely because of the abstract wording. This is a confirmed internal search-date reporting inconsistency in the 2022 predecessor, with the Methods giving the operative date.
+
+The 2022 predecessor also received a formal correction on 28 March 2022 (JACC Heart Failure 10(4):295–296; DOI 10.1016/j.jchf.2022.02.001; PMID 35361455). The correction says that in part B of the Central Illustration, **ARB was incorrectly labelled ACEI**; the corrected figure was published online. This is a confirmed figure-label error in the predecessor, not evidence of a numerical NMA error. For cross-review lineage, compare the corrected version of the 2022 illustration and its labels against the 2025 update rather than treating the original uncorrected image as the baseline.
+
+Sources: predecessor full PDF `turn361449view0` lines 20–22 and 69–74; correction notice `turn406277search0`; PubMed erratum record `turn406277search2`.
+
+
+## Cross-version trial and patient-time mass balance — 2022 to 2025 JACC update
+
+The 2022 predecessor reported 75 trials, 95,444 participants and 199,978 participant-years (PMID 34895860; `turn437801search0`, full PDF `turn361449view0` lines 26 and study-selection text). The 2025 update reports 89 RCTs, 103,754 participants and 199,724 participant-years (PMID 40892608; `turn912707search0`). Therefore the updated review has +14 trials and +8,310 participants but **254 fewer reported participant-years** (difference −0.127%). This is an observable aggregate cross-review discrepancy and a useful trial-family/person-time mass-balance check.
+
+Do not call it an error or double counting yet. The 2025 eligibility criteria may have removed some previously included older studies, changed trial-specific follow-up extraction, or recalculated person-time differently; 89−75 is a net difference, not necessarily exactly 14 additional RCTs if some old trials were removed. The authors say they updated the previous search and screened 5,065 additional records, with 17 full texts passing and three small GLP-1 trials excluded, while VICTOR data were separately incorporated. This must be reconciled with the final 89-study set.
+
+Required: exact 2022 and 2025 trial rosters; include/exclude status of each of the 75 predecessor RCTs; identity of 17 full-text records and 3 GLP-1 exclusions; identification of any duplicate or secondary reports; unique parent-trial map; study-level follow-up start/end/time at risk; source for patient-years; reason for removals/updates; and arithmetic sum of all 89 follow-up rows. If the 75 predecessor trials were all retained with unchanged follow-up and only new trials added, cumulative person-years should not decrease; if any original trials were removed/redefined or follow-up recalculated, the discrepancy may be explained. Status `CROSS_REVIEW_PERSON_TIME_RECONCILIATION_REQUIRED`, not a proven error.
+
+
+## FINEARTS-HF eligibility and MRA-node cross-check — 1 November 2026
+
+### Parent trial and subgroup facts
+
+FINEARTS-HF (NCT04435626; Desai et al., JACC 2025;85:106–116; DOI 10.1016/j.jacc.2024.09.004) randomized 6,001 patients with symptomatic HF and **LVEF ≥40%** to finerenone or placebo. Of 5,993 with baseline EF, 2,172 (36%) had LVEF <50%, mean EF 44±3%; 2,674 (45%) had EF 50–<60%; 1,147 (19%) EF ≥60%. The full randomized population is primarily HFmrEF/HFpEF, not an HFrEF trial. It should not be counted as a 6,001-person HFrEF RCT. A prespecified subgroup analysis reports the primary endpoint (CV death plus **total first and recurrent worsening-HF events**) in the EF<50 subgroup as rate ratio 0.84 (95% CI 0.68–1.03), with EF interaction P=0.70. This primary estimand is a recurrent-event rate ratio, not the NMA's time-to-event HR for CV death or time-to-first CV death/HF hospitalisation.
+
+The FINEARTS paper also reports key secondary **time-to-first** occurrence of worsening HF or CV death, and separately mortality endpoints; these could only be used if the exact EF subgroup estimates/events and matching analysis-set/time-to-event HRs were available and prespecified for extraction. The parent trial's all-population primary recurrent endpoint cannot be substituted directly into a binomial or Cox time-to-first network. Multiple FINEARTS subgroup papers are reports of the same parent RCT and must map to one trial family.
+
+Sources: NCT04435626; Desai et al., JACC 2025 DOI 10.1016/j.jacc.2024.09.004 (`turn521813search0`); Solomon et al./prespecified EF analysis DOI 10.1093/eurheartj/ehae102; PMC full text `turn434637search4`; mode-of-death subgroup PMC `turn434637search1` and PubMed `turn434637search2`.
+
+### Relevance to the JACC 2025 HFrEF NMA
+
+The JACC review explicitly searched through April 2025 and defines eligibility as HFrEF with LVEF ≤50%, but its published abstract/methods and the accessible 89-study roster do not identify FINEARTS-HF by name. The full 198.75 KB supplemental workbook is still inaccessible, and the complete reference list has not yet been independently reconciled against NCT04435626. Therefore it is **not yet established whether FINEARTS was included, excluded, or considered through an EF-restricted subgroup**. Do not allege omission or duplicate inclusion until the reference roster and workbook are obtained.
+
+If FINEARTS is absent, exclusion may be defensible because the trial as a whole enrolled HFmrEF/HFpEF and its main primary endpoint is a different recurrent-event estimand, even though 2,172 participants had EF<50. If an EF<50 subgroup was included, verify the exact time-to-event mortality and first composite estimates, not only the primary recurrent-event rate ratio. If the full 6,001 patients or multiple subgroup reports were entered as independent HFrEF cohorts, that would be a major phenotype and/or trial-family data error; no evidence currently establishes that occurred.
+
+### Cross-review MRA interpretation
+
+Do not use FINEARTS-HF's finerenone result in HFmrEF/HFpEF as evidence that spironolactone or eplerenone is more effective in HFrEF. Nonsteroidal finerenone and steroidal MRAs are different molecules with different evidence/populations. If the review's component code combines them under a generic MRA component, identify the MRA trials and EF subgroup contributing to each outcome, and run agent-specific and phenotype-specific sensitivities where connected. The NMA's HFrEF MRA class effect should not be silently strengthened by a full-population FINEARTS estimate if that trial does not meet the HFrEF target estimand.
+
+Current status: `FINEARTS_ROSTER_MEMBERSHIP_UNVERIFIED`; source-level trial identity, EF strata and endpoint definitions confirmed, but actual membership in 89-trial network and fitted contribution unresolved.
