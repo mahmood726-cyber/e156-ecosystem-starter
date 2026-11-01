@@ -382,3 +382,38 @@ The Results say 3 GLP-1 agonist articles with 619 patients and only 36 mortality
 ### Egger test and network reporting-bias appraisal
 
 The article reports three Egger P values (all-cause mortality 0.072; CV death/HF-hospitalisation 0.705; CV death 0.177) as evidence of no significant reporting bias. The main text does not specify whether these were comparison-adjusted funnel/regression procedures, how multi-arm and correlated contrasts were handled, or whether sparse treatment nodes/unequal comparison distribution affect power. Obtain Supplemental Figure 4 and code to identify the precise test. A nonsignificant Egger result does not establish absence of reporting bias, especially for the 21-study composite network. This is a methods transparency and test-power concern, not a confirmed calculation error.
+
+
+## Full-text extraction update — 1 November 2026 (JACC 2025)
+
+Full searchable article text was recovered from JACC search indexing (the publisher page itself still blocks direct open). This resolves several issues more accurately:
+
+### 1. Outcome counts and figure cross-references
+
+The Results text explicitly reports 84 studies/102,489 participants/18,520 deaths for all-cause mortality; 21 studies for CV death or HF hospitalization; and 55 studies for standalone CV death. These are distinct outcome-availability sets and are not a denominator error by themselves. The Figure 2 caption labels A=all-cause mortality, B=CV mortality, C=CV death/HF hospitalisation. However, the Results text cites Figure 2B for the composite and Figure 2C for standalone CV mortality. The cross-references are reversed: a confirmed editorial/reporting error, not evidence of wrong numerical coefficients.
+
+The actual contrasts are stated: quintuple vs quadruple HR 0.88 (0.79–0.98) for all-cause death; 0.87 (0.77–0.98) for CV death; and 0.93 (0.85–1.02) for CV death/HF hospitalization. The article explicitly says the quintuple node is a single-trial (VICTOR) secondary-endpoint result and labels it exploratory. The composite contrast is not statistically significant. Thus the incremental signal is outcome-dependent, not a uniform mortality-and-morbidity advantage.
+
+### 2. Sensitivity analysis is reported transparently
+
+The full text explicitly reports that excluding VICTOR leaves quadruple ARNi+BB+MRA+SGLT2i as the most effective all-cause mortality regimen (HR 0.36, 95% CI 0.29–0.46). With a 70% background-drug threshold, quadruple therapy ranks first (HR 0.39, 0.32–0.49), while at 90% two triple regimens are similar (ARNi+BB+MRA HR 0.47, 0.39–0.56; ARNi+BB+vericiguat HR 0.47, 0.39–0.57). This is an explicit reported sensitivity, not a hidden analysis. The interpretation concern is that the fifth-component result is structurally dependent on a single trial and the chosen marginal-exposure threshold; do not call it an undisclosed analysis or data error.
+
+### 3. Life-year/NNT uncertainty is a distinct unresolved reproducibility issue
+
+The article's Methods say NNTs are derived from estimated 2-year survival differences vs placebo and CIs from nonparametric bootstrap resampling. The article reports 70-year life-year gains of 5.3 years (2.8–7.7) for quadruple and 6.0 years (3.7–8.4) for quintuple, then describes the incremental difference as approximately 0.7 years. It does not report a paired 95% CI for this incremental 0.7-year contrast in the main text. The marginal intervals cannot be subtracted or combined to create a paired interval because both scenarios share baseline cohort and network inputs. In earlier correspondence the authors indicated that covariance for this difference was not estimated. Keep this as `INCREMENTAL_LIFE_YEAR_UNCERTAINTY_NOT_QUANTIFIED`, not a claim that the individual 5.3 and 6.0 projections are themselves invalid. Ask for joint bootstrap draws or a paired contrast CI and explicit statement of whether NMA coefficient uncertainty is propagated into each 2-year NNT CI.
+
+### 4. VICTOR sponsor data were disclosed, not a hidden source
+
+The Methods explicitly state that unpublished VICTOR data (NCT05093933) were provided by the trial sponsor before peer-reviewed publication, and state that sponsors had no role in the NMA's design, funding or generation, analysis or interpretation. The manuscript was accepted 22 Aug 2025; VICTOR paper published ahead 29 Aug 2025. The trial registry was updated later. This is transparent disclosure and is not a data integrity allegation. The reproducibility requirement is to reconcile the exact sponsor-provided data cut with final peer-reviewed/registry outcomes and the 2026 correction, especially because the JACC paper uses secondary mortality data after VICTOR's neutral primary endpoint.
+
+### 5. GLP-1 trial exclusion and search scope
+
+The Results explicitly say three GLP-1 agonist articles, 619 participants and 36 mortality events, were identified but excluded because considered too few to generate meaningful estimates. The paper's limitation paragraph also acknowledges this. This is disclosed, not a hidden exclusion. It narrows the review's scope and may merit separate descriptive or pairwise treatment, but cannot be called a selection error without a protocol contradiction. The database search named MEDLINE, Embase and CENTRAL; the authors also obtained VICTOR directly from the sponsor. No CT.gov search is named in the described databases; status remains a search-reporting/coverage query rather than proof of missed RCTs.
+
+### 6. EF inclusion rule requires time-aware interpretation
+
+The 2025 article explicitly defines its eligible population as LVEF ≤50%. At the time of the 2021/2022 guideline nomenclature, classic HFrEF was generally LVEF ≤40%, with HFmrEF 41–49%; hence the 2025 search covers a broader group than the traditional HFrEF label and should be sensitivity-analysed by EF. However, the current 2026 ESC HF guideline uses HFrEF LVEF <50%, so do not describe the ≤50% eligibility as intrinsically erroneous under current definitions. The precise issue is the inclusive endpoint (≤50 vs <50), historical classification at publication, and the need for EF-specific sensitivity, particularly if any trials have EF=50 or mixed HFmrEF participants.
+
+### 7. What has not been verified
+
+The 198.75 KB JACC supplement `mmc2.xlsx` is listed on the article page but could not be retrieved through accessible publisher/download routes in this session (publisher 403 and container DNS failure). Therefore we still do not know exact trial-level source rows, all endpoint definitions, CIBIS III's precise 2025 role, or whether the VICTORIA/GALACTIC-HF count labels entered the fitted models. No full 84- or 21-study model reproduction has been completed. Do not state otherwise.
