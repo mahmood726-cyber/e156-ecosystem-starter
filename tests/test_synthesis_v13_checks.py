@@ -350,7 +350,9 @@ class DeterministicTests(unittest.TestCase):
         self.assertEqual(m.p_from_normal_z(2, 1, 0.15, test_name="NORMAL_Z", multiplicity="TUKEY")["status"], "NOT_COMPARABLE")
 
     def test_wrong_statistic_identity(self):
-        self.assertEqual(m.statistic_identity("HETEROGENEITY_Q", "OVERALL_EFFECT")["status"], "REVIEW")
+        # Bare labels of legitimate Q and Z tests are not evidence of misassignment.
+        self.assertEqual(m.statistic_identity("HETEROGENEITY_Q", "OVERALL_EFFECT")["status"],
+                         "NOT_COMPARABLE")
 
     def test_unknown_statistic_abstains(self):
         self.assertEqual(m.statistic_identity("UNKNOWN", "OVERALL_EFFECT")["status"], "NOT_COMPARABLE")
@@ -367,6 +369,73 @@ class DeterministicTests(unittest.TestCase):
     def test_factor_noshift(self):
         self.assertEqual(m.factor_shift([0, 1], [0, 1], verified_r_factor_conversion=True)["status"], "CONSISTENT")
 
+
+
+class StatisticIdentitySourceTests(unittest.TestCase):
+    """Synthetic Q-vs-effect assignments, never human-verified published cases."""
+
+    @staticmethod
+    def evidence(**overrides):
+        args = dict(paper_version_verified=True,
+                    analysis_context_verified=True,
+                    source_p_text_verified=True,
+                    assignment_conflict_verified=True,
+                    reported_p_locator="Synthetic VoR forest plot panel B: Q-test p cell",
+                    test_definition_locator="Synthetic VoR panel B: effect Z-test label")
+        args.update(overrides)
+        return args
+
+    def test_planted_q_p_mislabelled_as_pooled_effect_is_review(self):
+        out = m.statistic_identity("HETEROGENEITY_Q", "OVERALL_EFFECT",
+                                   **self.evidence())
+        self.assertEqual(out["status"], "REVIEW")
+        self.assertIn("reported_p_locator", out)
+
+    def test_clean_figure_contains_both_p_values_without_misassignment(self):
+        # Q and pooled-effect P legitimately answer different hypotheses.
+        out = m.statistic_identity("HETEROGENEITY_Q", "OVERALL_EFFECT",
+                  **self.evidence(assignment_conflict_verified=False))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_older_preprint_p_cannot_be_attributed_to_current_version(self):
+        self.assertEqual(m.statistic_identity(
+            "HETEROGENEITY_Q", "OVERALL_EFFECT",
+            **self.evidence(paper_version_verified=False))["status"], "NOT_COMPARABLE")
+
+    def test_different_meta_analysis_panels_not_equated(self):
+        self.assertEqual(m.statistic_identity(
+            "HETEROGENEITY_Q", "OVERALL_EFFECT",
+            **self.evidence(analysis_context_verified=False))["status"], "NOT_COMPARABLE")
+
+    def test_ocr_uncertain_p_text_abstains(self):
+        self.assertEqual(m.statistic_identity(
+            "HETEROGENEITY_Q", "OVERALL_EFFECT",
+            **self.evidence(source_p_text_verified=False))["status"], "NOT_COMPARABLE")
+
+    def test_unproven_assignment_conflict_abstains(self):
+        self.assertEqual(m.statistic_identity(
+            "HETEROGENEITY_Q", "OVERALL_EFFECT",
+            **self.evidence(assignment_conflict_verified=False))["status"], "NOT_COMPARABLE")
+
+    def test_missing_p_span_abstains(self):
+        self.assertEqual(m.statistic_identity(
+            "HETEROGENEITY_Q", "OVERALL_EFFECT",
+            **self.evidence(reported_p_locator="  "))["status"], "NOT_COMPARABLE")
+
+    def test_missing_test_definition_span_abstains(self):
+        self.assertEqual(m.statistic_identity(
+            "HETEROGENEITY_Q", "OVERALL_EFFECT",
+            **self.evidence(test_definition_locator=None))["status"], "NOT_COMPARABLE")
+
+    def test_matching_statistic_labels_do_not_generate_candidate(self):
+        self.assertEqual(m.statistic_identity(
+            "OVERALL_EFFECT", "OVERALL_EFFECT")["status"], "CONSISTENT")
+
+    def test_unknown_or_malformed_identity_abstains(self):
+        self.assertEqual(m.statistic_identity(
+            "UNKNOWN", "OVERALL_EFFECT", **self.evidence())["status"], "NOT_COMPARABLE")
+        self.assertEqual(m.statistic_identity(
+            None, "OVERALL_EFFECT", **self.evidence())["status"], "NOT_COMPARABLE")
 
 
 class PaperCodeFactorFidelityTests(unittest.TestCase):

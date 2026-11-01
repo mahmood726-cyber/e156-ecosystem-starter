@@ -267,12 +267,43 @@ def p_from_normal_z(estimate: Any, se: Any, reported: Any, *,
             "alternative": alternative, "scale": estimate_scale}
 
 
-def statistic_identity(reported_source: str, expected_source: str) -> dict:
-    """TOPCHILD-type error: Q-test P mistakenly attached to pooled effect."""
-    if not reported_source or not expected_source or "UNKNOWN" in {reported_source, expected_source}:
-        return result("NOT_COMPARABLE", "P-value source statistic unknown")
-    return result("CONSISTENT" if reported_source == expected_source else "REVIEW",
-                  "statistic identity matches" if reported_source == expected_source else "P value belongs to different test")
+def statistic_identity(reported_source: str, expected_source: str, *,
+                       paper_version_verified: bool = False,
+                       analysis_context_verified: bool = False,
+                       source_p_text_verified: bool = False,
+                       assignment_conflict_verified: bool = False,
+                       reported_p_locator: str | None = None,
+                       test_definition_locator: str | None = None) -> dict:
+    """Check an attested P-to-statistic assignment, not bare test-name differences.
+
+    A Q-test of heterogeneity and a Z-test of the pooled effect have distinct
+    hypotheses and may legitimately both appear in one forest plot. Only an
+    exact-version, same-context, source-located *misassignment* can enter REVIEW.
+    Caller-supplied attestations remain unaudited by this function.
+    """
+    if (not isinstance(reported_source, str) or not reported_source.strip()
+            or not isinstance(expected_source, str) or not expected_source.strip()
+            or any(x.strip().upper() == "UNKNOWN"
+                   for x in (reported_source, expected_source))):
+        return result("NOT_COMPARABLE", "P-value statistic identity unknown or malformed")
+    if reported_source == expected_source:
+        return result("CONSISTENT",
+                      "caller-declared statistic identities match; source not independently verified")
+    if (paper_version_verified is not True
+            or analysis_context_verified is not True
+            or source_p_text_verified is not True
+            or assignment_conflict_verified is not True
+            or not isinstance(reported_p_locator, str)
+            or not reported_p_locator.strip()
+            or not isinstance(test_definition_locator, str)
+            or not test_definition_locator.strip()):
+        return result("NOT_COMPARABLE",
+                      "distinct tests alone are not a verified P-value misassignment")
+    return result("REVIEW",
+                  "source-attested P-value/test assignment conflict; independent review required",
+                  reported_source=reported_source, expected_source=expected_source,
+                  reported_p_locator=reported_p_locator,
+                  test_definition_locator=test_definition_locator)
 
 
 def factor_shift(original: Any, observed: Any, *, verified_r_factor_conversion: bool,
