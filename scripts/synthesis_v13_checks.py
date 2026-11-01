@@ -460,16 +460,34 @@ def gate(record: Mapping) -> dict:
 
 
 def root_cause_summary(rows: Sequence[Mapping]) -> dict:
+    """Count distinct affected claims separately from root-cause/claim links.
+
+    Several independent mechanisms can affect one claim, while one mechanism
+    may affect several outputs. Summing per-root set lengths therefore counts
+    *links*, not unique outputs. Caller-supplied identifiers are not evidence
+    that root causes were independently verified or trial families deduplicated.
+    """
     groups: dict[str, set[str]] = defaultdict(set)
+    all_claims: set[str] = set()
+    unattributed: set[str] = set()
     for row in rows:
         cid, rid = row.get("claim_id"), row.get("root_cause_id")
         if not isinstance(cid, str) or not cid:
             raise ValueError("each affected output needs a claim ID")
+        all_claims.add(cid)
         if rid is not None:
             if not isinstance(rid, str) or not rid:
                 raise ValueError("invalid root cause ID")
             groups[rid].add(cid)
-    return {"root_causes": len(groups), "affected_outputs": sum(map(len, groups.values())),
+        else:
+            unattributed.add(cid)
+    attributed = set().union(*groups.values()) if groups else set()
+    unattributed -= attributed
+    return {"root_causes": len(groups),
+            "affected_outputs": len(attributed),
+            "root_cause_claim_assignments": sum(map(len, groups.values())),
+            "all_claims": len(all_claims),
+            "unattributed_claims": len(unattributed),
             "groups": {k: sorted(v) for k, v in sorted(groups.items())}}
 
 
