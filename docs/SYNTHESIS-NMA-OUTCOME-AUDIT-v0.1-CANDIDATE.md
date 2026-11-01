@@ -580,3 +580,26 @@ The 2022 predecessor reported 75 trials, 95,444 participants and 199,978 partici
 Do not call it an error or double counting yet. The 2025 eligibility criteria may have removed some previously included older studies, changed trial-specific follow-up extraction, or recalculated person-time differently; 89−75 is a net difference, not necessarily exactly 14 additional RCTs if some old trials were removed. The authors say they updated the previous search and screened 5,065 additional records, with 17 full texts passing and three small GLP-1 trials excluded, while VICTOR data were separately incorporated. This must be reconciled with the final 89-study set.
 
 Required: exact 2022 and 2025 trial rosters; include/exclude status of each of the 75 predecessor RCTs; identity of 17 full-text records and 3 GLP-1 exclusions; identification of any duplicate or secondary reports; unique parent-trial map; study-level follow-up start/end/time at risk; source for patient-years; reason for removals/updates; and arithmetic sum of all 89 follow-up rows. If the 75 predecessor trials were all retained with unchanged follow-up and only new trials added, cumulative person-years should not decrease; if any original trials were removed/redefined or follow-up recalculated, the discrepancy may be explained. Status `CROSS_REVIEW_PERSON_TIME_RECONCILIATION_REQUIRED`, not a proven error.
+
+
+## FINEARTS-HF eligibility and MRA-node cross-check — 1 November 2026
+
+### Parent trial and subgroup facts
+
+FINEARTS-HF (NCT04435626; Desai et al., JACC 2025;85:106–116; DOI 10.1016/j.jacc.2024.09.004) randomized 6,001 patients with symptomatic HF and **LVEF ≥40%** to finerenone or placebo. Of 5,993 with baseline EF, 2,172 (36%) had LVEF <50%, mean EF 44±3%; 2,674 (45%) had EF 50–<60%; 1,147 (19%) EF ≥60%. The full randomized population is primarily HFmrEF/HFpEF, not an HFrEF trial. It should not be counted as a 6,001-person HFrEF RCT. A prespecified subgroup analysis reports the primary endpoint (CV death plus **total first and recurrent worsening-HF events**) in the EF<50 subgroup as rate ratio 0.84 (95% CI 0.68–1.03), with EF interaction P=0.70. This primary estimand is a recurrent-event rate ratio, not the NMA's time-to-event HR for CV death or time-to-first CV death/HF hospitalisation.
+
+The FINEARTS paper also reports key secondary **time-to-first** occurrence of worsening HF or CV death, and separately mortality endpoints; these could only be used if the exact EF subgroup estimates/events and matching analysis-set/time-to-event HRs were available and prespecified for extraction. The parent trial's all-population primary recurrent endpoint cannot be substituted directly into a binomial or Cox time-to-first network. Multiple FINEARTS subgroup papers are reports of the same parent RCT and must map to one trial family.
+
+Sources: NCT04435626; Desai et al., JACC 2025 DOI 10.1016/j.jacc.2024.09.004 (`turn521813search0`); Solomon et al./prespecified EF analysis DOI 10.1093/eurheartj/ehae102; PMC full text `turn434637search4`; mode-of-death subgroup PMC `turn434637search1` and PubMed `turn434637search2`.
+
+### Relevance to the JACC 2025 HFrEF NMA
+
+The JACC review explicitly searched through April 2025 and defines eligibility as HFrEF with LVEF ≤50%, but its published abstract/methods and the accessible 89-study roster do not identify FINEARTS-HF by name. The full 198.75 KB supplemental workbook is still inaccessible, and the complete reference list has not yet been independently reconciled against NCT04435626. Therefore it is **not yet established whether FINEARTS was included, excluded, or considered through an EF-restricted subgroup**. Do not allege omission or duplicate inclusion until the reference roster and workbook are obtained.
+
+If FINEARTS is absent, exclusion may be defensible because the trial as a whole enrolled HFmrEF/HFpEF and its main primary endpoint is a different recurrent-event estimand, even though 2,172 participants had EF<50. If an EF<50 subgroup was included, verify the exact time-to-event mortality and first composite estimates, not only the primary recurrent-event rate ratio. If the full 6,001 patients or multiple subgroup reports were entered as independent HFrEF cohorts, that would be a major phenotype and/or trial-family data error; no evidence currently establishes that occurred.
+
+### Cross-review MRA interpretation
+
+Do not use FINEARTS-HF's finerenone result in HFmrEF/HFpEF as evidence that spironolactone or eplerenone is more effective in HFrEF. Nonsteroidal finerenone and steroidal MRAs are different molecules with different evidence/populations. If the review's component code combines them under a generic MRA component, identify the MRA trials and EF subgroup contributing to each outcome, and run agent-specific and phenotype-specific sensitivities where connected. The NMA's HFrEF MRA class effect should not be silently strengthened by a full-population FINEARTS estimate if that trial does not meet the HFrEF target estimand.
+
+Current status: `FINEARTS_ROSTER_MEMBERSHIP_UNVERIFIED`; source-level trial identity, EF strata and endpoint definitions confirmed, but actual membership in 89-trial network and fitted contribution unresolved.
