@@ -7,7 +7,7 @@
 
 ## Why this candidate exists
 
-The 1 November 2026 HF audit exposed a recurrent combination of problems: distinct reports of one trial presented as distinct randomized trials; event totals mistaken for participant totals; first and recurrent hospitalizations combined as binary events; one-year and entire-follow-up outcomes mixed; cardiac versus HF-specific hospitalizations conflated; safety populations and denominators mixed; effect-modifying trial selection/run-in and background therapy obscured by broad drug-class nodes; and ranking claims exceeding the reported comparative intervals.
+The 1 November 2026 HF audit exposed a recurrent combination of problems: distinct reports of one trial presented as distinct randomized trials; event totals mistaken for participant totals; first and recurrent hospitalizations combined as binary events; one-year and entire-follow-up outcomes mixed; cardiac versus HF-specific hospitalizations conflated; safety populations and denominators mixed; effect-modifying trial selection/run-in and background therapy obscured by broad drug-class nodes; masking/comparator and numerical transcription errors persisting across review updates; and ranking claims exceeding the reported comparative intervals.
 
 The methodology should catch these **without equating a suspicious table with a proven model error**, and without assuming that all trial results or NMAs are wrong. A correct source record can disagree with a crude diagnostic because the original outcome is time-to-event, stratified, adjusted, recurrent or differently censored. Every candidate error requires an explicit alternative explanation and a matched-estimator check.
 
@@ -22,6 +22,7 @@ For each outcome, retain the complete original claimed denominator: all included
 | Required field | Meaning / fail-closed test |
 |---|---|
 | `review_doi`, `review_version`, `reported_result_locator` | Exact current published edition; section, table, figure, supplement cell, date and any correction history. |
+| `predecessor_review_doi`, `shared_registration_id`, `cross_review_cell_lineage` | Identify earlier versions of a review and repeated table entries (including anomalous Ns, endpoint codes and design labels). Mark `REUSED_REPORTING` separately from `MODEL_DATA_REUSED`, which requires proof from exact input rows. Do not imply that an explicitly updated review improperly used its earlier extraction. |
 | `outcome_id`, `outcome_definition`, `population_id`, `ef_rule` | Exact outcome, HF subtype, EF eligibility, symptomatic status and target PICO. |
 | `parent_trial_id`, `report_doi`, `registry_id`, `subset_relation` | Registry-linked independent RCT, publication, subgroup/report inclusion and parent–child relationship; do not infer independence from author/year. |
 | `arm_id`, `comparator_id`, `randomized_n`, `analysis_n`, `safety_n` | Exact arm, experimental/reference orientation and denominator type from the original source. |
@@ -48,6 +49,7 @@ Missing essential source/estimand/parent-trial identifiers yields **HOLD**, neve
 5. Check placebo/active comparator, drug molecule and class-node coding, crossover, factorial/multi-arm shared controls, dose, background therapy and eligibility of every trial (symptomatic HF, EF cut, renal threshold, recent hospitalization, trial era).
 6. Cross-check trial extraction tables against original primary reports and supplementary event tables; document both value and **endpoint identity**. A numerically equal count for cardiac admissions is not proof it is HF admissions.
 7. Verify that each named treatment has an observed outcome-specific source edge wherever the review estimates that outcome; reconcile every trial's reported outcome-code availability with network diagrams and Results, retaining `UNRESOLVED` if source inputs are hidden.
+8. For an updated NMA, compare the predecessor's published trial/outcome/denominator/design table **cell by cell** against the new version. Preserve unchanged normal entries and repeated anomalies, source the shared protocol/registration and correction history, and explicitly distinguish **transmission of reported text** from **use of erroneous numbers in the statistical model**. An impossible printed denominator is a reporting error but does not by itself establish a fitted-data error.
 
 ### Pass 2 — exact original-model reproduction
 
@@ -103,6 +105,7 @@ Include matched counterexamples so the protocol does not train a detector to alw
 11. A non-significant head-to-head estimate but numerically highest SUCRA — label rank uncertainty; do not allege computation error without source contradiction.
 12. Current corrected journal version resolves an older table typo — flag as **resolved history**, not an ongoing defect.
 13. A published treatment node with few direct events legitimately gains precision from **specified** hierarchical class borrowing or other independently observed constraints — test the full stated likelihood and structure before alleging impossible precision.
+14. An updated review transparently reuses its predecessor's trial table, including a typographical denominator error, but its **separately verified fitted dataset uses valid Ns** — retain the reporting correction and do not assert a changed clinical effect or misconduct.
 
 These are **proposed fixture descriptions only**. No test code or independently sampled validation was executed by publishing this document.
 
@@ -110,6 +113,7 @@ These are **proposed fixture descriptions only**. No test code or independently 
 
 - `source_registry`: exact source IDs, versions, retrieval path, locators, hashes and access failures.
 - `trial_family_map`: independent parent RCT and publications/subgroups; overlap/missing status, source-backed.
+- `cross_review_lineage`: predecessor DOI and registration, exact reused table cells and status, corrected edition, and a separate proof field for **whether the model actually imported a disputed value**.
 - `outcome_ledger`: every reported network/outcome/contrast; no missing unflagged outcomes; source and analysis statuses.
 - `replay_manifest`: author original code/options/input, actual run command, environment and differences; `UNAVAILABLE` if not obtained.
 - `corrected_manifest`: one-at-a-time and joint sensitivity, network topology, estimates and appropriate intervals.
