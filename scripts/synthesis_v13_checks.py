@@ -645,6 +645,9 @@ def unchanged_control_false_alerts(papers: Sequence[Mapping], claims: Sequence[M
     publication may contain genuine errors. This function trusts supplied labels
     and must not be described as independent verification or held-out accuracy.
     Incomplete inventories and unresolved truth hold papers out of the rate.
+    Claim IDs are local to each paper; the unique claim key is
+    (paper_id, claim_id). Reused local IDs across distinct papers must never
+    truncate a complete negative-control denominator.
     """
     if not isinstance(papers, (list, tuple)) or not isinstance(claims, (list, tuple)):
         raise ValueError("paper and claim manifests must be sequences")
@@ -664,9 +667,9 @@ def unchanged_control_false_alerts(papers: Sequence[Mapping], claims: Sequence[M
         if not isinstance(c, Mapping):
             raise ValueError("claim entries must be mappings")
         pid, cid = c.get("paper_id"), c.get("claim_id")
-        if pid not in paper_map or not isinstance(cid, str) or not cid or cid in seen:
-            raise ValueError("orphaned, duplicate or empty claim ID")
-        seen.add(cid)
+        if pid not in paper_map or not isinstance(cid, str) or not cid or (pid, cid) in seen:
+            raise ValueError("orphaned, duplicate or empty paper-scoped claim ID")
+        seen.add((pid, cid))
         if c.get("prediction") not in {"FLAG", "NO_FLAG", "HOLD"}:
             raise ValueError("unknown prediction")
         if c.get("reference") not in {"ERROR", "NO_ERROR", "UNDETERMINED"}:
