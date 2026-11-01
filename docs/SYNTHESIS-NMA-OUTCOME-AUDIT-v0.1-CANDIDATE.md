@@ -27,9 +27,11 @@ For each outcome, retain the complete original claimed denominator: all included
 | `arm_id`, `comparator_id`, `randomized_n`, `analysis_n`, `safety_n` | Exact arm, experimental/reference orientation and denominator type from the original source. |
 | `endpoint_unit` | `PEOPLE_FIRST_EVENT`, `EVENTS_RECURRENT`, `RATE_PERSON_TIME`, `TIME_TO_FIRST`, `COMPOSITE_PEOPLE`, `CONTINUOUS`, `OTHER`, or `UNRESOLVED`. |
 | `event_count`, `person_count`, `time_origin`, `followup`, `censoring` | Distinguish admissions from people; label first-year versus full follow-up and time at risk. |
+| `outcome_available`, `source_outcome_code`, `outcome_edge_count` | Reconcile the paper's trial-level outcome availability table with every claimed outcome-specific graph, treatment estimate and figure; an absent code needs an explanation, not invented input. |
 | `effect_measure`, `effect_of_interest`, `adjustment`, `model_signature` | HR/RR/OR/rate ratio/mean difference, ITT/assignment or adherence, stratification, repeated-event model, CI method. |
 | `source_url`, `source_locator`, `source_version`, `retrieval_status`, `source_hash` | Original paper/registry/protocol/SAP and what exactly was accessed. Never invent inaccessible files. |
 | `reported_estimate`, `reported_interval`, `authors_input`, `reproduced_estimate` | Keep reported, original-model-replayed, and independently repaired values separately; never substitute approximate crude ORs for author estimates. |
+| `implied_se`, `information_bound`, `precision_explanation` | Compare displayed interval precision to the maximum information in the listed unique populations for an explicitly specified likelihood; check hidden independent data, hierarchical borrowing and shared controls before alleging an impossibility. |
 | `rob2_domains`, `rob_nma_domains`, `transitivity_matrix`, `cinema_domains` | Outcome-specific judgments with exact justification and independent-review status. |
 | `benign_explanation`, `refutation_result`, `severity`, `evidence_maturity`, `outreach_hold` | Strongest plausible non-error explanation, checked answer, materiality, provenance, and communication gate. |
 
@@ -45,6 +47,7 @@ Missing essential source/estimand/parent-trial identifiers yields **HOLD**, neve
 4. Record **for each arm/outcome** whether a numerator means people, recurrent events, first events or person-time rate. Reject as a standard binomial person-count input any event total exceeding the relevant randomized/at-risk person count. Do not mistake valid recurrent events for fraud; they are valid when analysed appropriately.
 5. Check placebo/active comparator, drug molecule and class-node coding, crossover, factorial/multi-arm shared controls, dose, background therapy and eligibility of every trial (symptomatic HF, EF cut, renal threshold, recent hospitalization, trial era).
 6. Cross-check trial extraction tables against original primary reports and supplementary event tables; document both value and **endpoint identity**. A numerically equal count for cardiac admissions is not proof it is HF admissions.
+7. Verify that each named treatment has an observed outcome-specific source edge wherever the review estimates that outcome; reconcile every trial's reported outcome-code availability with network diagrams and Results, retaining `UNRESOLVED` if source inputs are hidden.
 
 ### Pass 2 — exact original-model reproduction
 
@@ -52,6 +55,7 @@ Missing essential source/estimand/parent-trial identifiers yields **HOLD**, neve
 2. **First reproduce the printed NMA without repairing it.** Compare every reported effect, CI, treatment rank and network topology. Record any differences from rounding, package version or unidentified input.
 3. If original code is unavailable, reconstruct a **labeled diagnostic** using published data and record all assumptions; do not call it a reproduction, conclude an exact hidden implementation, or present its changed CI as a formally corrected publication.
 4. Before each comparison verify estimator identity: recurrent-event rate model versus people with an event, HR versus risk/odds ratio, adjusted versus crude, Cox/KM versus raw proportions, outcome time horizon, competing terminal events, and analysis population.
+5. For single-edge drug nodes or suspect duplicate clusters, calculate a **conditional information-budget check**: derive the SE implied by the displayed interval and bound plausible binary contrast precision using unique source Ns/events, network geometry and allowed correlation. Record the assumptions and benign alternatives (additional unlisted RCT, adjusted survival likelihood, legitimate hierarchical shrinkage, class borrowing) before treating an overly narrow CI as a source/data problem. A contrast-only bound does **not** apply universally to complex joint NMA models.
 
 ### Pass 3 — corrected and stress-tested outcome-specific network
 
@@ -98,6 +102,7 @@ Include matched counterexamples so the protocol does not train a detector to alw
 10. NMA with no closed loops and no feasible coherence test — **do not claim missing test proves bias**.
 11. A non-significant head-to-head estimate but numerically highest SUCRA — label rank uncertainty; do not allege computation error without source contradiction.
 12. Current corrected journal version resolves an older table typo — flag as **resolved history**, not an ongoing defect.
+13. A published treatment node with few direct events legitimately gains precision from **specified** hierarchical class borrowing or other independently observed constraints — test the full stated likelihood and structure before alleging impossible precision.
 
 These are **proposed fixture descriptions only**. No test code or independently sampled validation was executed by publishing this document.
 
