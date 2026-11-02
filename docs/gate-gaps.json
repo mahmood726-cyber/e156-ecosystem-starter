@@ -407,6 +407,21 @@
       "seal": {
         ".github/workflows/test.yml#jobs.meta-harness-unpack-windows": "3cc33294e1d32074b8418a25737507244563799f5acc11c44920d3e1924a5795"
       }
+    },
+    {
+      "id": ".github/workflows/synthesis-v13-candidate.yml#jobs.offline-regression",
+      "kind": "ci-job",
+      "name": "Synthesis v1.3 synthetic-only regression",
+      "stops": "Fails when the v1.3 synthetic deterministic checks or their regression assertions fail in the Ubuntu offline unittest suite.",
+      "would_not_stop": [
+        "Incorrect or fabricated caller-supplied paper evidence, source locations, estimand identities or correction history: this workflow does not authenticate source documents.",
+        "False-positive rates, missed real scientific errors or clinical validity on unseen papers: no prospective masked adjudication or independent accuracy evaluation is performed.",
+        "Failures in the repository-wide Python, Windows, Bash, security or other CI jobs: the dedicated v1.3 workflow is narrow and synthetic only."
+      ],
+      "source": "Synthesis v1.3 candidate workflow offline-regression job; tests/test_synthesis_v13_checks.py.",
+      "seal": {
+        ".github/workflows/synthesis-v13-candidate.yml#jobs.offline-regression": "7be3a86a5b8e88ebdfc61df171795a49d4201d3fa4d2927a6d58893d40bbf3c3"
+      }
     }
   ]
 }
