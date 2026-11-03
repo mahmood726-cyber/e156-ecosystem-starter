@@ -1,0 +1,115 @@
+{
+  "schema": "synthesis-public-case-inputs-v1",
+  "case_id": "SYN-NMA-ZHANG-HCC-1809232-20261103",
+  "doi": "10.3389/fonc.2026.1809232",
+  "accessed_date": "2026-11-03",
+  "sources": {
+    "nma_html": "https://www.frontiersin.org/journals/oncology/articles/10.3389/fonc.2026.1809232/full",
+    "nma_html_sha256": "91fced08207b043a1d7d9f24e874a9f040b9a3f625a4dfe291775da3baee4798",
+    "nma_pdf": "https://www.frontiersin.org/journals/oncology/articles/10.3389/fonc.2026.1809232/pdf",
+    "nma_pdf_sha256": "91875f9492f8231ecf3fa8eb71d32ab201bb7352de685f023ddb1bdeb576212e",
+    "primary_RCT": "https://pubmed.ncbi.nlm.nih.gov/39798578/",
+    "primary_RCT_doi": "10.1016/S0140-6736(24)02575-3",
+    "sponsor_followup": "https://www.merck.com/news/merck-and-eisai-provide-update-on-phase-3-leap-012-trial-in-unresectable-non-metastatic-hepatocellular-carcinoma/",
+    "sponsor_followup_date": "2025-10-29"
+  },
+  "claim_location": "Introduction, printed PDF p3, LEAP-012 sentence citing reference17",
+  "claim_paraphrase": "LEAP-012 established superiority for both PFS and OS.",
+  "primary_trial": {
+    "population": "LEAP-012 ITT unresectable nonmetastatic HCC",
+    "experimental_n": 237,
+    "control_n": 243,
+    "PFS": {
+      "HR": 0.66,
+      "CI95": [
+        0.51,
+        0.84
+      ],
+      "one_sided_p": 0.0002,
+      "reported_boundary": 0.025
+    },
+    "OS": {
+      "HR": 0.8,
+      "CI95": [
+        0.57,
+        1.11
+      ],
+      "one_sided_p": 0.087,
+      "reported_boundary": 0.0012
+    }
+  },
+  "negative_control": {
+    "unique_trial_family_counts": [
+      36,
+      501,
+      64,
+      342,
+      243,
+      669,
+      58,
+      247,
+      106,
+      68,
+      205,
+      954,
+      156,
+      480,
+      207,
+      1171,
+      315,
+      794,
+      105,
+      262,
+      313,
+      339,
+      338,
+      674,
+      543,
+      571,
+      616,
+      90,
+      326,
+      743,
+      837,
+      346,
+      64,
+      163,
+      649
+    ],
+    "reported_total": 13595,
+    "multiarm_sizes": {
+      "HIMALAYA": [
+        393,
+        389,
+        389
+      ],
+      "EMERALD-1": [
+        204,
+        207,
+        205
+      ],
+      "COSMIC-312": [
+        432,
+        217,
+        188
+      ]
+    },
+    "interpretation": "Published aggregate totals reconcile. Repeated contrast rows do not establish participant duplication or prove correct model covariance."
+  },
+  "interpretation": {
+    "root_id": "ZHANG-1809232-LEAP012-OS-SOURCE-001",
+    "root_count": 1,
+    "status": "SOURCE_VERIFIED_SOURCE_INTERPRETATION_DISCREPANCY",
+    "severity": "S3_PROVISIONAL",
+    "target_eligibility": "PENDING_EXTERNAL_REVIEW",
+    "native_NMA_refitted": false,
+    "published_correction_verified": false
+  },
+  "limits": [
+    "Superiority could have been intended as numerical direction; no statistically significant OS superiority established in cited source.",
+    "The quoted source RCT estimand is not replaced with a fitted NMA result.",
+    "No demonstrated endpoint mis-extraction, clinical harm or model invalidity.",
+    "Current source and bounded correction search checked; no relevant notice retrieved, not proof of absence.",
+    "Public record excludes private correspondence."
+  ]
+}
