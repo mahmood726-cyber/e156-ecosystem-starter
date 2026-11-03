@@ -1,0 +1,96 @@
+{
+  "schema": "synthesis-public-case-inputs-v1",
+  "case_id": "SYN-NMA-YIN-IPF-1761899-20261103",
+  "doi": "10.3389/fphar.2026.1761899",
+  "accessed_date": "2026-11-03",
+  "sources": {
+    "html": "https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2026.1761899/full",
+    "html_sha256": "3d168bb2bd1e151c5d4f0b4842f33638e21d63c6409cde9281bb48a32aa29eb0",
+    "pdf": "https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2026.1761899/pdf",
+    "pdf_sha256": "2184a51e81ea3c06c0de26b1a76313d661e877972edf131cbdb111327c2d25f0"
+  },
+  "cutoff_root": {
+    "id": "YIN-1761899-SEARCH-DATE-001",
+    "status": "SOURCE_VERIFIED_TEXT_FIGURE_DATE_DIFFERENCE",
+    "results_text_page": 4,
+    "text_cutoff_year": 2025,
+    "figure_page": 5,
+    "figure": 1,
+    "figure_cutoff_year": 2005,
+    "removed_records": 693,
+    "included_list_earliest_year": 2005,
+    "inference": "Figure1 and inclusion of older trials support a text typo as a benign explanation, not proof that trials were wrongly excluded.",
+    "severity": "S2_REPORTING",
+    "target_eligibility": "HOLD_LOW_SUBSTANTIVE_MATERIALITY"
+  },
+  "denominator_root": {
+    "id": "YIN-1761899-CHARACTERISTICS-DENOM-002",
+    "status": "HELD_DENOMINATOR_IDENTITY",
+    "page": 6,
+    "publications": 121,
+    "studies": 162,
+    "registered": 25,
+    "registered_printed_percent": 18.1,
+    "multicentre": 28,
+    "multicentre_printed_percent": 20.3,
+    "alternative_denominator": 138,
+    "refutation": "An unlabelled 138-study subset reproduces both percentages at one decimal; intended population unknown.",
+    "target_eligibility": "HOLD"
+  },
+  "unit_identity_lead": {
+    "id": "YIN-1761899-TIMEPOINT-UNIT-003",
+    "status": "QUESTION_ONLY_NOT_A_VERIFIED_ERROR",
+    "page": 6,
+    "observed_paraphrase": "121 publications expanded to 162 studies where publications involved multiple trials or intervention time points.",
+    "benign_explanations": [
+      "Multiple independent trials within one publication may be valid units.",
+      "Separate time points could be assigned to separate outcome networks or use appropriate covariance."
+    ],
+    "needed": "Native trial-family/time-point extraction and fitted covariance to establish whether repeated participants enter one pooled network independently.",
+    "target_eligibility": "HOLD_NO_ERROR_CREDIT"
+  },
+  "screening_control": {
+    "database_counts": [
+      891,
+      1356,
+      1184,
+      2319,
+      595,
+      768,
+      629,
+      714
+    ],
+    "identified": 8456,
+    "pre_date_exclusions": 693,
+    "duplicates": 3023,
+    "screened": 4740,
+    "study_type_exclusions": [
+      200,
+      238,
+      413,
+      537,
+      59
+    ],
+    "remaining": 3293,
+    "title_abstract_exclusions": 3083,
+    "full_text_sought": 210,
+    "not_retrieved": 27,
+    "full_text_assessed": 183,
+    "full_text_exclusions": 62,
+    "included": 121,
+    "status": "ARITHMETIC_RECONCILES"
+  },
+  "verification": {
+    "rendered_pdf_pages": [
+      4,
+      5
+    ],
+    "characteristics_text_page": 6,
+    "native_extraction_obtained": false,
+    "native_model_replayed": false,
+    "independent_human_adjudication": false,
+    "published_correction_verified": false,
+    "public_correspondence_included": false
+  },
+  "correction_check": "Current publisher source and bounded DOI/title/correction search returned no relevant notice; absence is not established."
+}

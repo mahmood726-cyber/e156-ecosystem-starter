@@ -1,0 +1,207 @@
+{
+  "schema": "synthesis-public-case-inputs-v1",
+  "case_id": "SYN-NMA-YU-01653-20261103",
+  "doi": "10.1186/s13102-026-01653-5",
+  "accessed_date": "2026-11-03",
+  "sources": {
+    "html": "https://link.springer.com/article/10.1186/s13102-026-01653-5",
+    "html_sha256": "d610c91d88f1fa09fcfdfb85a123c85b0425ca3c036ecceee1c3e98317b2b8ce",
+    "pdf": "https://link.springer.com/content/pdf/10.1186/s13102-026-01653-5.pdf",
+    "pdf_sha256": "3f1d3f4c049d39c6640451511c4bf778b2c6400042d053ea15b44826d2fdd702",
+    "supplement": "https://static-content.springer.com/esm/art%3A10.1186%2Fs13102-026-01653-5/MediaObjects/13102_2026_1653_MOESM1_ESM.docx",
+    "supplement_sha256": "fefde4ab368793d7ff72791259d6fe8e2ce0fac0faebc28dcf81e0c746fb83d7",
+    "supplement_content": "Search strategy appendix; no recovered native graph or posterior rank data."
+  },
+  "ranking_root": {
+    "id": "YU-01653-RANKING-DISCUSSION-003",
+    "status": "SOURCE_VERIFIED_WRITTEN_RANKING_CONFLICT",
+    "severity": "S3_PROVISIONAL",
+    "grouped_root_count": 1,
+    "target_eligibility": "HOLD_NATIVE_MODEL_IDENTITY_AND_EXTERNAL_REVIEW",
+    "observations": [
+      {
+        "outcome": "RT strength",
+        "discussion_page": 28,
+        "discussion_claimed_top": "RT_Passive",
+        "discussion_sucra_percent": 91.5,
+        "table_page": 23,
+        "table": "6a",
+        "table_top": "RT_Cold_Long",
+        "table_top_sucra_percent": 86.2,
+        "table_passive_rank": 8,
+        "table_passive_sucra_percent": 47.1
+      },
+      {
+        "outcome": "RT power",
+        "discussion_page": 28,
+        "discussion_claim_paraphrase": "Passive recovery superior across strength and power",
+        "table_page": 23,
+        "table": "6b",
+        "table_top": "RT_Cold_Long",
+        "table_top_sucra_percent": 85,
+        "table_passive_rank": 10,
+        "table_passive_sucra_percent": 34.6
+      },
+      {
+        "outcome": "TS power",
+        "discussion_page": 29,
+        "discussion_claimed_top": "TS_Active",
+        "discussion_sucra_percent": 61.6,
+        "table_page": 23,
+        "table": "6e",
+        "table_top": "TS_Cold_Long",
+        "table_top_sucra_percent": 93.3,
+        "table_active_rank": 2,
+        "table_active_sucra_percent": 61.6
+      }
+    ],
+    "limits": [
+      "Native posterior ranks, analysis/time-window identity and intended correction remain unresolved.",
+      "Ranking leadership does not imply statistically significant benefit; RT-strength cold-long interval includes zero.",
+      "Do not infer fitted-model failure, participant harm or three distinct errors."
+    ]
+  },
+  "geometry_root": {
+    "id": "YU-01653-DIRECT-PAIR-DENOMINATORS-001",
+    "status": "CONDITIONAL_REPORTING_QUESTION",
+    "target_eligibility": "HOLD_UNIQUE_EDGE_AND_TOPOLOGY_IDENTITY",
+    "networks": [
+      {
+        "outcome": "RT strength",
+        "nodes": 13,
+        "studies_or_measurements": 24,
+        "claimed_direct_pair_numerator": 24,
+        "unordered_possible_pairs": 78,
+        "connected_acyclic_max_unique_edges": 12,
+        "reported_direct_percent": 30.7692,
+        "max_direct_percent_if_acyclic": 15.3846,
+        "claimed_count_excess_if_acyclic": 12,
+        "acyclic_bound_applicable_to_claim": true
+      },
+      {
+        "outcome": "RT power",
+        "nodes": 13,
+        "studies_or_measurements": 17,
+        "claimed_direct_pair_numerator": 17,
+        "unordered_possible_pairs": 78,
+        "connected_acyclic_max_unique_edges": 12,
+        "reported_direct_percent": 21.7949,
+        "max_direct_percent_if_acyclic": 15.3846,
+        "claimed_count_excess_if_acyclic": 5,
+        "acyclic_bound_applicable_to_claim": true
+      },
+      {
+        "outcome": "EN aerobic performance",
+        "nodes": 6,
+        "studies_or_measurements": 11,
+        "claimed_direct_pair_numerator": 5,
+        "unordered_possible_pairs": 15,
+        "connected_acyclic_max_unique_edges": 5,
+        "reported_direct_percent": 33.3333,
+        "max_direct_percent_if_acyclic": 33.3333,
+        "claimed_count_excess_if_acyclic": 0,
+        "acyclic_bound_applicable_to_claim": true
+      },
+      {
+        "outcome": "EN recovery",
+        "nodes": 12,
+        "studies_or_measurements": 17,
+        "claimed_direct_pair_numerator": 16,
+        "unordered_possible_pairs": 66,
+        "connected_acyclic_max_unique_edges": 11,
+        "reported_direct_percent": 24.2424,
+        "max_direct_percent_if_acyclic": 16.6667,
+        "claimed_count_excess_if_acyclic": 5,
+        "acyclic_bound_applicable_to_claim": true
+      },
+      {
+        "outcome": "TS power",
+        "nodes": 9,
+        "studies_or_measurements": 18,
+        "claimed_direct_pair_numerator": 9,
+        "unordered_possible_pairs": 36,
+        "connected_acyclic_max_unique_edges": 8,
+        "reported_direct_percent": 25,
+        "max_direct_percent_if_acyclic": 22.2222,
+        "claimed_count_excess_if_acyclic": 1,
+        "acyclic_bound_applicable_to_claim": true
+      },
+      {
+        "outcome": "Universal muscle damage",
+        "nodes": 13,
+        "studies_or_measurements": 37,
+        "claimed_direct_pair_numerator": 37,
+        "unordered_possible_pairs": 78,
+        "connected_acyclic_max_unique_edges": 12,
+        "reported_direct_percent": 47.4359,
+        "max_direct_percent_if_acyclic": 15.3846,
+        "claimed_count_excess_if_acyclic": 25,
+        "acyclic_bound_applicable_to_claim": true
+      },
+      {
+        "outcome": "Universal perceived recovery",
+        "nodes": 15,
+        "studies_or_measurements": 47,
+        "claimed_direct_pair_numerator": 16,
+        "unordered_possible_pairs": 105,
+        "connected_acyclic_max_unique_edges": 14,
+        "reported_direct_percent": 15.2381,
+        "max_direct_percent_if_acyclic": 13.3333,
+        "claimed_count_excess_if_acyclic": 2,
+        "acyclic_bound_applicable_to_claim": false
+      }
+    ],
+    "formula": "possible_pairs=V*(V-1)/2; connected_acyclic_edges=V-1",
+    "refutation": "Cyclic graphs may have more than V-1 unique edges. Study contrasts or repeated edges are not unique treatment pairs. Perceived-recovery text explicitly acknowledges cycles; its 16/105 is not flagged as impossible."
+  },
+  "figure_identity_root": {
+    "id": "YU-01653-TS-POWER-FIGURE-IDENTITY-002",
+    "status": "SOURCE_VERIFIED_LABEL_IDENTITY_CONFLICT_CONSEQUENCES_UNKNOWN",
+    "target_eligibility": "HOLD",
+    "figure_page": 20,
+    "panel": "3e",
+    "literal_panel_label": "TS strength outcomes",
+    "approx_visual_nodes": 6,
+    "results_outcome": "TS power",
+    "results_figure_reference": "3e",
+    "results_page": 26,
+    "ranking_table": "6e",
+    "ranking_table_treatments": 9,
+    "table4_TS_strength_studies": 7,
+    "methods_NMA_threshold": 10,
+    "refutation": "A wrong label or substituted figure can explain this without a wrong fitted network. Visual graph is not native adjacency."
+  },
+  "unflagged_controls": [
+    {
+      "outcome": "RT power",
+      "abstract_and_table_cold_long_sucra": 85
+    },
+    {
+      "outcome": "EN aerobic performance",
+      "abstract_and_table_cold_medium_sucra": 75.1
+    },
+    {
+      "outcome": "TS power",
+      "abstract_and_table_cold_long_sucra": 93.3
+    },
+    {
+      "outcome": "EN aerobic performance",
+      "nodes": 6,
+      "direct_pairs": 5,
+      "consistent_with_connected_acyclic_graph": true
+    }
+  ],
+  "verification": {
+    "rendered_pdf_pages": [
+      20,
+      23,
+      28,
+      29
+    ],
+    "native_model_replayed": false,
+    "independent_human_adjudication": false,
+    "published_correction_verified": false,
+    "public_correspondence_included": false
+  },
+  "correction_check": "Current publisher sources and bounded DOI/title/correction search returned no relevant notice; absence is not established."
+}
