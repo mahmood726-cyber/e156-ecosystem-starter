@@ -11,6 +11,7 @@ import argparse
 import json
 import re
 import subprocess
+import time
 from pathlib import Path
 
 from scicoqa_paired_benchmark import BenchmarkError, ARMS, SCHEMA, canonical, digest, read_jsonl
@@ -18,34 +19,57 @@ from scicoqa_paired_benchmark import BenchmarkError, ARMS, SCHEMA, canonical, di
 
 def parse_yaml(text: str) -> list[dict]:
     """Parse a conservative subset of SciCoQA discrepancy-list YAML."""
-    lines = text.strip().replace("```yaml", "").replace("```", "").splitlines()
-    try:
-        at = next(i for i, line in enumerate(lines) if line.strip().startswith("discrepancies:"))
-    except StopIteration as exc:
-        raise BenchmarkError("no discrepancies key") from exc
-    first = lines[at].split(":", 1)[1].strip()
+    document = text.strip()
+    if document.startswith("```"):
+        fence = re.fullmatch(r"```(?:yaml|yml)?\s*\n(.*?)\n```", document, re.DOTALL)
+        if not fence:
+            raise BenchmarkError("response must be one YAML document")
+        document = fence.group(1).strip()
+    lines = document.splitlines()
+    if not lines or not re.fullmatch(r"discrepancies:\s*(?:\[\])?\s*", lines[0]):
+        raise BenchmarkError("response must start with discrepancies key; no preamble")
+    first = lines[0].split(":", 1)[1].strip()
     if first == "[]":
+        if any(line.strip() for line in lines[1:]):
+            raise BenchmarkError("unexpected content after empty result")
         return []
     if first:
         raise BenchmarkError("unsupported inline YAML")
     items = []
-    for line in lines[at+1:]:
+    for line in lines[1:]:
         if not line.strip():
             continue
-        match = re.match(r"^\s+-\s+(.*)$", line)
+        match = re.match(r"^  -\s+(.*)$", line)
         if match:
             value = match.group(1).strip()
-            if not value or value in {"|", ">"}:
-                raise BenchmarkError("unsupported multiline YAML")
-            items.append(value.strip("'\""))
-        elif items and line.startswith("    "):
+            if (not value or value in {"|", ">", "|-", ">-", "null", "~", "true", "false"}
+                    or value.startswith(("{", "[", "&", "*", "!", "#"))):
+                raise BenchmarkError("unsupported YAML scalar; use plain string list")
+            if value.startswith('"'):
+                try:
+                    value = json.loads(value)
+                except json.JSONDecodeError as exc:
+                    raise BenchmarkError("unsupported quoted YAML scalar") from exc
+            elif value.startswith("'"):
+                if not value.endswith("'") or len(value) < 2:
+                    raise BenchmarkError("unclosed YAML scalar")
+                value = value[1:-1].replace("''", "'")
+            elif ": " in value or re.fullmatch(r"[-+]?\d+(?:\.\d+)?", value):
+                raise BenchmarkError("finding must be a YAML string, not a mapping or number")
+            if not isinstance(value, str) or not value.strip():
+                raise BenchmarkError("finding must be a nonempty string")
+            items.append(value)
+        elif items and line.startswith("    ") and not line.lstrip().startswith(("-", "#", "discrepancies:")):
             items[-1] += " " + line.strip()
         else:
             raise BenchmarkError("unrecognized YAML response")
+    if not items:
+        raise BenchmarkError("empty YAML value is not an empty list")
     return [{"finding_id": f"F{i+1}", "text": x} for i, x in enumerate(items)]
 
 
-def execute(manifest: dict, prompts: dict, command: list[str], timeout: int = 180) -> tuple[list, list]:
+def execute(manifest: dict, prompts: dict, command: list[str], timeout: int = 180,
+            on_result=None) -> tuple[list, list]:
     if manifest.get("schema") != SCHEMA or not manifest.get("cases"):
         raise BenchmarkError("invalid manifest")
     if not command or timeout < 1:
@@ -69,18 +93,28 @@ def execute(manifest: dict, prompts: dict, command: list[str], timeout: int = 18
     sha = digest(canonical(manifest))
     for cid in sorted(cases):
         for arm in ARMS:
-            status, findings, output, error = "COMPLETE", [], "", None
+            status, findings, output, error, stderr = "COMPLETE", [], "", None, ""
+            started = time.monotonic()
             try:
                 completed = subprocess.run(
                     command, input=indexed[(cid, arm)], text=True,
                     capture_output=True, timeout=timeout, check=False)
                 output = completed.stdout
+                stderr = completed.stderr
                 if completed.returncode:
                     status = "FAILED"
                     error = f"model command exited {completed.returncode}"
                 else:
                     findings = parse_yaml(output)
-            except (subprocess.TimeoutExpired, OSError) as exc:
+            except subprocess.TimeoutExpired as exc:
+                output = (exc.stdout or b"")
+                stderr = (exc.stderr or b"")
+                if isinstance(output, bytes):
+                    output = output.decode("utf-8", errors="replace")
+                if isinstance(stderr, bytes):
+                    stderr = stderr.decode("utf-8", errors="replace")
+                status, error = "FAILED", "TimeoutExpired"
+            except (OSError, UnicodeError) as exc:
                 status, error = "FAILED", type(exc).__name__
             except BenchmarkError as exc:
                 status, error = "ABSTAIN", str(exc)
@@ -89,9 +123,12 @@ def execute(manifest: dict, prompts: dict, command: list[str], timeout: int = 18
                 "rendered_prompt_sha256": cases[cid]["rendered_prompt_sha256"][arm],
                 "model": manifest["model"], "model_revision": manifest["model_revision"],
                 "decoding_config": manifest["decoding_config"], "status": status,
-                "findings": findings}
+                "findings": findings, "latency_seconds": time.monotonic() - started}
             predictions.append(row)
-            raw_outputs.append({**row, "raw_response": output, "error": error})
+            raw_outputs.append({**row, "raw_response": output, "raw_response_sha256": digest(output),
+                                "stderr": stderr, "error": error})
+            if on_result is not None:
+                on_result(row, raw_outputs[-1])
     return predictions, raw_outputs
 
 
@@ -108,11 +145,25 @@ def main() -> None:
         p.error("specify a model command and a new output directory")
     manifest = json.loads((a.prepared / "manifest.json").read_text(encoding="utf-8"))
     prompts = {arm: read_jsonl(a.prepared / f"{arm}-prompts.jsonl") for arm in ARMS}
-    predictions, outputs = execute(manifest, prompts, command, a.timeout)
     a.output.mkdir(parents=True)
-    for filename, rows in (("predictions.jsonl", predictions), ("raw_outputs.jsonl", outputs)):
-        (a.output / filename).write_text(
-            "".join(canonical(x) + "\n" for x in rows), encoding="utf-8")
+    metadata = {"manifest_sha256": digest(canonical(manifest)),
+                "command_sha256": digest(canonical(command)),
+                "model_settings_verification": "caller-declared; not provider-attested",
+                "state": "STARTED"}
+    metadata_path = a.output / "execution.json"
+    metadata_path.write_text(canonical(metadata) + "\n", encoding="utf-8")
+    with (a.output / "predictions.jsonl").open("w", encoding="utf-8") as pred_file, \
+            (a.output / "raw_outputs.jsonl").open("w", encoding="utf-8") as raw_file:
+        def checkpoint(prediction, raw):
+            pred_file.write(canonical(prediction) + "\n")
+            pred_file.flush()
+            raw_file.write(canonical(raw) + "\n")
+            raw_file.flush()
+
+        predictions, outputs = execute(manifest, prompts, command, a.timeout, checkpoint)
+    metadata["state"] = "FINISHED"
+    metadata["recorded_calls"] = len(predictions)
+    metadata_path.write_text(canonical(metadata) + "\n", encoding="utf-8")
     print("Model responses recorded; no independent scientific adjudication performed")
     print(json.dumps({"total": len(predictions),
                       "complete": sum(x["status"] == "COMPLETE" for x in predictions),
