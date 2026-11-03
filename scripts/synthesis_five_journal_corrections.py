@@ -86,7 +86,7 @@ def validate_notice(record: Any) -> dict:
     if not isinstance(record, dict) or record.get("schema") != SCHEMA:
         raise ValueError("unknown or missing notice schema")
     journal = record.get("journal")
-    if journal not in JOURNALS:
+    if not isinstance(journal, str) or journal not in JOURNALS:
         raise ValueError("not one of the five exact main journals")
     doi = normalize_doi(record.get("notice_doi"))
     source = record.get("primary_notice_url")
