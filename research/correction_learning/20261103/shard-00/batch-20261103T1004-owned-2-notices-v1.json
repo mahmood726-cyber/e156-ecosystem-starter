@@ -1,0 +1,145 @@
+{
+  "schema": "synthesis-correction-learning-shard00-v1",
+  "audit_date": "2026-11-03",
+  "shard": 0,
+  "focus": "Event Counts and conservative correction status",
+  "full_notice_credit_rule": "Read entire substantive primary publisher notice, verify its correction DOI and original DOI relationship, record source-located summary; no credit for search snippets/metadata",
+  "ownership_rule": "SHA256(normalized bare notice DOI), unsigned big endian modulo 10; 'doi:' prefix is NOT hashed (consistent with shard02/05).",
+  "population_of_search": "Open-access 2025-2026 biomedical publisher notices discovered in targeted web search; convenience development data, not systematic or validation sample",
+  "checks": {
+    "source_notice_bodies_fully_read": 2,
+    "eligible_owned_dois": 2,
+    "current_article_selected_claims_checked": 2,
+    "duplicate_owned_dois": 0,
+    "metadata_only_owned": 0,
+    "partial_notice_owned": 0,
+    "selected_claim_reconciled": 1,
+    "selected_claim_hold": 1,
+    "administrative_or_attribution": 1,
+    "protocol_intervention_identity": 1,
+    "independently_adjudicated_errors": 0,
+    "new_discovered_unreported_errors": 0
+  },
+  "records": [
+    {
+      "canonical_key": "10.1186/s12879-025-10877-8",
+      "sha256": "c314f85c16781598510fb3ebc80af6038d9ee90254dd0d4141243fc176e19992",
+      "owner": 0,
+      "credit": "FULL",
+      "notice_title": "Correction: Standard versus double dosing of beta-lactam antibiotics in critically ill patients with sepsis: The BULLSEYE study protocol for a multicenter randomized controlled trial",
+      "notice_date": "2025-04-07",
+      "publisher": "Springer Nature / BMC Infectious Diseases",
+      "notice_url": "https://link.springer.com/article/10.1186/s12879-025-10877-8",
+      "notice_body_locator": "Correction body immediately after original article reference, web displayed lines 56-67",
+      "notice_version": "2025-04-07",
+      "original_title": "Standard versus double dosing of beta-lactam antibiotics in critically ill patients with sepsis: The BULLSEYE study protocol for a multicenter randomized controlled trial",
+      "original_doi": "10.1186/s12879-025-10747-3",
+      "original_url": "https://link.springer.com/article/10.1186/s12879-025-10747-3",
+      "original_version_of_record_date": "2025-03-21",
+      "study_design": "randomized multicenter open-label trial protocol, not results",
+      "registry": "NCT06766461",
+      "trial_sample_size_plan": 988,
+      "change_locator": "Abstract > Methods antibiotic list, ninth drug",
+      "notice_attested_before": "piperacillin/clavulanic acid",
+      "notice_attested_after": "piperacillin/tazobactam",
+      "primary_source_evidence": "Notice 2025-04-07 says its abstract Methods list previously contained wrong ninth drug and original article was corrected; notice publisher page web lines 58-64",
+      "current_publisher_text_observed": "Retrieved original Springer publisher HTML still displays 'piperacillin/clavulanic acid' as ninth drug in Abstract Methods (display lines 66-67), despite publisher banner 'updated' (lines 58-60). This may be a stale/cached representation; not independently verified as latest live Version of Record.",
+      "current_claim_status": "HOLD_PUBLISHER_RENDERING_CONFLICT",
+      "source_support": "SUPPORTED_HISTORICAL_CORRECTION;CURRENT_VERSION_UNVERIFIED",
+      "maturity": "SOURCE_BACKED_NOTICE_AND_RETRIEVED_HTML",
+      "correction_status": "CORRECTION_PUBLISHED",
+      "severity_provisional": "S2 for intervention name in protocol abstract; possible S3 medication-identity risk only if unreconciled current article",
+      "duplicate_key": "10.1186/s12879-025-10747-3|Abstract Methods|ninth beta-lactam drug",
+      "estimator_signature": "NOT_APPLICABLE to medication label and no outcomes recalculated",
+      "strongest_benign_alternative": "Publisher rendering is an old cached/versioned HTML view despite an updated article/PDF; the correction is only an abstract drug-list typo and not evidence of actual trial allocation or administration of the wrong drug. Cross-check the latest publisher PDF/HTML and prospectively registered treatment list before resolution.",
+      "missing_sources": "Current publisher VoR text independently fresh, corrected PDF source span and registry/protocol medication list. No claim about current published error until these are obtained.",
+      "conclusion": "Complete notice credit; correction published; apparent current HTML conflict HOLD not new source-adjudicated error",
+      "correspondence": "NONE; OUTREACH SUSPENDED",
+      "learning_cases": [
+        {
+          "historical": "Abstract ninth drug name appears as piperacillin/clavulanic acid",
+          "corrected": "publisher correction instructs piperacillin/tazobactam",
+          "benign": "same medication list with amoxicillin/clavulanic acid in sixth position AND piperacillin/tazobactam ninth position should not be flagged",
+          "abstention": "correction notice exists but current VoR span is stale or unauthenticated => HOLD, even if page says updated",
+          "status": "PROPOSED_NOT_EXECUTED"
+        }
+      ]
+    },
+    {
+      "canonical_key": "10.1186/s40360-025-00891-6",
+      "sha256": "9c31295194ed80922a4e4f4256770a26a3df1a97a620af3206ce58d508abbb24",
+      "owner": 0,
+      "credit": "FULL",
+      "notice_title": "Correction: Aspirin plus clopidogrel versus cilostazol-based triple antiplatelet therapy in PCI: systematic review and meta-analysis",
+      "notice_date": "2025-03-07",
+      "publisher": "Springer Nature / BMC Pharmacology and Toxicology",
+      "notice_url": "https://link.springer.com/article/10.1186/s40360-025-00891-6",
+      "notice_body_locator": "Correction body 'Incorrect'/'Correct' paragraphs, publisher web lines 68-81",
+      "notice_version": "2025-03-07",
+      "original_doi": "10.1186/s40360-025-00870-x",
+      "original_url": "https://link.springer.com/article/10.1186/s40360-025-00870-x",
+      "original_version_of_record_date": "2025-02-20",
+      "study_design": "systematic review/meta-analysis of 8 randomized trials",
+      "population": "5,299 participants in included trials",
+      "review_registry": "PROSPERO CRD42024610147",
+      "change_locator": "Original article > Methods > Risk of bias and certainty of evidence, first sentence",
+      "notice_attested_before": "independent assessors initials A.B. and B.C.",
+      "notice_attested_after": "independent assessors initials A.M. and B.Q.",
+      "current_publisher_text_observed": "Retrieved current original publisher HTML Methods > Risk of bias and certainty of evidence uses A.M. and B.Q. exactly, and publisher links its 7 March 2025 correction",
+      "current_claim_status": "RECONCILED_EXACT_TEXT",
+      "source_support": "SUPPORTED_NOTICE_AND_CURRENT_PUBLISHER_TEXT",
+      "maturity": "SOURCE_BACKED_SELECTED_CLAIM",
+      "correction_status": "CORRECTION_PUBLISHED",
+      "severity_provisional": "S2 author/reviewer attribution, not proof RoB ratings changed",
+      "duplicate_key": "10.1186/s40360-025-00870-x|Methods Risk of bias|independent assessors initials",
+      "estimator_signature": "NOT_APPLICABLE for assessor-attribution text",
+      "strongest_benign_alternative": "Corrected assessor identities alter attribution only; not evidence that reported RoB ratings, clinical outcomes or meta-analysis models were wrong. Cannot infer changed quality assessments absent underlying reviewer files.",
+      "benign_arithmetic_controls": {
+        "included_trial_group_sizes": "2679 DAPT + 2620 TAPT = 5299 total (source original Results > Baseline characteristics)",
+        "study_selection_flow": "2785 after deduplication - 2771 title/abstract exclusions = 14 full-text records (source original Results > Search results)",
+        "full_text_inclusion": "14 full text records - 8 included = 6 not included (source Results)"
+      },
+      "numeric_status": "NO_FLAG for narrow internally sourced simple counts only; not validation of review extraction, raw event denominators or pooled outcomes",
+      "conclusion": "Complete notice credit; exact specified current text reconciled; no numerical correction established",
+      "correspondence": "NONE; OUTREACH SUSPENDED",
+      "learning_cases": [
+        {
+          "historical": "two assessors initials A.B./B.C.",
+          "corrected": "two assessors initials A.M./B.Q. current article verified",
+          "benign": "different initials for separate tasks (screening versus RoB) are not conflicting claims",
+          "abstention": "journal notice exists but authorship/reviewer records not authenticated => neither misconduct allegation nor RoB reproducibility claim",
+          "status": "PROPOSED_NOT_EXECUTED"
+        },
+        {
+          "historical": "if 2785 minus 2771 were not 14 this would be a count-consistency review candidate",
+          "corrected": "the actual reported identity is exactly 14 and is NO_FLAG",
+          "benign": "full-text eligibility count differs from total included due to six excluded full texts",
+          "abstention": "if screening stages are incomparable or flow chart not sourced, return NOT_COMPARABLE",
+          "status": "PROPOSED_NOT_EXECUTED"
+        }
+      ]
+    }
+  ],
+  "coordination": {
+    "cross_shard_ownership_warning": "The published campaign text states SHA256(canonical normalized DOI). Existing shard-02 and shard-05 credits demonstrably hash the bare DOI; a separate previously drafted shard-09 record reportedly uses 'doi:' + DOI, which assigns 3 of its 5 notice IDs to different workers under bare-DOI hash. Before aggregator publishes a total, agree one rule, migrate wrong-shard records with aliases, and deduplicate. This run hashes bare DOI, matching shard02/05 and the original proposed explicit SHA256(canonical DOI) examples.",
+    "example_hash_disagreement": [
+      {
+        "doi": "10.1007/s12325-025-03235-2",
+        "bare_owner": 4,
+        "doi_prefixed_owner": 9
+      },
+      {
+        "doi": "10.1186/s41687-026-01010-7",
+        "bare_owner": 6,
+        "doi_prefixed_owner": 9
+      },
+      {
+        "doi": "10.1007/s40264-019-00816-3",
+        "bare_owner": 8,
+        "doi_prefixed_owner": 9
+      }
+    ],
+    "require_human_confirmation_of_campaign_normalization": "Owner hash mismatch is protocol ambiguity, NOT a discovered paper error"
+  },
+  "next_cursor": "Continue new open-access journal correction notices after this batch; prioritize notices correcting event counts, denominators and published percentages; do not recount these two; coordinate hash normalization before aggregate."
+}
