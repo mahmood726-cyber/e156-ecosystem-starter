@@ -325,7 +325,8 @@
             "summary": "Indexed notice distinguishes serious adverse events from grade 3 or higher; values and supplement replaced.",
             "current_vor_state": "NOTICE_SAYS_UPDATED"
           }
-        ]
+        ],
+        "original_doi": "10.1056/NEJMoa2303974"
       }
     ],
     "access_or_source_note": "Publisher search extract is detailed but complete primary page could not be opened; no full-notice credit."
@@ -356,7 +357,8 @@
             "summary": "Indexed notice corrects target-region labels for two gene-editing approaches.",
             "current_vor_state": "NOTICE_SAYS_UPDATED"
           }
-        ]
+        ],
+        "original_doi": "10.1056/NEJMra2405260"
       }
     ],
     "access_or_source_note": "Full primary page not obtained; no full-notice credit."
@@ -381,7 +383,8 @@
             "summary": "Publisher-indexed notice reverses the valve-type group descriptor for the lower co-primary endpoint event rate.",
             "current_vor_state": "NOTICE_SAYS_UPDATED"
           }
-        ]
+        ],
+        "original_doi": "10.1016/j.jacc.2024.11.051"
       }
     ],
     "access_or_source_note": "A group-label correction is not evidence the RCT's numerical analysis was wrong; verify table and trial source before further claims."
@@ -412,7 +415,8 @@
             "summary": "Indexed notice moves an asterisk between management boxes.",
             "current_vor_state": "NOTICE_SAYS_UPDATED"
           }
-        ]
+        ],
+        "original_doi": "10.1016/j.jacc.2023.08.017"
       }
     ],
     "access_or_source_note": "Cross-published guideline editions require journal-specific notice identities and shared underlying root accounting."
