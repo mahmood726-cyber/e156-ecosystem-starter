@@ -1,0 +1,420 @@
+[
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "The Lancet",
+    "notice_doi": "10.1016/S0140-6736(25)02154-3",
+    "primary_notice_url": "https://www.thelancet.com/pdfs/journals/lancet/PIIS0140-6736%2825%2902154-3.pdf",
+    "observed_on": "2026-11-03",
+    "review_depth": "FULL_PRIMARY_NOTICE",
+    "primary_notice_read_entirely": true,
+    "source_format": "PUBLISHER_PDF",
+    "notice_body_locator": "PDF p1, Department of Error, HARMONi-2 paragraph",
+    "articles": [
+      {
+        "original_title": "Ivonescimab versus pembrolizumab (HARMONi-2)",
+        "changes": [
+          {
+            "mechanism": "METHODS_DESCRIPTION",
+            "claim_locator": "Introduction paragraph 3",
+            "summary": "Notice revises the LEAP007 comparison statement.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "SURVIVAL_RISK_TABLE",
+            "claim_locator": "Figure 2 and Figure 2A",
+            "summary": "Censoring counts and numbers-at-risk placement corrected; historical figure and patient-level data not independently replayed.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ],
+        "original_doi": "10.1016/S0140-6736(24)02722-3"
+      }
+    ],
+    "access_or_source_note": "Primary one-page notice read; explicit report-specific changes, not new Synthesis discoveries."
+  },
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "The Lancet",
+    "notice_doi": "10.1016/S0140-6736(25)02078-1",
+    "primary_notice_url": "https://www.thelancet.com/pdfs/journals/lancet/PIIS0140-6736%2825%2902078-1.pdf",
+    "observed_on": "2026-11-03",
+    "review_depth": "FULL_PRIMARY_NOTICE",
+    "primary_notice_read_entirely": true,
+    "source_format": "PUBLISHER_PDF",
+    "notice_body_locator": "PDF p1, Department of Error, QWINT-3 paragraph",
+    "articles": [
+      {
+        "original_title": "Once-weekly insulin efsitora alfa versus daily degludec (QWINT-3)",
+        "changes": [
+          {
+            "mechanism": "EVENT_DEFINITION",
+            "claim_locator": "Discussion paragraph 3",
+            "summary": "Notice specifies 15 participants (2%) with medication errors of interest; comparability to other adverse-event classes untested.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "PROTOCOL_HISTORY",
+            "claim_locator": "Methods paragraph 1 and appendix",
+            "summary": "Notice adds a protocol-amendment date and personal-CGM details; amended appendix added.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ],
+        "original_doi": "10.1016/S0140-6736(25)01044-X"
+      }
+    ],
+    "access_or_source_note": "Publisher primary notice read; no independent amended-protocol adjudication."
+  },
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "The Lancet",
+    "notice_doi": "10.1016/S0140-6736(21)00398-6",
+    "primary_notice_url": "https://www.thelancet.com/article/S0140673621003986/pdf",
+    "observed_on": "2026-11-03",
+    "review_depth": "FULL_PRIMARY_NOTICE",
+    "primary_notice_read_entirely": true,
+    "source_format": "PUBLISHER_PDF",
+    "notice_body_locator": "PDF p1, Department of Error paragraphs covering four papers",
+    "articles": [
+      {
+        "original_title": "CheckMate 743 trial",
+        "changes": [
+          {
+            "mechanism": "SUPPLEMENT_VERSION",
+            "claim_locator": "CheckMate 743 appendix",
+            "summary": "Notice reports an appendix replacement, without listing every individual numerical change.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ]
+      },
+      {
+        "original_title": "Vaccination impact modelling in 98 countries",
+        "changes": [
+          {
+            "mechanism": "FIGURE_LEGEND",
+            "claim_locator": "Appendix 2 table legends and titles",
+            "summary": "Notice changes age-group versus calendar/cohort-view labelling in supplementary tables.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ]
+      },
+      {
+        "original_title": "BE VIVID trial",
+        "changes": [
+          {
+            "mechanism": "NUMERIC_RESULT",
+            "claim_locator": "Table 2 and Figure 3",
+            "summary": "Notice corrects an upper odds-ratio CI endpoint to 384.3 and a switched-treatment DLQI percentage to 71%.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ]
+      },
+      {
+        "original_title": "Sputnik V interim phase III trial",
+        "changes": [
+          {
+            "mechanism": "SURVIVAL_RISK_TABLE",
+            "claim_locator": "Figure 2 day-20 risk table",
+            "summary": "Notice corrects the day-20 number at risk to 15117.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "FIGURE_LEGEND",
+            "claim_locator": "Figure 3B and legend",
+            "summary": "Notice corrects a male-participant label to 46 and explains four missing birth dates.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "ATTRIBUTION",
+            "claim_locator": "Funding list",
+            "summary": "Notice removes an incorrectly listed funder.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ]
+      }
+    ],
+    "access_or_source_note": "Critical one-notice-to-four-articles example; separate notices/articles/claim changes; no implication of four newly detected errors."
+  },
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "Nature",
+    "notice_doi": "10.1038/s41586-025-09938-4",
+    "primary_notice_url": "https://www.nature.com/articles/s41586-025-09938-4.pdf",
+    "observed_on": "2026-11-03",
+    "review_depth": "FULL_PRIMARY_NOTICE",
+    "primary_notice_read_entirely": true,
+    "source_format": "PUBLISHER_PDF",
+    "notice_body_locator": "PDF p1, first correction paragraph and labelled Fig. 1",
+    "articles": [
+      {
+        "original_title": "Diversity-oriented synthesis yields novel multistage antimalarial inhibitors",
+        "changes": [
+          {
+            "mechanism": "FIGURE_DUPLICATION",
+            "claim_locator": "Extended Data Fig. 3c, day 11 chloroquine panel",
+            "summary": "Notice identifies a duplicated treatment image and supplies corrected image; old source figure retained due to article age.",
+            "current_vor_state": "NOT_CHECKED"
+          }
+        ],
+        "original_doi": "10.1038/nature19804"
+      }
+    ],
+    "access_or_source_note": "Full publisher notice read; historic original figure cannot be replaced; correction note is separate replacement evidence."
+  },
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "Nature",
+    "notice_doi": "10.1038/s41586-025-09871-6",
+    "primary_notice_url": "https://www.nature.com/articles/s41586-025-09871-6.pdf",
+    "observed_on": "2026-11-03",
+    "review_depth": "FULL_PRIMARY_NOTICE",
+    "primary_notice_read_entirely": true,
+    "source_format": "PUBLISHER_PDF",
+    "notice_body_locator": "PDF p1, notice text lines on redox remeasurement and supplemental changes",
+    "articles": [
+      {
+        "original_title": "Photocatalytic low-temperature defluorination of PFASs",
+        "changes": [
+          {
+            "mechanism": "NUMERIC_RESULT",
+            "claim_locator": "Figure 1a and redox-potential text",
+            "summary": "Notice replaces several anion redox potentials after repeat measurements; explanatory claims about photoreductant activity removed.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "SUPPLEMENT_VERSION",
+            "claim_locator": "Supplementary Information and characterisation",
+            "summary": "Notice updates catalyst characterisations and experimental reproducibility details.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "FIGURE_LEGEND",
+            "claim_locator": "Figure 2a",
+            "summary": "Notice removes an inconsistent reagent annotation relative to the legend.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ],
+        "original_doi": "10.1038/s41586-024-08179-1"
+      }
+    ],
+    "access_or_source_note": "Full publisher PDF read; scientific validity of remeasurement not independently reproduced; authors say overall reactivity conclusions unchanged."
+  },
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "Circulation",
+    "notice_doi": "10.1161/CIR.0000000000001345",
+    "primary_notice_url": "https://www.ahajournals.org/doi/pdf/10.1161/cir.0000000000001345",
+    "observed_on": "2026-11-03",
+    "review_depth": "FULL_PRIMARY_NOTICE",
+    "primary_notice_read_entirely": true,
+    "source_format": "PUBLISHER_PDF",
+    "notice_body_locator": "PDF p1, three numbered changes on e559, e566, e581",
+    "articles": [
+      {
+        "original_title": "2025 Heart Disease and Stroke Statistics",
+        "changes": [
+          {
+            "mechanism": "METHODS_DESCRIPTION",
+            "claim_locator": "Page e559 Prevalence second bullet",
+            "summary": "Notice removes an erroneous prevalence bullet; old claim no longer supported in current article.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "REFERENCE_LINK",
+            "claim_locator": "Pages e566 and e581",
+            "summary": "Notice updates and replaces supporting reference numbering.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ],
+        "original_doi": "10.1161/CIR.0000000000001303"
+      }
+    ],
+    "access_or_source_note": "Full one-page publisher notice read; cannot infer which underlying prevalence estimate changed from notice alone."
+  },
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "Circulation",
+    "notice_doi": "10.1161/CIR.0000000000001338",
+    "primary_notice_url": "https://www.ahajournals.org/doi/pdf/10.1161/CIR.0000000000001338",
+    "observed_on": "2026-11-03",
+    "review_depth": "FULL_PRIMARY_NOTICE",
+    "primary_notice_read_entirely": true,
+    "source_format": "PUBLISHER_PDF",
+    "notice_body_locator": "PDF pp e965-e966, Figure and Table 2 corrections",
+    "articles": [
+      {
+        "original_title": "Core Components of Cardiac Rehabilitation Programs: 2024 Update",
+        "changes": [
+          {
+            "mechanism": "UNIT_DIMENSION",
+            "claim_locator": "Table 2, six-minute-walk corridor description",
+            "summary": "Notice changes an incorrect minutes unit to a metres distance for the corridor/course.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "FIGURE_LEGEND",
+            "claim_locator": "Cardiac rehabilitation wheel diagram",
+            "summary": "Notice corrects a psychosocial-management diagram label; original visually distinct error not inferred from rendered text.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ],
+        "original_doi": "10.1161/CIR.0000000000001289"
+      }
+    ],
+    "access_or_source_note": "Primary two-page publisher correction read; source figure must be examined visually for exact changes."
+  },
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "Circulation",
+    "notice_doi": "10.1161/CIR.0000000000001396",
+    "primary_notice_url": "https://www.ahajournals.org/doi/pdf/10.1161/CIR.0000000000001396",
+    "observed_on": "2026-11-03",
+    "review_depth": "FULL_PRIMARY_NOTICE",
+    "primary_notice_read_entirely": true,
+    "source_format": "PUBLISHER_PDF",
+    "notice_body_locator": "PDF p e403, three numbered guideline changes",
+    "articles": [
+      {
+        "original_title": "2025 High Blood Pressure Guideline",
+        "changes": [
+          {
+            "mechanism": "GUIDELINE_ALGORITHM",
+            "claim_locator": "Table 1 What Is New",
+            "summary": "Notice updates recommendation classification cells.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "DOSE_SPECIFIC_SAFETY",
+            "claim_locator": "Page e177, resistant-hypertension paragraph",
+            "summary": "Notice separates apocitentan oedema/fluid-retention frequencies by approved and unapproved doses plus placebo; raw comparison not reproduced.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "GUIDELINE_ALGORITHM",
+            "claim_locator": "Figure 8 treatment pathway",
+            "summary": "Notice clarifies dual endothelin-receptor antagonism versus direct vasodilator prerequisites.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ],
+        "original_doi": "10.1161/CIR.0000000000001356"
+      }
+    ],
+    "access_or_source_note": "Primary publisher notice read; high-impact candidate mechanism without assuming a previously unsafe recommendation."
+  },
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "New England Journal of Medicine",
+    "notice_doi": "10.1056/NEJMx250003",
+    "primary_notice_url": "https://www.nejm.org/doi/full/10.1056/NEJMx250003",
+    "observed_on": "2026-11-03",
+    "review_depth": "INDEXED_EXCERPT_ONLY",
+    "primary_notice_read_entirely": false,
+    "source_format": "INDEXED_EXCERPT",
+    "notice_body_locator": "Search-indexed source extraction, entire page fetch HTTP 403",
+    "articles": [
+      {
+        "original_title": "Improved Outcomes with Enzalutamide in Biochemically Recurrent Prostate Cancer",
+        "changes": [
+          {
+            "mechanism": "NUMERIC_RESULT",
+            "claim_locator": "Results Efficacy treatment suspensions",
+            "summary": "Indexed notice reports changed medians, ranges and >24-month proportions in three trial groups.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "EVENT_DEFINITION",
+            "claim_locator": "Table 2, grade 3+ adverse events",
+            "summary": "Indexed notice distinguishes serious adverse events from grade 3 or higher; values and supplement replaced.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ]
+      }
+    ],
+    "access_or_source_note": "Publisher search extract is detailed but complete primary page could not be opened; no full-notice credit."
+  },
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "New England Journal of Medicine",
+    "notice_doi": "10.1056/NEJMx250010",
+    "primary_notice_url": "https://www.nejm.org/doi/full/10.1056/NEJMx250010",
+    "observed_on": "2026-11-03",
+    "review_depth": "INDEXED_EXCERPT_ONLY",
+    "primary_notice_read_entirely": false,
+    "source_format": "INDEXED_EXCERPT",
+    "notice_body_locator": "Search-indexed source extraction, entire page not verified",
+    "articles": [
+      {
+        "original_title": "The Fetal-to-Adult Hemoglobin Switch — Mechanism and Therapy",
+        "changes": [
+          {
+            "mechanism": "FIGURE_LEGEND",
+            "claim_locator": "Figure 4C variant position",
+            "summary": "Indexed notice clarifies a base-pair position relative to adjacent variant.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "CLINICAL_LABEL",
+            "claim_locator": "Table 1 edited therapeutics",
+            "summary": "Indexed notice corrects target-region labels for two gene-editing approaches.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ]
+      }
+    ],
+    "access_or_source_note": "Full primary page not obtained; no full-notice credit."
+  },
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "JACC",
+    "notice_doi": "10.1016/j.jacc.2025.05.001",
+    "primary_notice_url": "https://www.jacc.org/doi/10.1016/j.jacc.2025.05.001",
+    "observed_on": "2026-11-03",
+    "review_depth": "INDEXED_EXCERPT_ONLY",
+    "primary_notice_read_entirely": false,
+    "source_format": "INDEXED_EXCERPT",
+    "notice_body_locator": "Publisher search-indexed correction text, direct source HTTP 403",
+    "articles": [
+      {
+        "original_title": "Transcatheter Aortic Valve Replacement Beyond Severe Aortic Stenosis",
+        "changes": [
+          {
+            "mechanism": "ARM_DIRECTION",
+            "claim_locator": "Page 949, bioprosthetic valve dysfunction sentence",
+            "summary": "Publisher-indexed notice reverses the valve-type group descriptor for the lower co-primary endpoint event rate.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ]
+      }
+    ],
+    "access_or_source_note": "A group-label correction is not evidence the RCT's numerical analysis was wrong; verify table and trial source before further claims."
+  },
+  {
+    "schema": "synthesis-five-journal-notice-v1",
+    "journal": "JACC",
+    "notice_doi": "10.1016/j.jacc.2024.05.033",
+    "primary_notice_url": "https://www.jacc.org/doi/10.1016/j.jacc.2024.05.033",
+    "observed_on": "2026-11-03",
+    "review_depth": "INDEXED_EXCERPT_ONLY",
+    "primary_notice_read_entirely": false,
+    "source_format": "INDEXED_EXCERPT",
+    "notice_body_locator": "Publisher search-indexed correction text; full page not independently opened",
+    "articles": [
+      {
+        "original_title": "2023 ACC/AHA/ACCP/HRS Atrial Fibrillation Guideline",
+        "changes": [
+          {
+            "mechanism": "NUMERIC_RESULT",
+            "claim_locator": "Table 8, ATRIA hypertension score",
+            "summary": "Indexed notice inserts an omitted point value in a risk-factor table.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          },
+          {
+            "mechanism": "GUIDELINE_ALGORITHM",
+            "claim_locator": "Figure 17 treatment asterisk",
+            "summary": "Indexed notice moves an asterisk between management boxes.",
+            "current_vor_state": "NOTICE_SAYS_UPDATED"
+          }
+        ]
+      }
+    ],
+    "access_or_source_note": "Cross-published guideline editions require journal-specific notice identities and shared underlying root accounting."
+  }
+]
