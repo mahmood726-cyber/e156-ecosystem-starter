@@ -83,6 +83,13 @@ class OverlapTests(unittest.TestCase):
         ])
         self.assertEqual(result["status"], "NO_FLAG")
 
+    def test_mixed_three_reports_two_unaccounted_still_review(self):
+        result = m.duplicate_trial_population([
+            effect(), effect(report_id="report-2"),
+            effect(report_id="report-3", dependence_handling="CORRELATION_ACCOUNTED_FOR"),
+        ])
+        self.assertEqual(result["status"], "REVIEW_CANDIDATE")
+
     def test_unknown_correlation_abstains(self):
         result = m.duplicate_trial_population([
             effect(), effect(report_id="report-2", dependence_handling="UNKNOWN"),
@@ -115,6 +122,13 @@ class SharedControlTests(unittest.TestCase):
             contrast(), contrast(comparison_id="B_vs_D", control_arm_id="control-D"),
         ])
         self.assertEqual(result["status"], "NO_FLAG")
+
+    def test_two_unaccounted_contrasts_with_third_accounted_still_review(self):
+        result = m.shared_control_dependence([
+            contrast(), contrast(comparison_id="B_vs_C"),
+            contrast(comparison_id="D_vs_C", analysis_model="CORRELATION_ACCOUNTED_FOR"),
+        ])
+        self.assertEqual(result["status"], "REVIEW_CANDIDATE")
 
     def test_unknown_model_abstains(self):
         result = m.shared_control_dependence([

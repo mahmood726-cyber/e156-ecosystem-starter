@@ -50,7 +50,7 @@ def duplicate_trial_population(rows: Sequence[Mapping]) -> dict:
     for key, reports in sorted(groups.items()):
         if len(reports) < 2:
             continue
-        if all(method == "INDEPENDENT_UNCORRELATED" for _, method in reports):
+        if sum(method == "INDEPENDENT_UNCORRELATED" for _, method in reports) >= 2:
             issues.append({"key": key, "reports": [r for r, _ in reports]})
     return {
         "status": "REVIEW_CANDIDATE" if issues else "NO_FLAG",
@@ -86,7 +86,7 @@ def shared_control_dependence(comparisons: Sequence[Mapping]) -> dict:
         {"key": key, "contrasts": [v[0] for v in vals]}
         for key, vals in sorted(groups.items())
         if len({v[0] for v in vals}) >= 2
-        and all(v[1] == "INDEPENDENT_UNCORRELATED" for v in vals)
+        and sum(v[1] == "INDEPENDENT_UNCORRELATED" for v in vals) >= 2
     ]
     return {
         "status": "REVIEW_CANDIDATE" if issues else "NO_FLAG",

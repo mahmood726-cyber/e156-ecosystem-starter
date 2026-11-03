@@ -37,6 +37,14 @@ Report per version and manual comparator:
 
 No numerical performance threshold is declared achieved here. The independent custodian should preregister acceptable false-alert harm, minimum evidence coverage and a stopping/escalation rule before seeing results. If prospective control performance is poor, retire the detector candidate or repair it using development data, then freeze a *fresh* unexposed cohort for final assessment.
 
+## Static-versus-dynamic disclosure
+
+| Item | Static protocol/template | Derived only after independent evidence |
+|---|---|---|
+| Fields, example statuses, synthetic regression inputs, proposed 24-family feasibility target | Yes; design only | No measured accuracy or reviewed cases |
+| Actual DOI/family sample, claims, source snapshots, reviewer assignments and frozen predictions | No | Approved and frozen by independent custodian |
+| Confirmed errors, sent messages, NMA replay differences, false positives, recall, precision and reviewer costs | No | Actual private, source-verified and independently adjudicated records |
+
 ## Existing tooling
 
 Follow [SYNTHESIS-REPORTING-v0.1.md](SYNTHESIS-REPORTING-v0.1.md) and the offline synthesis_blind_eval.py manifest/prediction/adjudication SHA-256 contracts. Those checks establish file consistency, **not** source truth, blinding, reviewer independence or a cryptographically signed attestation.
