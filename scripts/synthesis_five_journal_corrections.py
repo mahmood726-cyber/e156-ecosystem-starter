@@ -17,6 +17,8 @@ from typing import Any
 from urllib.parse import urlsplit
 
 SCHEMA = "synthesis-five-journal-notice-v1"
+SCHEMA_V2 = "synthesis-five-journal-notice-v2"
+
 JOURNALS = {
     "The Lancet": "www.thelancet.com",
     "New England Journal of Medicine": "www.nejm.org",
@@ -49,6 +51,25 @@ MECHANISMS = {
     "METHODS_DESCRIPTION",
     "OTHER",
 }
+# An original available as a legitimate public full-text article (including a
+# deposited author manuscript) is eligible for targeted source comparison.
+# Public readability does NOT by itself establish a Creative Commons licence.
+ORIGINAL_ACCESS_STATES = {
+    "NOT_CHECKED",
+    "FREE_FULL_TEXT_IDENTIFIED",
+    "SOURCE_SPAN_RECHECKED",
+}
+ORIGINAL_SOURCE_FORMATS = {
+    "PUBLISHER_HTML", "PUBLISHER_PDF", "PMC_FULL_HTML",
+    "REPOSITORY_AUTHOR_MANUSCRIPT",
+}
+ORIGINAL_SOURCE_HOSTS = {
+    "www.nature.com", "www.ahajournals.org", "www.thelancet.com",
+    "www.jacc.org", "www.nejm.org", "pmc.ncbi.nlm.nih.gov",
+    "www.sciencedirect.com",
+}
+ACCESS_BASIS = "PUBLIC_FULL_TEXT_READABLE_LICENSE_NOT_ASSESSED"
+
 DOI_RE = re.compile(r"^10\.\d{4,9}/[^\s?#]+$", re.IGNORECASE)
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -81,9 +102,39 @@ def _iso_day(value: Any) -> bool:
     return True
 
 
+def validate_original_access(article: dict) -> dict:
+    """Check source-provenance assertions, not the truth of external source text."""
+    info = article.get("original_access")
+    if not isinstance(info, dict) or info.get("status") not in ORIGINAL_ACCESS_STATES:
+        raise ValueError("v2 article needs explicit original full-text access status")
+    state = info["status"]
+    if state == "NOT_CHECKED":
+        if set(info) != {"status"}:
+            raise ValueError("unreviewed original cannot carry unsupported access details")
+        return info
+    if not _nonempty(article.get("original_doi")):
+        raise ValueError("reviewed original must have its exact DOI")
+    fulltext = info.get("full_text_url")
+    if not _nonempty(fulltext):
+        raise ValueError("public original full-text URL is required")
+    parts = urlsplit(fulltext)
+    if parts.scheme != "https" or (parts.hostname or "").lower() not in ORIGINAL_SOURCE_HOSTS:
+        raise ValueError("unsupported original full-text host; use official or PMC source")
+    if not _iso_day(info.get("observed_on")):
+        raise ValueError("invalid original source observation date")
+    if info.get("source_format") not in ORIGINAL_SOURCE_FORMATS:
+        raise ValueError("original source format not independently identified")
+    for field in ("source_version", "source_locator", "comparison_note"):
+        if not _nonempty(info.get(field)):
+            raise ValueError("original access evidence requires " + field)
+    if info.get("access_basis") != ACCESS_BASIS:
+        raise ValueError("do not infer copyright licence from public readability")
+    return info
+
+
 def validate_notice(record: Any) -> dict:
     """Validate explicit metadata/attestations; do not claim to verify truth."""
-    if not isinstance(record, dict) or record.get("schema") != SCHEMA:
+    if not isinstance(record, dict) or record.get("schema") not in {SCHEMA, SCHEMA_V2}:
         raise ValueError("unknown or missing notice schema")
     journal = record.get("journal")
     if not isinstance(journal, str) or journal not in JOURNALS:
@@ -119,6 +170,8 @@ def validate_notice(record: Any) -> dict:
             raise ValueError("article title or DOI required; keep unknowns explicit")
         if article.get("original_doi") is not None:
             normalize_doi(article["original_doi"])
+        if record["schema"] == SCHEMA_V2:
+            validate_original_access(article)
         changes = article.get("changes")
         if not isinstance(changes, list):
             raise ValueError("changes must be a list")
@@ -162,6 +215,9 @@ def summarize(records: list[dict], *, target: int = 1000) -> dict:
     mechanism_entries = Counter()
     referenced_article_entries = 0
     notice_described_change_entries = 0
+    original_source_spans_checked = 0
+    original_full_text_located_unpaired = 0
+    oa_paired_notice_ids: set[str] = set()
     for item in distinct.values():
         depth = item["review_depth"]
         depths[depth] += 1
@@ -174,6 +230,14 @@ def summarize(records: list[dict], *, target: int = 1000) -> dict:
             "SOURCE_BLOCKED": "source_blocked",
         }[depth]] += 1
         for article in item["articles"]:
+            if item["schema"] == SCHEMA_V2:
+                access_state = article["original_access"]["status"]
+                if access_state == "SOURCE_SPAN_RECHECKED":
+                    original_source_spans_checked += 1
+                    if depth == "FULL_PRIMARY_NOTICE":
+                        oa_paired_notice_ids.add(item["notice_doi"])
+                elif access_state == "FREE_FULL_TEXT_IDENTIFIED":
+                    original_full_text_located_unpaired += 1
             referenced_article_entries += 1
             for change in article["changes"]:
                 notice_described_change_entries += 1
@@ -186,6 +250,10 @@ def summarize(records: list[dict], *, target: int = 1000) -> dict:
         "total_distinct_notice_records": len(distinct),
         "full_primary_notices": complete,
         "remaining_to_full_notice_target": max(0, target - complete),
+        "full_notices_paired_with_public_original_claim": len(oa_paired_notice_ids),
+        "remaining_to_oa_paired_target": max(0, target - len(oa_paired_notice_ids)),
+        "original_article_spans_rechecked": original_source_spans_checked,
+        "original_full_text_located_without_claim_recheck": original_full_text_located_unpaired,
         "indexed_excerpt_only": depths["INDEXED_EXCERPT_ONLY"],
         "metadata_only": depths["METADATA_ONLY"],
         "source_blocked": depths["SOURCE_BLOCKED"],
@@ -199,6 +267,8 @@ def summarize(records: list[dict], *, target: int = 1000) -> dict:
             "One notice may modify multiple articles/claims; one article may receive multiple notices.",
             "No count of independent errors, Synthesis discoveries, author confirmations or emails.",
             "Retrospective publisher corrections are development data, not held-out accuracy validation.",
+            "Public readability is distinct from a verified reuse licence; original version identity matters.",
+            "A source-limited notice cannot earn paired-credit even if a PMC original span is readable.",
         ],
     }
 

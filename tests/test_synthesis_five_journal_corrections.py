@@ -13,6 +13,11 @@ from scripts.synthesis_five_journal_corrections import (
     normalize_doi, summarize, validate_notice,
 )
 
+OA_CORPUS = (
+    Path(__file__).resolve().parents[1]
+    / "research/correction_learning/five_journals/20261103/notices-oa-review-v2.json"
+)
+
 CORPUS = (
     Path(__file__).resolve().parents[1]
     / "research/correction_learning/five_journals/20261103/notices-pilot-v1.json"
@@ -137,6 +142,83 @@ class FiveJournalCorrectionContractTests(unittest.TestCase):
         for invalid in ("not a doi", "https://doi.org/10.1038/example?x=1", ""):
             with self.subTest(doi=invalid), self.assertRaises(ValueError):
                 normalize_doi(invalid)
+
+
+
+class OpenOriginalEvidenceContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.rows = json.loads(OA_CORPUS.read_text(encoding="utf-8"))
+
+    def test_oa_pair_count_is_separate_from_notice_count(self):
+        stats = summarize(self.rows)
+        self.assertEqual(stats["total_distinct_notice_records"], 12)
+        self.assertEqual(stats["full_primary_notices"], 8)
+        self.assertEqual(stats["full_notices_paired_with_public_original_claim"], 3)
+        self.assertEqual(stats["remaining_to_oa_paired_target"], 997)
+        self.assertEqual(stats["original_article_spans_rechecked"], 4)
+        self.assertEqual(stats["original_full_text_located_without_claim_recheck"], 1)
+
+    def test_every_original_access_record_validates(self):
+        for row in self.rows:
+            with self.subTest(doi=row["notice_doi"]):
+                validate_notice(row)
+                for article in row["articles"]:
+                    self.assertIn("original_access", article)
+
+    def test_original_full_text_location_alone_not_paired_credit(self):
+        row = next(r for r in self.rows if r["notice_doi"].lower() ==
+                   "10.1161/cir.0000000000001345")
+        self.assertEqual(row["articles"][0]["original_access"]["status"],
+                         "FREE_FULL_TEXT_IDENTIFIED")
+        self.assertEqual(summarize([row])["full_notices_paired_with_public_original_claim"], 0)
+
+    def test_indexed_notice_with_original_source_span_not_paired_credit(self):
+        row = next(r for r in self.rows if r["notice_doi"].lower() ==
+                   "10.1016/j.jacc.2024.05.033")
+        self.assertEqual(row["articles"][0]["original_access"]["status"],
+                         "SOURCE_SPAN_RECHECKED")
+        self.assertEqual(summarize([row])["full_notices_paired_with_public_original_claim"], 0)
+        self.assertIn("PMC_AUTHOR_MANUSCRIPT",
+                      row["articles"][0]["original_access"]["source_version"])
+
+    def test_unsubstantiated_oa_claim_fails_closed(self):
+        source = next(r for r in self.rows if r["notice_doi"].lower() ==
+                      "10.1161/cir.0000000000001338")
+        for field in ("full_text_url", "source_version", "source_locator",
+                      "observed_on", "comparison_note", "access_basis"):
+            bad = deepcopy(source)
+            del bad["articles"][0]["original_access"][field]
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                validate_notice(bad)
+
+    def test_false_open_original_metadata_cannot_win_credit(self):
+        row = deepcopy(self.rows[0])
+        row["articles"][0]["original_access"] = {"status": "SOURCE_SPAN_RECHECKED"}
+        with self.assertRaises(ValueError):
+            validate_notice(row)
+        row = deepcopy(self.rows[0])
+        row["articles"][0]["original_access"] = {"status": "NOT_CHECKED",
+                                                "full_text_url": "https://example.org"}
+        with self.assertRaises(ValueError):
+            validate_notice(row)
+
+    def test_public_article_requires_exact_host_and_not_a_license_inference(self):
+        row = next(r for r in self.rows if r["notice_doi"].lower() ==
+                   "10.1038/s41586-025-09938-4")
+        with self.assertRaisesRegex(ValueError, "full-text host"):
+            other = deepcopy(row)
+            other["articles"][0]["original_access"]["full_text_url"] = "https://nature.com.attacker.example/a"
+            validate_notice(other)
+        with self.assertRaisesRegex(ValueError, "licence"):
+            other = deepcopy(row)
+            other["articles"][0]["original_access"]["access_basis"] = "CC_BY_CONFIRMED"
+            validate_notice(other)
+
+    def test_legacy_notice_pilot_never_implies_original_review(self):
+        legacy = json.loads(CORPUS.read_text(encoding="utf-8"))
+        stats = summarize(legacy)
+        self.assertEqual(stats["full_notices_paired_with_public_original_claim"], 0)
 
 
 if __name__ == "__main__":
