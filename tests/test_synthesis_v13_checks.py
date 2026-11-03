@@ -1434,12 +1434,13 @@ class ExactIntegerPrecisionTests(unittest.TestCase):
             float(2**53), float(2**53), self.count_sig(), self.count_sig(),
             ("endpoint",))["status"], "NOT_COMPARABLE")
 
-    def test_small_float_comparisons_preserved(self):
+    def test_small_float_comparisons_require_exact_source_attestation(self):
         s = sig(value_unit="1", value_representation="RAW_RATIO")
         self.assertEqual(m.cross_document(
             0.75, 0.75, s, s, ("endpoint",))["status"], "CONSISTENT")
         self.assertEqual(m.cross_document(
-            0.75, 0.68, s, s, ("endpoint",))["status"], "REVIEW")
+            0.75, 0.68, s, s, ("endpoint",),
+            source_values_exact=True)["status"], "REVIEW")
 
     def test_negative_exact_integer_tolerance_invalid(self):
         self.assertEqual(m.cross_document(
