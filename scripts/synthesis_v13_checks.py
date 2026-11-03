@@ -431,7 +431,12 @@ def factor_shift(original: Any, observed: Any, *, verified_r_factor_conversion: 
 
 
 def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
-                   required_fields: Sequence[str], tolerance: Any = 0) -> dict:
+                   required_fields: Sequence[str], tolerance: Any = 0, *,
+                   left_published_literal: str | None = None,
+                   right_published_literal: str | None = None,
+                   published_precision_verified: bool = False,
+                   display_rounding_rule: str | None = None,
+                   source_values_exact: bool = False) -> dict:
     """Compare numbers only after matching the full attested analysis identity.
 
     A caller listing only endpoint/test fields cannot override population,
@@ -440,7 +445,11 @@ def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
     numeric unit and representation must also match; no automatic conversion.
     These attestations are not independently verified by this software.
     Provenance and current-source identity still require external inspection;
-    REVIEW is never a paper verdict.
+    REVIEW is never a paper verdict. Printed decimal estimates can differ
+    harmlessly by source rounding; incompatible display intervals are reviewable
+    only with source-verified literal text and a declared rounding convention.
+    Unequal floating results without these attestations fail closed. Exact,
+    unrounded numerical source values may be explicitly attested by the caller.
     """
     if not isinstance(required_fields, (list, tuple)) or not required_fields or any(
             field not in ESTIMATOR_FIELDS for field in required_fields):
@@ -469,6 +478,49 @@ def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
     if differing:
         return result("NOT_COMPARABLE", "different numeric units/representations; verify conversion",
                       fields=differing)
+    # Floats can originate in rounded displays. Require source-verbatim decimal
+    # precision before comparing unequal values unless exact inputs are attested.
+    literals_present = (left_published_literal is not None
+                        or right_published_literal is not None)
+    if literals_present:
+        if (not isinstance(left_published_literal, str)
+                or not isinstance(right_published_literal, str)
+                or published_precision_verified is not True
+                or display_rounding_rule != "NEAREST_DECIMAL"
+                or tolerance != 0):
+            return result("NOT_COMPARABLE",
+                          "paired source-verbatim decimal precision is incomplete")
+        decimal_pat = r"[+-]?(?:\d+(?:\.\d+)?|\.\d+)"
+        left_text, right_text = (left_published_literal.strip(),
+                                  right_published_literal.strip())
+        if (not re.fullmatch(decimal_pat, left_text)
+                or not re.fullmatch(decimal_pat, right_text)):
+            return result("NOT_COMPARABLE", "unrecognised printed numeric notation")
+        try:
+            from decimal import Decimal, InvalidOperation
+            x, y = finite(left), finite(right)
+            if (max(abs(x), abs(y)) >= 2**53
+                    or Decimal(left_text) != Decimal(str(x))
+                    or Decimal(right_text) != Decimal(str(y))):
+                return result("NOT_COMPARABLE",
+                              "source literal/value identity or floating precision uncertain")
+            def display_interval(literal: str) -> tuple:
+                printed = Decimal(literal)
+                places = len(literal.split(".")[1]) if "." in literal else 0
+                half_step = Decimal(5).scaleb(-places - 1)
+                return printed - half_step, printed + half_step
+            low_a, high_a = display_interval(left_text)
+            low_b, high_b = display_interval(right_text)
+        except (ValueError, OverflowError, InvalidOperation):
+            return result("NOT_COMPARABLE", "printed value could not be verified")
+        overlap = max(low_a, low_b) <= min(high_a, high_b)
+        return result("CONSISTENT" if overlap else "REVIEW",
+                      "source display intervals overlap; no contradiction established"
+                      if overlap else
+                      "source-verified decimal intervals disagree; verify originals",
+                      compatibility="ROUNDING_OVERLAP" if overlap else "ROUNDING_DISJOINT",
+                      left_interval=(str(low_a), str(high_a)),
+                      right_interval=(str(low_b), str(high_b)))
     # Exact integer counts must not silently collapse at IEEE-754's 53-bit
     # precision boundary. Preserve arbitrary-precision integer arithmetic
     # when *all* comparison operands are native integers.
@@ -495,6 +547,9 @@ def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
     if max(abs(x), abs(y), abs(tol)) >= 2**53:
         return result("NOT_COMPARABLE",
                       "large floating input may conceal distinct exact values")
+    if x != y and source_values_exact is not True:
+        return result("NOT_COMPARABLE",
+                      "differing floating values need source precision or attested exact inputs")
     agrees = abs(x-y) <= tol
     return result("CONSISTENT" if agrees else "REVIEW",
                   "matched document values agree" if agrees else "matched source values disagree")

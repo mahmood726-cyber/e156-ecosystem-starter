@@ -256,13 +256,70 @@ class EstimatorTests(unittest.TestCase):
 
     def test_crossdocument_complete_identity_injected_discrepancy(self):
         # A deliberate synthetic mismatch still enters REVIEW, not a paper verdict.
-        out = m.cross_document(0.75, 0.68, sig(), sig(), ("endpoint",))
+        out = m.cross_document(0.75, 0.68, sig(), sig(), ("endpoint",),
+                               source_values_exact=True)
         self.assertEqual(out["status"], "REVIEW")
 
     def test_crossdocument_complete_identity_clean_match(self):
         out = m.cross_document(0.75, 0.75, sig(), sig(), ("endpoint",))
         self.assertEqual(out["status"], "CONSISTENT")
 
+
+
+    def test_unequal_float_without_precision_abstains(self):
+        out = m.cross_document(0.75, 0.68, sig(), sig(), ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_rounding_overlap_is_not_an_error(self):
+        out = m.cross_document(
+            1.234, 1.23, sig(), sig(), ("endpoint",),
+            left_published_literal="1.234", right_published_literal="1.23",
+            published_precision_verified=True, display_rounding_rule="NEAREST_DECIMAL")
+        self.assertEqual(out["status"], "CONSISTENT")
+        self.assertEqual(out["compatibility"], "ROUNDING_OVERLAP")
+
+    def test_source_matched_disjoint_printed_intervals_review(self):
+        out = m.cross_document(
+            1.234, 1.20, sig(), sig(), ("endpoint",),
+            left_published_literal="1.234", right_published_literal="1.20",
+            published_precision_verified=True, display_rounding_rule="NEAREST_DECIMAL")
+        self.assertEqual(out["status"], "REVIEW")
+        self.assertEqual(out["compatibility"], "ROUNDING_DISJOINT")
+
+    def test_unverified_printed_precision_abstains(self):
+        out = m.cross_document(
+            1.234, 1.20, sig(), sig(), ("endpoint",),
+            left_published_literal="1.234", right_published_literal="1.20",
+            display_rounding_rule="NEAREST_DECIMAL")
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_missing_one_published_literal_abstains(self):
+        out = m.cross_document(
+            1.234, 1.20, sig(), sig(), ("endpoint",),
+            left_published_literal="1.234",
+            published_precision_verified=True, display_rounding_rule="NEAREST_DECIMAL")
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_incompatible_printed_text_and_numeric_abstains(self):
+        out = m.cross_document(
+            1.234, 1.20, sig(), sig(), ("endpoint",),
+            left_published_literal="1.235", right_published_literal="1.20",
+            published_precision_verified=True, display_rounding_rule="NEAREST_DECIMAL")
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_unsupported_scientific_notation_abstains(self):
+        out = m.cross_document(
+            0.001, 0.002, sig(), sig(), ("endpoint",),
+            left_published_literal="1e-3", right_published_literal="0.002",
+            published_precision_verified=True, display_rounding_rule="NEAREST_DECIMAL")
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_arbitrary_tolerance_cannot_override_print_precision(self):
+        out = m.cross_document(
+            1.234, 1.20, sig(), sig(), ("endpoint",), tolerance=0.1,
+            left_published_literal="1.234", right_published_literal="1.20",
+            published_precision_verified=True, display_rounding_rule="NEAREST_DECIMAL")
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
 
 
 def or_inputs(literal):
