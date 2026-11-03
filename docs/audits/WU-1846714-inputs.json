@@ -1,0 +1,68 @@
+{
+  "schema": "synthesis-public-case-inputs-v1",
+  "case_id": "SYN-NMA-WU-1846714-20261103",
+  "doi": "10.3389/fphar.2026.1846714",
+  "accessed_date": "2026-11-03",
+  "source_pdf": "https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2026.1846714/pdf",
+  "source_html": "https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2026.1846714/full",
+  "source_pdf_sha256": "9173131d2f1b1e8e5d076b0527a65658ac039fd076113608c3dd9589f5578810",
+  "source_html_sha256": "4ab74c86a6aeed662848f58310528e6c22b93816af3e3e5f66c29783c3e4024f",
+  "figures": {
+    "2": {"url": "https://www.frontiersin.org/files/Articles/1846714/xml-images/fphar-17-1846714-g002.webp", "sha256": "f90ca6f85f8883b6745705079ee1dc612c929cc9d7716011d648ac4bea3678af"},
+    "3": {"url": "https://www.frontiersin.org/files/Articles/1846714/xml-images/fphar-17-1846714-g003.webp", "sha256": "2bcd6dd3bab0e1d9a43351caf98173c82e513cb8a4d8d22f5ab1f24b6a340504"}
+  },
+  "source_locations": {
+    "HbA1c": "Section 3.4 and Figure 2b, printed PDF page 5",
+    "FPG": "Section 3.4, printed PDF page 5; Figure 3b, printed page 6",
+    "comparator_question": "Sections 2.2 and 3.3; figures' Control labels and placebo captions"
+  },
+  "observations": [
+    {"endpoint":"HbA1c", "treatment":"ITCA650", "estimate":-0.80, "lower":-1.8, "upper":0.21},
+    {"endpoint":"HbA1c", "treatment":"Polyethylene glycol loxenatide", "estimate":-0.59, "lower":-1.2, "upper":-0.0096},
+    {"endpoint":"HbA1c", "treatment":"Liraglutide", "estimate":-0.91, "lower":-1.1, "upper":-0.74},
+    {"endpoint":"HbA1c", "treatment":"Lixisenatide", "estimate":-0.52, "lower":-0.90, "upper":-0.14},
+    {"endpoint":"HbA1c", "treatment":"Efpeglenatide", "estimate":-1.0, "lower":-1.5, "upper":-0.51},
+    {"endpoint":"HbA1c", "treatment":"Tirzepatide", "estimate":-2.3, "lower":-2.7, "upper":-1.8},
+    {"endpoint":"HbA1c", "treatment":"Survodutide", "estimate":-1.3, "lower":-2.2, "upper":-0.44},
+    {"endpoint":"HbA1c", "treatment":"Visepegenatide", "estimate":-0.65, "lower":-1.4, "upper":0.058},
+    {"endpoint":"HbA1c", "treatment":"Exenatide", "estimate":-0.96, "lower":-1.2, "upper":-0.75},
+    {"endpoint":"HbA1c", "treatment":"Retatrutide", "estimate":-1.8, "lower":-2.7, "upper":-0.94},
+    {"endpoint":"HbA1c", "treatment":"Dulaglutide", "estimate":-0.98, "lower":-1.2, "upper":-0.77},
+    {"endpoint":"HbA1c", "treatment":"Orforglipron", "estimate":-1.8, "lower":-2.7, "upper":-0.96},
+    {"endpoint":"HbA1c", "treatment":"Mazdutide", "estimate":-1.1, "lower":-1.7, "upper":-0.43},
+    {"endpoint":"HbA1c", "treatment":"Semaglutide", "estimate":-1.4, "lower":-1.6, "upper":-1.2},
+    {"endpoint":"HbA1c", "treatment":"Cotadutide", "estimate":-0.84, "lower":-1.7, "upper":0.041},
+    {"endpoint":"FPG", "treatment":"Polyethylene glycol loxenatide", "estimate":-1.4, "lower":-2.6, "upper":-0.14},
+    {"endpoint":"FPG", "treatment":"Liraglutide", "estimate":-1.5, "lower":-1.9, "upper":-1.2},
+    {"endpoint":"FPG", "treatment":"Lixisenatide", "estimate":-0.96, "lower":-1.6, "upper":-0.30},
+    {"endpoint":"FPG", "treatment":"Efpeglenatide", "estimate":-1.7, "lower":-2.6, "upper":-0.89},
+    {"endpoint":"FPG", "treatment":"Tirzepatide", "estimate":-3.3, "lower":-4.0, "upper":-2.6},
+    {"endpoint":"FPG", "treatment":"Visepegenatide", "estimate":-0.68, "lower":-1.9, "upper":0.55},
+    {"endpoint":"FPG", "treatment":"Exenatide", "estimate":-1.4, "lower":-1.8, "upper":-0.95},
+    {"endpoint":"FPG", "treatment":"Retatrutide", "estimate":-3.3, "lower":-4.8, "upper":-1.8},
+    {"endpoint":"FPG", "treatment":"Dulaglutide", "estimate":-1.5, "lower":-1.9, "upper":-1.2},
+    {"endpoint":"FPG", "treatment":"Orforglipron", "estimate":-2.6, "lower":-4.2, "upper":-1.1},
+    {"endpoint":"FPG", "treatment":"Mazdutide", "estimate":-2.0, "lower":-3.1, "upper":-0.91},
+    {"endpoint":"FPG", "treatment":"Semaglutide", "estimate":-2.2, "lower":-2.5, "upper":-1.8}
+  ],
+  "interpretation": {
+    "grouped_root_id": "WU-1846714-SIGNIFICANCE-001",
+    "status": "SOURCE_VERIFIED_REPORTING_CONTRADICTION",
+    "root_count": 1,
+    "claim": "Section 3.4 describes all 15 HbA1c comparisons as statistically significant, but three corresponding plotted 95% credible intervals include zero.",
+    "FPG": "Related wording query: all 12 therapies described as effective, while visepegenatide's interval includes zero. Not counted separately.",
+    "comparator_question": "HOLD: primary Control node may pool reference treatments, but trial-to-node mapping unavailable. No analytical error established; contributes zero errors.",
+    "target_eligibility": "PENDING_EXTERNAL_REVIEW",
+    "author_confirmed": false,
+    "independent_human_adjudication": false,
+    "published_correction_verified": false
+  },
+  "limits": [
+    "Transcribed observations, not simulated estimates or a refitted NMA.",
+    "PDF, HTML and figure assets are representations of one publisher source, not independent studies or independent human adjudication.",
+    "No p-value is reconstructed from a Bayesian interval.",
+    "No intended corrected interval, failed treatment efficacy, or invalid fitted model is established.",
+    "Current publisher source and bounded DOI/corrigendum search checked; no relevant notice retrieved, not proof none exists.",
+    "Supplementary data were not retrieved; comparator mapping and native estimates remain unavailable."
+  ]
+}
