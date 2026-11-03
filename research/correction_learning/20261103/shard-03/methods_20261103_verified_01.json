@@ -1,0 +1,107 @@
+{
+  "schema": "synthesis-correction-learning/shard03-v1",
+  "date": "2026-11-03",
+  "shard": 3,
+  "batch": "20261103-methods-verified-01",
+  "framework": "Experimental Synthesis v1.3; retrospective training cases not performance validation",
+  "counts": {
+    "full_primary_notice_read": 1,
+    "partial": 1,
+    "metadata_only": 0,
+    "administrative": 0,
+    "no_error": 0,
+    "duplicate": 0,
+    "hold_current_version": 1,
+    "independent_adjudicated": 0,
+    "new_discovered_error": 0
+  },
+  "records": [
+    {
+      "correction_doi": "10.1038/s41598-025-89201-y",
+      "ownership_sha256": "7249aeeb64e7ec36ac6b4eeaf08dfc2038929b02f5c181aeedb3f27b6af9a423",
+      "owner_shard": 3,
+      "notice_url": "https://www.nature.com/articles/s41598-025-89201-y",
+      "notice_date": "2025-02-12",
+      "original_doi": "10.1038/s41598-024-62491-4",
+      "original_title": "Superiority of high sensitivity cardiac troponin I over NT-proBNP and adiponectin for 7-year mortality in stable patients receiving haemodialysis",
+      "original_url": "https://www.nature.com/articles/s41598-024-62491-4",
+      "journal": "Scientific Reports",
+      "design": "observational cohort, Cox mortality analysis",
+      "notice_type": "TG regression P-value corrections",
+      "locators": [
+        "notice Incorrect Table 2 / Correct Table 2, TG all-cause mortality",
+        "notice Incorrect Table 3 / Correct Table 3, TG models 1-3"
+      ],
+      "old_p": [
+        "0.532",
+        "0.0031",
+        "0.0031",
+        "0.0031"
+      ],
+      "corrected_p": [
+        "0.0492",
+        "0.629",
+        "0.439",
+        "0.636"
+      ],
+      "hr_ci": [
+        "0.369 (0.137-0.997)",
+        "0.755 (0.241-2.360)",
+        "0.643 (0.210-1.966)",
+        "1.154 (0.711-1.874)"
+      ],
+      "source_precision": "printed notice only; exact coefficients and SE not verified",
+      "signature": {
+        "population": "haemodialysis cohort, analytical population unverified",
+        "endpoint": "all-cause mortality",
+        "time_window": "7 years",
+        "effect_measure": "hazard ratio",
+        "estimand": "observational association",
+        "model": "univariable Cox (Table 2); multivariable Cox (Table 3)",
+        "adjustment": "Table 3 model-specific, not replayed",
+        "multiplicity": "unknown",
+        "missingness": "unknown",
+        "censoring": "unknown",
+        "variance_method": "unknown",
+        "test_statistic_identity": "unknown"
+      },
+      "strongest_benign_alternative": "Wald CI inversion need not reproduce score/LR P; historical typo has already been corrected, with no evidence of underlying model recalculation",
+      "severity": "S3 provisional significance-label impact",
+      "source_support": "SUPPORTED for correction text; current exact table values unavailable",
+      "maturity": "SOURCE_BACKED",
+      "disposition": "HOLD_CURRENT_VOR",
+      "published_correction": "confirmed publisher notice",
+      "current_vor": "Original DOI linked from correction notice; direct publisher current HTML redirected to sign-in; current exact corrected cells not verified",
+      "review_credit": 1,
+      "duplicate_key": "10.1038/s41598-025-89201-y"
+    }
+  ],
+  "partial_queue": [
+    {
+      "correction_doi": "10.1038/s41591-026-04245-5",
+      "original_doi": "10.1038/s41591-025-04101-y",
+      "type": "administrative consortium author duplication",
+      "primary_notice": "https://www.nature.com/articles/s41591-026-04245-5",
+      "status": "publisher HTML direct fetch blocked; complete notice visible in indexed primary search but no independent complete page review; no credit",
+      "owner_shard": 3
+    }
+  ],
+  "test_design": [
+    {
+      "mechanism": "Cox printed P mismatch",
+      "historical": "Table2 TG HR 0.369 CI [0.137,0.997], P=0.532",
+      "corrected": "same HR/CI, P=0.0492",
+      "benign": "difference between test statistic identity or source rounding can invalidate direct P comparison",
+      "abstention": "unknown actual test statistic/variance -> NOT_COMPARABLE"
+    }
+  ],
+  "next_cursor": {
+    "seen_notice_dois": [
+      "10.1038/s41598-025-89201-y",
+      "10.1038/s41591-026-04245-5"
+    ],
+    "next": "Find other shard-03 full public primary notices; revisit original article exact table version and study-specific Cox test identities"
+  },
+  "outreach": "none; suspended",
+  "shared_code": "unchanged; shard 09 owns integrated edits"
+}
