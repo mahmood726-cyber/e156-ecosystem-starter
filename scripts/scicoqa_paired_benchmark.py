@@ -16,7 +16,7 @@ from string import Template
 
 ARMS = ("baseline", "synthesis")
 SCHEMA = "synthesis-scicoqa-paired-v1"
-CONTEXT_FIELDS = {"case_id", "split", "paper_version", "code_commit", "paper_text", "code_text"}
+CONTEXT_FIELDS = {"case_id", "paper_family_id", "split", "paper_version", "code_commit", "paper_text", "code_text"}
 COMMIT = re.compile(r"[0-9a-fA-F]{40}")
 
 
@@ -111,7 +111,9 @@ def make_prompts(contexts: list[dict], base: str, candidate: str, model: str,
         commit = nonempty(row["code_commit"], "code_commit")
         if not COMMIT.fullmatch(commit):
             raise BenchmarkError(f"{case_id}: code_commit must be a 40-character SHA")
-        case = {"case_id": case_id, "split": row["split"], "paper_version": version,
+        family = nonempty(row["paper_family_id"], "paper_family_id")
+        case = {"case_id": case_id, "paper_family_id": family,
+                "split": row["split"], "paper_version": version,
                 "code_commit": commit.lower(), "paper_sha256": digest(paper),
                 "code_sha256": digest(code), "rendered_prompt_sha256": {}}
         for arm, template in (("baseline", base), ("synthesis", candidate)):
@@ -146,7 +148,8 @@ def finite_nonnegative(value: object, label: str) -> float:
     return float(value)
 
 
-def score(manifest: dict, predictions: list[dict], adjudications: list[dict]) -> dict:
+def _score_cohort(manifest: dict, predictions: list[dict], adjudications: list[dict],
+                  case_ids: set[str] | None = None) -> dict:
     """Account for *provided* independently reviewed labels, not scientific truth."""
     if manifest.get("schema") != SCHEMA or not manifest.get("cases"):
         raise BenchmarkError("unknown or empty frozen manifest")
@@ -187,6 +190,8 @@ def score(manifest: dict, predictions: list[dict], adjudications: list[dict]) ->
     reviews = unique(adjudications, "case_id")
     if set(reviews) != set(cases):
         raise BenchmarkError("adjudication must enumerate every case, including unknown/unreviewed")
+    if case_ids is not None:
+        cases = {cid: row for cid, row in cases.items() if cid in case_ids}
     stats = {a: {"detected": set(), "matched": 0, "false": 0, "unresolved": 0,
                  "abstain": 0, "failed": 0, "findings": 0, "review_minutes": 0.0,
                  "clean_cases_with_false_alert": 0, "clean_false_alerts": 0} for a in ARMS}
@@ -269,6 +274,10 @@ def score(manifest: dict, predictions: list[dict], adjudications: list[dict]) ->
             "false_alerts_per_100_verified_clean_cases": proportion(s["clean_false_alerts"] * 100, clean_cases),
             "clean_cases_with_any_false_alert_per_100": proportion(s["clean_cases_with_false_alert"] * 100, clean_cases),
             "total_findings": s["findings"], "unresolved_findings": s["unresolved"],
+            "matched_findings": s["matched"], "false_positive_findings": s["false"],
+            "zero_finding_complete_cases": sum(
+                p["status"] == "COMPLETE" and not p["findings"]
+                for (cid, a), p in pred_by_key.items() if cid in cases and a == arm),
             "abstained_cases": s["abstain"], "failed_cases": s["failed"],
             "total_reviewer_minutes": round(s["review_minutes"], 2)}
     baseline, synthesis = stats["baseline"]["detected"], stats["synthesis"]["detected"]
@@ -281,6 +290,23 @@ def score(manifest: dict, predictions: list[dict], adjudications: list[dict]) ->
             round((len(synthesis) - len(baseline)) / len(references), 6) if references else None),
         "confidence_interval": None,
         "note": "Descriptive paired counts only; cluster-aware uncertainty and external validation not supplied."}
+    return outcome
+
+
+def score(manifest: dict, predictions: list[dict], adjudications: list[dict]) -> dict:
+    """Primary per-stratum metrics; legacy aggregate is explicitly secondary.
+
+    Validate all predictions against the original manifest, including its hash,
+    before filtering. A subgroup manifest would invalidate provenance bindings.
+    """
+    outcome = _score_cohort(manifest, predictions, adjudications)
+    outcome["aggregate_role"] = "secondary only; report by_split as primary"
+    outcome["by_split"] = {
+        split: _score_cohort(manifest, predictions, adjudications,
+                             {c["case_id"] for c in manifest["cases"] if c["split"] == split})
+        for split in sorted({c["split"] for c in manifest["cases"]})}
+    outcome["paper_family_count"] = len({c.get("paper_family_id", c["case_id"])
+                                          for c in manifest["cases"]})
     return outcome
 
 

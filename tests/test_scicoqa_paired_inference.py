@@ -12,7 +12,7 @@ from scicoqa_paired_inference import execute, parse_yaml
 class PairedModelRunnerTests(unittest.TestCase):
     def setUp(self):
         self.manifest, self.prompts = make_prompts(
-            [{"case_id": "synthetic-1", "split": "synthetic",
+            [{"case_id": "synthetic-1", "paper_family_id": "fixture-family", "split": "synthetic",
               "paper_version": "fixture-v1",
               "code_commit": "a" * 40,
               "paper_text": "Paper describes method A.",
@@ -36,6 +36,33 @@ class PairedModelRunnerTests(unittest.TestCase):
         self.assertEqual([p["arm"] for p in preds], ["baseline", "synthesis"])
         self.assertTrue(all(p["status"] == "COMPLETE" and not p["findings"] for p in preds))
         self.assertEqual(len(raw), 2)
+
+    def test_preambles_trailers_and_invalid_empty_documents_abstain(self):
+        for text in ["I cannot review this.\ndiscrepancies: []",
+                     "discrepancies: []\nExtra explanation", "discrepancies:",
+                     "discrepancies:\n  - null", "discrepancies:\n  - key: value",
+                     "```yaml\ndiscrepancies: []\n```\nMore text"]:
+            with self.subTest(text=text), self.assertRaises(BenchmarkError):
+                parse_yaml(text)
+        self.assertEqual(parse_yaml("```yaml\ndiscrepancies: []\n```"), [])
+        command = [sys.executable, "-c", "print('Refusal\\ndiscrepancies: []')"]
+        preds, _ = execute(self.manifest, self.prompts, command)
+        self.assertTrue(all(p["status"] == "ABSTAIN" for p in preds))
+
+    def test_timeout_preserves_partial_stdout_stderr_and_hash(self):
+        from scicoqa_paired_benchmark import digest
+        from unittest.mock import patch
+        import subprocess
+        partial = "discrepancies:\n  - partial output"
+        exc = subprocess.TimeoutExpired("fixture", 1, output=partial.encode(), stderr=b"diagnostic")
+        with patch("scicoqa_paired_inference.subprocess.run", side_effect=exc):
+            preds, raw = execute(self.manifest, self.prompts, ["fixture"], timeout=1)
+        self.assertTrue(all(p["status"] == "FAILED" for p in preds))
+        self.assertTrue(all(p["findings"] == [] for p in preds))
+        self.assertEqual(raw[0]["raw_response"], partial)
+        self.assertEqual(raw[0]["stderr"], "diagnostic")
+        self.assertEqual(raw[0]["raw_response_sha256"], digest(partial))
+        self.assertGreaterEqual(raw[0]["latency_seconds"], 0)
 
     def test_missing_arm_is_rejected(self):
         with self.assertRaises(BenchmarkError):

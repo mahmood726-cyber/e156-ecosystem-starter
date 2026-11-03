@@ -15,7 +15,8 @@ SHA = "a" * 40
 
 
 def context(cid, split="real"):
-    return {"case_id": cid, "split": split, "paper_version": "https://arxiv.org/pdf/testv1.pdf",
+    return {"case_id": cid, "paper_family_id": "family-" + cid,
+            "split": split, "paper_version": "https://arxiv.org/pdf/testv1.pdf",
             "code_commit": SHA, "paper_text": "Paper mentions L2 normalization",
             "code_text": "def normalize(x): return sum(abs(x))"}
 
@@ -47,6 +48,15 @@ def review(cid, refs, base_matches=None, synth_matches=None, base_false=None, sy
 
 
 class PairPreparationTests(unittest.TestCase):
+    def test_family_id_is_required_and_frozen(self):
+        c = context("C1")
+        c["paper_family_id"] = "same-paper"
+        manifest, _ = prepared([c])
+        self.assertEqual(manifest["cases"][0]["paper_family_id"], "same-paper")
+        del c["paper_family_id"]
+        with self.assertRaises(m.BenchmarkError):
+            prepared([c])
+
     def test_verbatim_plain_and_same_underlying_inputs(self):
         manifest, out = prepared([context("C1")])
         self.assertEqual(out["baseline"][0]["prompt"], BASE.replace("${paper}", context("C1")["paper_text"]).replace("${code}", context("C1")["code_text"]))
@@ -73,6 +83,20 @@ class PairPreparationTests(unittest.TestCase):
 
 
 class ScoreTests(unittest.TestCase):
+    def test_real_and_synthetic_denominators_remain_separate(self):
+        manifest, _ = prepared([context("R", "real"), context("S", "synthetic")])
+        preds = [prediction(manifest, cid, arm, "COMPLETE", ["f"] if arm == hit else [])
+                 for cid, hit in [("R", "baseline"), ("S", "synthesis")] for arm in m.ARMS]
+        reviews = [review("R", ["r"], [{"finding_id": "f", "reference_id": "r"}]),
+                   review("S", ["r"], synth_matches=[{"finding_id": "f", "reference_id": "r"}])]
+        result = m.score(manifest, preds, reviews)
+        key = "full_reference_recall_including_abstentions_and_failures"
+        self.assertEqual(result["arms"]["baseline"][key]["value"], 0.5)
+        self.assertEqual(result["by_split"]["real"]["arms"]["baseline"][key]["value"], 1)
+        self.assertEqual(result["by_split"]["synthetic"]["arms"]["baseline"][key]["value"], 0)
+        self.assertEqual(result["by_split"]["synthetic"]["paired"]["synthesis_only_reference_detections"], 1)
+        self.assertIn("secondary", result["aggregate_role"])
+
     def test_paired_reference_recall_with_abstention_and_false_alert(self):
         manifest, _ = prepared([context("A"), context("B"), context("C")])
         preds = [prediction(manifest, "A", "baseline", "COMPLETE", ["b1"]),
