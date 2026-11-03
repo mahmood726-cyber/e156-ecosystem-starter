@@ -16,6 +16,7 @@ import json
 from pathlib import Path, PurePosixPath
 import re
 import tarfile
+import time
 import urllib.error
 import urllib.request
 
@@ -88,21 +89,31 @@ def retrieve(asset: dict, output: Path, timeout: int, max_bytes: int,
              previous: dict | None = None) -> dict:
     path = output / asset["relative_path"]
     started = datetime.now(timezone.utc).isoformat()
+    deadline = time.monotonic() + timeout
     if previous and previous.get("status") == "RETRIEVED" and path.is_file():
         if sha256(path.read_bytes()) == previous.get("sha256"):
             validate_payload(path, asset)
             return previous
         raise BenchmarkError(f"cached asset changed: {asset['asset_id']}")
     part = path.with_suffix(path.suffix + ".part")
+    download_url = asset["url"]
+    # Some upstream "versioned paper" fields link to an arXiv abstract page.
+    # Resolve the same explicit edition to its PDF, never to the latest version.
+    arxiv_abs = re.fullmatch(r"https://arxiv.org/abs/(\d{4}\.\d{4,5}v\d+)", download_url)
+    if asset["kind"] == "paper" and arxiv_abs:
+        download_url = "https://arxiv.org/pdf/" + arxiv_abs.group(1) + ".pdf"
+    asset = {**asset, "download_url": download_url}
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        request = urllib.request.Request(asset["url"], headers={"User-Agent": "SciCoQA-source-retrieval/1"})
+        request = urllib.request.Request(download_url, headers={"User-Agent": "SciCoQA-source-retrieval/1"})
         with urllib.request.urlopen(request, timeout=timeout) as response, part.open("wb") as stream:
             length = response.headers.get("Content-Length")
             if length and int(length) > max_bytes:
                 raise BenchmarkError("payload exceeds declared byte limit")
             total = 0
-            while chunk := response.read(1024 * 1024):
+            while chunk := response.read(64 * 1024):
+                if time.monotonic() > deadline:
+                    raise TimeoutError("total download deadline exceeded")
                 total += len(chunk)
                 if total > max_bytes:
                     raise BenchmarkError("payload exceeds declared byte limit")
@@ -134,7 +145,7 @@ def main() -> None:
     args.output.mkdir(parents=True, exist_ok=True)
     receipt_path = args.output / "retrieval.jsonl"
     previous = {}
-    if receipt_path.exists():
+    if receipt_path.exists() and receipt_path.stat().st_size:
         previous = {r["asset_id"]: r for r in read_jsonl(receipt_path)}
     (args.output / "inventory.json").write_text(json.dumps({
         "upstream_ref": UPSTREAM_REF, "dataset_version": "v1.1", "datasets": datasets,

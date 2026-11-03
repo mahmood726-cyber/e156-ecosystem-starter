@@ -1,6 +1,6 @@
 # SciCoQA × Synthesis: paper–code discrepancy comparison
 
-**3 November 2026 · Design + offline preparation/scoring code only · NO head-to-head inference or scientific adjudication performed**
+**3 November 2026 · Source retrieval and implementation tested · NO head-to-head inference or scientific adjudication performed**
 
 This experimental comparison is a *public external benchmark study*, not a claim that Synthesis is better than SciCoQA or the baseline LLM. It does not replace Synthesis v1.2, the candidate [v1.3 method](SYNTHESIS-v1.3-CANDIDATE.md), or the separate [blinded prospective validation plan](SYNTHESIS-v1.3-BLINDED-VALIDATION-PLAN.md). The existing protected/frozen Simo v0.10 cohort and historical correspondence must remain unchanged. No automatic author or journal contact is permitted.
 
@@ -41,7 +41,7 @@ The standard-library utility [`scripts/scicoqa_paired_benchmark.py`](../scripts/
 A local `contexts.jsonl` record must have **exactly** these keys, with unique `case_id` per paper–code snapshot (not per known error):
 
 ```json
-{"case_id":"LOCAL-SNAPSHOT-ID","split":"real","paper_version":"https://example.org/versioned-paper-v1","code_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","paper_text":"[full permitted paper markdown]","code_text":"[full exact-commit code prompt]"}
+{"case_id":"LOCAL-SNAPSHOT-ID","paper_family_id":"LOCAL-PAPER-FAMILY","split":"real","paper_version":"https://example.org/versioned-paper-v1","code_commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","paper_text":"[full permitted paper markdown]","code_text":"[full exact-commit code prompt]"}
 ```
 
 The above record is a **schema illustration**, not a real SciCoQA item, downloaded paper or valid experimental sample. For synthetic cases, `code_text` must already include the *specified injected* change; record the exact changed-code snapshot and group related cases by underlying paper. Never put labels in contexts. Use the actual source code commit rather than the illustrative `aaaaaaaa...`.
@@ -71,7 +71,7 @@ python3 scripts/scicoqa_paired_benchmark.py score \
 python3 -B -m unittest discover -s tests -p 'test_scicoqa_paired_benchmark.py' -v
 ```
 
-`score` computes paired reference detection, full-denominator recall, conditional judged precision, known-clean case false alerts, abstention/failure counts and reviewer minutes, and displays an explicit `null` confidence interval. It deliberately **does not** claim source truth, verify model calls, audit licences, prove the reviewers were independent, compute a cluster-aware interval, or perform the upstream LLM judge evaluation. Unresolved findings are excluded from **conditional** precision, but their number is always reported; this metric cannot be quoted as overall paper/claim precision. The generated example identifiers are for tests/schema only, not published research evidence.
+`score` reports each `by_split` stratum as primary; the legacy top-level aggregate is explicitly secondary. It requires a nonempty frozen `paper_family_id` (re-prepare manifests made before this field was required). It computes paired reference detection, full-denominator recall, conditional judged precision, known-clean case false alerts, abstention/failure counts and reviewer minutes, and displays an explicit `null` confidence interval. It deliberately **does not** claim source truth, verify model calls, audit licences, prove the reviewers were independent, compute a cluster-aware interval, or perform the upstream LLM judge evaluation. Unresolved findings are excluded from **conditional** precision, but their number is always reported; this metric cannot be quoted as overall paper/claim precision. The generated example identifiers are for tests/schema only, not published research evidence.
 
 ## Risks, falsifiers and next decisions
 
@@ -87,3 +87,9 @@ python3 -B -m unittest discover -s tests -p 'test_scicoqa_paired_benchmark.py' -
 | Version links, source definitions, prompt text, JSONL schema, fail-closed preparation/accounting and synthetic unit tests | Actual paper/code input snapshots, model API calls, complete generations, blind source adjudication, recall/precision/CI, time and costs |
 
 **Responsible communication:** Do not use a detected SciCoQA benchmark mismatch alone to email authors or assert scientific misconduct. Independent evidence verification, source permissions and manual editorial judgment remain essential.
+
+## Execution continuation after PRs #73 and #74
+
+See [the execution report](../benchmarks/scicoqa/EXECUTION-REPORT-2026-11-03.md) and source receipts for observed retrieval coverage and access blockers. `scripts/scicoqa_retrieve_sources.py` accepts the exact v1.1 dataset bytes from the pinned source tree and retrieves PDF editions and commit archives without executing repository code. A versioned arXiv abstract URL is resolved only to the corresponding versioned PDF. Download errors, invalid payloads and size/deadline exclusions remain recorded. Retrieval is not model inference or source adjudication.
+
+The CLI runner writes each completed call immediately, including raw response hash, stderr and latency, so later interruption preserves earlier evidence. Its command hash and declared model settings do not authenticate the provider or prove the model revision. It accepts a conservative YAML string-list subset; unsupported YAML or prose is a format abstention, and an explicit `discrepancies: []` document is a completed zero-finding response. Parsing does not establish whether a model actually reviewed the inputs. No artificial test response may be reported as a benchmark inference.

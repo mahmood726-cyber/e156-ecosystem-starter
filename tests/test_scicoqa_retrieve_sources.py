@@ -13,6 +13,16 @@ from scicoqa_retrieve_sources import inventory, retrieve, sha256, validate_paylo
 
 
 class RetrievalTests(unittest.TestCase):
+    def test_main_resumes_an_empty_receipt_without_network(self):
+        from scicoqa_retrieve_sources import main
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "retrieval.jsonl").touch()
+            with patch("sys.argv", ["retrieve", "--dataset-dir", str(root), "--output", str(root)]), \
+                    patch("scicoqa_retrieve_sources.inventory", return_value=([], {})):
+                main()
+            self.assertTrue((root / "inventory.json").is_file())
+
     def test_inventory_deduplicates_shared_sources_without_exposing_answers(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -55,6 +65,19 @@ class RetrievalTests(unittest.TestCase):
             (Path(tmp) / asset["relative_path"]).write_bytes(b"tampered")
             with self.assertRaises(BenchmarkError):
                 retrieve(asset, Path(tmp), 1, 1024, result)
+
+    def test_arxiv_abstract_resolves_the_same_explicit_edition(self):
+        with TemporaryDirectory() as tmp:
+            response = io.BytesIO(b"%PDF-1.4\nfixture")
+            response.headers = {}
+            asset = {"asset_id": "fixture", "kind": "paper",
+                     "url": "https://arxiv.org/abs/2106.05234v5",
+                     "relative_path": "assets/fixture.pdf"}
+            with patch("scicoqa_retrieve_sources.urllib.request.urlopen", return_value=response) as get:
+                result = retrieve(asset, Path(tmp), 1, 1024)
+            self.assertEqual(get.call_args.args[0].full_url, "https://arxiv.org/pdf/2106.05234v5.pdf")
+            self.assertEqual(result["url"], asset["url"])
+            self.assertEqual(result["status"], "RETRIEVED")
 
     def test_archive_root_must_match_exact_commit(self):
         with TemporaryDirectory() as tmp:

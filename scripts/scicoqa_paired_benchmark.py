@@ -154,6 +154,10 @@ def _score_cohort(manifest: dict, predictions: list[dict], adjudications: list[d
     if manifest.get("schema") != SCHEMA or not manifest.get("cases"):
         raise BenchmarkError("unknown or empty frozen manifest")
     cases = unique(manifest["cases"], "case_id")
+    for case in cases.values():
+        nonempty(case.get("paper_family_id"), "paper_family_id")
+        if case.get("split") not in ("real", "synthetic", "pooled", "clean_control"):
+            raise BenchmarkError("unsupported split in manifest")
     expected = {(cid, arm) for cid in cases for arm in ARMS}
     pred_by_key = {}
     for row in predictions:
@@ -305,7 +309,7 @@ def score(manifest: dict, predictions: list[dict], adjudications: list[dict]) ->
         split: _score_cohort(manifest, predictions, adjudications,
                              {c["case_id"] for c in manifest["cases"] if c["split"] == split})
         for split in sorted({c["split"] for c in manifest["cases"]})}
-    outcome["paper_family_count"] = len({c.get("paper_family_id", c["case_id"])
+    outcome["paper_family_count"] = len({c["paper_family_id"]
                                           for c in manifest["cases"]})
     return outcome
 

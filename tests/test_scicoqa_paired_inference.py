@@ -64,6 +64,18 @@ class PairedModelRunnerTests(unittest.TestCase):
         self.assertEqual(raw[0]["raw_response_sha256"], digest(partial))
         self.assertGreaterEqual(raw[0]["latency_seconds"], 0)
 
+    def test_checkpoint_preserves_first_call_if_later_call_is_interrupted(self):
+        from unittest.mock import patch
+        import subprocess
+        saved = []
+        success = subprocess.CompletedProcess(["fixture"], 0, "discrepancies: []", "")
+        with patch("scicoqa_paired_inference.subprocess.run", side_effect=[success, KeyboardInterrupt]):
+            with self.assertRaises(KeyboardInterrupt):
+                execute(self.manifest, self.prompts, ["fixture"],
+                        on_result=lambda p, r: saved.append((p, r)))
+        self.assertEqual(len(saved), 1)
+        self.assertEqual(saved[0][0]["status"], "COMPLETE")
+
     def test_missing_arm_is_rejected(self):
         with self.assertRaises(BenchmarkError):
             execute(self.manifest, {"baseline": self.prompts["baseline"], "synthesis": []},

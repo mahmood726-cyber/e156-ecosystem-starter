@@ -68,7 +68,8 @@ def parse_yaml(text: str) -> list[dict]:
     return [{"finding_id": f"F{i+1}", "text": x} for i, x in enumerate(items)]
 
 
-def execute(manifest: dict, prompts: dict, command: list[str], timeout: int = 180) -> tuple[list, list]:
+def execute(manifest: dict, prompts: dict, command: list[str], timeout: int = 180,
+            on_result=None) -> tuple[list, list]:
     if manifest.get("schema") != SCHEMA or not manifest.get("cases"):
         raise BenchmarkError("invalid manifest")
     if not command or timeout < 1:
@@ -126,6 +127,8 @@ def execute(manifest: dict, prompts: dict, command: list[str], timeout: int = 18
             predictions.append(row)
             raw_outputs.append({**row, "raw_response": output, "raw_response_sha256": digest(output),
                                 "stderr": stderr, "error": error})
+            if on_result is not None:
+                on_result(row, raw_outputs[-1])
     return predictions, raw_outputs
 
 
@@ -142,11 +145,25 @@ def main() -> None:
         p.error("specify a model command and a new output directory")
     manifest = json.loads((a.prepared / "manifest.json").read_text(encoding="utf-8"))
     prompts = {arm: read_jsonl(a.prepared / f"{arm}-prompts.jsonl") for arm in ARMS}
-    predictions, outputs = execute(manifest, prompts, command, a.timeout)
     a.output.mkdir(parents=True)
-    for filename, rows in (("predictions.jsonl", predictions), ("raw_outputs.jsonl", outputs)):
-        (a.output / filename).write_text(
-            "".join(canonical(x) + "\n" for x in rows), encoding="utf-8")
+    metadata = {"manifest_sha256": digest(canonical(manifest)),
+                "command_sha256": digest(canonical(command)),
+                "model_settings_verification": "caller-declared; not provider-attested",
+                "state": "STARTED"}
+    metadata_path = a.output / "execution.json"
+    metadata_path.write_text(canonical(metadata) + "\n", encoding="utf-8")
+    with (a.output / "predictions.jsonl").open("w", encoding="utf-8") as pred_file, \
+            (a.output / "raw_outputs.jsonl").open("w", encoding="utf-8") as raw_file:
+        def checkpoint(prediction, raw):
+            pred_file.write(canonical(prediction) + "\n")
+            pred_file.flush()
+            raw_file.write(canonical(raw) + "\n")
+            raw_file.flush()
+
+        predictions, outputs = execute(manifest, prompts, command, a.timeout, checkpoint)
+    metadata["state"] = "FINISHED"
+    metadata["recorded_calls"] = len(predictions)
+    metadata_path.write_text(canonical(metadata) + "\n", encoding="utf-8")
     print("Model responses recorded; no independent scientific adjudication performed")
     print(json.dumps({"total": len(predictions),
                       "complete": sum(x["status"] == "COMPLETE" for x in predictions),
