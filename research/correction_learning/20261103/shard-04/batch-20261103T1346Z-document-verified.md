@@ -1,0 +1,33 @@
+# Shard 04 — correction notice learning, source-verified batch
+Date: 2026-11-03; methodological lens: cross-document consistency.
+Framework: Synthesis v1.3 experimental. SHA256(lowercase correction DOI) unsigned integer mod 10 = 4 for each DOI below. No original errors newly discovered; these are historical published corrections. Complete notice read: 3; confirmed publisher current article visited: 2; original page access HOLD: 1; publisher primary text unavailable HOLD: 1. Credit only the 2 with directly reviewed publisher original and notice. No exact historical pre-correction archive inspected. No Gmail or private material.
+
+## FULL-CREDIT 1: duplicated figure assets (biomedical EEG computational study)
+- Notice DOI `10.1038/s41598-026-73666-6`, SHA256 `b98bde4966c33e5dfd9e73cfa1ec4375a359bbf45df66e17ea91fc5ab09fef4a` (owner 4). Scientific Reports, 7 October 2026. Full primary notice: https://www.nature.com/articles/s41598-026-73666-6 , notice lines under “Correction to”. Original DOI `10.1038/s41598-026-56405-9`; original published 17 June 2026, current publisher source: https://www.nature.com/articles/s41598-026-56405-9 , article header “Correction” and “updated”; figure image/caption locations throughout article.
+- Notice says every original figure image duplicated Figure 7, although captions were correct; publisher now reports intended images restored. Original published PDF/asset hashes not recovered: old state is publisher-attested, not independent visual replay. Current publisher update banner independently observed.
+- Support SUPPORTED for notice; maturity SOURCE_BACKED; status CORRECTION_PUBLISHED, current banner VERIFIED; S3 provisional for loss of visual science content, not underlying model accuracy. Strong benign explanation: production asset mapping error. Numerical 12-field signature NOT_APPLICABLE; no numeric recalculation. Do not claim computational result revalidated.
+
+## FULL-CREDIT 2: supplementary table identity / incorrect citation / significance legend (ICU diagnostic accuracy)
+- Notice DOI `10.1038/s41598-026-54835-z`, SHA256 `cb98b4801d03fca2cc01aa8938ed6c0fec322a0d19941f2b555a4e1b3c73a388` (owner 4). Scientific Reports, 8 June 2026. Primary notice https://www.nature.com/articles/s41598-026-54835-z , paragraphs directly following “Correction to”, including old/new quoted Discussion citation and Fig S1 legend. Original DOI `10.1038/s41598-025-30459-7`, published 21 February 2026; publisher current page https://www.nature.com/articles/s41598-025-30459-7 , article header correction link and “updated”.
+- Publisher states original Table 3 was a supplementary Table S1 inadvertently placed in main paper; Discussion cited Supplementary Table S1 where S2 was intended; Figure S1 statistical annotation absent. Current notice specifies star threshold `p<0.0001` for Brown-Forsythe/Welch ANOVA; NOT a P-value recomputation. Direct supplementary-file visual verification not completed; exact figure remediation HOLD. Type: production/cross-reference/legend. Support SUPPORTED; maturity SOURCE_BACKED; S2 provisional. Notice states findings unaffected; independently not rerun. Strong benign explanation: typesetting/cross-reference/annotation rather than biological data changes. 12-field P estimator fields population=site strata (exact n unknown), endpoint=optical density, time_window=cross-sectional, effect_measure=P, estimand=group difference, model=Brown–Forsythe/Welch ANOVA, adjustment=not attested, multiplicity=unknown, missingness=unknown, censoring=NA, variance_method=heteroscedastic, test_statistic_identity=unknown. => NOT_COMPARABLE, no calculation.
+
+## PRIMARY NOTICE READ, but CURRENT ORIGINAL PAGE HOLD (not credited under strict gate)
+- DOI `10.1038/s41598-026-44467-8`, SHA256 `16cd250f1c185d3d9df49e8e8cab17a50f7c0b11eb9a520e52b50ec517291f3a` (owner 4). Scientific Reports, 17 March 2026, author's full publisher notice reproduced at PMC https://pmc.ncbi.nlm.nih.gov/articles/PMC12996351/ , lines 76–83. Original `10.1038/s41598-025-21820-x` (30 October 2025), publisher URL https://www.nature.com/articles/s41598-025-21820-x returned login redirect during original article verification. Publisher notice: Jin-Ting Sie omitted from byline; notice supplies contribution description; corrected original declared. Administrative/authorship S1 scientific, governance implications; no numerical error claimed. Full notice text read, original DOI verified as notice linkage; current byline not directly checked this run. HOLD pending current VOR direct access.
+
+## HOLD: publisher notice body inaccessible
+- DOI `10.1038/s41467-026-73658-0`, SHA256 `e69d067502173bedb17d54d8042b8737e12fc4a4ea9a46daa455bce344e58a34` (owner 4). https://www.nature.com/articles/s41467-026-73658-0 redirected to access login. Potential corrected 2024 chitinase study `10.1038/s41467-024-47588-8`; do NOT give reviewed credit. Candidate mechanism of replicate plot-label swaps from preliminary indexing only, not this run's full primary text.
+
+## Development fixtures (not executed software tests)
+1. HISTORICAL: unique figure IDs all mapped to Fig7 image -> source-backed duplicate-asset review if archived original verified.
+2. CORRECTED: distinct verified publisher figure assets and version link -> reconcile only after image assets verified.
+3. BENIGN: intentionally repeated reference image with explicit figure caption -> NO_FLAG.
+4. ABSTAIN: captions are available but image assets/historical edition missing -> HOLD.
+5. HISTORICAL: Discussion points to S1 while correction notice states S2 was intended -> flag link-identity only with source-attested version.
+6. CORRECTED: inspect current Discussion S2 and Supplement visually -> RECONCILED if exact link resolved.
+7. BENIGN: S1 and S2 intentionally mirror each other and text specifies correct context -> NO_FLAG.
+8. ABSTAIN: supplementary files or original versions unavailable -> HOLD / NOT_COMPARABLE.
+Fixtures are declarative; no implementation/CI, no held-out scientific validation.
+
+## Counts and cursor
+Full notice read in this run: 3 (2 publisher primary + 1 publisher text via PMC). Strict FULL-CREDIT for fully read primary plus current original publisher page opened: 2. Partial/blocked notices: 1. Administrative full but current-original HOLD: 1. Duplicate: 0 observed among these four; not a programme-wide dedup. Independently adjudicated: 0. Cumulative shard-04 confirmed **in this run only**: 2; earlier unsaved candidate batch 0 confirmed persisted. Programme cumulative UNKNOWN.
+Next cursor: reopen chitinase correction via authorized public mirror; then inspect nursing-cart original VOR and IgG corrected Supplementary Figure S1. Hash DOI owner before recording. Branch code/PR not changed. No outreach.
