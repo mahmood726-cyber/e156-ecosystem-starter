@@ -412,15 +412,16 @@
       "id": ".github/workflows/synthesis-v13-candidate.yml#jobs.offline-regression",
       "kind": "ci-job",
       "name": "Synthesis v1.3 synthetic-only regression",
-      "stops": "Fails when the v1.3 synthetic deterministic checks or their regression assertions fail in the Ubuntu offline unittest suite.",
+      "stops": "Fails when the v1.3 deterministic, evidence-packet-accounting, or NMA/IPD preflight synthetic assertions fail on the Ubuntu offline unittest suite.",
       "would_not_stop": [
-        "Incorrect or fabricated caller-supplied paper evidence, source locations, estimand identities or correction history: this workflow does not authenticate source documents.",
+        "Incorrect or fabricated caller-supplied paper evidence, source locations, estimand identities, statistical models or correction history: the workflow does not authenticate source documents.",
         "False-positive rates, missed real scientific errors or clinical validity on unseen papers: no prospective masked adjudication or independent accuracy evaluation is performed.",
-        "Failures in the repository-wide Python, Windows, Bash, security or other CI jobs: the dedicated v1.3 workflow is narrow and synthetic only."
+        "Claims of real reviewer independence, actual Gmail Sent-folder delivery, or successful native NMA/IPD model replay: these new receipts and preflight functions validate declarations, not external reality.",
+        "Failures in repository-wide Python, Windows, Bash, security or other CI jobs: the dedicated v1.3 workflow is narrow and synthetic only."
       ],
-      "source": "Synthesis v1.3 candidate workflow offline-regression job; tests/test_synthesis_v13_checks.py.",
+      "source": "Synthesis v1.3 candidate workflow offline-regression; tests/test_synthesis_v13_checks.py, tests/test_synthesis_v13_evidence.py, tests/test_synthesis_v13_nma_preflight.py.",
       "seal": {
-        ".github/workflows/synthesis-v13-candidate.yml#jobs.offline-regression": "7be3a86a5b8e88ebdfc61df171795a49d4201d3fa4d2927a6d58893d40bbf3c3"
+        ".github/workflows/synthesis-v13-candidate.yml#jobs.offline-regression": "5cee62fde2a40614ae2a846e99228d10554cc46ddac94ff06064a2bf5ed52776"
       }
     }
   ]

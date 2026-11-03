@@ -1,8 +1,17 @@
 # Synthesis v1.3 — evidence-integrity development candidate
 
-**31 October 2026 · Status: experimental, not scientifically validated**
+**Updated 3 November 2026 · Status: experimental implementation integrated into main; not scientifically validated**
 
 This document describes a candidate extension to Synthesis v1.2 and the existing v1.1 preflight validator. It does **not** supersede the canonical internal standard, alter prospective protocols, adjudicate any paper, authorize author contact, or certify a published scientific error. The implementation accompanying it is deliberately small, offline and fail-closed.
+
+## Current integration and limitations (3 November 2026)
+
+- [PR #64](https://github.com/mahmood726-cyber/e156-ecosystem-starter/pull/64) merged the development candidate on 2 November at commit `ee66c160`; **210/210 synthetic v1.3 checks passed** and full repository checks passed on that merge SHA. This is software integration, not source authentication or clinical detection validation.
+- The canonical v1.2 methodology and all separately frozen cohorts remain unchanged. Private correspondence, raw case ledgers and signed/protected historical records stay outside this public repository.
+- The receipt/accounting module (`scripts/synthesis_v13_evidence.py`) validates caller-supplied evidence packet fields and sent-ID deduplication; it cannot authenticate their truth or email delivery. The NMA/IPD preflight (`scripts/synthesis_v13_nma_preflight.py`) detects narrowly identified potential trial overlaps, shared-control covariance problems and replay-readiness gaps; it neither fits NMA models nor independently reproduces results.
+- Unequal floating cross-document values now require attested exact unrounded inputs **or** source-verbatim decimal precision and a declared rounding rule. Unverified precision abstains. Equivalent overlapping printed rounding intervals do not generate a discrepancy candidate.
+- Read the [blinded validation plan](SYNTHESIS-v1.3-BLINDED-VALIDATION-PLAN.md) and [audit packet/accounting contract](SYNTHESIS-v1.3-AUDIT-PACKET.md). The independent validation study has **not** been performed. Real-paper sensitivity, precision, false-alert rates, abstention harm and reviewer time remain UNKNOWN.
+- The original 31 October change notes below are historical development records; their head SHAs, PR statuses and smaller test counts are not the current integration status.
 
 ## Objective
 
@@ -72,7 +81,7 @@ At local creation, **35/35 synthetic tests passed**. Hosted CI and protected-bra
 
 ## Change-control constraints
 
-Build this v1.3 candidate **separately** from unmerged Preflight v1.1 PR #60 and from the v1.2 public-site proposal. Keep frozen protocols, e156 protected attestations, all full CI gates and required independent human review. No bypasses, no merge without exact-head CI and provenance, no alteration to historical certificates, no external contact and no private correspondence in this repository. Any future publication-performance claim requires a separate independent, prospective evaluation.
+**Historical 31 October rule:** the candidate was initially kept separate from Preflight v1.1 PR #60 and v1.2. PR #60 subsequently merged and the v1.3 implementation entered main through PR #64 on 2 November. Preserve frozen protocols, e156 protected attestations, exact-head full CI, provenance and independent scientific validation. Do not alter historical certificates, infer an error, authorize external contact or publish private correspondence from this code. The repository owner has elected not to require new GitHub branch-protection settings; required CI and evidence-truth constraints still apply. Any publication-performance claim requires separate independent prospective evaluation.
 
 ## Printed-P precision safeguard (31 October 2026 candidate delta)
 
@@ -173,3 +182,13 @@ third-party code was imported. **Potential disadvantage:** extra abstentions on
 large float values may hide true discrepancies. External, independent source-level
 review and held-out matched-budget testing are required before promotion. Keep the
 v1.2 Standard, frozen cohorts, correspondence and protected branch policies intact.
+
+## 3 November 2026 — fail-closed source precision, NMA preflight and audit packet
+
+**Cross-document precision contract.** `cross_document()` retains exact integer arithmetic. For unequal floating-point comparisons, the caller must either attest exact unrounded source inputs (`source_values_exact=True`) or provide both source-verbatim printed literals, `published_precision_verified=True`, and `display_rounding_rule="NEAREST_DECIMAL"`. In the latter path the checker conservatively includes halfway ties and checks interval overlap, returning `NOT_COMPARABLE` for incomplete/ambiguous/OCR-unverified precision. Passing source attestations remain unauthenticated; even `REVIEW` is a candidate for human inspection, not an error verdict.
+
+**Independent evidence receipt.** `evidence_packet()` requires a current claim, correction check, matched analysis, exact locators and SHA-256 source identifiers, original report, reconstruction and benign-alternative refutation. It outputs only `READY_FOR_INDEPENDENT_REVIEW`, never an error certification. `reconciliation_summary()` separately counts administratively eligible distinct substantive root records and distinct actual-message identifiers, with independently adjudicated caller attestations and documented Synthesis discovery. Consolidated emails may cover multiple independent roots. Neither function checks private Gmail, verifies publication contents, nor proves correspondence was sent.
+
+**NMA/IPD integrity preflight.** `duplicate_trial_population()` and `shared_control_dependence()` flag only explicitly source-attested duplicated independent effects or unaccounted shared controls; different cohorts/endpoints or verified covariance handling are negative controls. `replay_readiness()` requires original published-model replay before corrected-analysis replay; outcome-level source extraction, unique populations, RoB 2/RoB NMA, transitivity/consistency and conclusion sensitivity are mandatory evidence references. These are administrative/source-identity gates. Comprehensive source retrieval, native network estimation and independent source-level verification remain open development work.
+
+All added regressions are synthetic; do not use them to estimate real-paper performance. Preserve the Simo v0.10 frozen 36-claim/12-family cohort, the separately proposed 24-family benchmark and any other held-out manifests without modification or label leakage.
