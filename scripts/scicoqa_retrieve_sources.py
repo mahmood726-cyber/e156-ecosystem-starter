@@ -15,10 +15,8 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 import re
+import subprocess
 import tarfile
-import time
-import urllib.error
-import urllib.request
 
 from scicoqa_paired_benchmark import BenchmarkError, canonical, read_jsonl
 
@@ -89,7 +87,6 @@ def retrieve(asset: dict, output: Path, timeout: int, max_bytes: int,
              previous: dict | None = None) -> dict:
     path = output / asset["relative_path"]
     started = datetime.now(timezone.utc).isoformat()
-    deadline = time.monotonic() + timeout
     if previous and previous.get("status") == "RETRIEVED" and path.is_file():
         if sha256(path.read_bytes()) == previous.get("sha256"):
             validate_payload(path, asset)
@@ -105,27 +102,22 @@ def retrieve(asset: dict, output: Path, timeout: int, max_bytes: int,
     asset = {**asset, "download_url": download_url}
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        request = urllib.request.Request(download_url, headers={"User-Agent": "SciCoQA-source-retrieval/1"})
-        with urllib.request.urlopen(request, timeout=timeout) as response, part.open("wb") as stream:
-            length = response.headers.get("Content-Length")
-            if length and int(length) > max_bytes:
-                raise BenchmarkError("payload exceeds declared byte limit")
-            total = 0
-            while chunk := response.read(64 * 1024):
-                if time.monotonic() > deadline:
-                    raise TimeoutError("total download deadline exceeded")
-                total += len(chunk)
-                if total > max_bytes:
-                    raise BenchmarkError("payload exceeds declared byte limit")
-                stream.write(chunk)
-            if length is not None and total != int(length):
-                raise BenchmarkError("incomplete response body")
+        result = subprocess.run([
+            "curl", "--fail", "--location", "--silent", "--show-error",
+            "--max-time", str(timeout), "--max-filesize", str(max_bytes),
+            "--user-agent", "SciCoQA-source-retrieval/1", "--output", str(part), download_url
+        ], capture_output=True, text=True, timeout=timeout + 5, check=False)
+        if result.returncode:
+            raise BenchmarkError(f"curl exit {result.returncode}: {result.stderr.strip()}")
+        total = part.stat().st_size
+        if total > max_bytes:
+            raise BenchmarkError("payload exceeds declared byte limit")
         validate_payload(part, asset)
         content_hash = sha256(part.read_bytes())
         part.replace(path)
         return {**asset, "status": "RETRIEVED", "bytes": total, "sha256": content_hash,
                 "retrieved_at_utc": started}
-    except (OSError, ValueError, tarfile.TarError, urllib.error.URLError) as exc:
+    except (OSError, ValueError, tarfile.TarError, subprocess.TimeoutExpired) as exc:
         part.unlink(missing_ok=True)
         return {**asset, "status": "FAILED", "error": type(exc).__name__ + ": " + str(exc),
                 "attempted_at_utc": started}
@@ -152,10 +144,14 @@ def main() -> None:
         "assets": assets, "inference_calls": 0, "independent_human_reviews": 0}, indent=2) + "\n")
     # Append and flush each result so interruption cannot erase completed work.
     with receipt_path.open("a", encoding="utf-8") as receipt, ThreadPoolExecutor(args.workers) as pool:
-        jobs = [pool.submit(retrieve, a, args.output, args.timeout, args.max_bytes,
-                            previous.get(a["asset_id"])) for a in assets]
+        jobs = {pool.submit(retrieve, a, args.output, args.timeout, args.max_bytes,
+                            previous.get(a["asset_id"])): a for a in assets}
         for i, job in enumerate(as_completed(jobs), 1):
-            result = job.result()
+            try:
+                result = job.result()
+            except BenchmarkError as exc:
+                result = {**jobs[job], "status": "FAILED", "error": str(exc),
+                          "attempted_at_utc": datetime.now(timezone.utc).isoformat()}
             receipt.write(canonical(result) + "\n")
             receipt.flush()
             print(f"{i}/{len(jobs)} {result['kind']} {result['status']} {result['url']}", flush=True)

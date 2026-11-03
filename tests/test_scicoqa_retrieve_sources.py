@@ -3,6 +3,7 @@ import io
 import json
 from pathlib import Path
 import sys
+import subprocess
 import tarfile
 from tempfile import TemporaryDirectory
 import unittest
@@ -13,6 +14,13 @@ from scicoqa_retrieve_sources import inventory, retrieve, sha256, validate_paylo
 
 
 class RetrievalTests(unittest.TestCase):
+    @staticmethod
+    def downloader(payload):
+        def run(command, **kwargs):
+            Path(command[command.index("--output") + 1]).write_bytes(payload)
+            return subprocess.CompletedProcess(command, 0, "", "")
+        return run
+
     def test_main_resumes_an_empty_receipt_without_network(self):
         from scicoqa_retrieve_sources import main
         with TemporaryDirectory() as tmp:
@@ -40,11 +48,10 @@ class RetrievalTests(unittest.TestCase):
 
     def test_html_is_not_accepted_as_a_paper_and_partial_is_removed(self):
         with TemporaryDirectory() as tmp:
-            response = io.BytesIO(b"<html>Access denied</html>")
-            response.headers = {}
+            payload = b"<html>Access denied</html>"
             asset = {"asset_id": "fixture", "kind": "paper", "url": "https://example.org/paper.pdf",
                      "relative_path": "assets/fixture.pdf"}
-            with patch("scicoqa_retrieve_sources.urllib.request.urlopen", return_value=response):
+            with patch("scicoqa_retrieve_sources.subprocess.run", side_effect=self.downloader(payload)):
                 result = retrieve(asset, Path(tmp), 1, 1024)
             self.assertEqual(result["status"], "FAILED")
             self.assertFalse((Path(tmp) / asset["relative_path"]).exists())
@@ -53,11 +60,10 @@ class RetrievalTests(unittest.TestCase):
     def test_pdf_receipt_hash_and_cache_tamper_detection(self):
         with TemporaryDirectory() as tmp:
             data = b"%PDF-1.4\nfixture bytes only"
-            response = io.BytesIO(data)
-            response.headers = {"Content-Length": str(len(data))}
+            payload = data
             asset = {"asset_id": "fixture", "kind": "paper", "url": "https://example.org/paper.pdf",
                      "relative_path": "assets/fixture.pdf"}
-            with patch("scicoqa_retrieve_sources.urllib.request.urlopen", return_value=response):
+            with patch("scicoqa_retrieve_sources.subprocess.run", side_effect=self.downloader(payload)):
                 result = retrieve(asset, Path(tmp), 1, 1024)
             self.assertEqual(result["status"], "RETRIEVED")
             self.assertEqual(result["sha256"], sha256(data))
@@ -68,14 +74,13 @@ class RetrievalTests(unittest.TestCase):
 
     def test_arxiv_abstract_resolves_the_same_explicit_edition(self):
         with TemporaryDirectory() as tmp:
-            response = io.BytesIO(b"%PDF-1.4\nfixture")
-            response.headers = {}
+            payload = b"%PDF-1.4\nfixture"
             asset = {"asset_id": "fixture", "kind": "paper",
                      "url": "https://arxiv.org/abs/2106.05234v5",
                      "relative_path": "assets/fixture.pdf"}
-            with patch("scicoqa_retrieve_sources.urllib.request.urlopen", return_value=response) as get:
+            with patch("scicoqa_retrieve_sources.subprocess.run", side_effect=self.downloader(payload)) as get:
                 result = retrieve(asset, Path(tmp), 1, 1024)
-            self.assertEqual(get.call_args.args[0].full_url, "https://arxiv.org/pdf/2106.05234v5.pdf")
+            self.assertEqual(get.call_args.args[0][-1], "https://arxiv.org/pdf/2106.05234v5.pdf")
             self.assertEqual(result["url"], asset["url"])
             self.assertEqual(result["status"], "RETRIEVED")
 
@@ -88,6 +93,21 @@ class RetrievalTests(unittest.TestCase):
                 archive.addfile(item, io.BytesIO(b"pass"))
             with self.assertRaises(BenchmarkError):
                 validate_payload(path, {"kind": "code", "code_commit": "a" * 40})
+
+    def test_hard_download_timeout_is_recorded_and_partial_removed(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "assets").mkdir()
+            part = root / "assets/fixture.pdf.part"
+            part.write_bytes(b"partial")
+            asset = {"asset_id": "fixture", "kind": "paper", "url": "https://example.org/paper.pdf",
+                     "relative_path": "assets/fixture.pdf"}
+            with patch("scicoqa_retrieve_sources.subprocess.run",
+                       side_effect=subprocess.TimeoutExpired("curl", 6)):
+                result = retrieve(asset, root, 1, 1024)
+            self.assertEqual(result["status"], "FAILED")
+            self.assertIn("TimeoutExpired", result["error"])
+            self.assertFalse(part.exists())
 
 
 if __name__ == "__main__":
