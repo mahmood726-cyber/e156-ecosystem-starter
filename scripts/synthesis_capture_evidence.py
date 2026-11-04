@@ -32,9 +32,10 @@ RESERVED_RIGHTS = re.compile(r"\ball[\s_-]+rights[\s_-]+reserved\b", re.IGNORECA
 CC_TERMS = re.compile(r"https?://(?:www\.)?creativecommons\.org/"
                       r"((?:licenses|publicdomain)/[a-z0-9-]+(?:/[0-9]+\.[0-9]+)?)", re.IGNORECASE)
 CC_TYPE = re.compile(r"(?:cc-?)?(by(?:-(?:nc|nd|sa))*|0|zero)(?:-?([0-9]+\.[0-9]+))?(?:-?license)?")
-RESTRICTIVE_CC_NAME = re.compile(r"\b(?:CC[\s_-]*BY[\s_-]+(?:NC|ND|SA)|"
-                                r"Creative Commons Attribution[\s_-]+(?:Non[\s_-]?Commercial|"
-                                r"No[\s_-]?Derivatives|Share[\s_-]?Alike))\b", re.IGNORECASE)
+CC_ATTRIBUTION = r"(?:CC[\s_-]*BY|Creative[\s_-]+Commons[\s_-]+Attribution)"
+CC_ATTRIBUTION_NAME = re.compile(rf"\b{CC_ATTRIBUTION}(?:[\s_-]*([0-9]+\.[0-9]+))?\b", re.IGNORECASE)
+RESTRICTIVE_CC_NAME = re.compile(rf"\b{CC_ATTRIBUTION}[\s_-]+(?:NC|ND|SA|Non[\s_-]?Commercial|"
+                                r"No[\s_-]?Derivatives|Share[\s_-]?Alike)(?![a-z0-9])", re.IGNORECASE)
 TEXT_MARKERS = {
     "sup": ("^{", "}"), "sub": ("_{", "}"), "xref": ("[", "]"), "ext-link": ("[", "]"),
     "bold": ("**", "**"), "italic": ("*", "*"),
@@ -76,9 +77,12 @@ def licence_type_agrees(declared_type, url_terms):
         return False
     normalized = re.sub(r"[\s_-]+", "-", declared_type.strip().casefold())
     code = CC_TYPE.fullmatch(normalized)
-    if not code:
+    if code:
+        family, version = code.groups()
+    elif attribution := CC_ATTRIBUTION_NAME.search(declared_type):
+        family, version = "by", attribution[1]
+    else:
         return True
-    family, version = code.groups()
     expected = "publicdomain/zero" if family in {"0", "zero"} else f"licenses/{family}"
     return url_terms.startswith(expected + "/") if version is None else url_terms == f"{expected}/{version}"
 
@@ -114,6 +118,8 @@ def license_url(permissions):
             references = [node.get(XLINK_HREF, "") for node in paragraph.iter()]
             prose_terms.update(match[1].casefold() for value in [prose, *references]
                                for match in CC_TERMS.finditer(value))
+            prose_terms.update(f"licenses/by/{match[1]}" if match[1] else "licenses/by"
+                               for match in CC_ATTRIBUTION_NAME.finditer(prose))
     if len(links) != 1:
         raise ValueError("Expected an explicit, unambiguous CC BY or CC0 license")
     licence = next(iter(links))

@@ -105,6 +105,11 @@ class CaptureEvidenceTests(unittest.TestCase):
             b'<license-p>See https://creativecommons.org/licenses/by-nc/ for the terms.</license-p></license>',
             b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/">'
             b'<license-p>Distributed under the Creative Commons Attribution-NonCommercial license.</license-p></license>',
+            b'<license xlink:href="https://creativecommons.org/publicdomain/zero/1.0/">'
+            b'<license-p>This article is distributed under the Creative Commons Attribution 4.0 International License.'
+            b'</license-p></license>',
+            b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/">'
+            b'<license-p>This article is distributed under the CC BY 3.0 licence.</license-p></license>',
         ):
             with self.subTest(invalid=invalid):
                 code, result = self.run_capture(ARTICLE.replace(declared, invalid))
@@ -117,6 +122,10 @@ class CaptureEvidenceTests(unittest.TestCase):
         )
         code, result = self.run_capture(ARTICLE.replace(declared, with_data_waiver))
         self.assertEqual((code, result["source"]["license"]), (0, "https://creativecommons.org/licenses/by/4.0/"))
+
+        public_domain = b'<license license-type="CC0" xlink:href="https://creativecommons.org/publicdomain/zero/1.0/"/>'
+        code, result = self.run_capture(ARTICLE.replace(declared, public_domain))
+        self.assertEqual((code, result["source"]["license"]), (0, "https://creativecommons.org/publicdomain/zero/1.0/"))
 
     def test_cell_markup_preserves_values_and_separation(self):
         payload = ARTICLE.replace(b"<td>Arm A</td><td>24</td>",

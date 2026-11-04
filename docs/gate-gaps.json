@@ -34,7 +34,7 @@
       "source": "scripts/synthesis_preflight.py, scripts/synthesis_capture_evidence.py, scripts/synthesis_participant_evidence.py and the restricted-count arithmetic in scripts/synthesis_v13_nma_preflight.py, with prompt v1.1 and synthetic regressions.",
       "seal": {
         "scripts/synthesis_preflight.py": "854399886f2d10df4a2968846946385fba990de18fc5eba04a49f8018f1802d2",
-        "scripts/synthesis_capture_evidence.py": "137dc3be1295111f7215e6af513898b801d96daa6e9cbbdd09277df313764af6",
+        "scripts/synthesis_capture_evidence.py": "2e10e84259be2a2bf85b7b8071e5b3018993a86dbd1ae3a87e6d1a08940b3e9e",
         "scripts/synthesis_participant_evidence.py": "29ff524e01fca60e448cda81c8d4aaa0d977db2ecb51c7533799586691138c32",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605"
       }
