@@ -222,7 +222,7 @@ Capture failures and identifier or version mismatches hold the intake and retain
 
 Run `python -B scripts/synthesis_capture_evidence.py PMC10070245 --doi 10.1038/s41598-023-32272-6` to fetch a public JATS record through [NCBI E-Utilities](https://pmc.ncbi.nlm.nih.gov/tools/developers/). Add `--xml path/to/response.xml` to replay a saved PMC response offline. The command emits JSON to standard output and returns exit code 2 with a `HOLD` when identity, version, licence, or the response cannot be verified.
 
-The capture records the PMC version, DOI, declared CC BY or CC0 licence, and SHA-256 of the exact input bytes. It accepts the licence URL from the JATS licence element or its NISO licence reference. Live capture stays on the HTTPS NCBI EFetch origin. Table evidence preserves the XML order, cell spans, line-break separation and subscript or superscript notation. Images and unsupported table formats are marked for manual review. The receipt inventories links to supplements and corrections for follow-up.
+The capture records the PMC version, DOI, declared CC BY or CC0 licence, and SHA-256 of the exact input bytes. It accepts the licence URL from the JATS licence element or its NISO licence reference. Dated licence references require manual review. Live capture stays on the HTTPS NCBI EFetch origin. Table evidence preserves the XML order, cell spans, reference markers, line-break separation and subscript or superscript notation. Images and unsupported table markup are marked for manual review. The receipt inventories links to supplements and corrections for follow-up.
 
 | Fixed contract | Derived from each public source |
 |---|---|

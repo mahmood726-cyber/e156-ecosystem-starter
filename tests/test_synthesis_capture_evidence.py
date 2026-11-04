@@ -101,6 +101,32 @@ class CaptureEvidenceTests(unittest.TestCase):
         cells = result["tables"][0]["rows"][1]["cells"]
         self.assertEqual([cell["text"] for cell in cells], ["10^{5}", "10 20"])
 
+    def test_numeric_reference_stays_separate_from_the_value(self):
+        payload = ARTICLE.replace(b"<td>24</td>", b'<td>10<xref ref-type="table-fn" rid="fn1">1</xref></td>')
+        code, result = self.run_capture(payload)
+        self.assertEqual(code, 0)
+        self.assertEqual(result["tables"][0]["rows"][1]["cells"][1]["text"], "10[1]")
+
+    def test_graphic_formula_requires_manual_review(self):
+        payload = ARTICLE.replace(
+            b"<td>24</td>",
+            b'<td>10<inline-formula><alternatives><graphic xlink:href="formula.png"/></alternatives></inline-formula>20</td>',
+        )
+        code, result = self.run_capture(payload)
+        self.assertEqual(code, 0)
+        self.assertEqual(result["tables"][0]["status"], "MANUAL_REVIEW")
+        self.assertNotIn("rows", result["tables"][0])
+
+    def test_dated_licence_does_not_establish_applicability(self):
+        payload = ARTICLE.replace(
+            b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/"/>',
+            b'<license><license_ref xmlns="http://www.niso.org/schemas/ali/1.0/" start_date="9999-01-01">'
+            b'https://creativecommons.org/licenses/by/4.0/</license_ref></license>',
+        )
+        code, result = self.run_capture(payload)
+        self.assertEqual((code, result["status"]), (2, "HOLD"))
+        self.assertIn("Dated", result["reason"])
+
     def test_redirect_and_unexpected_response_origin_hold(self):
         handler = capture.PmcRedirectHandler()
         for target in ("https://example.invalid/", "http://eutils.ncbi.nlm.nih.gov/"):

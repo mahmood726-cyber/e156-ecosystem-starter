@@ -26,18 +26,24 @@ XLINK_HREF = "{http://www.w3.org/1999/xlink}href"
 ALI_LICENSE_REF = "{http://www.niso.org/schemas/ali/1.0/}license_ref"
 CC_LINK = re.compile(r"https?://creativecommons\.org/((?:licenses|publicdomain)/[^?#\s]+)")
 OPEN_LICENSE = re.compile(r"(?:licenses/by|publicdomain/zero)/[0-9]+\.[0-9]+")
+TABLE_MARKUP = frozenset({
+    "table", "caption", "colgroup", "col", "thead", "tbody", "tfoot", "tr", "th", "td",
+    "bold", "italic", "monospace", "overline", "sc", "strike", "styled-content", "underline",
+    "sub", "sup", "break", "p", "list", "list-item", "label", "named-content", "xref", "ext-link",
+})
+TEXT_MARKERS = {"sup": ("^{", "}"), "sub": ("_{", "}"), "xref": ("[", "]")}
 
 
 def text(node):
     def fragments(element):
-        marker = {"sup": "^{", "sub": "_{"}.get(element.tag)
         separator = " " if element.tag in {"break", "p", "list-item"} else ""
-        yield marker or separator
+        opening, closing = TEXT_MARKERS.get(element.tag, (separator, separator))
+        yield opening
         yield element.text or ""
         for child in element:
             yield from fragments(child)
             yield child.tail or ""
-        yield "}" if marker else separator
+        yield closing
 
     return " ".join("".join(fragments(node)).split()) if node is not None else ""
 
@@ -52,7 +58,10 @@ def article_id(meta, kind):
 def license_url(meta):
     links = set()
     for license_node in meta.findall("./permissions/license"):
-        declarations = [text(ref) for ref in license_node.findall(ALI_LICENSE_REF)]
+        references = license_node.findall(ALI_LICENSE_REF)
+        if any(ref.get("start_date") is not None for ref in references):
+            raise ValueError("Dated PMC licence declarations require manual review")
+        declarations = [text(ref) for ref in references]
         if license_node.get(XLINK_HREF) is not None:
             declarations.append(license_node.get(XLINK_HREF))
         if not declarations or re.search(r"\ball[\s_-]+rights[\s_-]+reserved\b",
@@ -80,10 +89,7 @@ def table_evidence(body):
             "footnotes": text(wrapper.find("table-wrap-foot")),
             "status": "MANUAL_REVIEW",
         }
-        if len(tables) == 1 and not any(
-            node.tag.rsplit("}", 1)[-1] in {"math", "tex-math", "inline-graphic"}
-            for node in tables[0].iter()
-        ):
+        if len(tables) == 1 and all(node.tag in TABLE_MARKUP for node in tables[0].iter()):
             rows = [
                 {"group": group.tag, "cells": [
                     {"kind": cell.tag, "text": text(cell), "rowspan": cell.get("rowspan", "1"),
