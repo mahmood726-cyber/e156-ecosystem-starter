@@ -23,6 +23,18 @@ ESTIMATOR_FIELDS = (
 # missingness, censoring, variance and test identities can legitimately change
 # published outputs. A caller-selected field subset can never downgrade this gate.
 CROSS_DOCUMENT_CORE_FIELDS = ESTIMATOR_FIELDS
+RESULT_IDENTITY_FIELDS = (
+    "source_result_id", "data_version", "intervention", "comparator",
+    "denominator_basis", "component",
+)
+SOURCE_ASSIGNMENT_FIELDS = frozenset((
+    *ESTIMATOR_FIELDS, *RESULT_IDENTITY_FIELDS, "study_design", "cohort_label",
+    "value_unit", "value_representation",
+))
+MISSING_IDENTITIES = frozenset({
+    "", "unknown", "not_enough_info", "source_limited", "not_reported",
+    "not_available", "unavailable", "n/a", "na", "unclear", "tbd",
+})
 SEVERITIES = {"S1", "S2", "S3", "S4", "S5"}
 
 
@@ -65,6 +77,13 @@ def nonnegative_count(value: Any) -> int:
     return int(n)
 
 
+def _missing_identity(value: Any) -> bool:
+    if not isinstance(value, str):
+        return True
+    label = "_".join(value.strip().casefold().replace("-", " ").split())
+    return label in MISSING_IDENTITIES
+
+
 def compatible(left: Mapping, right: Mapping, fields: Sequence[str] = ESTIMATOR_FIELDS) -> dict:
     """Unknown or differing analysis definitions cannot support a numerical allegation."""
     if not isinstance(left, Mapping) or not isinstance(right, Mapping):
@@ -74,19 +93,7 @@ def compatible(left: Mapping, right: Mapping, fields: Sequence[str] = ESTIMATOR_
     # Source-provided "UNKNOWN " / "not reported" must not match another
     # unknown value just because both are textually identical. Required
     # estimator fields must contain meaningful *textual* identities.
-    missing_labels = {
-        "", "unknown", "not_enough_info", "source_limited",
-        "not_reported", "not_available", "unavailable",
-        "n/a", "na", "unclear", "tbd",
-    }
-
-    def missing(value: Any) -> bool:
-        if not isinstance(value, str):
-            return True
-        label = "_".join(value.strip().casefold().replace("-", " ").split())
-        return label in missing_labels
-
-    unknown = [k for k in fields if missing(left.get(k)) or missing(right.get(k))]
+    unknown = [k for k in fields if _missing_identity(left.get(k)) or _missing_identity(right.get(k))]
     if unknown:
         return result("NOT_COMPARABLE", "estimator signature incomplete", fields=unknown)
     mismatch = [k for k in fields if left[k] != right[k]]
@@ -389,6 +396,32 @@ def statistic_identity(reported_source: str, expected_source: str, *,
                   test_definition_locator=test_definition_locator)
 
 
+def source_assignment(field: str, reported: Mapping, source: Mapping, *,
+                      same_assignment_verified: bool = False) -> dict:
+    """Check labels independently of the arithmetic they accompany.
+
+    Both records need a caller-verified canonical value, version and locator.
+    Attest that the report is making the same assignment documented by the
+    reference source, e.g. the comparator for a particular study result.
+    Different legitimate analyses or unverified aliases cannot support REVIEW.
+    """
+    if (not isinstance(field, str) or field not in SOURCE_ASSIGNMENT_FIELDS
+            or not isinstance(reported, Mapping) or not isinstance(source, Mapping)):
+        return result("INVALID", "supported field and two evidence mappings required")
+    if same_assignment_verified is not True:
+        return result("NOT_COMPARABLE", "the reported assignment is not linked to the reference source")
+    for record in (reported, source):
+        if record.get("verified") is not True or any(
+                _missing_identity(record.get(key)) for key in ("value", "version", "locator")):
+            return result("NOT_COMPARABLE", "source assignment values, versions or locators are unverified")
+    if reported["value"].strip() == source["value"].strip():
+        return result("CONSISTENT", "declared source assignment agrees")
+    return result("REVIEW", "reported assignment conflicts with the linked source assignment",
+                  field=field, reported_value=reported["value"], source_value=source["value"],
+                  reported_version=reported["version"], source_version=source["version"],
+                  reported_locator=reported["locator"], source_locator=source["locator"])
+
+
 def factor_shift(original: Any, observed: Any, *, verified_r_factor_conversion: bool,
                  paper_claim_code_conflict_verified: bool = False,
                  paper_source_locator: str | None = None,
@@ -443,6 +476,9 @@ def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
     estimand, model, adjustment, multiplicity, missingness, censoring,
     variance-method or test-statistic checks. Explicit, source-attested
     numeric unit and representation must also match; no automatic conversion.
+    When either signature includes result_identity, both sides must declare
+    the same verified source result, input version, ordered arms, denominator
+    basis and component. Legacy signatures keep the estimator-only path.
     These attestations are not independently verified by this software.
     Provenance and current-source identity still require external inspection;
     REVIEW is never a paper verdict. Printed decimal estimates can differ
@@ -458,6 +494,18 @@ def cross_document(left: Any, right: Any, left_sig: Mapping, right_sig: Mapping,
     match = compatible(left_sig, right_sig, fields)
     if match["status"] != "MATCHED":
         return match
+    if "result_identity" in left_sig or "result_identity" in right_sig:
+        left_identity, right_identity = left_sig.get("result_identity"), right_sig.get("result_identity")
+        if any(not isinstance(identity, Mapping) or identity.get("verified") is not True
+               for identity in (left_identity, right_identity)):
+            return result("NOT_COMPARABLE", "both source result identities must be verified")
+        unknown = [key for key in RESULT_IDENTITY_FIELDS
+                   if _missing_identity(left_identity.get(key)) or _missing_identity(right_identity.get(key))]
+        if unknown:
+            return result("NOT_COMPARABLE", "source result identity incomplete", fields=unknown)
+        different = [key for key in RESULT_IDENTITY_FIELDS if left_identity[key] != right_identity[key]]
+        if different:
+            return result("NOT_COMPARABLE", "different source result identities", fields=different)
     # Source-matched estimands can still contain physically equivalent numbers
     # in different units (mg vs micrograms) or different representations
     # (raw ratio vs log ratio, proportion vs percentage). No implicit
@@ -569,17 +617,18 @@ def gate(record: Mapping) -> dict:
         return result("INVALID", "candidate must be a mapping")
     if record.get("severity") not in SEVERITIES or version(record.get("version", "UNKNOWN"))["status"] != "CURRENT":
         return result("HOLD", "severity or current publication version not established")
-    if record.get("source_access") != "ACCESSIBLE" or not record.get("source_locator"):
+    if record.get("source_access") != "ACCESSIBLE" or _missing_identity(record.get("source_locator")):
         return result("HOLD", "source access or exact locator incomplete")
     # Source support is version-scoped: a valid contradiction in an earlier
     # edition must not be flagged against a subsequently corrected article.
     correction = record.get("current_correction_status")
     if correction == "RESOLVED_IN_PUBLISHED_VERSION":
         if (record.get("correction_source_verified") is True
-                and isinstance(record.get("correction_locator"), str)
-                and record["correction_locator"].strip()):
+                and record.get("corrected_claim_verified") is True
+                and not _missing_identity(record.get("correction_locator"))
+                and not _missing_identity(record.get("corrected_claim_locator"))):
             return result("RECONCILED", "verified published correction resolves prior claim")
-        return result("HOLD", "published correction lacks verified exact locator")
+        return result("HOLD", "correction or its resolution of the exact claim lacks verified evidence")
     if record.get("current_claim_verified") is not True:
         return result("HOLD", "exact disputed claim not verified in current published version")
     if correction not in {"NO_RELEVANT_CORRECTION", "CORRECTION_REVIEWED_CLAIM_PERSISTS"}:

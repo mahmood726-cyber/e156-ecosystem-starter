@@ -1,7 +1,7 @@
 """Conservative NMA/IPD preflight; no pooled-effect model is fitted here.
 
-Flags potential overlap or ignored multi-arm dependence only with caller-attested
-source identity and published handling. These are review candidates, not errors.
+Flags potential overlap, ignored multi-arm dependence or inconsistent subset
+accounting only with caller-attested source evidence. These are review candidates.
 A complete replay manifest is a readiness check, not statistical reproduction.
 """
 from __future__ import annotations
@@ -92,6 +92,43 @@ def shared_control_dependence(comparisons: Sequence[Mapping]) -> dict:
         "status": "REVIEW_CANDIDATE" if issues else "NO_FLAG",
         "possible_shared_control_groups": issues,
         "warning": "A shared control is legitimate when covariance is correctly accounted for",
+    }
+
+
+def restricted_analysis_accounting(record: Mapping) -> dict:
+    """Compare published counts for an explicitly restricted sensitivity analysis.
+
+    A different population definition or an analysis that adds or substitutes
+    studies can legitimately report more participants. A review candidate does
+    not identify which count is wrong or establish the cause of the mismatch.
+    """
+    if not isinstance(record, Mapping):
+        return {"status": "INVALID", "reason": "record must be a mapping"}
+    locations = ("source_version", "restriction_locator", "primary_locator", "restricted_locator")
+    missing = {"unknown", "not enough info", "source limited", "not reported", "not available",
+               "unavailable", "n/a", "na", "unclear", "tbd"}
+    if (not _named(record, locations)
+            or any(" ".join(record[key].casefold().replace("-", " ").replace("_", " ").split()) in missing
+                   for key in locations)
+            or record.get("same_source_version_verified") is not True):
+        return {"status": "HOLD", "reason": "exact source version and analysis locations are required"}
+    if record.get("relationship") == "NOT_A_RESTRICTION":
+        return {"status": "NOT_COMPARABLE", "reason": "the second analysis is not a subset"}
+    if record.get("relationship") != "RESTRICTION":
+        return {"status": "HOLD", "reason": "the paper must explicitly describe a restriction"}
+    if record.get("same_participant_count_basis_verified") is not True:
+        return {"status": "HOLD", "reason": "participant-count definitions must be verified as comparable"}
+    primary = record.get("primary_participants")
+    restricted = record.get("restricted_participants")
+    if any(type(n) is not int or n < 0 for n in (primary, restricted)):
+        return {"status": "HOLD", "reason": "exact nonnegative integer participant counts are required"}
+    if restricted <= primary:
+        return {"status": "NO_FLAG", "reason": "the restriction does not report more participants"}
+    return {
+        "status": "REVIEW_CANDIDATE",
+        "reason": "the reported restriction has more participants than its primary analysis",
+        "participant_excess": restricted - primary,
+        **{name: record[name] for name in locations},
     }
 
 

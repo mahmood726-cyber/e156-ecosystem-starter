@@ -143,6 +143,56 @@ class SharedControlTests(unittest.TestCase):
         self.assertEqual(result["status"], "HOLD")
 
 
+class RestrictedAccountingTests(unittest.TestCase):
+    def setUp(self):
+        self.record = {
+            "source_version": "published-v1", "restriction_locator": "Methods, paragraph 2",
+            "primary_locator": "Table 2, primary N", "restricted_locator": "Table 2, sensitivity N",
+            "same_source_version_verified": True, "relationship": "RESTRICTION",
+            "same_participant_count_basis_verified": True,
+            "primary_participants": 100, "restricted_participants": 120,
+        }
+
+    def test_increased_count_returns_review_candidate_and_evidence(self):
+        result = m.restricted_analysis_accounting(self.record)
+        self.assertEqual(result["status"], "REVIEW_CANDIDATE")
+        self.assertEqual(result["participant_excess"], 20)
+        for locator in ("restriction_locator", "primary_locator", "restricted_locator"):
+            self.assertEqual(result[locator], self.record[locator])
+
+    def test_equal_or_smaller_count_does_not_flag(self):
+        for count in (0, 99, 100):
+            with self.subTest(count=count):
+                row = dict(self.record, restricted_participants=count)
+                self.assertEqual(m.restricted_analysis_accounting(row)["status"], "NO_FLAG")
+
+    def test_expanded_analysis_is_not_comparable(self):
+        row = dict(self.record, relationship="NOT_A_RESTRICTION")
+        self.assertEqual(m.restricted_analysis_accounting(row)["status"], "NOT_COMPARABLE")
+
+    def test_missing_or_mismatched_context_holds(self):
+        for key, value in (("same_source_version_verified", False),
+                           ("same_participant_count_basis_verified", False),
+                           ("relationship", "UNKNOWN"), ("restriction_locator", ""),
+                           ("primary_locator", ""), ("restricted_locator", "")):
+            with self.subTest(key=key):
+                row = dict(self.record, **{key: value})
+                self.assertEqual(m.restricted_analysis_accounting(row)["status"], "HOLD")
+
+    def test_non_integer_or_negative_counts_hold(self):
+        for count in (True, 120.0, "120", -1, None):
+            with self.subTest(count=count):
+                row = dict(self.record, restricted_participants=count)
+                self.assertEqual(m.restricted_analysis_accounting(row)["status"], "HOLD")
+
+    def test_placeholder_provenance_holds_even_with_attestations(self):
+        for key in ("source_version", "restriction_locator", "primary_locator", "restricted_locator"):
+            for marker in ("UNKNOWN ", "not reported", "N/A"):
+                with self.subTest(key=key, marker=marker):
+                    row = dict(self.record, **{key: marker})
+                    self.assertEqual(m.restricted_analysis_accounting(row)["status"], "HOLD")
+
+
 class ReplayReadinessTests(unittest.TestCase):
     def test_complete_receipts_not_a_replay_verdict(self):
         result = m.replay_readiness(replay())
