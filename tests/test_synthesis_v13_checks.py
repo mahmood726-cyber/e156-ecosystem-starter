@@ -37,6 +37,78 @@ def candidate(**overrides):
     return base
 
 
+class SourceIdentityTests(unittest.TestCase):
+    def setUp(self):
+        self.identity = {
+            "verified": True, "source_result_id": "synthetic-table/pooled-row",
+            "data_version": "analysis-v2", "intervention": "arm-a", "comparator": "arm-b",
+            "denominator_basis": "analysed participants", "component": "upper bound",
+        }
+        self.reported = {"value": "active comparator", "version": "report-v1",
+                         "locator": "Methods, design sentence", "verified": True}
+        self.source = {"value": "non-user comparator", "version": "source-v2",
+                       "locator": "Cohort definition, reference group", "verified": True}
+
+    def test_matching_result_identity_uses_existing_numeric_gate(self):
+        signature = sig(result_identity=self.identity)
+        self.assertEqual(m.cross_document(7, 7, signature, signature, ("endpoint",))["status"], "CONSISTENT")
+        self.assertEqual(m.cross_document(7, 8, signature, signature, ("endpoint",))["status"], "REVIEW")
+
+    def test_distinct_result_context_abstains_even_when_estimator_matches(self):
+        alternatives = {"source_result_id": "synthetic-table/site-row", "data_version": "analysis-v1",
+                        "intervention": "arm-b", "comparator": "arm-a",
+                        "denominator_basis": "adverse events", "component": "lower bound"}
+        for field, value in alternatives.items():
+            with self.subTest(field=field):
+                left = sig(result_identity=self.identity)
+                right = sig(result_identity={**self.identity, field: value})
+                out = m.cross_document(7, 8, left, right, ("endpoint",))
+                self.assertEqual(out["status"], "NOT_COMPARABLE")
+                self.assertEqual(out["fields"], [field])
+
+    def test_matching_unknown_identity_fields_do_not_establish_same_result(self):
+        signature = sig(result_identity={**self.identity, "source_result_id": "not reported"})
+        out = m.cross_document(7, 7, signature, signature, ("endpoint",))
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+        self.assertEqual(out["fields"], ["source_result_id"])
+
+    def test_opt_in_cannot_be_one_sided_or_unverified(self):
+        for record in (None, {}, {**self.identity, "verified": False}):
+            with self.subTest(record=record):
+                self.assertEqual(m.cross_document(
+                    7, 8, sig(result_identity=self.identity), sig(result_identity=record), ("endpoint",)
+                )["status"], "NOT_COMPARABLE")
+        self.assertEqual(m.cross_document(
+            7, 8, sig(result_identity=self.identity), sig(), ("endpoint",)
+        )["status"], "NOT_COMPARABLE")
+
+    def test_source_attested_same_assignment_can_flag_structural_mismatch(self):
+        for field in ("comparator", "cohort_label", "test_statistic_identity"):
+            with self.subTest(field=field):
+                out = m.source_assignment(field, self.reported, self.source, same_assignment_verified=True)
+                self.assertEqual(out["status"], "REVIEW")
+                self.assertEqual(out["field"], field)
+                self.assertEqual(out["source_locator"], self.source["locator"])
+                self.assertEqual(out["reported_version"], self.reported["version"])
+
+    def test_different_analyses_do_not_establish_wrong_assignment(self):
+        out = m.source_assignment("comparator", self.reported, self.source)
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_verified_correct_assignment_is_consistent(self):
+        reported = {**self.reported, "value": self.source["value"]}
+        out = m.source_assignment("comparator", reported, self.source, same_assignment_verified=True)
+        self.assertEqual(out["status"], "CONSISTENT")
+
+    def test_structural_comparison_holds_without_complete_evidence(self):
+        for field, value in (("verified", False), ("locator", " "), ("version", "unknown"),
+                             ("value", "not reported")):
+            with self.subTest(field=field):
+                out = m.source_assignment("comparator", self.reported, {**self.source, field: value},
+                                          same_assignment_verified=True)
+                self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+
 class EstimatorTests(unittest.TestCase):
     def test_full_match(self):
         self.assertEqual(m.compatible(sig(), sig())["status"], "MATCHED")
@@ -889,6 +961,8 @@ class GovernanceTests(unittest.TestCase):
             version="CORRECTED_LATEST", current_claim_verified=False,
             current_correction_status="RESOLVED_IN_PUBLISHED_VERSION",
             correction_locator="Current VoR correction notice, Table 2, test DOI",
+            corrected_claim_locator="Replacement Table 2, affected row",
+            corrected_claim_verified=True,
             correction_source_verified=True))
         self.assertEqual(out["status"], "RECONCILED")
 
@@ -917,6 +991,16 @@ class GovernanceTests(unittest.TestCase):
             version="CORRECTED_LATEST", current_claim_verified=False,
             current_correction_status="RESOLVED_IN_PUBLISHED_VERSION",
             correction_locator="", correction_source_verified=True))["status"], "HOLD")
+
+    def test_linked_public_notice_alone_cannot_close_the_disputed_claim(self):
+        for missing in ({}, {"corrected_claim_verified": True},
+                        {"corrected_claim_locator": "Replacement Table 2", "corrected_claim_verified": False}):
+            with self.subTest(missing=missing):
+                self.assertEqual(m.gate(candidate(
+                    version="CORRECTED_LATEST", current_claim_verified=False,
+                    current_correction_status="RESOLVED_IN_PUBLISHED_VERSION",
+                    correction_locator="Verified notice for the paper", correction_source_verified=True,
+                    **missing))["status"], "HOLD")
 
     def test_group_one_root_multiple_outputs(self):
         rows = [{"claim_id": "A", "root_cause_id": "R1"}, {"claim_id": "B", "root_cause_id": "R1"},
