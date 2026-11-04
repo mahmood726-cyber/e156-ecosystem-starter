@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synthesis Preflight v1.1: local, no-network audit packet validator.
+"""Synthesis Preflight v1.1: audit packet validator with opt-in PMC capture.
 
 This checks the integrity of reported evidence and runs modest deterministic
 consistency tests; it neither uses an LLM nor establishes scientific truth.
@@ -105,7 +105,8 @@ def _check_one(check: dict) -> dict:
     return result
 
 
-def review_packet(packet: dict, prompt_sha256: str, input_sha256: str) -> dict:
+def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
+                  pmc_live: bool = False, pmc_xml: Path | None = None) -> dict:
     problems: list[dict] = []
     def warn(code: str, message: str, claim_id: str | None = None) -> None:
         problems.append({"code": code, "claim_id": claim_id, "detail": message})
@@ -265,6 +266,12 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str) -> dict:
         "ORPHAN_CHECK", "DUPLICATE_CHECK_ID", "INVALID_CHECK", "SOURCES_NOT_LIST", "BAD_SOURCE_IDS",
     }
     intake_valid = not any(p["code"] in structural_faults for p in problems)
+    pmc_evidence = None
+    if isinstance(doc, dict) and "pmcid" in doc:
+        pmc_evidence = capture_packet_pmc(doc, intake_valid, pmc_live, pmc_xml)
+        if pmc_evidence["status"] != "CAPTURED":
+            warn("PMC_EVIDENCE_HOLD", pmc_evidence["reason"])
+            intake_valid = False
     if not intake_valid:
         # Invalid input cannot emit an actionable positive OR definitive negative.
         # Keep original proposed dispositions and all evidence for repair/audit.
@@ -282,7 +289,25 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str) -> dict:
             "hold_count":sum(v["effective"]=="HOLD" for v in views),
             "reconciled_count":sum(v["effective"]=="RECONCILED" for v in views),
             "top_five":flag_summary,"ledger":views,"checks":check_results,"problems":problems,
-            "disclaimer":"Structural verification only; no independent scientific accuracy measured. No external actions performed."}
+            **({"pmc_evidence": pmc_evidence} if pmc_evidence is not None else {}),
+            "disclaimer":"Structural verification only; no independent scientific accuracy measured."
+                         + (" No outreach performed." if pmc_evidence else " No external actions performed.")}
+
+
+def capture_packet_pmc(document, intake_valid, live, xml):
+    if not intake_valid:
+        return {"status": "HOLD", "reason": "PMC capture requires a structurally valid packet"}
+    if (live is True) == (xml is not None):
+        return {"status": "HOLD", "reason": "Choose one of --pmc-live or --pmc-xml for a PMC packet"}
+    doi = document.get("identifier")
+    if not isinstance(doi, str) or not doi.strip().startswith("10."):
+        return {"status": "HOLD", "reason": "PMC intake requires a bare DOI"}
+    if __package__:
+        from scripts.synthesis_capture_evidence import retrieve_pmc_evidence
+    else:
+        from synthesis_capture_evidence import retrieve_pmc_evidence
+
+    return retrieve_pmc_evidence(document["pmcid"], doi=doi, version=document["version"], xml=xml)
 
 
 def _markdown(result: dict) -> str:
@@ -296,6 +321,13 @@ def _markdown(result: dict) -> str:
     for v in result["top_five"]:
         out.append("| "+" | ".join(esc(v.get(k)) for k in ("id","priority","locator","support","requested"))+" |")
     if not result["top_five"]:out.append("| — | — | — | — | No source-backed discrepancy established |")
+    evidence = result.get("pmc_evidence")
+    if evidence and evidence["status"] == "CAPTURED":
+        source = evidence["source"]
+        out.extend(["", "## PMC source evidence", "",
+                    f"Version `{source['version']}`, DOI `{source['doi']}`.",
+                    f"Snapshot SHA-256 `{source['snapshot_sha256']}`.",
+                    "Table evidence and linked documents are in the JSON receipt."])
     out.extend(["", "## Complete, unfiltered claim ledger", "", "| Claim | Priority | Requested | Effective | Support | Maturity |", "|---|---|---|---|---|---|"])
     for v in result["ledger"]:
         out.append("| "+" | ".join(esc(v.get(k)) for k in ("id","priority","requested","effective","support","maturity"))+" |")
@@ -315,10 +347,17 @@ def main(argv: list[str] | None=None) -> int:
     p.add_argument("--prompt",type=Path,required=True,help="Exact dated prompt text; SHA verified")
     p.add_argument("--packet",type=Path,required=True)
     p.add_argument("--output-dir",type=Path,required=True)
+    pmc_mode = p.add_mutually_exclusive_group()
+    pmc_mode.add_argument("--pmc-live", action="store_true", help="Allow live PMC retrieval for a PMC packet")
+    pmc_mode.add_argument("--pmc-xml", type=Path, help="Replay saved PMC XML for a packet with document.pmcid")
     args=p.parse_args(argv)
     raw=args.packet.read_bytes()
     packet=json.loads(raw.decode("utf-8"))
-    result=review_packet(packet,digest_bytes(args.prompt.read_bytes()),digest_bytes(raw))
+    document = packet.get("document") if isinstance(packet, dict) else None
+    if (args.pmc_live or args.pmc_xml is not None) and not (isinstance(document, dict) and "pmcid" in document):
+        p.error("PMC capture requires document.pmcid in the packet")
+    result=review_packet(packet,digest_bytes(args.prompt.read_bytes()),digest_bytes(raw),
+                         pmc_live=args.pmc_live,pmc_xml=args.pmc_xml)
     args.output_dir.mkdir(parents=True,exist_ok=True)
     (args.output_dir/"receipt.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     (args.output_dir/"report.md").write_text(_markdown(result),encoding="utf-8")

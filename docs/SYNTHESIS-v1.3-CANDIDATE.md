@@ -213,3 +213,17 @@ Use `source_assignment(field, reported, source, same_assignment_verified=True)` 
 The open-access development screen covered 1,000 unique notice bodies. Keyword matches informed triage and can overlap. The three paired examples above were checked at the affected passage. Synthetic tests exercise the software decisions. Independent blinded evaluation is required to measure detection performance on unseen papers.
 
 All added regressions are synthetic; do not use them to estimate real-paper performance. Preserve the Simo v0.10 frozen 36-claim/12-family cohort, the separately proposed 24-family benchmark and any other held-out manifests without modification or label leakage.
+
+## PMC evidence capture
+
+To capture evidence during [normal preflight intake](SYNTHESIS-PREFLIGHT-v1.1.md#structured-receipt-and-validator), add `document.pmcid` to the packet, use the bare DOI in `document.identifier`, and set `document.version` to the exact PMC version, such as `PMC10070245.1`. Add `--pmc-live` to the normal preflight command to fetch the XML, or `--pmc-xml path/to/response.xml` to replay a saved response. The JSON receipt stores the evidence under `pmc_evidence`. The operator chooses the capture mode.
+
+Capture failures and identifier or version mismatches hold the intake and retain the reason in the receipt. Packets without `document.pmcid` use the offline path. Claim-level source review and refutation still require explicit attestations.
+
+Run `python -B scripts/synthesis_capture_evidence.py PMC10070245 --doi 10.1038/s41598-023-32272-6` to fetch a public JATS record through [NCBI E-Utilities](https://pmc.ncbi.nlm.nih.gov/tools/developers/). Add `--xml path/to/response.xml` to replay a saved PMC response offline. The command emits JSON to standard output and returns exit code 2 with a `HOLD` when identity, version, licence, or the response cannot be verified.
+
+The capture records the PMC version, DOI, declared CC BY or CC0 licence, and SHA-256 of the exact input bytes. It accepts the licence URL from the JATS licence element or its NISO licence reference. Dated licence references require manual review. Live capture stays on the HTTPS NCBI EFetch origin. Table evidence preserves the XML order, cell spans, reference markers, line-break separation and subscript or superscript notation. Images and unsupported table markup are marked for manual review. The receipt inventories links to supplements and corrections for follow-up.
+
+| Fixed contract | Derived from each public source |
+|---|---|
+| NCBI endpoint, supported licences and XML structure, maximum payload | Identifiers, version, licence, digest, source locations, table cells and linked documents |
