@@ -6,32 +6,35 @@
       "id": ".github/workflows/synthesis-preflight.yml#jobs.offline-regression",
       "kind": "ci-job",
       "name": "Synthesis preflight synthetic regression (development only)",
-      "stops": "The Ubuntu regression job fails when a named synthetic preflight unit assertion fails or when the example receipt lacks the expected prompt binding, two-claim intake and conservative REVIEW/NOT_COMPARABLE statuses.",
+      "stops": "The Ubuntu regression job fails when a synthetic preflight or PMC capture assertion fails, including capture failure and version mismatch controls, or when the offline example receipt loses its expected prompt binding or review statuses.",
       "would_not_stop": [
-        "Incorrect extraction, source identity, paper version or source-to-claim interpretation: its example packet and tests use synthetic caller-supplied evidence.",
+        "Live PMC outages and unexpected changes in real XML: the job exercises synthetic archive replay and an offline packet.",
+        "Wrong interpretation of a real source, table or correction: the synthetic cases cover specific structural checks.",
         "A false positive or missed substantive error in an unseen published paper: no masked real-paper evaluation or human adjudication is performed.",
         "Failures in the repository's other Python, Windows, Bash, link, hash or Sentinel jobs: this narrow workflow is not the full repository CI.",
         "An altered prompt and packet that are both consistently rehashed: the receipt checks internal binding, not independent scientific provenance."
       ],
-      "source": ".github/workflows/synthesis-preflight.yml offline-regression job; tests/test_synthesis_preflight.py and examples/synthetic_packet.json.",
+      "source": ".github/workflows/synthesis-preflight.yml offline-regression job, both Synthesis preflight and capture tests, and examples/synthetic_packet.json.",
       "seal": {
-        ".github/workflows/synthesis-preflight.yml#jobs.offline-regression": "39d97dcc5a14b199f9561c344f2594440f365c4ebc43ff1c8bcfef3bad6ba942"
+        ".github/workflows/synthesis-preflight.yml#jobs.offline-regression": "ad3e6c9c93970bbc993fa58050ae578c38884af3e63c3a21cace9777df4cb06d"
       }
     },
     {
       "id": "scripts/synthesis_preflight.py",
       "kind": "script",
       "name": "Synthesis local packet validator (experimental)",
-      "stops": "Malformed or incomplete v1.1 claim/source packets, unbound prompt SHA-256, specified missing provenance fields, and bounded arithmetic inconsistencies under explicitly declared compatible estimator conditions; unsupported comparisons are held or NOT_COMPARABLE.",
+      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for packets opting into PMC evidence. Bounded arithmetic checks surface inconsistencies under explicitly compatible estimators.",
       "would_not_stop": [
-        "Fabricated but internally consistent source attestations: the validator has no independent retrieval or authenticity check.",
+        "Fabricated but internally consistent claim attestations or locally supplied XML: capture binds a snapshot and declared identity. Claim support and archive provenance require separate review.",
+        "An unavailable or superseded linked supplement or correction: capture inventories links for follow-up.",
         "Statistically valid alternative methods, adjusted or survival estimators, and complex meta-analysis pipelines outside its five narrow calculation kinds.",
         "Missed paper errors in unflagged claims or incorrect human interpretation of reported source text: these require separate review and held-out assessment.",
         "Incorrect human adjudication, false claims of author confirmation or bias in how papers were selected; none are adjudicated by this script."
       ],
-      "source": "scripts/synthesis_preflight.py review_packet and _check_one; prompt v1.1 and synthetic regression suite.",
+      "source": "scripts/synthesis_preflight.py and scripts/synthesis_capture_evidence.py, with prompt v1.1 and synthetic regressions.",
       "seal": {
-        "scripts/synthesis_preflight.py": "81cb4bcebbde4ca9ef7c16ccc2969bb6a217cb74fc2afd1744aea59c965c823f"
+        "scripts/synthesis_preflight.py": "c91fce7f001cf012c6ce5bf3e712fa1537202a4708830e31f72acf41211484b2",
+        "scripts/synthesis_capture_evidence.py": "6ebc843f572ca8437b2403f259750ce4bd37a29089a738fcd50e3d40de8aba1a"
       }
     },
     {
