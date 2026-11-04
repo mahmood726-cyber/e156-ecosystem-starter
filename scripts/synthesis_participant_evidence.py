@@ -11,6 +11,8 @@ else:
 
 MAX_CHECKS = 40
 COUNT = re.compile(r"(?:0|[1-9][0-9]{0,14}|[1-9][0-9]{0,2}(?:,[0-9]{3}){1,4})")
+MISSING_LABELS = {"unknown", "n/a", "na", "not reported", "unclear", "not available",
+                  "unavailable", "tbd", "not enough info", "source limited"}
 
 
 def count_quotes(checks, *, corrections=False):
@@ -55,10 +57,11 @@ def _count_cell(evidence, ref):
 
 def _label(spec, key):
     value = spec.get(key)
-    if (not isinstance(value, str) or not value.strip() or len(value) > 200
-            or value.strip().casefold() in {"unknown", "n/a", "na", "not reported", "unclear"}):
+    label = " ".join(value.split()) if isinstance(value, str) else ""
+    normalized = " ".join(label.casefold().replace("-", " ").replace("_", " ").split())
+    if not label or len(value) > 200 or normalized in MISSING_LABELS:
         raise ValueError(f"An explicit reviewer-verified {key} is required")
-    return " ".join(value.split())
+    return label
 
 
 def _restricted(evidence, spec, context):
@@ -174,8 +177,10 @@ def participant_count_finding(claim_id, spec, evidence):
             finding.update(_unique_arms(evidence, spec))
         else:
             raise ValueError("Unknown participant count check kind")
-        if finding["status"] == "NO_FLAG" and correction.get("status") == "HOLD":
-            finding.update(status="HOLD", comparison_status="NO_FLAG", reason="Requested correction evidence is unresolved")
+        if finding["status"] == "NO_FLAG" and correction:
+            reason = ("Requested correction evidence is unresolved" if correction["status"] == "HOLD"
+                      else "A source-bound correction requires review of the original-only comparison")
+            finding.update(status="HOLD", comparison_status="NO_FLAG", reason=reason)
     except ValueError as exc:
         finding.update(status="HOLD", reason=str(exc))
     return finding

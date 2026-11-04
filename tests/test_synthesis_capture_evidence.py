@@ -92,10 +92,23 @@ class CaptureEvidenceTests(unittest.TestCase):
         for invalid in (
             b'<license><license-p>All rights reserved. See <ext-link xlink:href="https://creativecommons.org/licenses/by/4.0/">another licence</ext-link>.</license-p></license>',
             b'<license license-type="all-rights-reserved" xlink:href="https://creativecommons.org/licenses/by/4.0/"/>',
+            b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/">'
+            b'<license-p><ext-link xlink:href="https://creativecommons.org/licenses/by-nc/4.0/">'
+            b'Terms for this work</ext-link>.</license-p></license>',
+            b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/">'
+            b'<license-p>Distributed under the Creative Commons Attribution-NonCommercial license.</license-p></license>',
         ):
             with self.subTest(invalid=invalid):
                 code, result = self.run_capture(ARTICLE.replace(declared, invalid))
                 self.assertEqual((code, result["status"]), (2, "HOLD"))
+
+        with_data_waiver = (
+            b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/">'
+            b'<license-p>The waiver at <ext-link xlink:href="https://creativecommons.org/publicdomain/zero/1.0/"/>'
+            b' applies to the data.</license-p></license>'
+        )
+        code, result = self.run_capture(ARTICLE.replace(declared, with_data_waiver))
+        self.assertEqual((code, result["source"]["license"]), (0, "https://creativecommons.org/licenses/by/4.0/"))
 
     def test_cell_markup_preserves_values_and_separation(self):
         payload = ARTICLE.replace(b"<td>Arm A</td><td>24</td>",
@@ -238,6 +251,12 @@ class CaptureEvidenceTests(unittest.TestCase):
         self.assertEqual(result["quote_locations"]["Counts by arm."], ["body p 1", "body p 2"])
         self.assertEqual(result["quote_locations"]["Trial counts"], ["body table-wrap 1 caption"])
 
+        incomplete = ARTICLE.replace(b"<td>Arm A</td><td>24</td>",
+                                     b"<td><p>Counts by arm.</p></td><td><strike>24</strike></td>")
+        result = capture.capture(incomplete, "PMC123", quotes=("Counts by arm.",))
+        self.assertEqual(result["tables"][0]["status"], "MANUAL_REVIEW")
+        self.assertEqual(result["quote_locations"]["Counts by arm."], [])
+
 
 class PmcIntakeTests(unittest.TestCase):
     def run_preflight(self, *, doi="10.1234/synthetic", version="PMC123.2", payload=ARTICLE, replay=True,
@@ -301,7 +320,8 @@ class PmcIntakeTests(unittest.TestCase):
         self.assertEqual(result["ledger"][0]["effective"], "HOLD")
 
         for override in ({"snapshot_sha256": "0" * 64}, {"scope_verified": False},
-                         {"context_quote": "Missing context."}, {"restricted": check["primary"]}):
+                         {"context_quote": "Missing context."}, {"restricted": check["primary"]},
+                         {"basis": "not\nreported"}, {"basis": "not_available"}):
             with self.subTest(override=override):
                 _, result, _ = self.run_preflight(payload=payload, participant_count={**check, **override})
                 self.assertEqual(result["participant_count_findings"][0]["status"], "HOLD")
@@ -374,7 +394,7 @@ class PmcIntakeTests(unittest.TestCase):
         self.assertEqual(result["participant_count_findings"][0]["correction"]["status"], "HOLD")
         self.assertEqual(result["pmc_evidence"]["linked_corrections"][0]["status"], "HOLD")
 
-    def test_a_requested_unresolved_correction_prevents_a_definitive_no_flag(self):
+    def test_requested_correction_prevents_a_definitive_original_only_no_flag(self):
         payload = ARTICLE.replace(b"<td>24</td>", b"<td>24</td><td>23</td>")
         check = {
             "kind": "RESTRICTED", "context_quote": "Counts by arm.", "scope_verified": True,
@@ -389,6 +409,19 @@ class PmcIntakeTests(unittest.TestCase):
         finding, = result["participant_count_findings"]
         self.assertEqual((finding["status"], finding["comparison_status"], finding["correction"]["status"]),
                          ("HOLD", "NO_FLAG", "HOLD"))
+        self.assertEqual(result["ledger"][0]["effective"], "HOLD")
+
+        revised = CORRECTION.replace(b"The correct arm count is 24.", b"The restricted count should be 27.")
+        revised = revised.replace(b"<td>24</td>", b"<td>27</td>")
+        revised_check = {**check, "correction": {**check["correction"],
+                         "snapshot_sha256": sha256(revised).hexdigest(),
+                         "context_quote": "The restricted count should be 27.",
+                         "replacement": check["primary"]}}
+        _, result, _ = self.run_preflight(payload=payload, linked_xml=revised, participant_count=revised_check)
+        finding, = result["participant_count_findings"]
+        self.assertEqual((finding["status"], finding["comparison_status"], finding["correction"]["status"]),
+                         ("HOLD", "NO_FLAG", "SOURCE_BOUND"))
+        self.assertEqual(finding["correction"]["replacement"]["participants"], 27)
         self.assertEqual(result["ledger"][0]["effective"], "HOLD")
 
         _, result, _ = self.run_preflight(payload=payload, linked_xml=CORRECTION,

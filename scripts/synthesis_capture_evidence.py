@@ -29,6 +29,11 @@ ALI_LICENSE_REF = "{http://www.niso.org/schemas/ali/1.0/}license_ref"
 CC_LINK = re.compile(r"https?://creativecommons\.org/((?:licenses|publicdomain)/[^?#\s]+)")
 OPEN_LICENSE = re.compile(r"(?:licenses/by|publicdomain/zero)/[0-9]+\.[0-9]+")
 RESERVED_RIGHTS = re.compile(r"\ball[\s_-]+rights[\s_-]+reserved\b", re.IGNORECASE)
+CC_TERMS = re.compile(r"https?://(?:www\.)?creativecommons\.org/"
+                      r"((?:licenses|publicdomain)/[a-z0-9-]+/[0-9]+\.[0-9]+)", re.IGNORECASE)
+RESTRICTIVE_CC_NAME = re.compile(r"\b(?:CC[\s_-]+BY[\s_-]+(?:NC|ND|SA)|"
+                                r"Creative Commons Attribution[\s_-]+(?:Non[\s_-]?Commercial|"
+                                r"No[\s_-]?Derivatives|Share[\s_-]?Alike))\b", re.IGNORECASE)
 TEXT_MARKERS = {
     "sup": ("^{", "}"), "sub": ("_{", "}"), "xref": ("[", "]"), "ext-link": ("[", "]"),
     "bold": ("**", "**"), "italic": ("*", "*"),
@@ -66,6 +71,7 @@ def article_id(meta, kind):
 
 def license_url(permissions):
     links = set()
+    prose_terms = set()
     if any(RESERVED_RIGHTS.search("".join(declaration.itertext()))
            for node in permissions for declaration in node):
         raise ValueError("PMC rights declarations conflict with open access")
@@ -83,9 +89,21 @@ def license_url(permissions):
             if not match or not OPEN_LICENSE.fullmatch(match[1].rstrip("/")):
                 raise ValueError("Expected an explicit, unambiguous CC BY or CC0 license")
             links.add(match[1].rstrip("/"))
+        for paragraph in license_node.iter("license-p"):
+            prose = "".join(paragraph.itertext())
+            if RESTRICTIVE_CC_NAME.search(prose):
+                raise ValueError("PMC licence prose conflicts with open access")
+            references = [node.get(XLINK_HREF, "") for node in paragraph.iter()]
+            prose_terms.update(match[1].casefold() for value in [prose, *references]
+                               for match in CC_TERMS.finditer(value))
     if len(links) != 1:
         raise ValueError("Expected an explicit, unambiguous CC BY or CC0 license")
-    return "https://creativecommons.org/" + next(iter(links)) + "/"
+    licence = next(iter(links))
+    # A CC0 data waiver does not weaken the declared article-level CC BY terms.
+    if any(term != licence and not (licence.startswith("licenses/by/") and term.startswith("publicdomain/zero/"))
+           for term in prose_terms):
+        raise ValueError("PMC licence prose conflicts with the declared licence")
+    return "https://creativecommons.org/" + licence + "/"
 
 
 def table_rows(table):
@@ -173,16 +191,24 @@ def locate_quotes(body, tables, quotes):
     """Index only requested excerpts so receipts do not copy article prose."""
     if not quotes:
         return {}
-    table_paragraphs = {node for wrapper in body.iter("table-wrap") for node in wrapper.iter("p")}
+    wrappers = list(body.iter("table-wrap"))
+    table_paragraphs = {node for wrapper in wrappers for node in wrapper.iter("p")}
     locations = [(f"body p {index}", text(node)) for index, node in enumerate(body.iter("p"), 1)
                  if node not in table_paragraphs]
-    for table in tables:
+    unresolved_text = set()
+    for wrapper, table in zip(wrappers, tables):
         locator = table["locator"]
         locations.extend((f"{locator} {key}", table[key]) for key in ("label", "caption", "footnotes"))
+        if table["status"] != "STRUCTURED":
+            for cell in wrapper.iter():
+                if cell.tag in {"th", "td"}:
+                    unresolved_text.update((text(cell), " ".join("".join(cell.itertext()).split())))
         for row_index, row in enumerate(table.get("rows", []), 1):
             locations.extend((f"{locator} row {row_index} cell {cell_index}", cell["text"])
                              for cell_index, cell in enumerate(row["cells"], 1))
-    return {quote: [location for location, value in locations if quote in value] for quote in quotes}
+    # Text from unresolved cells can rule out uniqueness without becoming evidence.
+    return {quote: [] if any(quote in value for value in unresolved_text)
+            else [location for location, value in locations if quote in value] for quote in quotes}
 
 
 def capture(payload, pmcid, expected_doi=None, *, quotes=(), for_archive=False):

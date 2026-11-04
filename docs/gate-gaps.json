@@ -23,7 +23,7 @@
       "id": "scripts/synthesis_preflight.py",
       "kind": "script",
       "name": "Synthesis local packet validator (experimental)",
-      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for PMC packets. Live capture requires an operator flag and the HTTPS EFetch origin. Archives refuse extra articles and conflicting rights declarations. Source-bound findings require a matching snapshot hash, a uniquely located source quote, and exact numeric cells under reviewer-verified analysis and denominator scope. Unresolved requested corrections cannot clear a claim.",
+      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for PMC packets. Live capture requires an operator flag and the HTTPS EFetch origin. Archives refuse extra articles and conflicting rights declarations. Source-bound findings require a matching snapshot hash, a uniquely located source quote, and exact numeric cells under reviewer-verified analysis and denominator scope. A requested correction prevents an original-only comparison from clearing a claim.",
       "would_not_stop": [
         "Fabricated but internally consistent claim attestations or locally supplied XML: capture binds a snapshot and declared identity. Claim support and archive provenance require separate review.",
         "An unavailable or superseded external attachment or correction: inline supplement tables and verified linked PMC corrections can be traced, but unresolved links require follow-up and correction evidence does not automatically close a claim.",
@@ -34,8 +34,8 @@
       "source": "scripts/synthesis_preflight.py, scripts/synthesis_capture_evidence.py, scripts/synthesis_participant_evidence.py and the restricted-count arithmetic in scripts/synthesis_v13_nma_preflight.py, with prompt v1.1 and synthetic regressions.",
       "seal": {
         "scripts/synthesis_preflight.py": "854399886f2d10df4a2968846946385fba990de18fc5eba04a49f8018f1802d2",
-        "scripts/synthesis_capture_evidence.py": "435c85c1be57bca94e62f20152010032f8fee3e26a1aeadef13a710515db1b59",
-        "scripts/synthesis_participant_evidence.py": "959a3d896cc6b49c187789d948770f62b17930fc126332a2e374e0316d61e71d",
+        "scripts/synthesis_capture_evidence.py": "64e8e97362b5ecb270135b89eb63e804285cf76fa8c84c3d54693ec03616a87d",
+        "scripts/synthesis_participant_evidence.py": "29ff524e01fca60e448cda81c8d4aaa0d977db2ecb51c7533799586691138c32",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605"
       }
     },
