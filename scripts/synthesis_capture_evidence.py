@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 from hashlib import sha256
 from http.client import HTTPException
 import json
 from pathlib import Path
 import re
+from tempfile import NamedTemporaryFile
 from urllib.error import HTTPError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -34,6 +36,7 @@ TABLE_MARKUP = frozenset({
     "table", "caption", "colgroup", "col", "thead", "tbody", "tfoot", "tr", "th", "td",
     "break", "p", *TEXT_MARKERS,
 })
+MAX_LINKED_CORRECTIONS = 8
 
 
 def text(node):
@@ -51,6 +54,8 @@ def text(node):
 
 
 def article_id(meta, kind):
+    if meta is None:
+        raise ValueError("Article metadata is missing")
     values = [text(node) for node in meta.findall("article-id") if node.get("pub-id-type") == kind]
     if len(values) != 1 or not values[0]:
         raise ValueError(f"Expected one article ID of type {kind}")
@@ -80,6 +85,37 @@ def license_url(meta):
     return "https://creativecommons.org/" + next(iter(links)) + "/"
 
 
+def table_rows(table):
+    for group in table:
+        if group.tag == "tr":
+            yield group, group
+        elif group.tag in {"thead", "tbody", "tfoot"}:
+            for row in group.findall("tr"):
+                yield group, row
+
+
+def table_markup_issue(table, rows):
+    cells = {
+        node: (row_index, cell_index)
+        for row_index, (_, row) in enumerate(rows, 1)
+        for cell_index, cell in enumerate((child for child in row if child.tag in {"td", "th"}), 1)
+        for node in cell.iter()
+    }
+    row_nodes = {row for _, row in rows}
+    cell_nodes = {cell for row in row_nodes for cell in row if cell.tag in {"td", "th"}}
+    for node in table.iter():
+        styled = {"style", "style-type"}.intersection(node.attrib)
+        misplaced = ((node.tag == "tr" and node not in row_nodes)
+                     or (node.tag in {"td", "th"} and node not in cell_nodes)
+                     or (node.tag == "table" and node is not table))
+        if node.tag not in TABLE_MARKUP or styled or misplaced:
+            issue = {"code": "UNSUPPORTED_TABLE_MARKUP", "element": node.tag, "attributes": sorted(styled)}
+            if node in cells:
+                issue["row"], issue["cell"] = cells[node]
+            return issue
+    return None
+
+
 def table_evidence(body):
     for position, wrapper in enumerate(body.iter("table-wrap"), start=1):
         tables = wrapper.findall("./table") + wrapper.findall("./alternatives/table")
@@ -91,36 +127,66 @@ def table_evidence(body):
             "footnotes": text(wrapper.find("table-wrap-foot")),
             "status": "MANUAL_REVIEW",
         }
-        if len(tables) == 1 and all(
-            node.tag in TABLE_MARKUP and "style" not in node.attrib and "style-type" not in node.attrib
-            for node in tables[0].iter()
-        ):
-            rows = [
+        styled = {"style", "style-type"}.intersection(wrapper.attrib)
+        if styled:
+            evidence["manual_review"] = {"code": "UNSUPPORTED_TABLE_MARKUP", "element": "table-wrap",
+                                         "attributes": sorted(styled)}
+        elif len(tables) != 1:
+            evidence["manual_review"] = {"code": "EXPECTED_ONE_JATS_TABLE", "table_count": len(tables)}
+        else:
+            source_rows = list(table_rows(tables[0]))
+            issue = table_markup_issue(tables[0], source_rows)
+            rows = [] if issue else [
                 {"group": group.tag, "cells": [
                     {"kind": cell.tag, "text": text(cell), "rowspan": cell.get("rowspan", "1"),
                      "colspan": cell.get("colspan", "1")}
                     for cell in row if cell.tag in {"td", "th"}
                 ]}
-                for group in tables[0] if group.tag in {"thead", "tbody", "tfoot", "tr"}
-                for row in ([group] if group.tag == "tr" else group.findall("tr"))
+                for group, row in source_rows
             ]
             if rows and all(row["cells"] for row in rows):
                 evidence.update(status="STRUCTURED", rows=rows)
+            else:
+                evidence["manual_review"] = issue or {"code": "MISSING_TABLE_ROWS_OR_CELLS"}
         yield evidence
 
 
-def capture(payload, pmcid, expected_doi=None):
-    if not PMCID.fullmatch(pmcid):
-        raise ValueError("A canonical PMCID is required")
+def article_entries(payload):
     if len(payload) > MAX_BYTES:
         raise ValueError("XML exceeds the capture size limit")
     root = ET.fromstring(payload)
     if root.tag == "article":
-        articles = [root]
-    elif root.tag == "pmc-articleset":
-        articles = root.findall("article")
-    else:
-        raise ValueError("Expected a PMC JATS article or article set")
+        return [root]
+    if root.tag == "pmc-articleset":
+        return root.findall("article")
+    raise ValueError("Expected a PMC JATS article or article set")
+
+
+def locate_quotes(body, tables, quotes):
+    """Index only requested excerpts so receipts do not copy article prose."""
+    if not quotes:
+        return {}
+    locations = [(f"body p {index}", text(node)) for index, node in enumerate(body.iter("p"), 1)]
+    for table in tables:
+        locator = table["locator"]
+        locations.extend((f"{locator} {key}", table[key]) for key in ("label", "caption", "footnotes"))
+        for row_index, row in enumerate(table.get("rows", []), 1):
+            locations.extend((f"{locator} row {row_index} cell {cell_index}", cell["text"])
+                             for cell_index, cell in enumerate(row["cells"], 1))
+    # Prefer exact source blocks over substring matches. A short quote in both a
+    # caption and its underlying paragraph can use the paragraph's exact locator.
+    return {
+        quote: ([location for location, value in locations if quote == value and location.startswith("body p ")]
+                or [location for location, value in locations if quote == value]
+                or [location for location, value in locations if quote in value])
+        for quote in quotes
+    }
+
+
+def capture(payload, pmcid, expected_doi=None, *, quotes=()):
+    if not PMCID.fullmatch(pmcid):
+        raise ValueError("A canonical PMCID is required")
+    articles = article_entries(payload)
     matches = [
         article for article in articles
         if any(text(node) == pmcid and node.get("pub-id-type") == "pmcid"
@@ -141,18 +207,36 @@ def capture(payload, pmcid, expected_doi=None):
     body = article.find("body")
     if body is None or not text(body):
         raise ValueError("Expected a nonempty JATS article body")
+    tables = list(table_evidence(body))
+    table_locators = {node: table["locator"] for node, table in zip(body.iter("table-wrap"), tables)
+                      if table["status"] == "STRUCTURED"}
+    supplements = []
+    for position, node in enumerate(article.iter("supplementary-material"), 1):
+        inline = [table_locators[wrapper] for wrapper in node.iter("table-wrap") if wrapper in table_locators]
+        targets = list(dict.fromkeys(child.get(XLINK_HREF) for child in node.iter() if child.get(XLINK_HREF)))
+        supplements.append({
+            "locator": f"article supplementary-material {position}", "jats_id": node.get("id"),
+            "label": text(node.find("label")), "targets": targets, "inline_tables": inline,
+            "status": "MANUAL_REVIEW" if targets or not inline else "INLINE_CAPTURED",
+            **({"reason": "External attachment or no structured inline table; verify edition and rights separately"}
+               if targets or not inline else {}),
+        })
+    pmids = [text(node) for node in meta.findall("article-id") if node.get("pub-id-type") == "pmid"]
     return {
         "status": "CAPTURED",
         "source": {
             "pmcid": pmcid, "doi": doi, "version": version, "license": license_url(meta),
             "snapshot_sha256": sha256(payload).hexdigest(),
+            **({"pmid": pmids[0]} if len(pmids) == 1 and re.fullmatch(r"[1-9][0-9]*", pmids[0]) else {}),
         },
+        "article_type": article.get("article-type"),
         "sections": [
             {"locator": f"body sec {position}", "jats_id": node.get("id"),
              "title": text(node.find("title"))}
             for position, node in enumerate(body.iter("sec"), start=1)
         ],
-        "tables": list(table_evidence(body)),
+        "tables": tables,
+        **({"quote_locations": locate_quotes(body, tables, quotes)} if quotes else {}),
         "correction_links": [
             {"locator": f"article-meta related-article {position}", "relation": node.get("related-article-type"),
              "id_type": node.get("ext-link-type"), "target": node.get(XLINK_HREF)}
@@ -160,12 +244,7 @@ def capture(payload, pmcid, expected_doi=None):
             if node.get("related-article-type") in {"correction-forward", "corrected-article"}
             and node.get(XLINK_HREF)
         ],
-        "supplement_links": [
-            {"locator": f"article supplementary-material {position}", "jats_id": node.get("id"),
-             "label": text(node.find("label")),
-             "targets": list(dict.fromkeys(child.get(XLINK_HREF) for child in node.iter() if child.get(XLINK_HREF)))}
-            for position, node in enumerate(article.iter("supplementary-material"), start=1)
-        ],
+        "supplement_links": supplements,
     }
 
 
@@ -182,7 +261,34 @@ class PmcRedirectHandler(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def retrieve_pmc_evidence(pmcid, *, doi=None, version=None, xml=None):
+def archive_snapshot(payload, result, directory):
+    source = result["source"]
+    name = source["snapshot_sha256"] + ".xml"
+    directory.mkdir(parents=True, exist_ok=True)
+    target = directory / name
+    if target.is_file():
+        with target.open("rb") as stream:
+            if stream.read(MAX_BYTES + 1) != payload:
+                raise ValueError("Existing PMC archive does not match its content digest")
+    else:
+        temporary = None
+        try:
+            with NamedTemporaryFile(dir=directory, delete=False) as stream:
+                temporary = Path(stream.name)
+                stream.write(payload)
+            temporary.replace(target)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+    source["snapshot_file"] = f"{directory.name}/{name}"
+
+
+def _read_xml(path):
+    with path.open("rb") as source:
+        return source.read(MAX_BYTES + 1)
+
+
+def retrieve_pmc_evidence(pmcid, *, doi=None, version=None, xml=None, archive=None, quotes=(), correction_of=None):
     """Retrieve or replay one PMC response, optionally binding a requested version."""
     mode = "ARCHIVED_XML" if xml is not None else "NCBI_EFETCH"
     url = None
@@ -196,25 +302,99 @@ def retrieve_pmc_evidence(pmcid, *, doi=None, version=None, xml=None):
         ):
             raise ValueError("The requested version must be a versioned PMCID for the requested article")
         if xml is not None:
-            with xml.open("rb") as source:
-                payload = source.read(MAX_BYTES + 1)
+            payload = _read_xml(xml)
         else:
             query = urlencode({"db": "pmc", "id": pmcid, "retmode": "xml"})
             url = EFETCH + "?" + query
             request = Request(url, headers={"User-Agent": "Synthesis-evidence-capture/1"})
             with build_opener(PmcRedirectHandler()).open(request, timeout=20) as source:
-                if not is_efetch_origin(source.geturl()):
+                final_url = source.geturl()
+                if not is_efetch_origin(final_url):
                     raise ValueError("PMC response is outside the HTTPS EFetch origin")
                 payload = source.read(MAX_BYTES + 1)
-        result = capture(payload, pmcid, doi)
+        result = capture(payload, pmcid, doi, quotes=quotes)
         if version is not None and result["source"]["version"] != version:
             raise ValueError("The captured PMC version does not match the requested version")
+        if xml is None:
+            result["source"].update(retrieval_url=final_url, retrieved_at=datetime.now(timezone.utc).isoformat())
+        if correction_of is not None:
+            result = _linked_entry(result, correction_of, archive, payload)
+        elif archive is not None:
+            archive_snapshot(payload, result, archive)
     except (OSError, HTTPException, ValueError, ET.ParseError, LookupError, RecursionError) as exc:
         result = {"status": "HOLD", "reason": str(exc)}
     result["capture_mode"] = mode
     if url:
         result["attempted_url"] = url
     return result
+
+
+def link_matches(link, source):
+    kind, target = link["id_type"], link["target"]
+    if kind in {"pmc", "pmcid"}:
+        return target in (source["pmcid"], source["pmcid"][3:], source["version"])
+    if kind in {"pmid", "pubmed"}:
+        return target == source.get("pmid")
+    if kind == "doi":
+        try:
+            return normalize_doi(target) == source["doi"]
+        except ValueError:
+            return False
+    return False
+
+
+def _linked_entry(result, original, archive, payload=None):
+    if result["status"] != "CAPTURED":
+        return result
+    backlinks = [link for link in result["correction_links"] if link["relation"] == "corrected-article"
+                 and link_matches(link, original["source"])]
+    if not backlinks or result["source"]["pmcid"] == original["source"]["pmcid"]:
+        return {"status": "HOLD", "reason": "Linked XML lacks a typed correction backlink to this article"}
+    if archive is not None and payload is not None:
+        archive_snapshot(payload, result, archive)
+    result["backlinks"] = backlinks
+    return result
+
+
+def linked_correction_evidence(original, paths, *, follow=False, archive=None, quotes=()):
+    """Verify explicit sidecars and, when authorized, direct PMC correction links."""
+    entries = []
+    for path in paths:
+        try:
+            payload = _read_xml(path)
+            articles = article_entries(payload)
+            if len(articles) != 1:
+                raise ValueError("A linked XML file must contain exactly one article")
+            pmcid = article_id(articles[0].find("front/article-meta"), "pmcid")
+            captured = capture(payload, pmcid, quotes=quotes)
+            captured["capture_mode"] = "ARCHIVED_XML"
+            entries.append(_linked_entry(captured, original, archive, payload))
+        except (OSError, ValueError, ET.ParseError, LookupError, RecursionError) as exc:
+            entries.append({"status": "HOLD", "reason": str(exc)})
+
+    seen = set()
+    for link in original["correction_links"]:
+        if link["relation"] != "correction-forward":
+            continue
+        matched = [entry for entry in entries if entry["status"] == "CAPTURED"
+                   and link_matches(link, entry["source"])]
+        target = link["target"]
+        if link["id_type"] in {"pmc", "pmcid"} and re.fullmatch(r"[1-9][0-9]*", target):
+            target = "PMC" + target
+        if (not matched and follow and link["id_type"] in {"pmc", "pmcid"}
+                and re.fullmatch(r"PMC[1-9][0-9]*(?:\.[1-9][0-9]*)?", target)
+                and target.split(".")[0] != original["source"]["pmcid"]
+                and target not in seen and len(seen) < MAX_LINKED_CORRECTIONS):
+            seen.add(target)
+            entry = retrieve_pmc_evidence(target.split(".")[0], version=target if "." in target else None,
+                                         quotes=quotes, correction_of=original, archive=archive)
+            entry["forward_link"] = link["locator"]
+            entries.append(entry)
+            matched = [entry] if entry["status"] == "CAPTURED" else []
+        link["resolution"] = "CAPTURED" if matched else "MANUAL_REVIEW"
+        if not matched:
+            link["resolution_reason"] = "Supply verified PMC correction XML or follow a typed direct PMC link"
+    return entries
 
 
 def main():

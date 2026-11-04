@@ -106,7 +106,8 @@ def _check_one(check: dict) -> dict:
 
 
 def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
-                  pmc_live: bool = False, pmc_xml: Path | None = None) -> dict:
+                  pmc_live: bool = False, pmc_xml: Path | None = None, pmc_archive: Path | None = None,
+                  pmc_linked_xml: tuple[Path, ...] = (), pmc_follow_corrections: bool = False) -> dict:
     problems: list[dict] = []
     def warn(code: str, message: str, claim_id: str | None = None) -> None:
         problems.append({"code": code, "claim_id": claim_id, "detail": message})
@@ -148,6 +149,7 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
         claims=[]
     claim_ids=set()
     views=[]
+    participant_checks=[]
     for claim in claims:
         if not isinstance(claim,dict):
             warn("BAD_CLAIM", "Claim must be an object")
@@ -157,6 +159,8 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
             warn("DUPLICATE_OR_MISSING_CLAIM_ID", "Claim IDs must be nonempty and unique",str(cid))
             continue
         claim_ids.add(cid)
+        if "participant_count_check" in claim:
+            participant_checks.append((cid, claim["participant_count_check"]))
         support=claim.get("source_support")
         maturity=claim.get("evidence_maturity")
         requested=claim.get("proposed_disposition")
@@ -267,11 +271,32 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
     }
     intake_valid = not any(p["code"] in structural_faults for p in problems)
     pmc_evidence = None
+    participant_findings = []
+    if participant_checks:
+        if __package__:
+            from scripts.synthesis_participant_evidence import MAX_CHECKS, count_quotes, participant_count_finding
+        else:
+            from synthesis_participant_evidence import MAX_CHECKS, count_quotes, participant_count_finding
+
+        if len(participant_checks) > MAX_CHECKS or not (isinstance(doc, dict) and "pmcid" in doc):
+            warn("PARTICIPANT_EVIDENCE_INVALID", f"Up to {MAX_CHECKS} participant checks require a PMC document")
+            intake_valid = False
     if isinstance(doc, dict) and "pmcid" in doc:
-        pmc_evidence = capture_packet_pmc(doc, intake_valid, pmc_live, pmc_xml)
+        quotes = count_quotes(participant_checks) if participant_checks and intake_valid else ()
+        correction_quotes = count_quotes(participant_checks, corrections=True) if participant_checks and intake_valid else ()
+        pmc_evidence = capture_packet_pmc(doc, intake_valid, pmc_live, pmc_xml, pmc_archive,
+                                          pmc_linked_xml, pmc_follow_corrections, quotes, correction_quotes)
         if pmc_evidence["status"] != "CAPTURED":
             warn("PMC_EVIDENCE_HOLD", pmc_evidence["reason"])
             intake_valid = False
+    if participant_checks and len(participant_checks) <= MAX_CHECKS:
+        participant_findings = [participant_count_finding(cid, spec, pmc_evidence) for cid, spec in participant_checks]
+        held_ids = {finding["claim_id"] for finding in participant_findings if finding["status"] != "NO_FLAG"}
+        for view in views:
+            if view["id"] in held_ids and view["effective"] in {"FLAG", "RECONCILED", "NO_FLAG"}:
+                view["effective"] = "HOLD"
+                view["reasons"].append("The participant count needs reviewer attention")
+                warn("PARTICIPANT_EVIDENCE_HOLD", view["reasons"][-1], view["id"])
     if not intake_valid:
         # Invalid input cannot emit an actionable positive OR definitive negative.
         # Keep original proposed dispositions and all evidence for repair/audit.
@@ -290,11 +315,12 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
             "reconciled_count":sum(v["effective"]=="RECONCILED" for v in views),
             "top_five":flag_summary,"ledger":views,"checks":check_results,"problems":problems,
             **({"pmc_evidence": pmc_evidence} if pmc_evidence is not None else {}),
+            **({"participant_count_findings": participant_findings} if participant_checks else {}),
             "disclaimer":"Structural verification only; no independent scientific accuracy measured."
                          + (" No outreach performed." if pmc_evidence else " No external actions performed.")}
 
 
-def capture_packet_pmc(document, intake_valid, live, xml):
+def capture_packet_pmc(document, intake_valid, live, xml, archive, linked_xml, follow, quotes, correction_quotes):
     if not intake_valid:
         return {"status": "HOLD", "reason": "PMC capture requires a structurally valid packet"}
     if (live is True) == (xml is not None):
@@ -303,11 +329,20 @@ def capture_packet_pmc(document, intake_valid, live, xml):
     if not isinstance(doi, str) or not doi.strip().startswith("10."):
         return {"status": "HOLD", "reason": "PMC intake requires a bare DOI"}
     if __package__:
-        from scripts.synthesis_capture_evidence import retrieve_pmc_evidence
+        from scripts.synthesis_capture_evidence import MAX_LINKED_CORRECTIONS, linked_correction_evidence, retrieve_pmc_evidence
     else:
-        from synthesis_capture_evidence import retrieve_pmc_evidence
+        from synthesis_capture_evidence import MAX_LINKED_CORRECTIONS, linked_correction_evidence, retrieve_pmc_evidence
 
-    return retrieve_pmc_evidence(document["pmcid"], doi=doi, version=document["version"], xml=xml)
+    if (follow and not live) or len(linked_xml) > MAX_LINKED_CORRECTIONS:
+        return {"status": "HOLD", "reason": "Following corrections requires live mode and linked XML is limited"}
+    result = retrieve_pmc_evidence(document["pmcid"], doi=doi, version=document["version"], xml=xml,
+                                   archive=archive, quotes=quotes)
+    if result["status"] == "CAPTURED":
+        corrections = linked_correction_evidence(result, linked_xml, follow=follow,
+                                                  archive=archive, quotes=correction_quotes)
+        if corrections:
+            result["linked_corrections"] = corrections
+    return result
 
 
 def _markdown(result: dict) -> str:
@@ -328,6 +363,11 @@ def _markdown(result: dict) -> str:
                     f"Version `{source['version']}`, DOI `{source['doi']}`.",
                     f"Snapshot SHA-256 `{source['snapshot_sha256']}`.",
                     "Table evidence and linked documents are in the JSON receipt."])
+    if result.get("participant_count_findings"):
+        out.extend(["", "## Source-bound participant counts", "",
+                    "| Claim | Finding | Explanation |", "|---|---|---|"])
+        for finding in result["participant_count_findings"]:
+            out.append("| " + " | ".join(esc(finding[key]) for key in ("claim_id", "status", "reason")) + " |")
     out.extend(["", "## Complete, unfiltered claim ledger", "", "| Claim | Priority | Requested | Effective | Support | Maturity |", "|---|---|---|---|---|---|"])
     for v in result["ledger"]:
         out.append("| "+" | ".join(esc(v.get(k)) for k in ("id","priority","requested","effective","support","maturity"))+" |")
@@ -350,14 +390,23 @@ def main(argv: list[str] | None=None) -> int:
     pmc_mode = p.add_mutually_exclusive_group()
     pmc_mode.add_argument("--pmc-live", action="store_true", help="Allow live PMC retrieval for a PMC packet")
     pmc_mode.add_argument("--pmc-xml", type=Path, help="Replay saved PMC XML for a packet with document.pmcid")
+    p.add_argument("--pmc-linked-xml", type=Path, action="append", default=[],
+                   help="Verify a saved PMC correction XML against this article (repeatable)")
+    p.add_argument("--pmc-follow-corrections", action="store_true",
+                   help="With --pmc-live, follow direct typed PMC links to corrections")
     args=p.parse_args(argv)
     raw=args.packet.read_bytes()
     packet=json.loads(raw.decode("utf-8"))
     document = packet.get("document") if isinstance(packet, dict) else None
     if (args.pmc_live or args.pmc_xml is not None) and not (isinstance(document, dict) and "pmcid" in document):
         p.error("PMC capture requires document.pmcid in the packet")
+    if args.pmc_linked_xml and not (args.pmc_live or args.pmc_xml is not None):
+        p.error("--pmc-linked-xml requires --pmc-live or --pmc-xml")
+    if args.pmc_follow_corrections and not args.pmc_live:
+        p.error("--pmc-follow-corrections requires --pmc-live")
     result=review_packet(packet,digest_bytes(args.prompt.read_bytes()),digest_bytes(raw),
-                         pmc_live=args.pmc_live,pmc_xml=args.pmc_xml)
+                         pmc_live=args.pmc_live,pmc_xml=args.pmc_xml,pmc_archive=args.output_dir / "pmc-snapshots",
+                         pmc_linked_xml=tuple(args.pmc_linked_xml),pmc_follow_corrections=args.pmc_follow_corrections)
     args.output_dir.mkdir(parents=True,exist_ok=True)
     (args.output_dir/"receipt.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     (args.output_dir/"report.md").write_text(_markdown(result),encoding="utf-8")

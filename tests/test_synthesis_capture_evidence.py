@@ -116,6 +116,10 @@ class CaptureEvidenceTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(result["tables"][0]["status"], "MANUAL_REVIEW")
         self.assertNotIn("rows", result["tables"][0])
+        self.assertEqual(result["tables"][0]["manual_review"], {
+            "code": "UNSUPPORTED_TABLE_MARKUP", "element": "inline-formula", "attributes": [],
+            "row": 2, "cell": 2,
+        })
 
     def test_unhandled_semantic_styling_requires_manual_review(self):
         for cell in (
@@ -151,16 +155,41 @@ class CaptureEvidenceTests(unittest.TestCase):
             self.assertEqual(capture.retrieve_pmc_evidence("PMC123")["status"], "HOLD")
             response.read.assert_not_called()
 
+    def test_live_snapshot_archived_only_after_identity_validation(self):
+        with tempfile.TemporaryDirectory() as folder, patch.object(capture, "build_opener") as opener:
+            archive = Path(folder) / "pmc-snapshots"
+            response = opener.return_value.open.return_value.__enter__.return_value
+            response.geturl.return_value = capture.EFETCH
+            response.read.return_value = ARTICLE
+            self.assertEqual(capture.retrieve_pmc_evidence("PMC123", version="PMC123.1",
+                                                          archive=archive)["status"], "HOLD")
+            self.assertFalse(archive.exists())
+            result = capture.retrieve_pmc_evidence("PMC123", version="PMC123.2", archive=archive)
+            source = result["source"]
+            self.assertEqual((Path(folder) / source["snapshot_file"]).read_bytes(), ARTICLE)
+            self.assertEqual(source["retrieval_url"], capture.EFETCH)
+            self.assertTrue(source["retrieved_at"].endswith("+00:00"))
+
+    def test_inline_supplement_has_same_snapshot_table_locator(self):
+        payload = ARTICLE.replace(b'<supplementary-material id="supplement"><media xlink:href="appendix.pdf"/>',
+                                  b'<supplementary-material id="supplement"><table-wrap><table>'
+                                  b'<tr><td>17</td></tr></table></table-wrap>')
+        _, result = self.run_capture(payload)
+        supplement, = result["supplement_links"]
+        self.assertEqual(supplement["status"], "INLINE_CAPTURED")
+        self.assertEqual(supplement["inline_tables"], [result["tables"][2]["locator"]])
+
 
 class PmcIntakeTests(unittest.TestCase):
-    def run_preflight(self, *, doi="10.1234/synthetic", version="PMC123.2", payload=ARTICLE, replay=True):
+    def run_preflight(self, *, doi="10.1234/synthetic", version="PMC123.2", payload=ARTICLE, replay=True,
+                      participant_count=None, linked_xml=None):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             xml = root / "response.xml"
             if payload is not None:
                 xml.write_bytes(payload)
             packet = root / "packet.json"
-            packet.write_text(json.dumps({
+            data = {
                 "schema_version": "1.1",
                 "run": {"run_id": "synthetic-pmc-intake", "model_id": "none", "model_provider": "manual",
                         "tool_versions": {}, "prompt_sha256": sha256(PROMPT.read_bytes()).hexdigest()},
@@ -169,15 +198,114 @@ class PmcIntakeTests(unittest.TestCase):
                 "claims": [{"id": "C1", "text": "Synthetic claim", "locator": "Table 1", "source_ids": [],
                             "source_support": "SUPPORTED", "evidence_maturity": "SCREENED",
                             "priority": "P4", "proposed_disposition": "NO_FLAG"}],
-            }), encoding="utf-8")
+            }
+            if participant_count is not None:
+                data["claims"][0]["participant_count_check"] = participant_count
+            packet.write_text(json.dumps(data), encoding="utf-8")
             command = [sys.executable, "-B", str(PREFLIGHT), "--prompt", str(PROMPT),
                        "--packet", str(packet), "--output-dir", str(root)]
             if replay:
                 command += ["--pmc-xml", str(xml)]
+            if linked_xml is not None:
+                linked = root / "correction.xml"
+                linked.write_bytes(linked_xml)
+                command += ["--pmc-linked-xml", str(linked)]
             run = subprocess.run(command, capture_output=True, text=True, check=False)
+            self.assertTrue((root / "receipt.json").is_file(), run.stderr)
             result = json.loads((root / "receipt.json").read_text(encoding="utf-8"))
+            for source in [result.get("pmc_evidence", {}).get("source", {}), *[
+                item.get("source", {}) for item in result.get("pmc_evidence", {}).get("linked_corrections", [])
+            ]]:
+                if source.get("snapshot_file"):
+                    saved = (root / source["snapshot_file"]).read_bytes()
+                    self.assertEqual(sha256(saved).hexdigest(), source["snapshot_sha256"])
             self.assertEqual(result["input_sha256"], sha256(packet.read_bytes()).hexdigest())
             return run.returncode, result, (root / "report.md").read_text(encoding="utf-8")
+
+    def test_count_check_uses_cells_and_archives_exact_bytes(self):
+        payload = ARTICLE.replace(b"<td>24</td>", b"<td>24</td><td>27</td>")
+        check = {
+            "kind": "RESTRICTED", "context_quote": "Counts by arm.", "scope_verified": True,
+            "outcome": "Synthetic outcome", "timepoint": "Synthetic visit", "basis": "Synthetic participants",
+            "primary": {"table": 1, "row": 2, "cell": 2},
+            "restricted": {"table": 1, "row": 2, "cell": 3},
+            "snapshot_sha256": sha256(payload).hexdigest(),
+        }
+        code, result, report = self.run_preflight(payload=payload, participant_count=check)
+        self.assertEqual(code, 0)
+        finding, = result["participant_count_findings"]
+        self.assertEqual((finding["status"], finding["participant_excess"]), ("REVIEW_CANDIDATE", 3))
+        self.assertEqual(finding["cells"]["restricted"]["text"], "27")
+        self.assertEqual(finding["context"]["locator"], "body p 1")
+        self.assertIn("pmc-snapshots/", result["pmc_evidence"]["source"]["snapshot_file"])
+        self.assertIn("REVIEW_CANDIDATE", report)
+        self.assertEqual(result["ledger"][0]["effective"], "HOLD")
+
+        for override in ({"snapshot_sha256": "0" * 64}, {"scope_verified": False},
+                         {"context_quote": "Missing context."}, {"restricted": check["primary"]}):
+            with self.subTest(override=override):
+                _, result, _ = self.run_preflight(payload=payload, participant_count={**check, **override})
+                self.assertEqual(result["participant_count_findings"][0]["status"], "HOLD")
+
+    def test_shared_controls_are_counted_once_only_with_consistent_arm_evidence(self):
+        payload = ARTICLE.replace(b"<td>24</td>", b"<td>10</td><td>11</td><td>5</td><td>31</td>")
+
+        def cell(index):
+            return {"table": 1, "row": 2, "cell": index}
+
+        def arm(label, index, shared=False):
+            return {"trial": "Test trial", "cohort": "Randomized cohort", "arm": label,
+                    "count": cell(index), "shared_control": shared}
+
+        check = {
+            "kind": "UNIQUE_ARMS", "context_quote": "Counts by arm.", "scope_verified": True,
+            "outcome": "Synthetic outcome", "timepoint": "Synthetic visit", "basis": "Synthetic participants",
+            "snapshot_sha256": sha256(payload).hexdigest(), "reported": cell(5),
+            "arms": [arm("A", 2), arm("B", 3), arm("C", 4, True), arm("C", 4, True)],
+        }
+        _, result, _ = self.run_preflight(payload=payload, participant_count=check)
+        finding, = result["participant_count_findings"]
+        self.assertEqual((finding["status"], finding["unique_participants"], finding["participant_excess"]),
+                         ("REVIEW_CANDIDATE", 26, 5))
+        for invalid in (arm("C", 4), arm("C", 3, True), arm("D", 4, True), arm("C", 5, True)):
+            with self.subTest(invalid=invalid):
+                _, result, _ = self.run_preflight(payload=payload, participant_count={
+                    **check, "arms": [*check["arms"][:-1], invalid],
+                })
+                self.assertEqual(result["participant_count_findings"][0]["status"], "HOLD")
+
+    def test_public_correction_requires_backlink_and_separate_snapshot(self):
+        correction = (ARTICLE.replace(b"PMC123", b"PMC124").replace(b"10.1234/synthetic", b"10.1234/correction")
+                      .replace(b'correction-forward" ext-link-type="pmc" xlink:href="PMC124"',
+                               b'corrected-article" ext-link-type="pmc" xlink:href="PMC123"')
+                      .replace(b"Counts by arm.", b"The correct arm count is 24."))
+        payload = ARTICLE.replace(b"<td>24</td>", b"<td>24</td><td>27</td>")
+        check = {
+            "kind": "RESTRICTED", "context_quote": "Counts by arm.", "scope_verified": True,
+            "outcome": "Synthetic outcome", "timepoint": "Synthetic visit", "basis": "Synthetic participants",
+            "primary": {"table": 1, "row": 2, "cell": 2}, "restricted": {"table": 1, "row": 2, "cell": 3},
+            "snapshot_sha256": sha256(payload).hexdigest(),
+            "correction": {"same_claim_verified": True, "pmcid": "PMC124",
+                           "snapshot_sha256": sha256(correction).hexdigest(),
+                           "context_quote": "The correct arm count is 24.", "replacement": {"table": 1, "row": 2, "cell": 2}},
+        }
+        _, result, _ = self.run_preflight(payload=payload, participant_count=check, linked_xml=correction)
+        finding, = result["participant_count_findings"]
+        self.assertEqual(finding["status"], "REVIEW_CANDIDATE")
+        self.assertEqual(finding["correction"]["status"], "SOURCE_BOUND")
+        self.assertEqual(finding["correction"]["replacement"]["participants"], 24)
+        self.assertEqual(result["pmc_evidence"]["correction_links"][0]["resolution"], "CAPTURED")
+
+        trace = {**check, "kind": "PUBLISHED_CORRECTION", "original": check["restricted"]}
+        del trace["context_quote"]
+        _, result, _ = self.run_preflight(payload=payload, participant_count=trace, linked_xml=correction)
+        finding, = result["participant_count_findings"]
+        self.assertEqual((finding["status"], finding["original"]["participants"]), ("PUBLISHED_CORRECTION", 27))
+
+        _, result, _ = self.run_preflight(payload=payload, participant_count=check,
+                                           linked_xml=correction.replace(b'xlink:href="PMC123"', b'xlink:href="PMC125"'))
+        self.assertEqual(result["participant_count_findings"][0]["correction"]["status"], "HOLD")
+        self.assertEqual(result["pmc_evidence"]["linked_corrections"][0]["status"], "HOLD")
 
     def test_normal_intake_binds_capture_to_receipt(self):
         code, result, report = self.run_preflight()
