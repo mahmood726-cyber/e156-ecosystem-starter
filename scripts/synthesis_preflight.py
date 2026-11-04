@@ -10,7 +10,6 @@ import hashlib
 import json
 import math
 from pathlib import Path
-import re
 from typing import Any
 
 SUPPORT = {"SUPPORTED", "CONTRADICTED", "OVERGENERALIZED", "UNSUPPORTED_CITATION",
@@ -106,7 +105,8 @@ def _check_one(check: dict) -> dict:
     return result
 
 
-def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *, pmc_evidence: dict | None = None) -> dict:
+def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
+                  pmc_live: bool = False, pmc_xml: Path | None = None) -> dict:
     problems: list[dict] = []
     def warn(code: str, message: str, claim_id: str | None = None) -> None:
         problems.append({"code": code, "claim_id": claim_id, "detail": message})
@@ -128,23 +128,6 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *, pmc_ev
     doc = packet.get("document",{})
     if not isinstance(doc, dict) or not doc.get("identifier") or not doc.get("version"):
         warn("DOCUMENT_VERSION_INCOMPLETE", "Document identifier and edition/version must be recorded")
-    if isinstance(doc, dict) and "pmcid" in doc:
-        if not isinstance(pmc_evidence, dict):
-            pmc_evidence = {"status": "HOLD", "reason": "PMC evidence was not captured"}
-        if pmc_evidence.get("status") == "CAPTURED":
-            source = pmc_evidence.get("source")
-            identifier = doc.get("identifier")
-            snapshot = source.get("snapshot_sha256") if isinstance(source, dict) else None
-            if (not isinstance(source, dict) or not isinstance(identifier, str)
-                    or source.get("doi") != identifier.strip().lower()
-                    or source.get("pmcid") != doc.get("pmcid")
-                    or source.get("version") != doc.get("version")
-                    or not isinstance(snapshot, str) or not re.fullmatch(r"[0-9a-f]{64}", snapshot)):
-                pmc_evidence = {"status": "HOLD", "reason": "PMC evidence does not match the packet document"}
-        if pmc_evidence.get("status") != "CAPTURED":
-            warn("PMC_EVIDENCE_HOLD", pmc_evidence.get("reason") or "PMC capture failed")
-    else:
-        pmc_evidence = None
     sources=packet.get("sources",[])
     if not isinstance(sources,list):
         warn("SOURCES_NOT_LIST", "Sources must be a list")
@@ -273,7 +256,7 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *, pmc_ev
     structural_faults = {
         "UNSUPPORTED_PACKET_SCHEMA", "PROMPT_SHA_MISMATCH", "MISSING_RUN_ID",
         "MODEL_PROVENANCE_INCOMPLETE", "TOOL_PROVENANCE_INCOMPLETE",
-        "DOCUMENT_VERSION_INCOMPLETE", "PMC_EVIDENCE_HOLD", "CLAIMS_MISSING", "BAD_CLAIM",
+        "DOCUMENT_VERSION_INCOMPLETE", "CLAIMS_MISSING", "BAD_CLAIM",
         "DUPLICATE_OR_MISSING_CLAIM_ID", "INVALID_SUPPORT", "INVALID_MATURITY",
         "INVALID_PRIORITY", "INVALID_DISPOSITION", "CLAIM_LOCATOR_MISSING",
         "BAD_SOURCE_ID", "BAD_SOURCE_ACCESS", "SOURCE_PROVENANCE_INCOMPLETE",
@@ -283,6 +266,12 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *, pmc_ev
         "ORPHAN_CHECK", "DUPLICATE_CHECK_ID", "INVALID_CHECK", "SOURCES_NOT_LIST", "BAD_SOURCE_IDS",
     }
     intake_valid = not any(p["code"] in structural_faults for p in problems)
+    pmc_evidence = None
+    if isinstance(doc, dict) and "pmcid" in doc:
+        pmc_evidence = capture_packet_pmc(doc, intake_valid, pmc_live, pmc_xml)
+        if pmc_evidence["status"] != "CAPTURED":
+            warn("PMC_EVIDENCE_HOLD", pmc_evidence["reason"])
+            intake_valid = False
     if not intake_valid:
         # Invalid input cannot emit an actionable positive OR definitive negative.
         # Keep original proposed dispositions and all evidence for repair/audit.
@@ -303,6 +292,22 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *, pmc_ev
             **({"pmc_evidence": pmc_evidence} if pmc_evidence is not None else {}),
             "disclaimer":"Structural verification only; no independent scientific accuracy measured."
                          + (" No outreach performed." if pmc_evidence else " No external actions performed.")}
+
+
+def capture_packet_pmc(document, intake_valid, live, xml):
+    if not intake_valid:
+        return {"status": "HOLD", "reason": "PMC capture requires a structurally valid packet"}
+    if (live is True) == (xml is not None):
+        return {"status": "HOLD", "reason": "Choose one of --pmc-live or --pmc-xml for a PMC packet"}
+    doi = document.get("identifier")
+    if not isinstance(doi, str) or not doi.strip().startswith("10."):
+        return {"status": "HOLD", "reason": "PMC intake requires a bare DOI"}
+    if __package__:
+        from scripts.synthesis_capture_evidence import retrieve_pmc_evidence
+    else:
+        from synthesis_capture_evidence import retrieve_pmc_evidence
+
+    return retrieve_pmc_evidence(document["pmcid"], doi=doi, version=document["version"], xml=xml)
 
 
 def _markdown(result: dict) -> str:
@@ -342,27 +347,17 @@ def main(argv: list[str] | None=None) -> int:
     p.add_argument("--prompt",type=Path,required=True,help="Exact dated prompt text; SHA verified")
     p.add_argument("--packet",type=Path,required=True)
     p.add_argument("--output-dir",type=Path,required=True)
-    p.add_argument("--pmc-xml", type=Path, help="Replay saved PMC XML for a packet with document.pmcid")
+    pmc_mode = p.add_mutually_exclusive_group()
+    pmc_mode.add_argument("--pmc-live", action="store_true", help="Allow live PMC retrieval for a PMC packet")
+    pmc_mode.add_argument("--pmc-xml", type=Path, help="Replay saved PMC XML for a packet with document.pmcid")
     args=p.parse_args(argv)
     raw=args.packet.read_bytes()
     packet=json.loads(raw.decode("utf-8"))
-    prompt_digest = digest_bytes(args.prompt.read_bytes())
     document = packet.get("document") if isinstance(packet, dict) else None
-    evidence = None
-    if isinstance(document, dict) and "pmcid" in document:
-        from synthesis_capture_evidence import retrieve_pmc_evidence
-
-        doi, version = document.get("identifier"), document.get("version")
-        run = packet.get("run")
-        if not isinstance(doi, str) or not doi.strip().startswith("10.") or not version:
-            evidence = {"status": "HOLD", "reason": "PMC intake requires a bare DOI and a versioned PMCID"}
-        elif not isinstance(run, dict) or run.get("prompt_sha256") != prompt_digest:
-            evidence = {"status": "HOLD", "reason": "PMC intake requires the matching prompt digest"}
-        else:
-            evidence = retrieve_pmc_evidence(document["pmcid"], doi=doi, version=version, xml=args.pmc_xml)
-    elif args.pmc_xml is not None:
-        p.error("--pmc-xml requires document.pmcid in the packet")
-    result=review_packet(packet,prompt_digest,digest_bytes(raw),pmc_evidence=evidence)
+    if (args.pmc_live or args.pmc_xml is not None) and not (isinstance(document, dict) and "pmcid" in document):
+        p.error("PMC capture requires document.pmcid in the packet")
+    result=review_packet(packet,digest_bytes(args.prompt.read_bytes()),digest_bytes(raw),
+                         pmc_live=args.pmc_live,pmc_xml=args.pmc_xml)
     args.output_dir.mkdir(parents=True,exist_ok=True)
     (args.output_dir/"receipt.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     (args.output_dir/"report.md").write_text(_markdown(result),encoding="utf-8")

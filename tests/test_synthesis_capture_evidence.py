@@ -6,6 +6,12 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+from urllib.error import HTTPError
+from urllib.request import Request
+
+from scripts import synthesis_capture_evidence as capture
+from scripts import synthesis_preflight as preflight
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "synthesis_capture_evidence.py"
@@ -77,9 +83,38 @@ class CaptureEvidenceTests(unittest.TestCase):
                 code, result = self.run_capture(payload)
                 self.assertEqual((code, result["status"]), (2, "HOLD"))
 
+    def test_incidental_or_contradictory_license_does_not_grant_access(self):
+        declared = b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/"/>'
+        for invalid in (
+            b'<license><license-p>All rights reserved. See <ext-link xlink:href="https://creativecommons.org/licenses/by/4.0/">another licence</ext-link>.</license-p></license>',
+            b'<license license-type="all-rights-reserved" xlink:href="https://creativecommons.org/licenses/by/4.0/"/>',
+        ):
+            with self.subTest(invalid=invalid):
+                code, result = self.run_capture(ARTICLE.replace(declared, invalid))
+                self.assertEqual((code, result["status"]), (2, "HOLD"))
+
+    def test_cell_markup_preserves_values_and_separation(self):
+        payload = ARTICLE.replace(b"<td>Arm A</td><td>24</td>",
+                                  b"<td>10<sup>5</sup></td><td>10<break/>20</td>")
+        code, result = self.run_capture(payload)
+        self.assertEqual(code, 0)
+        cells = result["tables"][0]["rows"][1]["cells"]
+        self.assertEqual([cell["text"] for cell in cells], ["10^{5}", "10 20"])
+
+    def test_redirect_and_unexpected_response_origin_hold(self):
+        handler = capture.PmcRedirectHandler()
+        for target in ("https://example.invalid/", "http://eutils.ncbi.nlm.nih.gov/"):
+            with self.subTest(target=target), self.assertRaises(HTTPError):
+                handler.redirect_request(Request(capture.EFETCH), None, 302, "Found", {}, target)
+        with patch.object(capture, "build_opener") as opener:
+            response = opener.return_value.open.return_value.__enter__.return_value
+            response.geturl.return_value = "https://example.invalid/"
+            self.assertEqual(capture.retrieve_pmc_evidence("PMC123")["status"], "HOLD")
+            response.read.assert_not_called()
+
 
 class PmcIntakeTests(unittest.TestCase):
-    def run_preflight(self, *, doi="10.1234/synthetic", version="PMC123.2", payload=ARTICLE):
+    def run_preflight(self, *, doi="10.1234/synthetic", version="PMC123.2", payload=ARTICLE, replay=True):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             xml = root / "response.xml"
@@ -96,11 +131,11 @@ class PmcIntakeTests(unittest.TestCase):
                             "source_support": "SUPPORTED", "evidence_maturity": "SCREENED",
                             "priority": "P4", "proposed_disposition": "NO_FLAG"}],
             }), encoding="utf-8")
-            run = subprocess.run(
-                [sys.executable, "-B", str(PREFLIGHT), "--prompt", str(PROMPT), "--packet", str(packet),
-                 "--output-dir", str(root), "--pmc-xml", str(xml)],
-                capture_output=True, text=True, check=False,
-            )
+            command = [sys.executable, "-B", str(PREFLIGHT), "--prompt", str(PROMPT),
+                       "--packet", str(packet), "--output-dir", str(root)]
+            if replay:
+                command += ["--pmc-xml", str(xml)]
+            run = subprocess.run(command, capture_output=True, text=True, check=False)
             result = json.loads((root / "receipt.json").read_text(encoding="utf-8"))
             self.assertEqual(result["input_sha256"], sha256(packet.read_bytes()).hexdigest())
             return run.returncode, result, (root / "report.md").read_text(encoding="utf-8")
@@ -130,6 +165,25 @@ class PmcIntakeTests(unittest.TestCase):
         self.assertEqual(result["pmc_evidence"]["status"], "HOLD")
         self.assertEqual(result["ledger"][0]["effective"], "HOLD")
         self.assertIn("PMC_EVIDENCE_HOLD", [problem["code"] for problem in result["problems"]])
+
+    def test_packet_alone_cannot_enable_network(self):
+        code, result, _ = self.run_preflight(replay=False)
+        self.assertEqual(code, 2)
+        self.assertIn("--pmc-live", result["pmc_evidence"]["reason"])
+        self.assertNotIn("attempted_url", result["pmc_evidence"])
+
+    def test_invalid_packet_cannot_trigger_even_enabled_network(self):
+        digest = sha256(PROMPT.read_bytes()).hexdigest()
+        packet = {
+            "schema_version": "invalid",
+            "run": {"prompt_sha256": digest},
+            "document": {"pmcid": "PMC123", "identifier": "10.1234/synthetic", "version": "PMC123.2"},
+        }
+        with patch.object(capture, "retrieve_pmc_evidence") as retrieve:
+            result = preflight.review_packet(packet, digest, "synthetic", pmc_live=True)
+            retrieve.assert_not_called()
+        self.assertFalse(result["intake_valid"])
+        self.assertEqual(result["pmc_evidence"]["status"], "HOLD")
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@
       "id": ".github/workflows/synthesis-preflight.yml#jobs.offline-regression",
       "kind": "ci-job",
       "name": "Synthesis preflight synthetic regression (development only)",
-      "stops": "The Ubuntu regression job fails when a synthetic preflight or PMC capture assertion fails, including capture failure and version mismatch controls, or when the offline example receipt loses its expected prompt binding or review statuses.",
+      "stops": "The Ubuntu regression job fails when a synthetic preflight or PMC capture assertion fails, including version mismatch, licence, table markup, redirect and network opt-in controls, or when the offline example receipt loses its expected prompt binding or review statuses.",
       "would_not_stop": [
         "Live PMC outages and unexpected changes in real XML: the job exercises synthetic archive replay and an offline packet.",
         "Wrong interpretation of a real source, table or correction: the synthetic cases cover specific structural checks.",
@@ -23,7 +23,7 @@
       "id": "scripts/synthesis_preflight.py",
       "kind": "script",
       "name": "Synthesis local packet validator (experimental)",
-      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for packets opting into PMC evidence. Bounded arithmetic checks surface inconsistencies under explicitly compatible estimators.",
+      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for PMC packets. Live capture requires an operator flag and the HTTPS EFetch origin. Bounded arithmetic checks surface inconsistencies under explicitly compatible estimators.",
       "would_not_stop": [
         "Fabricated but internally consistent claim attestations or locally supplied XML: capture binds a snapshot and declared identity. Claim support and archive provenance require separate review.",
         "An unavailable or superseded linked supplement or correction: capture inventories links for follow-up.",
@@ -33,8 +33,8 @@
       ],
       "source": "scripts/synthesis_preflight.py and scripts/synthesis_capture_evidence.py, with prompt v1.1 and synthetic regressions.",
       "seal": {
-        "scripts/synthesis_preflight.py": "c91fce7f001cf012c6ce5bf3e712fa1537202a4708830e31f72acf41211484b2",
-        "scripts/synthesis_capture_evidence.py": "6ebc843f572ca8437b2403f259750ce4bd37a29089a738fcd50e3d40de8aba1a"
+        "scripts/synthesis_preflight.py": "1a7621649b24f4d9ed241b95ff8ab5d3b19ad79e02d5adcc5d3f5bc4fcc67280",
+        "scripts/synthesis_capture_evidence.py": "16e91503651ba8b5bac3c9c5e89787a3d892d139cc05ca6671fd25e1e039aa76"
       }
     },
     {

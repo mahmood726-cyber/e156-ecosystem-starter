@@ -7,23 +7,39 @@ from http.client import HTTPException
 import json
 from pathlib import Path
 import re
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.error import HTTPError
+from urllib.parse import urlencode, urlsplit
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 import xml.etree.ElementTree as ET
 
-from synthesis_five_journal_corrections import normalize_doi
+if __package__:
+    from scripts.synthesis_five_journal_corrections import normalize_doi
+else:
+    from synthesis_five_journal_corrections import normalize_doi
 
 
-EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+EFETCH_HOST = "eutils.ncbi.nlm.nih.gov"
+EFETCH = f"https://{EFETCH_HOST}/entrez/eutils/efetch.fcgi"
 MAX_BYTES = 32 * 1024 * 1024
 PMCID = re.compile(r"PMC[1-9][0-9]*")
 XLINK_HREF = "{http://www.w3.org/1999/xlink}href"
+ALI_LICENSE_REF = "{http://www.niso.org/schemas/ali/1.0/}license_ref"
 CC_LINK = re.compile(r"https?://creativecommons\.org/((?:licenses|publicdomain)/[^?#\s]+)")
 OPEN_LICENSE = re.compile(r"(?:licenses/by|publicdomain/zero)/[0-9]+\.[0-9]+")
 
 
 def text(node):
-    return " ".join("".join(node.itertext()).split()) if node is not None else ""
+    def fragments(element):
+        marker = {"sup": "^{", "sub": "_{"}.get(element.tag)
+        separator = " " if element.tag in {"break", "p", "list-item"} else ""
+        yield marker or separator
+        yield element.text or ""
+        for child in element:
+            yield from fragments(child)
+            yield child.tail or ""
+        yield "}" if marker else separator
+
+    return " ".join("".join(fragments(node)).split()) if node is not None else ""
 
 
 def article_id(meta, kind):
@@ -36,12 +52,19 @@ def article_id(meta, kind):
 def license_url(meta):
     links = set()
     for license_node in meta.findall("./permissions/license"):
-        for node in license_node.iter():
-            for value in (node.get(XLINK_HREF), text(node) if node.tag.endswith("license_ref") else None):
-                match = CC_LINK.fullmatch(value) if value else None
-                if match:
-                    links.add(match[1].rstrip("/"))
-    if len(links) != 1 or not OPEN_LICENSE.fullmatch(next(iter(links))):
+        declarations = [text(ref) for ref in license_node.findall(ALI_LICENSE_REF)]
+        if license_node.get(XLINK_HREF) is not None:
+            declarations.append(license_node.get(XLINK_HREF))
+        if not declarations or re.search(r"\ball[\s_-]+rights[\s_-]+reserved\b",
+                                         license_node.get("license-type", "") + " " + text(license_node),
+                                         re.IGNORECASE):
+            raise ValueError("Expected an explicit, unambiguous CC BY or CC0 license")
+        for value in declarations:
+            match = CC_LINK.fullmatch(value)
+            if not match or not OPEN_LICENSE.fullmatch(match[1].rstrip("/")):
+                raise ValueError("Expected an explicit, unambiguous CC BY or CC0 license")
+            links.add(match[1].rstrip("/"))
+    if len(links) != 1:
         raise ValueError("Expected an explicit, unambiguous CC BY or CC0 license")
     return "https://creativecommons.org/" + next(iter(links)) + "/"
 
@@ -57,7 +80,10 @@ def table_evidence(body):
             "footnotes": text(wrapper.find("table-wrap-foot")),
             "status": "MANUAL_REVIEW",
         }
-        if len(tables) == 1:
+        if len(tables) == 1 and not any(
+            node.tag.rsplit("}", 1)[-1] in {"math", "tex-math", "inline-graphic"}
+            for node in tables[0].iter()
+        ):
             rows = [
                 {"group": group.tag, "cells": [
                     {"kind": cell.tag, "text": text(cell), "rowspan": cell.get("rowspan", "1"),
@@ -132,6 +158,19 @@ def capture(payload, pmcid, expected_doi=None):
     }
 
 
+def is_efetch_origin(url):
+    target = urlsplit(url)
+    return target.scheme == "https" and target.netloc.lower() == EFETCH_HOST
+
+
+class PmcRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not is_efetch_origin(newurl):
+            raise HTTPError(req.full_url, code, "PMC retrieval refused a redirect outside the HTTPS EFetch origin",
+                            headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def retrieve_pmc_evidence(pmcid, *, doi=None, version=None, xml=None):
     """Retrieve or replay one PMC response, optionally binding a requested version."""
     mode = "ARCHIVED_XML" if xml is not None else "NCBI_EFETCH"
@@ -151,12 +190,15 @@ def retrieve_pmc_evidence(pmcid, *, doi=None, version=None, xml=None):
         else:
             query = urlencode({"db": "pmc", "id": pmcid, "retmode": "xml"})
             url = EFETCH + "?" + query
-            with urlopen(Request(url, headers={"User-Agent": "Synthesis-evidence-capture/1"}), timeout=20) as source:
+            request = Request(url, headers={"User-Agent": "Synthesis-evidence-capture/1"})
+            with build_opener(PmcRedirectHandler()).open(request, timeout=20) as source:
+                if not is_efetch_origin(source.geturl()):
+                    raise ValueError("PMC response is outside the HTTPS EFetch origin")
                 payload = source.read(MAX_BYTES + 1)
         result = capture(payload, pmcid, doi)
         if version is not None and result["source"]["version"] != version:
             raise ValueError("The captured PMC version does not match the requested version")
-    except (OSError, HTTPException, ValueError, ET.ParseError) as exc:
+    except (OSError, HTTPException, ValueError, ET.ParseError, LookupError, RecursionError) as exc:
         result = {"status": "HOLD", "reason": str(exc)}
     result["capture_mode"] = mode
     if url:
