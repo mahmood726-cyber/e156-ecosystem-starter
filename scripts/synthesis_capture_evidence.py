@@ -26,12 +26,14 @@ XLINK_HREF = "{http://www.w3.org/1999/xlink}href"
 ALI_LICENSE_REF = "{http://www.niso.org/schemas/ali/1.0/}license_ref"
 CC_LINK = re.compile(r"https?://creativecommons\.org/((?:licenses|publicdomain)/[^?#\s]+)")
 OPEN_LICENSE = re.compile(r"(?:licenses/by|publicdomain/zero)/[0-9]+\.[0-9]+")
+TEXT_MARKERS = {
+    "sup": ("^{", "}"), "sub": ("_{", "}"), "xref": ("[", "]"), "ext-link": ("[", "]"),
+    "bold": ("**", "**"), "italic": ("*", "*"),
+}
 TABLE_MARKUP = frozenset({
     "table", "caption", "colgroup", "col", "thead", "tbody", "tfoot", "tr", "th", "td",
-    "bold", "italic", "monospace", "overline", "sc", "strike", "styled-content", "underline",
-    "sub", "sup", "break", "p", "list", "list-item", "label", "named-content", "xref", "ext-link",
+    "break", "p", *TEXT_MARKERS,
 })
-TEXT_MARKERS = {"sup": ("^{", "}"), "sub": ("_{", "}"), "xref": ("[", "]")}
 
 
 def text(node):
@@ -89,7 +91,10 @@ def table_evidence(body):
             "footnotes": text(wrapper.find("table-wrap-foot")),
             "status": "MANUAL_REVIEW",
         }
-        if len(tables) == 1 and all(node.tag in TABLE_MARKUP for node in tables[0].iter()):
+        if len(tables) == 1 and all(
+            node.tag in TABLE_MARKUP and "style" not in node.attrib and "style-type" not in node.attrib
+            for node in tables[0].iter()
+        ):
             rows = [
                 {"group": group.tag, "cells": [
                     {"kind": cell.tag, "text": text(cell), "rowspan": cell.get("rowspan", "1"),

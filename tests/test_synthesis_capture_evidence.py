@@ -117,6 +117,19 @@ class CaptureEvidenceTests(unittest.TestCase):
         self.assertEqual(result["tables"][0]["status"], "MANUAL_REVIEW")
         self.assertNotIn("rows", result["tables"][0])
 
+    def test_unhandled_semantic_styling_requires_manual_review(self):
+        for cell in (
+            b"<td>0.<overline>3</overline></td>",
+            b"<td><strike>32</strike>24</td>",
+            b'<td>10<styled-content style-type="superscript">5</styled-content></td>',
+            b'<td>10<bold style="vertical-align: super">5</bold></td>',
+        ):
+            with self.subTest(cell=cell):
+                code, result = self.run_capture(ARTICLE.replace(b"<td>24</td>", cell))
+                self.assertEqual(code, 0)
+                self.assertEqual(result["tables"][0]["status"], "MANUAL_REVIEW")
+                self.assertNotIn("rows", result["tables"][0])
+
     def test_dated_licence_does_not_establish_applicability(self):
         payload = ARTICLE.replace(
             b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/"/>',

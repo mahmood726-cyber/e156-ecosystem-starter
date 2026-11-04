@@ -34,7 +34,7 @@
       "source": "scripts/synthesis_preflight.py and scripts/synthesis_capture_evidence.py, with prompt v1.1 and synthetic regressions.",
       "seal": {
         "scripts/synthesis_preflight.py": "1a7621649b24f4d9ed241b95ff8ab5d3b19ad79e02d5adcc5d3f5bc4fcc67280",
-        "scripts/synthesis_capture_evidence.py": "088d33d5e1b404762bcb89b5d68ba14685448101bc6fab94a4f757cce93723c0"
+        "scripts/synthesis_capture_evidence.py": "6dd927352cdbe36d0bc75dbc3b1734dfa98089d9701897264fece0288e258e64"
       }
     },
     {
