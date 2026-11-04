@@ -93,9 +93,16 @@ class CaptureEvidenceTests(unittest.TestCase):
             b'<license><license-p>All rights reserved. See <ext-link xlink:href="https://creativecommons.org/licenses/by/4.0/">another licence</ext-link>.</license-p></license>',
             b'<license license-type="all-rights-reserved" xlink:href="https://creativecommons.org/licenses/by/4.0/"/>',
             b'<license license-type="CC-BY-NC" xlink:href="https://creativecommons.org/licenses/by/4.0/"/>',
-            b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/">'
+            b'<license license-type="CC_BY_NC_SA" xlink:href="https://creativecommons.org/licenses/by/4.0/"/>',
+            b'<license license-type="CC-BY" xlink:href="https://creativecommons.org/publicdomain/zero/1.0/"/>',
+            b'<license license-type="CC-BY-3.0" xlink:href="https://creativecommons.org/licenses/by/4.0/"/>',
+            b'<license><license_ref xmlns="http://www.niso.org/schemas/ali/1.0/" content-type="cc0license">'
+            b'https://creativecommons.org/licenses/by/4.0/</license_ref></license>',
+            b'<license license-type="CC_BY_4.0" xlink:href="https://creativecommons.org/licenses/by/4.0/">'
             b'<license-p><ext-link xlink:href="https://creativecommons.org/licenses/by-nc/4.0/">'
             b'Terms for this work</ext-link>.</license-p></license>',
+            b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/">'
+            b'<license-p>See https://creativecommons.org/licenses/by-nc/ for the terms.</license-p></license>',
             b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/">'
             b'<license-p>Distributed under the Creative Commons Attribution-NonCommercial license.</license-p></license>',
         ):
@@ -104,7 +111,7 @@ class CaptureEvidenceTests(unittest.TestCase):
                 self.assertEqual((code, result["status"]), (2, "HOLD"))
 
         with_data_waiver = (
-            b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/">'
+            b'<license license-type="CC_BY_4.0" xlink:href="https://creativecommons.org/licenses/by/4.0/">'
             b'<license-p>The waiver at <ext-link xlink:href="https://creativecommons.org/publicdomain/zero/1.0/"/>'
             b' applies to the data.</license-p></license>'
         )

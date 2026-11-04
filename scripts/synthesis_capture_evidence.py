@@ -30,7 +30,8 @@ CC_LINK = re.compile(r"https?://creativecommons\.org/((?:licenses|publicdomain)/
 OPEN_LICENSE = re.compile(r"(?:licenses/by|publicdomain/zero)/[0-9]+\.[0-9]+")
 RESERVED_RIGHTS = re.compile(r"\ball[\s_-]+rights[\s_-]+reserved\b", re.IGNORECASE)
 CC_TERMS = re.compile(r"https?://(?:www\.)?creativecommons\.org/"
-                      r"((?:licenses|publicdomain)/[a-z0-9-]+/[0-9]+\.[0-9]+)", re.IGNORECASE)
+                      r"((?:licenses|publicdomain)/[a-z0-9-]+(?:/[0-9]+\.[0-9]+)?)", re.IGNORECASE)
+CC_TYPE = re.compile(r"(?:cc-?)?(by(?:-(?:nc|nd|sa))*|0|zero)(?:-?([0-9]+\.[0-9]+))?(?:-?license)?")
 RESTRICTIVE_CC_NAME = re.compile(r"\b(?:CC[\s_-]*BY[\s_-]+(?:NC|ND|SA)|"
                                 r"Creative Commons Attribution[\s_-]+(?:Non[\s_-]?Commercial|"
                                 r"No[\s_-]?Derivatives|Share[\s_-]?Alike))\b", re.IGNORECASE)
@@ -69,6 +70,19 @@ def article_id(meta, kind):
     return values[0]
 
 
+def licence_type_agrees(declared_type, url_terms):
+    declared_type = re.sub(r"[\u2010-\u2015]", "-", declared_type)
+    if RESERVED_RIGHTS.search(declared_type) or RESTRICTIVE_CC_NAME.search(declared_type):
+        return False
+    normalized = re.sub(r"[\s_-]+", "-", declared_type.strip().casefold())
+    code = CC_TYPE.fullmatch(normalized)
+    if not code:
+        return True
+    family, version = code.groups()
+    expected = "publicdomain/zero" if family in {"0", "zero"} else f"licenses/{family}"
+    return url_terms.startswith(expected + "/") if version is None else url_terms == f"{expected}/{version}"
+
+
 def license_url(permissions):
     links = set()
     prose_terms = set()
@@ -82,16 +96,19 @@ def license_url(permissions):
         declarations = [text(ref) for ref in references]
         if license_node.get(XLINK_HREF) is not None:
             declarations.append(license_node.get(XLINK_HREF))
-        license_type = license_node.get("license-type", "")
-        if not declarations or RESERVED_RIGHTS.search(license_type) or RESTRICTIVE_CC_NAME.search(license_type):
+        types = [license_node.get("license-type", ""), *(ref.get("content-type", "") for ref in references)]
+        if not declarations:
             raise ValueError("Expected an explicit, unambiguous CC BY or CC0 license")
         for value in declarations:
             match = CC_LINK.fullmatch(value)
             if not match or not OPEN_LICENSE.fullmatch(match[1].rstrip("/")):
                 raise ValueError("Expected an explicit, unambiguous CC BY or CC0 license")
-            links.add(match[1].rstrip("/"))
+            terms = match[1].rstrip("/")
+            if any(not licence_type_agrees(declared_type, terms) for declared_type in types):
+                raise ValueError("PMC licence type conflicts with the declared licence URL")
+            links.add(terms)
         for paragraph in license_node.iter("license-p"):
-            prose = "".join(paragraph.itertext())
+            prose = re.sub(r"[\u2010-\u2015]", "-", "".join(paragraph.itertext()))
             if RESTRICTIVE_CC_NAME.search(prose):
                 raise ValueError("PMC licence prose conflicts with open access")
             references = [node.get(XLINK_HREF, "") for node in paragraph.iter()]
@@ -101,8 +118,9 @@ def license_url(permissions):
         raise ValueError("Expected an explicit, unambiguous CC BY or CC0 license")
     licence = next(iter(links))
     # A CC0 data waiver does not weaken the declared article-level CC BY terms.
-    if any(term != licence and not (licence.startswith("licenses/by/") and term.startswith("publicdomain/zero/"))
-           for term in prose_terms):
+    if licence.startswith("licenses/by/"):
+        prose_terms = {term for term in prose_terms if term.split("/")[:2] != ["publicdomain", "zero"]}
+    if prose_terms.difference((licence, licence.rsplit("/", 1)[0])):
         raise ValueError("PMC licence prose conflicts with the declared licence")
     return "https://creativecommons.org/" + licence + "/"
 
