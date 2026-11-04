@@ -133,11 +133,8 @@ def _correction(evidence, spec):
 
 def participant_count_finding(claim_id, spec, evidence):
     finding = {"claim_id": claim_id}
-    has_source = evidence and evidence["status"] == "CAPTURED"
-    if has_source and isinstance(spec, dict) and "correction" in spec:
-        finding["correction"] = _correction(evidence, spec["correction"])
     try:
-        if not has_source:
+        if not evidence or evidence["status"] != "CAPTURED":
             raise ValueError("A valid open-access PMC snapshot is required")
         if not isinstance(spec, dict) or spec.get("scope_verified") is not True:
             raise ValueError("A reviewer must verify analysis relationship, arm coverage and comparable denominators")
@@ -146,9 +143,11 @@ def participant_count_finding(claim_id, spec, evidence):
             raise ValueError("Participant cell coordinates must bind the exact source snapshot SHA-256")
         finding["source"] = source
         finding["analysis"] = {key: _label(spec, key) for key in ("outcome", "timepoint", "basis")}
+        correction = _correction(evidence, spec["correction"]) if "correction" in spec else {}
+        if correction:
+            finding["correction"] = correction
         kind = spec.get("kind")
         if kind == "PUBLISHED_CORRECTION":
-            correction = finding.get("correction", {})
             if correction.get("status") != "SOURCE_BOUND":
                 raise ValueError("A published replacement requires a source-bound correction")
             from_article = "original" in spec
@@ -175,6 +174,8 @@ def participant_count_finding(claim_id, spec, evidence):
             finding.update(_unique_arms(evidence, spec))
         else:
             raise ValueError("Unknown participant count check kind")
+        if finding["status"] == "NO_FLAG" and correction.get("status") == "HOLD":
+            finding.update(status="HOLD", comparison_status="NO_FLAG", reason="Requested correction evidence is unresolved")
     except ValueError as exc:
         finding.update(status="HOLD", reason=str(exc))
     return finding

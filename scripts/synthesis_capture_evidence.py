@@ -28,6 +28,7 @@ XLINK_HREF = "{http://www.w3.org/1999/xlink}href"
 ALI_LICENSE_REF = "{http://www.niso.org/schemas/ali/1.0/}license_ref"
 CC_LINK = re.compile(r"https?://creativecommons\.org/((?:licenses|publicdomain)/[^?#\s]+)")
 OPEN_LICENSE = re.compile(r"(?:licenses/by|publicdomain/zero)/[0-9]+\.[0-9]+")
+RESERVED_RIGHTS = re.compile(r"\ball[\s_-]+rights[\s_-]+reserved\b", re.IGNORECASE)
 TEXT_MARKERS = {
     "sup": ("^{", "}"), "sub": ("_{", "}"), "xref": ("[", "]"), "ext-link": ("[", "]"),
     "bold": ("**", "**"), "italic": ("*", "*"),
@@ -37,6 +38,7 @@ TABLE_MARKUP = frozenset({
     "break", "p", *TEXT_MARKERS,
 })
 MAX_LINKED_CORRECTIONS = 8
+CORRECTION_ID_TYPES = {"pmc", "pmcid", "pmid", "pubmed", "doi"}
 
 
 def text(node):
@@ -62,18 +64,19 @@ def article_id(meta, kind):
     return values[0]
 
 
-def license_url(meta):
+def license_url(permissions):
     links = set()
-    for license_node in meta.findall("./permissions/license"):
+    if any(RESERVED_RIGHTS.search("".join(declaration.itertext()))
+           for node in permissions for declaration in node):
+        raise ValueError("PMC rights declarations conflict with open access")
+    for license_node in (item for node in permissions for item in node.findall("license")):
         references = license_node.findall(ALI_LICENSE_REF)
         if any(ref.get("start_date") is not None for ref in references):
             raise ValueError("Dated PMC licence declarations require manual review")
         declarations = [text(ref) for ref in references]
         if license_node.get(XLINK_HREF) is not None:
             declarations.append(license_node.get(XLINK_HREF))
-        if not declarations or re.search(r"\ball[\s_-]+rights[\s_-]+reserved\b",
-                                         license_node.get("license-type", "") + " " + text(license_node),
-                                         re.IGNORECASE):
+        if not declarations or RESERVED_RIGHTS.search(license_node.get("license-type", "")):
             raise ValueError("Expected an explicit, unambiguous CC BY or CC0 license")
         for value in declarations:
             match = CC_LINK.fullmatch(value)
@@ -158,7 +161,11 @@ def article_entries(payload):
     if root.tag == "article":
         return [root]
     if root.tag == "pmc-articleset":
-        return root.findall("article")
+        articles = list(root)
+        if (root.text or "").strip() or any(node.tag != "article" or (node.tail or "").strip()
+                                             for node in articles):
+            raise ValueError("Unexpected non-article record in PMC article set")
+        return articles
     raise ValueError("Expected a PMC JATS article or article set")
 
 
@@ -166,27 +173,24 @@ def locate_quotes(body, tables, quotes):
     """Index only requested excerpts so receipts do not copy article prose."""
     if not quotes:
         return {}
-    locations = [(f"body p {index}", text(node)) for index, node in enumerate(body.iter("p"), 1)]
+    table_paragraphs = {node for wrapper in body.iter("table-wrap") for node in wrapper.iter("p")}
+    locations = [(f"body p {index}", text(node)) for index, node in enumerate(body.iter("p"), 1)
+                 if node not in table_paragraphs]
     for table in tables:
         locator = table["locator"]
         locations.extend((f"{locator} {key}", table[key]) for key in ("label", "caption", "footnotes"))
         for row_index, row in enumerate(table.get("rows", []), 1):
             locations.extend((f"{locator} row {row_index} cell {cell_index}", cell["text"])
                              for cell_index, cell in enumerate(row["cells"], 1))
-    # Prefer exact source blocks over substring matches. A short quote in both a
-    # caption and its underlying paragraph can use the paragraph's exact locator.
-    return {
-        quote: ([location for location, value in locations if quote == value and location.startswith("body p ")]
-                or [location for location, value in locations if quote == value]
-                or [location for location, value in locations if quote in value])
-        for quote in quotes
-    }
+    return {quote: [location for location, value in locations if quote in value] for quote in quotes}
 
 
-def capture(payload, pmcid, expected_doi=None, *, quotes=()):
+def capture(payload, pmcid, expected_doi=None, *, quotes=(), for_archive=False):
     if not PMCID.fullmatch(pmcid):
         raise ValueError("A canonical PMCID is required")
     articles = article_entries(payload)
+    if for_archive and len(articles) != 1:
+        raise ValueError("A PMC archive must contain exactly one top-level article")
     matches = [
         article for article in articles
         if any(text(node) == pmcid and node.get("pub-id-type") == "pmcid"
@@ -196,6 +200,13 @@ def capture(payload, pmcid, expected_doi=None, *, quotes=()):
         raise ValueError("Expected exactly one JATS article matching the requested PMCID")
     article = matches[0]
     meta = article.find("front/article-meta")
+    if any(node is not article and node.tag in {"article", "sub-article", "response"} for node in article.iter()):
+        raise ValueError("Nested PMC articles and responses require separate rights review")
+    article_permissions = meta.findall("permissions")
+    licence = license_url(article_permissions)
+    for permissions in article.iter("permissions"):
+        if permissions not in article_permissions:
+            license_url((permissions,))
     if article_id(meta, "pmcid") != pmcid:
         raise ValueError("Article PMCID is ambiguous")
     doi = normalize_doi(article_id(meta, "doi"))
@@ -208,24 +219,28 @@ def capture(payload, pmcid, expected_doi=None, *, quotes=()):
     if body is None or not text(body):
         raise ValueError("Expected a nonempty JATS article body")
     tables = list(table_evidence(body))
-    table_locators = {node: table["locator"] for node, table in zip(body.iter("table-wrap"), tables)
-                      if table["status"] == "STRUCTURED"}
+    tables_by_node = dict(zip(body.iter("table-wrap"), tables))
     supplements = []
     for position, node in enumerate(article.iter("supplementary-material"), 1):
-        inline = [table_locators[wrapper] for wrapper in node.iter("table-wrap") if wrapper in table_locators]
+        wrappers = list(node.iter("table-wrap"))
+        inline = [tables_by_node[wrapper]["locator"] for wrapper in wrappers
+                  if wrapper in tables_by_node and tables_by_node[wrapper]["status"] == "STRUCTURED"]
+        unresolved = [tables_by_node[wrapper]["locator"] for wrapper in wrappers
+                      if wrapper in tables_by_node and tables_by_node[wrapper]["status"] != "STRUCTURED"]
         targets = list(dict.fromkeys(child.get(XLINK_HREF) for child in node.iter() if child.get(XLINK_HREF)))
+        manual = bool(targets) or not inline or len(inline) != len(wrappers)
         supplements.append({
             "locator": f"article supplementary-material {position}", "jats_id": node.get("id"),
             "label": text(node.find("label")), "targets": targets, "inline_tables": inline,
-            "status": "MANUAL_REVIEW" if targets or not inline else "INLINE_CAPTURED",
-            **({"reason": "External attachment or no structured inline table; verify edition and rights separately"}
-               if targets or not inline else {}),
+            "status": "MANUAL_REVIEW" if manual else "INLINE_CAPTURED",
+            **({"unresolved_inline_tables": unresolved} if unresolved else {}),
+            **({"reason": "External attachment or incomplete inline table evidence"} if manual else {}),
         })
     pmids = [text(node) for node in meta.findall("article-id") if node.get("pub-id-type") == "pmid"]
     return {
         "status": "CAPTURED",
         "source": {
-            "pmcid": pmcid, "doi": doi, "version": version, "license": license_url(meta),
+            "pmcid": pmcid, "doi": doi, "version": version, "license": licence,
             "snapshot_sha256": sha256(payload).hexdigest(),
             **({"pmid": pmids[0]} if len(pmids) == 1 and re.fullmatch(r"[1-9][0-9]*", pmids[0]) else {}),
         },
@@ -312,7 +327,7 @@ def retrieve_pmc_evidence(pmcid, *, doi=None, version=None, xml=None, archive=No
                 if not is_efetch_origin(final_url):
                     raise ValueError("PMC response is outside the HTTPS EFetch origin")
                 payload = source.read(MAX_BYTES + 1)
-        result = capture(payload, pmcid, doi, quotes=quotes)
+        result = capture(payload, pmcid, doi, quotes=quotes, for_archive=archive is not None)
         if version is not None and result["source"]["version"] != version:
             raise ValueError("The captured PMC version does not match the requested version")
         if xml is None:
@@ -343,13 +358,26 @@ def link_matches(link, source):
     return False
 
 
+def matching_links(links, source):
+    version_pattern = re.escape(source["pmcid"]) + r"\.[1-9][0-9]*"
+    versioned = [link for link in links if link["id_type"] in {"pmc", "pmcid"}
+                 and re.fullmatch(version_pattern, link["target"])]
+    return [link for link in (versioned or links) if link_matches(link, source)]
+
+
 def _linked_entry(result, original, archive, payload=None):
     if result["status"] != "CAPTURED":
         return result
-    backlinks = [link for link in result["correction_links"] if link["relation"] == "corrected-article"
-                 and link_matches(link, original["source"])]
+    backlinks = matching_links([link for link in result["correction_links"]
+                                if link["relation"] == "corrected-article"], original["source"])
     if not backlinks or result["source"]["pmcid"] == original["source"]["pmcid"]:
         return {"status": "HOLD", "reason": "Linked XML lacks a typed correction backlink to this article"}
+    if result["article_type"] is not None and result["article_type"].casefold() != "correction":
+        return {"status": "HOLD", "reason": "Linked XML declares an article type other than correction"}
+    forward_links = [link for link in original["correction_links"] if link["relation"] == "correction-forward"
+                     and link["id_type"] in CORRECTION_ID_TYPES]
+    if forward_links and not matching_links(forward_links, result["source"]):
+        return {"status": "HOLD", "reason": "Linked correction does not match a typed forward link from the article"}
     if archive is not None and payload is not None:
         archive_snapshot(payload, result, archive)
     result["backlinks"] = backlinks

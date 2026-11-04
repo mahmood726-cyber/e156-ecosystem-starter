@@ -2,6 +2,8 @@
 
 Use the normal Synthesis preflight with `document.pmcid`, a bare DOI in `document.identifier` and the exact edition in `document.version`. `--pmc-live` allows retrieval from PMC EFetch. `--pmc-xml PATH` replays a local JATS response without network access. The CLI saves validated XML bytes under `pmc-snapshots/<sha256>.xml` inside the receipt directory. Keep that directory with the receipt. Live receipts also record the final retrieval URL and UTC timestamp. A later response for the same PMCID version can have different bytes, so use the archived snapshot to reproduce a comparison.
 
+The archive requires a single article. Responses containing nested articles, separately restricted material or contradictory rights declarations are held before any XML is saved.
+
 Run capture once to locate tables and obtain the digest. Then add an optional `participant_count_check` object to the relevant entry in `claims` and replay the same XML. The object has these fields.
 
 | Field | Meaning |
@@ -20,13 +22,13 @@ The receipt reports `REVIEW_CANDIDATE` for an inconsistency, `NO_FLAG` for a pas
 
 ## Corrections and supplements
 
-Supply verified correction JATS with `--pmc-linked-xml PATH`, which can be repeated. The correction must carry a typed backlink to the article. `--pmc-live --pmc-follow-corrections` can also follow direct typed PMCID links using EFetch. Other links and missing or ambiguous records are listed for manual review. Archive older article XML separately from the current edition and the notice.
+Supply verified correction JATS with `--pmc-linked-xml PATH`, which can be repeated. The correction must carry a typed backlink to the article. If the notice declares an article type, it must be `correction`. When the article gives typed forward links, the notice must match one. Versioned links take precedence for their target PMCID. `--pmc-live --pmc-follow-corrections` can also follow direct typed PMCID links using EFetch. Other links and missing or ambiguous records are listed for manual review. Archive older article XML separately from the current edition and the notice. [JATS article types](https://jats.nlm.nih.gov/archiving/tag-library/1.3/attribute/article-type.html)
 
-To associate a notice with a specific comparison, add `correction` to the count check with its `pmcid`, `snapshot_sha256`, `context_quote`, and reviewer attestation `same_claim_verified: true`. Add `replacement` with a cell reference when the notice gives the replacement in a table. A `SOURCE_BOUND` correction preserves the matching excerpt or cell. It leaves the original comparison and its review disposition intact.
+To associate a notice with a specific comparison, add `correction` to the count check with its `pmcid`, `snapshot_sha256`, `context_quote`, and reviewer attestation `same_claim_verified: true`. Add `replacement` with a cell reference when the notice gives the replacement in a table. A `SOURCE_BOUND` correction preserves the matching excerpt or cell. An unresolved requested correction holds a comparison that would otherwise yield `NO_FLAG`. The receipt retains its arithmetic separately.
 
 Use `kind: "PUBLISHED_CORRECTION"` when the task is tracing a known count replacement. This mode requires the notice's context quote, its `correction.replacement` cell, and one previous count cell. Set `original` for a cell in the separately archived original article, or `correction.previous` when the notice itself reproduces the original. The receipt reports `MATCH` when the selected numbers agree, `PUBLISHED_CORRECTION` when they differ, and `HOLD` when the exact pair cannot be verified. Trace results should be scored separately from error detection.
 
-Inline supplementary tables in the article body use the same snapshot and cell references. The receipt retains links and manual-review reasons for external attachments, whose edition and reuse rights require separate verification. [PMC archive versioning and access](https://pmc.ncbi.nlm.nih.gov/tools/pmcaws/)
+Inline supplementary tables in the article body use the same snapshot and cell references. Supplements with unresolved tables or external attachments remain in manual review. The receipt distinguishes captured from unresolved tables. [PMC archive versioning and access](https://pmc.ncbi.nlm.nih.gov/tools/pmcaws/)
 
 ## Public-source evaluation summary
 

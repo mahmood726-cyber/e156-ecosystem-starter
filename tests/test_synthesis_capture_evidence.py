@@ -35,6 +35,10 @@ ARTICLE = b"""<article xmlns:xlink="http://www.w3.org/1999/xlink">
     <supplementary-material id="supplement"><media xlink:href="appendix.pdf"/></supplementary-material>
   </sec></body>
 </article>"""
+CORRECTION = (ARTICLE.replace(b"PMC123", b"PMC124").replace(b"10.1234/synthetic", b"10.1234/correction")
+              .replace(b'correction-forward" ext-link-type="pmc" xlink:href="PMC124"',
+                       b'corrected-article" ext-link-type="pmc" xlink:href="PMC123"')
+              .replace(b"Counts by arm.", b"The correct arm count is 24."))
 
 
 class CaptureEvidenceTests(unittest.TestCase):
@@ -170,6 +174,46 @@ class CaptureEvidenceTests(unittest.TestCase):
             self.assertEqual(source["retrieval_url"], capture.EFETCH)
             self.assertTrue(source["retrieved_at"].endswith("+00:00"))
 
+    def test_archive_holds_additional_records_and_separately_restricted_content(self):
+        restricted = ARTICLE.replace(b"PMC123", b"PMC125").replace(b"licenses/by/", b"licenses/by-nc/")
+        companion = b"<pmc-articleset>" + ARTICLE + restricted + b"</pmc-articleset>"
+        book = b"<pmc-articleset>" + ARTICLE + b"<book-part><body>Other material</body></book-part></pmc-articleset>"
+        nested = ARTICLE.replace(b"</article>", b"<sub-article><body><p>Separate review.</p></body></sub-article></article>")
+        scoped_rights = ARTICLE.replace(b'<media xlink:href="appendix.pdf"/>',
+                                        b'<permissions><license xlink:href="https://creativecommons.org/licenses/by-nc/4.0/"/></permissions>')
+        contradictory = ARTICLE.replace(b"<permissions>", b"<permissions><copyright-statement>"
+                                        b"All <bold>rights</bold> reserved.</copyright-statement>")
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            archive = root / "pmc-snapshots"
+            xml = root / "source.xml"
+            for payload in (companion, book, nested, scoped_rights, contradictory):
+                with self.subTest(payload_length=len(payload)):
+                    xml.write_bytes(payload)
+                    result = capture.retrieve_pmc_evidence("PMC123", xml=xml, archive=archive)
+                    self.assertEqual(result["status"], "HOLD")
+                    self.assertFalse(archive.exists())
+
+    def test_sidecar_with_conflicting_type_or_forward_link_cannot_be_archived(self):
+        original = capture.capture(ARTICLE, "PMC123")
+        cases = (
+            CORRECTION.replace(b"<article ", b'<article article-type="research-article" '),
+            CORRECTION.replace(b"PMC124", b"PMC999"),
+            CORRECTION.replace(b'xlink:href="PMC123"/>', b'xlink:href="PMC123"/>'
+                               b'<related-article related-article-type="corrected-article" '
+                               b'ext-link-type="pmc" xlink:href="PMC123.1"/>'),
+        )
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            xml = root / "linked.xml"
+            archive = root / "pmc-snapshots"
+            for payload in cases:
+                with self.subTest(payload_length=len(payload)):
+                    xml.write_bytes(payload)
+                    entry, = capture.linked_correction_evidence(original, (xml,), archive=archive)
+                    self.assertEqual(entry["status"], "HOLD")
+                    self.assertFalse(archive.exists())
+
     def test_inline_supplement_has_same_snapshot_table_locator(self):
         payload = ARTICLE.replace(b'<supplementary-material id="supplement"><media xlink:href="appendix.pdf"/>',
                                   b'<supplementary-material id="supplement"><table-wrap><table>'
@@ -178,6 +222,21 @@ class CaptureEvidenceTests(unittest.TestCase):
         supplement, = result["supplement_links"]
         self.assertEqual(supplement["status"], "INLINE_CAPTURED")
         self.assertEqual(supplement["inline_tables"], [result["tables"][2]["locator"]])
+
+        incomplete = payload.replace(b"</supplementary-material>", b"<table-wrap><table><tr><td>"
+                                     b"<strike>17</strike></td></tr></table></table-wrap></supplementary-material>")
+        _, result = self.run_capture(incomplete)
+        supplement, = result["supplement_links"]
+        self.assertEqual(supplement["status"], "MANUAL_REVIEW")
+        self.assertEqual(supplement["inline_tables"], [result["tables"][2]["locator"]])
+        self.assertEqual(supplement["unresolved_inline_tables"], [result["tables"][3]["locator"]])
+
+    def test_context_quote_does_not_hide_a_second_source_location(self):
+        payload = ARTICLE.replace(b"<p>Counts by arm.</p>",
+                                  b"<p>Counts by arm.</p><p>Earlier results: Counts by arm.</p>")
+        result = capture.capture(payload, "PMC123", quotes=("Counts by arm.", "Trial counts"))
+        self.assertEqual(result["quote_locations"]["Counts by arm."], ["body p 1", "body p 2"])
+        self.assertEqual(result["quote_locations"]["Trial counts"], ["body table-wrap 1 caption"])
 
 
 class PmcIntakeTests(unittest.TestCase):
@@ -275,10 +334,7 @@ class PmcIntakeTests(unittest.TestCase):
                 self.assertEqual(result["participant_count_findings"][0]["status"], "HOLD")
 
     def test_public_correction_requires_backlink_and_separate_snapshot(self):
-        correction = (ARTICLE.replace(b"PMC123", b"PMC124").replace(b"10.1234/synthetic", b"10.1234/correction")
-                      .replace(b'correction-forward" ext-link-type="pmc" xlink:href="PMC124"',
-                               b'corrected-article" ext-link-type="pmc" xlink:href="PMC123"')
-                      .replace(b"Counts by arm.", b"The correct arm count is 24."))
+        correction = CORRECTION
         payload = ARTICLE.replace(b"<td>24</td>", b"<td>24</td><td>27</td>")
         check = {
             "kind": "RESTRICTED", "context_quote": "Counts by arm.", "scope_verified": True,
@@ -317,6 +373,27 @@ class PmcIntakeTests(unittest.TestCase):
                                            linked_xml=correction.replace(b'xlink:href="PMC123"', b'xlink:href="PMC125"'))
         self.assertEqual(result["participant_count_findings"][0]["correction"]["status"], "HOLD")
         self.assertEqual(result["pmc_evidence"]["linked_corrections"][0]["status"], "HOLD")
+
+    def test_a_requested_unresolved_correction_prevents_a_definitive_no_flag(self):
+        payload = ARTICLE.replace(b"<td>24</td>", b"<td>24</td><td>23</td>")
+        check = {
+            "kind": "RESTRICTED", "context_quote": "Counts by arm.", "scope_verified": True,
+            "outcome": "Synthetic outcome", "timepoint": "Synthetic visit", "basis": "Synthetic participants",
+            "primary": {"table": 1, "row": 2, "cell": 2}, "restricted": {"table": 1, "row": 2, "cell": 3},
+            "snapshot_sha256": sha256(payload).hexdigest(),
+            "correction": {"same_claim_verified": True, "pmcid": "PMC124",
+                           "snapshot_sha256": sha256(CORRECTION).hexdigest(),
+                           "context_quote": "The correct arm count is 24."},
+        }
+        _, result, _ = self.run_preflight(payload=payload, participant_count=check)
+        finding, = result["participant_count_findings"]
+        self.assertEqual((finding["status"], finding["comparison_status"], finding["correction"]["status"]),
+                         ("HOLD", "NO_FLAG", "HOLD"))
+        self.assertEqual(result["ledger"][0]["effective"], "HOLD")
+
+        _, result, _ = self.run_preflight(payload=payload, linked_xml=CORRECTION,
+                                         participant_count={**check, "snapshot_sha256": "0" * 64})
+        self.assertNotIn("correction", result["participant_count_findings"][0])
 
     def test_normal_intake_binds_capture_to_receipt(self):
         code, result, report = self.run_preflight()
