@@ -92,6 +92,7 @@ class CaptureEvidenceTests(unittest.TestCase):
         for invalid in (
             b'<license><license-p>All rights reserved. See <ext-link xlink:href="https://creativecommons.org/licenses/by/4.0/">another licence</ext-link>.</license-p></license>',
             b'<license license-type="all-rights-reserved" xlink:href="https://creativecommons.org/licenses/by/4.0/"/>',
+            b'<license license-type="CC-BY-NC" xlink:href="https://creativecommons.org/licenses/by/4.0/"/>',
             b'<license xlink:href="https://creativecommons.org/licenses/by/4.0/">'
             b'<license-p><ext-link xlink:href="https://creativecommons.org/licenses/by-nc/4.0/">'
             b'Terms for this work</ext-link>.</license-p></license>',
@@ -255,6 +256,13 @@ class CaptureEvidenceTests(unittest.TestCase):
                                      b"<td><p>Counts by arm.</p></td><td><strike>24</strike></td>")
         result = capture.capture(incomplete, "PMC123", quotes=("Counts by arm.",))
         self.assertEqual(result["tables"][0]["status"], "MANUAL_REVIEW")
+        self.assertEqual(result["quote_locations"]["Counts by arm."], [])
+
+        alternate = ARTICLE.replace(b'<graphic xlink:href="table2.png"/>',
+                                    b'<alternatives><oasis:table xmlns:oasis="urn:test:cals">'
+                                    b'<oasis:entry>Counts by arm.</oasis:entry></oasis:table></alternatives>')
+        result = capture.capture(alternate, "PMC123", quotes=("Counts by arm.",))
+        self.assertEqual(result["tables"][1]["status"], "MANUAL_REVIEW")
         self.assertEqual(result["quote_locations"]["Counts by arm."], [])
 
 

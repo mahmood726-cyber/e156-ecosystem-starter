@@ -31,7 +31,7 @@ OPEN_LICENSE = re.compile(r"(?:licenses/by|publicdomain/zero)/[0-9]+\.[0-9]+")
 RESERVED_RIGHTS = re.compile(r"\ball[\s_-]+rights[\s_-]+reserved\b", re.IGNORECASE)
 CC_TERMS = re.compile(r"https?://(?:www\.)?creativecommons\.org/"
                       r"((?:licenses|publicdomain)/[a-z0-9-]+/[0-9]+\.[0-9]+)", re.IGNORECASE)
-RESTRICTIVE_CC_NAME = re.compile(r"\b(?:CC[\s_-]+BY[\s_-]+(?:NC|ND|SA)|"
+RESTRICTIVE_CC_NAME = re.compile(r"\b(?:CC[\s_-]*BY[\s_-]+(?:NC|ND|SA)|"
                                 r"Creative Commons Attribution[\s_-]+(?:Non[\s_-]?Commercial|"
                                 r"No[\s_-]?Derivatives|Share[\s_-]?Alike))\b", re.IGNORECASE)
 TEXT_MARKERS = {
@@ -82,7 +82,8 @@ def license_url(permissions):
         declarations = [text(ref) for ref in references]
         if license_node.get(XLINK_HREF) is not None:
             declarations.append(license_node.get(XLINK_HREF))
-        if not declarations or RESERVED_RIGHTS.search(license_node.get("license-type", "")):
+        license_type = license_node.get("license-type", "")
+        if not declarations or RESERVED_RIGHTS.search(license_type) or RESTRICTIVE_CC_NAME.search(license_type):
             raise ValueError("Expected an explicit, unambiguous CC BY or CC0 license")
         for value in declarations:
             match = CC_LINK.fullmatch(value)
@@ -200,13 +201,13 @@ def locate_quotes(body, tables, quotes):
         locator = table["locator"]
         locations.extend((f"{locator} {key}", table[key]) for key in ("label", "caption", "footnotes"))
         if table["status"] != "STRUCTURED":
-            for cell in wrapper.iter():
-                if cell.tag in {"th", "td"}:
-                    unresolved_text.update((text(cell), " ".join("".join(cell.itertext()).split())))
+            for node in wrapper:
+                if node.tag not in {"label", "caption", "table-wrap-foot"}:
+                    unresolved_text.update((text(node), " ".join("".join(node.itertext()).split())))
         for row_index, row in enumerate(table.get("rows", []), 1):
             locations.extend((f"{locator} row {row_index} cell {cell_index}", cell["text"])
                              for cell_index, cell in enumerate(row["cells"], 1))
-    # Text from unresolved cells can rule out uniqueness without becoming evidence.
+    # Unresolved table text can rule out uniqueness without becoming evidence.
     return {quote: [] if any(quote in value for value in unresolved_text)
             else [location for location, value in locations if quote in value] for quote in quotes}
 
