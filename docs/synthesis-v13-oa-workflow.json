@@ -1,7 +1,6 @@
 {
   "baseline": "dd0f26f0fb93a7a486d4e50e2d9534725d1734db",
-  "candidate": "5215b58f1f4e6b3f8977bdbbb9ac3cd69bccabee",
-  "candidate_tree": "ea135b659d395a8c65b5b850df6f059599c3e4c2",
+  "candidate": "ea135b659d395a8c65b5b850df6f059599c3e4c2",
   "retrieved_on": "2026-11-04",
   "sources": {
     "parp": {"doi":"10.3389/fonc.2022.815265","url":"https://www.frontiersin.org/journals/oncology/articles/10.3389/fonc.2022.815265/full","edition":"Published 2022 article","license":"CC BY"},

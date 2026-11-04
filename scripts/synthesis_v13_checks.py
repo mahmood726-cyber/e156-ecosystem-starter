@@ -617,7 +617,7 @@ def gate(record: Mapping) -> dict:
         return result("INVALID", "candidate must be a mapping")
     if record.get("severity") not in SEVERITIES or version(record.get("version", "UNKNOWN"))["status"] != "CURRENT":
         return result("HOLD", "severity or current publication version not established")
-    if record.get("source_access") != "ACCESSIBLE" or not record.get("source_locator"):
+    if record.get("source_access") != "ACCESSIBLE" or _missing_identity(record.get("source_locator")):
         return result("HOLD", "source access or exact locator incomplete")
     # Source support is version-scoped: a valid contradiction in an earlier
     # edition must not be flagged against a subsequently corrected article.

@@ -105,7 +105,12 @@ def restricted_analysis_accounting(record: Mapping) -> dict:
     if not isinstance(record, Mapping):
         return {"status": "INVALID", "reason": "record must be a mapping"}
     locations = ("source_version", "restriction_locator", "primary_locator", "restricted_locator")
-    if not _named(record, locations) or record.get("same_source_version_verified") is not True:
+    missing = {"unknown", "not enough info", "source limited", "not reported", "not available",
+               "unavailable", "n/a", "na", "unclear", "tbd"}
+    if (not _named(record, locations)
+            or any(" ".join(record[key].casefold().replace("-", " ").replace("_", " ").split()) in missing
+                   for key in locations)
+            or record.get("same_source_version_verified") is not True):
         return {"status": "HOLD", "reason": "exact source version and analysis locations are required"}
     if record.get("relationship") == "NOT_A_RESTRICTION":
         return {"status": "NOT_COMPARABLE", "reason": "the second analysis is not a subset"}

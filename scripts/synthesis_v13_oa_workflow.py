@@ -75,7 +75,7 @@ def shared_control(nma, checks, case, paper, notice):
     return result
 
 
-def receipt_packet(case, paper, notice, result, retrieved_on, revision):
+def receipt_packet(case, paper, notice, result, retrieved_on, snapshot):
     primary_loc, secondary_loc = case["locators"]
     provenance = [(paper, primary_loc if notice else " / ".join(case["locators"]))]
     if notice:
@@ -93,6 +93,8 @@ def receipt_packet(case, paper, notice, result, retrieved_on, revision):
                  f"for {result['unique_controls']} distinct controls.")
     elif result["primary"] is not None and result["sensitivity"] is not None:
         text += f". Reported participant counts were {result['primary']} and {result['sensitivity']}."
+        if status == "REVIEW_CANDIDATE":
+            text += " The counts are inconsistent for a strict subset. Which count is wrong remains unresolved."
     claim = {
         "id": case["id"], "locator": primary_loc, "text": text,
         "source_ids": [source["id"] for source in sources],
@@ -110,19 +112,21 @@ def receipt_packet(case, paper, notice, result, retrieved_on, revision):
                          "checked_against": f"{notice['doi']} / {secondary_loc}", "result": "SUPPORTED",
                      })
     elif status == "REVIEW_CANDIDATE":
-        claim.update(source_support="CONTRADICTED", evidence_maturity="SOURCE_BACKED",
+        claim.update(source_support="SUPPORTED", evidence_maturity="SOURCE_BACKED",
                      proposed_disposition="DISCUSSION")
-    elif status in {"NO_FLAG", "NOT_COMPARABLE"}:
+    elif status == "NO_FLAG":
         claim.update(source_support="SUPPORTED", evidence_maturity="SOURCE_BACKED",
                      proposed_disposition="NO_FLAG")
+    elif status == "NOT_COMPARABLE":
+        claim.update(source_support="SUPPORTED", evidence_maturity="SOURCE_BACKED")
     return {
         "schema_version": "1.1",
         "run": {
-            "run_id": f"oa-workflow-{revision[:12]}-{case['id']}",
+            "run_id": f"oa-workflow-{snapshot[:12]}-{case['id']}",
             "model_id": "Codex assisted source review; exact snapshot unavailable",
             "model_provider": "OpenAI",
             "prompt_sha256": sha256(PROMPT.read_bytes()).hexdigest(),
-            "tool_versions": {"preflight": "v1.1", "checks_git_revision": revision},
+            "tool_versions": {"preflight": "v1.1", "checks_git_tree": snapshot},
         },
         "document": {"identifier": paper["doi"], "version": paper["edition"]},
         "sources": sources,
@@ -138,8 +142,9 @@ def main():
     data = json.loads(raw)
     results = []
     for arm in ("baseline", "candidate"):
-        revision = data[arm]
-        snapshot = data["candidate_tree"] if arm == "candidate" else revision
+        snapshot = subprocess.check_output(
+            ["git", "rev-parse", "--verify", data[arm] + "^{tree}"], cwd=ROOT, text=True
+        ).strip()
         nma = load_snapshot(snapshot, "synthesis_v13_nma_preflight")
         checks = load_snapshot(snapshot, "synthesis_v13_checks")
         for case in data["cases"]:
@@ -151,7 +156,7 @@ def main():
                 rule = shared_control(nma, checks, case, paper, notice)
             else:
                 raise ValueError(f"Unknown check: {case['check']}")
-            packet = receipt_packet(case, paper, notice, rule, data["retrieved_on"], revision)
+            packet = receipt_packet(case, paper, notice, rule, data["retrieved_on"], snapshot)
             run_dir = args.output_dir / arm / case["id"]
             run_dir.mkdir(parents=True, exist_ok=True)
             path = run_dir / "packet.json"

@@ -185,6 +185,13 @@ class RestrictedAccountingTests(unittest.TestCase):
                 row = dict(self.record, restricted_participants=count)
                 self.assertEqual(m.restricted_analysis_accounting(row)["status"], "HOLD")
 
+    def test_placeholder_provenance_holds_even_with_attestations(self):
+        for key in ("source_version", "restriction_locator", "primary_locator", "restricted_locator"):
+            for marker in ("UNKNOWN ", "not reported", "N/A"):
+                with self.subTest(key=key, marker=marker):
+                    row = dict(self.record, **{key: marker})
+                    self.assertEqual(m.restricted_analysis_accounting(row)["status"], "HOLD")
+
 
 class ReplayReadinessTests(unittest.TestCase):
     def test_complete_receipts_not_a_replay_verdict(self):

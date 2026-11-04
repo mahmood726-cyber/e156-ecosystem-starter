@@ -1002,6 +1002,16 @@ class GovernanceTests(unittest.TestCase):
                     correction_locator="Verified notice for the paper", correction_source_verified=True,
                     **missing))["status"], "HOLD")
 
+    def test_exact_replacement_cannot_close_a_claim_without_original_locator(self):
+        for locator in ("unknown", "not reported", ["Results"]):
+            with self.subTest(locator=locator):
+                self.assertEqual(m.gate(candidate(
+                    version="CORRECTED_LATEST", source_locator=locator,
+                    current_correction_status="RESOLVED_IN_PUBLISHED_VERSION",
+                    correction_locator="Publisher notice, paragraph 2",
+                    corrected_claim_locator="Replacement Table 2, affected row",
+                    corrected_claim_verified=True, correction_source_verified=True))["status"], "HOLD")
+
     def test_group_one_root_multiple_outputs(self):
         rows = [{"claim_id": "A", "root_cause_id": "R1"}, {"claim_id": "B", "root_cause_id": "R1"},
                 {"claim_id": "C", "root_cause_id": "R2"}]
