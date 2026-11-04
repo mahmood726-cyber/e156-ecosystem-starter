@@ -6,7 +6,7 @@
       "id": ".github/workflows/synthesis-preflight.yml#jobs.offline-regression",
       "kind": "ci-job",
       "name": "Synthesis preflight synthetic regression (development only)",
-      "stops": "The Ubuntu regression job fails when a synthetic preflight or PMC capture assertion fails, including version mismatch, licence, table markup, redirect and network opt-in controls, or when the offline example receipt loses its expected prompt binding or review statuses.",
+      "stops": "The Ubuntu regression job fails when a synthetic preflight or PMC capture assertion fails, including version, licence, table markup, network opt-in, source-cell binding, shared-control accounting, or verified correction snapshot controls, or when the offline example loses expected prompt binding or review statuses.",
       "would_not_stop": [
         "Live PMC outages and unexpected changes in real XML: the job exercises synthetic archive replay and an offline packet.",
         "Wrong interpretation of a real source, table or correction: the synthetic cases cover specific structural checks.",
@@ -23,18 +23,20 @@
       "id": "scripts/synthesis_preflight.py",
       "kind": "script",
       "name": "Synthesis local packet validator (experimental)",
-      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for PMC packets. Live capture requires an operator flag and the HTTPS EFetch origin. Bounded arithmetic checks surface inconsistencies under explicitly compatible estimators.",
+      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for PMC packets. Live capture requires an operator flag and the HTTPS EFetch origin. Archives refuse extra articles and conflicting rights declarations. Source-bound findings require a matching snapshot hash, a uniquely located source quote, and exact numeric cells under reviewer-verified analysis and denominator scope. A requested correction prevents an original-only comparison from clearing a claim.",
       "would_not_stop": [
         "Fabricated but internally consistent claim attestations or locally supplied XML: capture binds a snapshot and declared identity. Claim support and archive provenance require separate review.",
-        "An unavailable or superseded linked supplement or correction: capture inventories links for follow-up.",
+        "An unavailable or superseded external attachment or correction: inline supplement tables and verified linked PMC corrections can be traced, but unresolved links require follow-up and correction evidence does not automatically close a claim.",
         "Statistically valid alternative methods, adjusted or survival estimators, and complex meta-analysis pipelines outside its five narrow calculation kinds.",
         "Missed paper errors in unflagged claims or incorrect human interpretation of reported source text: these require separate review and held-out assessment.",
         "Incorrect human adjudication, false claims of author confirmation or bias in how papers were selected; none are adjudicated by this script."
       ],
-      "source": "scripts/synthesis_preflight.py and scripts/synthesis_capture_evidence.py, with prompt v1.1 and synthetic regressions.",
+      "source": "scripts/synthesis_preflight.py, scripts/synthesis_capture_evidence.py, scripts/synthesis_participant_evidence.py and the restricted-count arithmetic in scripts/synthesis_v13_nma_preflight.py, with prompt v1.1 and synthetic regressions.",
       "seal": {
-        "scripts/synthesis_preflight.py": "1a7621649b24f4d9ed241b95ff8ab5d3b19ad79e02d5adcc5d3f5bc4fcc67280",
-        "scripts/synthesis_capture_evidence.py": "6dd927352cdbe36d0bc75dbc3b1734dfa98089d9701897264fece0288e258e64"
+        "scripts/synthesis_preflight.py": "854399886f2d10df4a2968846946385fba990de18fc5eba04a49f8018f1802d2",
+        "scripts/synthesis_capture_evidence.py": "2e10e84259be2a2bf85b7b8071e5b3018993a86dbd1ae3a87e6d1a08940b3e9e",
+        "scripts/synthesis_participant_evidence.py": "29ff524e01fca60e448cda81c8d4aaa0d977db2ecb51c7533799586691138c32",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605"
       }
     },
     {
