@@ -24,6 +24,20 @@ Supply verified correction JATS with `--pmc-linked-xml PATH`, which can be repea
 
 To associate a notice with a specific comparison, add `correction` to the count check with its `pmcid`, `snapshot_sha256`, `context_quote`, and reviewer attestation `same_claim_verified: true`. Add `replacement` with a cell reference when the notice gives the replacement in a table. A `SOURCE_BOUND` correction preserves the matching excerpt or cell. It leaves the original comparison and its review disposition intact.
 
-Use `kind: "PUBLISHED_CORRECTION"` when the task is tracing a known correction without running a comparison. This mode uses the notice's context quote. Include `original` for a cell in the separately archived original article, or `correction.previous` when the notice itself reproduces the original cell. The receipt labels which source supplied the old count. Trace results should be scored separately from error detection.
+Use `kind: "PUBLISHED_CORRECTION"` when the task is tracing a known count replacement. This mode requires the notice's context quote, its `correction.replacement` cell, and one previous count cell. Set `original` for a cell in the separately archived original article, or `correction.previous` when the notice itself reproduces the original. The receipt reports `MATCH` when the selected numbers agree, `PUBLISHED_CORRECTION` when they differ, and `HOLD` when the exact pair cannot be verified. Trace results should be scored separately from error detection.
 
 Inline supplementary tables in the article body use the same snapshot and cell references. The receipt retains links and manual-review reasons for external attachments, whose edition and reuse rights require separate verification. [PMC archive versioning and access](https://pmc.ncbi.nlm.nih.gov/tools/pmcaws/)
+
+## Public-source evaluation summary
+
+An independent AI evaluator froze 12 PMC cases before examining preflight results. The purposive challenge included repeated articles and notices. It excluded identifiers present in the 1,000-notice development register and four earlier public manifests. The evaluator supplied the target cells and adjudicated scope. Preflight computed the findings and cell bindings from the archived XML.
+
+| Case group | Baseline | Frozen candidate | Same-case diagnostic after the trace-status fix |
+| --- | --- | --- | --- |
+| Two valid analytical controls | No count finding | Both held for review | Same |
+| Four analytical abstention controls | No count finding | All four held | Same |
+| Two documented historical count changes | No trace finding | One exact trace and one hold | Same |
+| Two agreeing count pairs | No trace finding | Both pairs extracted correctly, with the correction label | Both reported as `MATCH` |
+| Two incomplete replacement pairs | No trace finding | One hold and one notice-only result labeled as a correction | Both held |
+
+The baseline was `396c7ab0279b3d0af806c6f60c4452f8fe72ed0c`. The frozen implementation used tree `355f0d2ba46398c58eb92302adf0312beda16a6a`. The initial run was blinded. The later diagnostic rerun reused the opened cases to verify the fix. Source markup sent both valid analytical comparisons to review. The analytical suite had zero verified positive errors, so detection sensitivity and false-positive rates remain unmeasured. The correction tests measured traceability with supplied notices. Live PMC intake separately retrieved and archived a fresh article and followed its direct typed correction link.

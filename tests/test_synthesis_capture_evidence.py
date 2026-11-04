@@ -302,6 +302,17 @@ class PmcIntakeTests(unittest.TestCase):
         finding, = result["participant_count_findings"]
         self.assertEqual((finding["status"], finding["original"]["participants"]), ("PUBLISHED_CORRECTION", 27))
 
+        _, result, _ = self.run_preflight(payload=payload, linked_xml=correction,
+                                           participant_count={**trace, "original": check["primary"]})
+        self.assertEqual(result["participant_count_findings"][0]["status"], "MATCH")
+
+        correction_link_only = {**trace, "correction": {k: v for k, v in check["correction"].items()
+                                                         if k != "replacement"}}
+        _, result, _ = self.run_preflight(payload=payload, participant_count=correction_link_only,
+                                           linked_xml=correction)
+        finding, = result["participant_count_findings"]
+        self.assertEqual((finding["status"], finding["correction"]["status"]), ("HOLD", "SOURCE_BOUND"))
+
         _, result, _ = self.run_preflight(payload=payload, participant_count=check,
                                            linked_xml=correction.replace(b'xlink:href="PMC123"', b'xlink:href="PMC125"'))
         self.assertEqual(result["participant_count_findings"][0]["correction"]["status"], "HOLD")

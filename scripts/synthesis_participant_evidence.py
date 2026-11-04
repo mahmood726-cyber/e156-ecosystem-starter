@@ -151,11 +151,22 @@ def participant_count_finding(claim_id, spec, evidence):
             correction = finding.get("correction", {})
             if correction.get("status") != "SOURCE_BOUND":
                 raise ValueError("A published replacement requires a source-bound correction")
-            if "replacement" not in correction and not re.search(r"[0-9]", correction["context"]["quote"]):
-                raise ValueError("A replacement needs a numeric source cell or a numeric excerpt from the notice")
-            if "original" in spec:
-                finding["original"] = _count_cell(evidence, spec["original"])
-            finding.update(status="PUBLISHED_CORRECTION", reason="A reviewer linked this claim to a published correction")
+            from_article = "original" in spec
+            from_notice = "previous_as_reproduced_in_notice" in correction
+            if from_article == from_notice or "replacement" not in correction:
+                raise ValueError("Supply one original count cell and one replacement count cell")
+            prior = (_count_cell(evidence, spec["original"]) if from_article
+                     else correction["previous_as_reproduced_in_notice"])
+            replacement = correction["replacement"]
+            if from_notice and prior["locator"] == replacement["locator"]:
+                raise ValueError("The original and replacement must use distinct source cells")
+            if from_article:
+                finding["original"] = prior
+            if prior["participants"] == replacement["participants"]:
+                finding.update(status="MATCH", reason="The two selected participant counts agree")
+            else:
+                finding.update(status="PUBLISHED_CORRECTION",
+                               reason="The two reviewer-mapped counts differ across the original and replacement cells")
             return finding
         finding["context"] = _context(evidence, spec)
         if kind == "RESTRICTED":
