@@ -370,7 +370,7 @@ class RootDedupContractTests(unittest.TestCase):
         row = self.row_with(
             maturity="INDEPENDENTLY_ADJUDICATED", human_adjudicated=True,
             human_receipt=self.human_receipt(
-                reviewer_id="synthetic:reviewer-\\u200bone",
+                reviewer_id="synthetic:reviewer-\u200bone",
                 investigator_id="synthetic:reviewer-one"))
         result = group_preflight_roots([row])
         self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
@@ -381,11 +381,11 @@ class RootDedupContractTests(unittest.TestCase):
         # Unicode format characters and embedded ASCII controls are not
         # trustworthy identity delimiters; refuse instead of splitting roots.
         for field, identifier in (
-            ("publication_id", "synthetic:paper-\\u202e1"),
-            ("root_scope_id", "synthetic:family-\\u20601"),
-            ("root_cause_id", "mapping-\\u200b1"),
-            ("affected_output_id", "\\u200b"),
-            ("affected_output_id", "table1:\\x00event"),
+            ("publication_id", "synthetic:paper-\u202e1"),
+            ("root_scope_id", "synthetic:family-\u20601"),
+            ("root_cause_id", "mapping-\u200b1"),
+            ("affected_output_id", "\u200b"),
+            ("affected_output_id", "table1:\x00event"),
         ):
             with self.subTest(field=field, identifier=identifier):
                 result = group_preflight_roots(
@@ -395,7 +395,7 @@ class RootDedupContractTests(unittest.TestCase):
         row = self.row_with(
             maturity="INDEPENDENTLY_ADJUDICATED", human_adjudicated=True,
             human_receipt=self.human_receipt(
-                receipt_locator="private:receipt-\\u2060one"))
+                receipt_locator="private:receipt-\u2060one"))
         self.assertEqual(group_preflight_roots([row])["status"],
                          "NOT_ENOUGH_INFO")
 
