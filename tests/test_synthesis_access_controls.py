@@ -132,6 +132,59 @@ class SourceRightsTests(unittest.TestCase):
             probe.assert_called_once()
 
 
+    def test_unreviewed_mirror_and_lineage_cannot_reuse_a_grant(self):
+        # A permission for one exact source must not authorize a different
+        # mirror, prior extraction, or derived input with unchecked ancestry.
+        variants = (
+            {"source_url": "https://unreviewed-mirror.invalid/fixture.xml"},
+            {"origin_urls": ["https://other-source.invalid/fixture.xml"]},
+            {"lineage": [{"doi": "10.1001/synthetic-ancestor"}]},
+            {"lineage": [{"doi": "10.8888/synthetic-unreviewed-parent"}]},
+            {"content_kind": "derived"},
+        )
+        for changes in variants:
+            with self.subTest(changes=changes):
+                changed = {**SOURCE, **changes}
+                self.assertEqual(
+                    assess_source(MANIFEST, changed, "CACHE_READ", on_date=TODAY)[0],
+                    "SOURCE_RIGHTS_HOLD",
+                )
+        approved_url = "https://fictional.invalid/reviewed-mirror/fixture.xml"
+        grant = dict(PERMISSION, source_url=approved_url)
+        scoped_manifest = dict(MANIFEST, permissions=[grant])
+        reviewed_source = dict(SOURCE, source_url=approved_url)
+        self.assertEqual(
+            assess_source(scoped_manifest, reviewed_source, "CACHE_READ", on_date=TODAY)[0],
+            "ALLOW",
+        )
+        self.assertEqual(
+            assess_source(scoped_manifest, SOURCE, "CACHE_READ", on_date=TODAY)[0],
+            "SOURCE_RIGHTS_HOLD",
+        )
+        self.assertEqual(
+            assess_source(scoped_manifest, {**reviewed_source,
+                "source_url": "https://fictional.invalid/other-path/fixture.xml"},
+                "CACHE_READ", on_date=TODAY)[0],
+            "SOURCE_RIGHTS_HOLD",
+        )
+        with TemporaryDirectory() as root:
+            base = Path(root)
+            manifest = base / "rights.json"
+            manifest.write_text(json.dumps(scoped_manifest))
+            log = base / "decisions.jsonl"
+            log.touch()
+            probe = Mock(return_value=b"synthetic-only")
+            with self.assertRaises(PermissionError):
+                execute_source_action({**reviewed_source,
+                    "source_url": "https://fictional.invalid/other-path/fixture.xml"},
+                    "CACHE_READ", probe, manifest_path=manifest,
+                    decision_log=log, on_date=TODAY)
+            probe.assert_not_called()
+            self.assertEqual(json.loads(log.read_text().splitlines()[0])["decision"],
+                             "SOURCE_RIGHTS_HOLD")
+
+
+
 class ContactTests(unittest.TestCase):
     EXCLUSIONS=[{"names":["Fictional Researcher"],"aliases":["F. Researcher"],
                  "emails":["fictional@example.invalid"],"coauthors":["coauthor@example.invalid"],
