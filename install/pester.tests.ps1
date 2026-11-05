@@ -98,6 +98,54 @@ Describe "Copy-RulesToAgent copies all .md files" {
     }
 }
 
+# The routing index is user-editable configuration, just like rules .md files.
+# Use disposable Windows fixtures; never touch any real agent profile.
+Describe "Rules routing-index backup and rollback" {
+    It "preserves an existing custom _index.yaml and restores it on rollback" {
+        $target = Join-Path $tmpRoot "index preservation-Ü-$([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        $index = Join-Path $target '_index.yaml'
+        Set-Content -LiteralPath $index -Value 'custom routing before install' -NoNewline -Encoding UTF8
+        $m = New-RollbackManifest
+        $r = Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target -Manifest $m
+        $r.Backed | Should -Contain '_index.yaml'
+        (Get-Content -LiteralPath "$index.user" -Raw).Trim() | Should -Be 'custom routing before install'
+        $m.BackedUp | Should -Contain "$index.user"
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic routing index rollback'
+        (Get-Content -LiteralPath $index -Raw).Trim() | Should -Be 'custom routing before install'
+        Test-Path -LiteralPath "$index.user" | Should -BeFalse
+    }
+
+    It "preserves successive routing-index edits without overwriting the first backup" {
+        $target = Join-Path $tmpRoot "index rerun-Ü-$([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        $index = Join-Path $target '_index.yaml'
+        Set-Content -LiteralPath $index -Value 'original custom route' -NoNewline -Encoding UTF8
+        Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target | Out-Null
+        Set-Content -LiteralPath $index -Value 'most recent custom route' -NoNewline -Encoding UTF8
+        $m = New-RollbackManifest
+        Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target -Manifest $m | Out-Null
+        (Get-Content -LiteralPath "$index.user" -Raw).Trim() | Should -Be 'original custom route'
+        $later = @($m.BackedUp | Where-Object { $_ -like "$index.user-*" })
+        $later.Count | Should -Be 1
+        (Get-Content -LiteralPath $later[0] -Raw).Trim() | Should -Be 'most recent custom route'
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic routing index reinstall rollback'
+        (Get-Content -LiteralPath $index -Raw).Trim() | Should -Be 'most recent custom route'
+        (Get-Content -LiteralPath "$index.user" -Raw).Trim() | Should -Be 'original custom route'
+    }
+
+    It "honours explicit -Force for the routing index without creating a backup" {
+        $target = Join-Path $tmpRoot "index force-$([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        $index = Join-Path $target '_index.yaml'
+        Set-Content -LiteralPath $index -Value 'replaceable custom route' -NoNewline -Encoding UTF8
+        $r = Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target -Force
+        $r.Backed | Should -Not -Contain '_index.yaml'
+        Test-Path -LiteralPath "$index.user" | Should -BeFalse
+        (Get-Content -LiteralPath $index -Raw).Trim() | Should -Not -Be 'replaceable custom route'
+    }
+}
+
 Describe "Copy-ContextFiles drops AGENTS/CLAUDE/GEMINI/CODEX" {
     It "creates all four context files when present in source" {
         $target = Join-Path $tmpRoot 'agent4'
