@@ -178,6 +178,28 @@ Describe "Copy-MemoryScaffold only bootstraps empty targets" {
     }
 }
 
+# Regression: an empty memory root can still contain user-edited nested templates.
+# Those files must not be replaced by the starter's identically named templates.
+Describe "Memory bootstrap preserves nested user templates (Role 05)" {
+    It "keeps an existing nested template and copies missing templates under a Unicode path" {
+        $memorySource = Join-Path $starterRoot 'memory'
+        $sourceTemplates = @(Get-ChildItem -LiteralPath (Join-Path $memorySource 'templates') -Filter '*.md' -File | Sort-Object Name)
+        $sourceTemplates.Count | Should -BeGreaterThan 1
+        $target = Join-Path $tmpRoot "memory existing template Ü $([guid]::NewGuid().ToString('N'))"
+        $targetTemplates = Join-Path $target 'templates'
+        New-Item -ItemType Directory -Force -Path $targetTemplates | Out-Null
+        $customTemplate = Join-Path $targetTemplates $sourceTemplates[0].Name
+        [System.IO.File]::WriteAllText($customTemplate, 'user edited template', [System.Text.Encoding]::UTF8)
+
+        $bootstrapped = Copy-MemoryScaffold -SourceMemoryDir $memorySource -TargetMemoryDir $target
+
+        $bootstrapped | Should -BeTrue
+        (Get-Content -LiteralPath $customTemplate -Raw) | Should -Be 'user edited template'
+        Test-Path -LiteralPath (Join-Path $target 'MEMORY.md') | Should -BeTrue
+        Test-Path -LiteralPath (Join-Path $targetTemplates $sourceTemplates[1].Name) | Should -BeTrue
+    }
+}
+
 # Disposable Windows junctions are deterministic redirection fixtures and do not
 # require privileged symbolic-link creation. All writes remain under tmpRoot.
 Describe "Windows junction destination refusal (Role 05)" {
