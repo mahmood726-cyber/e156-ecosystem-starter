@@ -1,5 +1,15 @@
 # e156-ecosystem-starter
 
+## Synthesis — start here (human checklist)
+
+**For authors, clinicians, reviewers and journal editors:** [**Open the Synthesis Human Checklist — no programming required**](docs/SYNTHESIS-HUMAN-CHECKLIST.md).
+
+This practical, 22-question checklist lets you review a manuscript manually, record evidence and identify points requiring clarification. Use **Yes / No / Unclear / N/A** for each check. A flagged inconsistency is **not** automatically a confirmed error. It is free to read and use; review the repository licence before adapting or redistributing it.
+
+**Need the technical specification?** See the [full Synthesis v1.3 candidate methodology](docs/SYNTHESIS-v1.3-CANDIDATE.md), [audit packet](docs/SYNTHESIS-v1.3-AUDIT-PACKET.md) and [blinded validation plan](docs/SYNTHESIS-v1.3-BLINDED-VALIDATION-PLAN.md). The candidate is experimental, not independently validated on real papers. No underlying analysis code or checking rules are changed by this navigation update.
+
+---
+
 Bootstrap Mahmood's quality-dev ecosystem on a student's laptop.
 
 This is not a single tool. It is the **install layer** that turns a fresh
