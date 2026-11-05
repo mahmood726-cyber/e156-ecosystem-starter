@@ -320,6 +320,80 @@ else
     bad "memory symlink refusal modified existing files"
 fi
 
+# A symlinked grandparent redirects writes even when the target and its
+# immediate parent are real directories. All paths remain in this test sandbox.
+start "rules install refuses an ancestor symlink, without external writes"
+ancestor_via="$SANDBOX/ancestor via-Ü"
+ancestor_outside="$SANDBOX/ancestor outside-Ü"
+mkdir -p "$ancestor_via" "$ancestor_outside/deep/.claude" "$ancestor_outside/deep/.gemini"
+ln -s "$ancestor_outside" "$ancestor_via/redirect"
+target="$ancestor_via/redirect/deep/.claude/rules"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if copy_rules_to_agent "$ROOT/rules" "$target" >/dev/null 2>&1; then
+    bad "rules install followed an ancestor symlink"
+elif [[ -L "$ancestor_via/redirect" &&
+        ! -e "$ancestor_outside/deep/.claude/rules" &&
+        ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_DIRS" &&
+        ! -s "$MANIFEST_BACKUPS" ]]; then
+    ok
+else
+    bad "rules ancestor refusal modified redirected files or manifest"
+fi
+
+start "context install refuses an ancestor symlink, without external writes"
+context_target="$ancestor_via/redirect/deep/.gemini"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if copy_context_files "$ROOT" "$context_target" >/dev/null 2>&1; then
+    bad "context install followed an ancestor symlink"
+elif [[ ! -e "$ancestor_outside/deep/.gemini/AGENTS.md" &&
+        ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_DIRS" &&
+        ! -s "$MANIFEST_BACKUPS" ]]; then
+    ok
+else
+    bad "context ancestor refusal modified redirected files or manifest"
+fi
+
+start "memory scaffold refuses an ancestor symlink, without external writes"
+memory_target="$ancestor_via/redirect/deep/.claude/memory"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if copy_memory_scaffold "$ROOT/memory" "$memory_target" >/dev/null 2>&1; then
+    bad "memory scaffold followed an ancestor symlink"
+elif [[ ! -e "$ancestor_outside/deep/.claude/memory/MEMORY.md" &&
+        ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_DIRS" &&
+        ! -s "$MANIFEST_BACKUPS" ]]; then
+    ok
+else
+    bad "memory ancestor refusal modified redirected files or manifest"
+fi
+
+# A non-symlinked templates directory can itself contain a symlinked file.
+# Reject it BEFORE writing MEMORY.md, including when other templates are safe.
+start "memory scaffold refuses an existing symlinked template leaf"
+memory_target="$SANDBOX/memory nested-Ü"
+outside_template="$SANDBOX/outside nested template"
+mkdir -p "$memory_target/templates"
+printf 'preserve this outside file' > "$outside_template"
+template_fixture=""
+for src_template in "$ROOT"/memory/templates/*.md; do
+    template_fixture="$src_template"
+    break
+done
+if [[ -f "$template_fixture" ]]; then
+    ln -s "$outside_template" "$memory_target/templates/$(basename "$template_fixture")"
+    : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+    if copy_memory_scaffold "$ROOT/memory" "$memory_target" >/dev/null 2>&1; then
+        bad "memory scaffold followed a nested template leaf symlink"
+    elif [[ "$(cat "$outside_template")" == "preserve this outside file" &&
+            ! -e "$memory_target/MEMORY.md" &&
+            ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_BACKUPS" ]]; then
+        ok
+    else
+        bad "memory nested-template refusal modified files or manifest"
+    fi
+else
+    bad "memory template fixture missing"
+fi
+
 # Describe: render_template rules in practice
 start "templated rules have no residual Mahmood paths"
 target="$SANDBOX/rendered/rules"
