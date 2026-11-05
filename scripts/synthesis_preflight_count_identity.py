@@ -91,6 +91,17 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
             "reason": "result identity/estimator/source version differs",
             "mismatched_fields": list(differing),
         }
+    # Same source location in the same declared document/result version
+    # must identify the same source bytes. A changed digest with unchanged
+    # locator is unresolved version/provenance drift, not a reproduced count
+    # agreement or discrepancy. Different locations may legitimately refer
+    # to distinct representations (e.g. article vs supplement).
+    if (left["locator"] == right["locator"]
+            and left["source_sha256"].casefold() != right["source_sha256"].casefold()):
+        return {
+            **base,
+            "reason": "same source locator/version has conflicting SHA-256 digests",
+        }
     lhs, rhs = left["value"], right["value"]
     if lhs == rhs:
         return {
