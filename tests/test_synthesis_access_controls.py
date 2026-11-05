@@ -218,6 +218,23 @@ class ContactTests(unittest.TestCase):
                 self.assertIn('PROGRAMME_OUTGOING_QUERY_PAUSE',blocked)
                 self.assertTrue(any(x.startswith('CONTACT_BLOCKED_NO_CONTACT: recipient/publication') for x in blocked))
 
+    def test_display_name_alias_on_all_recipient_routes(self):
+        # The visible name alone can identify an excluded person even when
+        # the mailbox is different from the known address or alias.
+        for route in ("to", "cc", "bcc", "indirect_recipients"):
+            for display_name in ("Fictional Researcher", "F. Researcher"):
+                message = {route: [f'"{display_name}" <new-address@example.invalid>'],
+                           "kind": "followup"}
+                with self.subTest(route=route, display_name=display_name):
+                    reasons = outgoing_blockers(message, self.EXCLUSIONS)
+                    self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                    self.assertTrue(any("recipient/publication/thread exclusion" in x
+                                        for x in reasons))
+        unrelated = outgoing_blockers(
+            {"to": ['"Different Invented Person" <new-address@example.invalid>']},
+            self.EXCLUSIONS)
+        self.assertEqual(unrelated, ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
+
     def test_malformed_publication_and_exclusion_lists_fail_closed(self):
         malformed_messages = (
             {"to":["other@example.invalid"],"related_dois":"10.7777/fictional-publication"},
