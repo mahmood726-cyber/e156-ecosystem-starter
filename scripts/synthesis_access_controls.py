@@ -101,6 +101,27 @@ def assess_source(manifest, source, operation, *, on_date=None):
     if any(not isinstance(source.get(k), str) or not source[k].strip() or
            source[k].strip() != p[k].strip() for k in original_fields):
         return "SOURCE_RIGHTS_HOLD", "original publication identity differs from reviewed permission"
+    # A grant for the original publication cannot be reused on a different
+    # retrieval URL. Both source and reviewed record must agree on the exact
+    # route URL when either declares it; aliases need separate review.
+    requested_url, reviewed_url = source.get("source_url"), p.get("source_url")
+    if requested_url is not None or reviewed_url is not None:
+        if (not isinstance(requested_url, str) or not requested_url.strip()
+                or not isinstance(reviewed_url, str) or not reviewed_url.strip()
+                or requested_url.strip() != reviewed_url.strip()):
+            return "SOURCE_RIGHTS_HOLD", "source URL differs from exact reviewed access route"
+    # This helper's v1 manifest has no way to authenticate each linked source
+    # in a derived item. Hold declared ancestry rather than silently granting
+    # linked-source operations via the top-level DOI. The separately reviewed
+    # source-rights caller must cover each ancestor before integration.
+    for entry in (source, p):
+        kind = entry.get("content_kind")
+        if isinstance(kind, str) and kind.strip().casefold() == "derived":
+            return "SOURCE_RIGHTS_HOLD", "derived provenance requires separate reviewed permissions"
+        if any(key in entry and
+               (not isinstance(entry[key], list) or bool(entry[key]))
+               for key in ("lineage", "origin_urls")):
+            return "SOURCE_RIGHTS_HOLD", "linked source provenance has not been reviewed"
     if p.get("status") != "REVIEWED_ALLOW" or p.get("conditions_satisfied") is not True:
         return "SOURCE_RIGHTS_HOLD", "unreviewed/denied permission or unmet conditions"
     if not all(isinstance(p.get(k), str) and p[k].strip() for k in ("reviewer", "evidence_reference")):
