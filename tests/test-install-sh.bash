@@ -286,6 +286,46 @@ MANIFEST_DIRS="$MANIFEST_DIR/dirs"
 MANIFEST_BACKUPS="$MANIFEST_DIR/backups"
 : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
 
+# A renderer may fail after creating a partial destination. The ERROR trap
+# must remove net-new files even when rendering did not return successfully.
+# Use a fresh Bash process so errexit/ERR behave as in a real install, not
+# like a function invoked inside a test's conditional expression.
+partial_render_driver="$SANDBOX/partial-render-driver.bash"
+cat > "$partial_render_driver" <<'BASH_PARTIAL_DRIVER'
+set -eEuo pipefail
+source "$ROOT/install/install.sh" --import
+trap 'rollback "synthetic interrupted render" >/dev/null 2>&1' ERR
+render_template() {
+    printf 'synthetic partial write' > "$2"
+    return 71
+}
+case "$KIND" in
+    rules) copy_rules_to_agent "$ROOT/rules" "$TARGET" ;;
+    context) copy_context_files "$ROOT" "$TARGET" ;;
+    *) exit 90 ;;
+esac
+BASH_PARTIAL_DRIVER
+
+start "rules rollback cleans incomplete new file after renderer error"
+target="$SANDBOX/partial render rules-Ü/rules"
+if ROOT="$ROOT" KIND=rules TARGET="$target" bash "$partial_render_driver" >/dev/null 2>&1; then
+    bad "synthetic rules renderer failure was swallowed"
+elif [[ ! -e "$target" ]]; then
+    ok
+else
+    bad "rules renderer failure left a partial user configuration file"
+fi
+
+start "context rollback cleans incomplete new file after renderer error"
+context_target="$SANDBOX/partial render context-Ü"
+if ROOT="$ROOT" KIND=context TARGET="$context_target" bash "$partial_render_driver" >/dev/null 2>&1; then
+    bad "synthetic context renderer failure was swallowed"
+elif [[ ! -e "$context_target" ]]; then
+    ok
+else
+    bad "context renderer failure left a partial user configuration file"
+fi
+
 # Symlinked user destinations must be refused before any other config files
 # are installed. The external fixture is never a real agent configuration.
 start "rules install refuses symlink leaf without partial writes"
