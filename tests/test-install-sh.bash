@@ -68,6 +68,39 @@ assert_contains "$out" "/home/alice/dir" && ok
 SANDBOX="$(mktemp -d -t e156-test.XXXXXX)"
 trap 'rm -rf "$SANDBOX"' EXIT
 
+# --dry-run promises a read-only self-SHA check. Even an empty transcript
+# directory is an unintended write to the caller's home/state tree.
+start "dry-run verifies SHA without creating a log or user state"
+dryrun_home="$SANDBOX/dry-run home-Ü"
+dryrun_state="$dryrun_home/state with spaces-Ü"
+mkdir -p "$dryrun_home"
+dryrun_status=0
+dryrun_output="$(HOME="$dryrun_home" XDG_STATE_HOME="$dryrun_state" bash "$ROOT/install/install.sh" --dry-run 2>&1)" || dryrun_status=$?
+if [[ "$dryrun_status" -eq 0 && "$dryrun_output" == *"Dry run: self-SHA verified."* &&
+      ! -e "$dryrun_state" && ! -e "$dryrun_home/.local" ]]; then
+    ok
+else
+    bad "dry-run wrote user state or did not verify the pinned installer SHA"
+fi
+
+start "dry-run rejects wrong SHA without creating user state"
+dryrun_fixture="$SANDBOX/bad SHA fixture-Ü"
+mkdir -p "$dryrun_fixture/install" "$dryrun_fixture/docs"
+cp "$ROOT/install/install.sh" "$dryrun_fixture/install/install.sh"
+printf '%064d\\n' 0 > "$dryrun_fixture/docs/HASH-linux.txt"
+dryrun_bad_home="$SANDBOX/bad SHA home-Ü"
+dryrun_bad_state="$dryrun_bad_home/state-Ü"
+mkdir -p "$dryrun_bad_home"
+dryrun_status=0
+dryrun_output="$(HOME="$dryrun_bad_home" XDG_STATE_HOME="$dryrun_bad_state" bash "$dryrun_fixture/install/install.sh" --dry-run 2>&1)" || dryrun_status=$?
+if [[ "$dryrun_status" -ne 0 && "$dryrun_output" == *"SHA does not match"* &&
+      ! -e "$dryrun_bad_state" && ! -e "$dryrun_bad_home/.local" ]]; then
+    ok
+else
+    bad "mismatched SHA dry-run wrote user state or did not fail closed"
+fi
+
+
 start "copy_rules_to_agent copies 4 rules files into an empty target"
 target="$SANDBOX/agent1/rules"
 : > "$MANIFEST_FILES"  # reset manifest
