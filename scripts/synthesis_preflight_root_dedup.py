@@ -106,9 +106,14 @@ def group_preflight_roots(observations: Any) -> dict[str, Any]:
         # A scoped human receipt is separate evidence, not proof that the
         # underlying source claim was reproduced. Preserve SCREENED/HOLD as
         # a legitimate negative/abstention record.
-        if (record["source_support"] in ("SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO")
-                and record["maturity"] != "SCREENED"):
-            return {**held, "reason": f"record {index}: source status cannot support claimed evidence maturity"}
+        if record["source_support"] in ("SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO"):
+            if record["maturity"] != "SCREENED":
+                return {**held, "reason": f"record {index}: source status cannot support claimed evidence maturity"}
+            # With no adequate source support, even a screened record cannot
+            # establish a FLAG, a refutation, a NO_FLAG, or a discussion
+            # disposition. Keep the unresolved question as an explicit HOLD.
+            if record["disposition"] != "HOLD":
+                return {**held, "reason": f"record {index}: unavailable source requires HOLD disposition"}
         # Booleans alone do not evidence human independence or explicit author
         # agreement. Exact dated, conflict-checked, scope-bound private receipt
         # metadata are required before either status may be reported. Even these
