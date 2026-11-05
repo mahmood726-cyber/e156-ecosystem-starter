@@ -29,6 +29,12 @@ UNKNOWN = frozenset({
 def _valid_identifier(value: Any) -> bool:
     if not isinstance(value, str) or value != value.strip():
         return False
+    # Invisible/format controls, surrogates, private-use and unassigned code
+    # points can split a source/root ID or impersonate a distinct reviewer.
+    # Reject the Unicode "Other" categories rather than silently normalizing
+    # evidence identities. Ordinary printable non-ASCII names remain valid.
+    if any(unicodedata.category(ch).startswith("C") for ch in value):
+        return False
     # A repeated spelling of UNKNOWN is never a valid scope or receipt ID.
     # Preserve original identifiers for grouping: normalize only to reject
     # placeholders, not to equate unrelated outputs or trial families.
