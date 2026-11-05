@@ -90,6 +90,20 @@ class SourceRightsTests(unittest.TestCase):
                 self.assertTrue(is_jama_source(source))
                 self.assertEqual(assess_source(MANIFEST,source,'CACHE_READ',on_date=TODAY)[0], 'SOURCE_RIGHTS_HOLD')
 
+
+    def test_resolver_alias_cannot_hide_jama_identity(self):
+        # Invented DOIs: a resolver alias is still the same held publication.
+        for doi in (
+            "https://dx.doi.org/10.1001/synthetic-fixture",
+            "http://dx.doi.org/10.1001/synthetic-fixture",
+            "https://doi.org/10.1001/synthetic-fixture?reader=1",
+        ):
+            with self.subTest(doi=doi):
+                self.assertTrue(is_jama_source({**SOURCE, "doi": doi}))
+        self.assertFalse(is_jama_source({
+            **SOURCE, "doi": "https://doi.org.untrusted.invalid/10.1001/synthetic-fixture"
+        }))
+
     def test_log_missing_blocks_before_any_operation(self):
         with TemporaryDirectory() as root:
             p=Path(root); manifest=p/'manifest.json'; manifest.write_text(json.dumps(MANIFEST))
@@ -279,6 +293,26 @@ class ContactTests(unittest.TestCase):
         for entry in malformed_exclusions:
             self.assertTrue(any("CONTACT_BLOCKED_NO_CONTACT: malformed exclusion" in reason
                                 for reason in outgoing_blockers({"to":["other@example.invalid"]},[entry])))
+
+
+    def test_resolver_alias_cannot_hide_excluded_publication(self):
+        # A publisher DOI exclusion must cover URL aliases in new/retry/follow-up
+        # cases even if the recipient mailbox is previously unknown.
+        for kind in ("new", "retry", "followup", "queued_send"):
+            for field in ("doi", "related_dois"):
+                value = "https://dx.doi.org/10.7777/fictional-publication"
+                msg = {"to": ["unknown@example.invalid"], "kind": kind,
+                       field: [value] if field == "related_dois" else value}
+                with self.subTest(kind=kind, field=field):
+                    blocked = outgoing_blockers(msg, self.EXCLUSIONS)
+                    self.assertTrue(any("recipient/publication/thread exclusion" in reason
+                                        for reason in blocked))
+                    with self.assertRaises(PermissionError):
+                        require_outgoing_allowed(msg, self.EXCLUSIONS)
+        self.assertEqual(outgoing_blockers(
+            {"to": ["unknown@example.invalid"],
+             "doi": "https://doi.org.untrusted.invalid/10.7777/fictional-publication"},
+            self.EXCLUSIONS), ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
 
     def test_unavailable_exclusions_also_fail_closed(self):
         reasons=outgoing_blockers({"to":["other@example.invalid"]},None)
