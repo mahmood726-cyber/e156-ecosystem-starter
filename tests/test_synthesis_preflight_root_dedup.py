@@ -203,5 +203,45 @@ class RootDedupContractTests(unittest.TestCase):
         self.assertEqual(result["status"], "GROUPED")
         self.assertEqual(result["root_count"], 1)
 
+    def test_source_unavailable_cannot_advance_to_reproduced_or_human_stage(self):
+        # Synthetic evidence claiming a source was unavailable cannot
+        # simultaneously mature to SOURCE_BACKED/REPRODUCED/ADJUDICATED.
+        # A scoped human receipt does not repair missing source support.
+        for support in ("SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO"):
+            for maturity in ("SOURCE_BACKED", "REPRODUCED",
+                             "INDEPENDENTLY_ADJUDICATED"):
+                with self.subTest(support=support, maturity=maturity):
+                    fields = dict(source_support=support, maturity=maturity)
+                    if maturity == "INDEPENDENTLY_ADJUDICATED":
+                        fields.update(human_adjudicated=True,
+                                      human_receipt=self.human_receipt())
+                    result = group_preflight_roots([self.row_with(**fields)])
+                    self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                    self.assertEqual(result["certified_errors"], 0)
+                    self.assertFalse(result["email_eligible"])
+
+    def test_unknown_source_screened_hold_remains_legitimate_control(self):
+        for support in ("SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO"):
+            with self.subTest(support=support):
+                result = group_preflight_roots([
+                    self.row_with(source_support=support, maturity="SCREENED",
+                                  disposition="HOLD")])
+                self.assertEqual(result["status"], "GROUPED")
+                self.assertFalse(result["roots"][0]["all_source_reproduced"])
+                self.assertFalse(result["roots"][0]["certified_error"])
+
+    def test_supported_source_reproduction_and_refutation_remain_valid(self):
+        # Source-backed flags and independent refutations share the same
+        # administrative maturity but neither certifies a scientific error.
+        for support, disposition in (("CONTRADICTED", "FLAG"),
+                                     ("SUPPORTED", "RECONCILED")):
+            with self.subTest(support=support, disposition=disposition):
+                result = group_preflight_roots([
+                    self.row_with(source_support=support, maturity="REPRODUCED",
+                                  disposition=disposition)])
+                self.assertEqual(result["status"], "GROUPED")
+                self.assertTrue(result["roots"][0]["all_source_reproduced"])
+                self.assertEqual(result["certified_errors"], 0)
+
 if __name__ == "__main__":
     unittest.main()
