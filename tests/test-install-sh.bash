@@ -150,7 +150,7 @@ printf 'earlier timestamp edit' > "$target/lessons.md.user-$collision_stamp"
 : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
 date() {
     if [[ "$#" -eq 1 && "$1" == "+%Y%m%d-%H%M%S" ]]; then
-        printf '%s\\n' "$collision_stamp"
+        printf '%s\n' "$collision_stamp"
     else
         command date "$@"
     fi
