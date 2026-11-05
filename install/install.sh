@@ -290,8 +290,16 @@ copy_rules_to_agent() {
             # Subsequent re-installs: back up to <name>.md.user-<timestamp> so
             # we never silently overwrite a re-edited file (the original .user
             # backup is preserved as the "first-known-edit" copy).
-            if [[ -f "$backup" ]]; then
-                actual_backup="${dest}.user-$(date +%Y%m%d-%H%M%S)"
+            if [[ -e "$backup" || -L "$backup" ]]; then
+                # Timestamp resolution is one second. Keep older backups
+                # even if two reinstalls occur during the same second.
+                local timestamp_backup="${dest}.user-$(date +%Y%m%d-%H%M%S)"
+                local backup_index=0
+                actual_backup="$timestamp_backup"
+                while [[ -e "$actual_backup" || -L "$actual_backup" ]]; do
+                    backup_index=$((backup_index + 1))
+                    actual_backup="${timestamp_backup}-${backup_index}"
+                done
             else
                 actual_backup="$backup"
             fi

@@ -137,6 +137,50 @@ MANIFEST_DIRS="$MANIFEST_DIR/dirs"
 MANIFEST_BACKUPS="$MANIFEST_DIR/backups"
 : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
 
+# A fixed timestamp makes a same-second collision deterministic. In the
+# old installer, cp silently overwrote the pre-existing timestamped backup.
+# Run in temporary paths only; do not touch real agent configuration.
+start "same-second reinstall preserves previous timestamp backup and rolls back"
+target="$SANDBOX/same-second path-Ü/rules"
+mkdir -p "$target"
+printf 'most recent user edit' > "$target/lessons.md"
+printf 'first preserved edit' > "$target/lessons.md.user"
+collision_stamp="20261105-081719"
+printf 'earlier timestamp edit' > "$target/lessons.md.user-$collision_stamp"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+date() {
+    if [[ "$#" -eq 1 && "$1" == "+%Y%m%d-%H%M%S" ]]; then
+        printf '%s\\n' "$collision_stamp"
+    else
+        command date "$@"
+    fi
+}
+copy_rules_to_agent "$ROOT/rules" "$target" >/dev/null 2>&1
+unset -f date
+collision_backup="$target/lessons.md.user-$collision_stamp-1"
+if [[ -f "$collision_backup" &&
+      "$(cat "$collision_backup")" == "most recent user edit" &&
+      "$(cat "$target/lessons.md.user-$collision_stamp")" == "earlier timestamp edit" &&
+      "$(cat "$target/lessons.md.user")" == "first preserved edit" ]] &&
+   grep -Fxq "$collision_backup" "$MANIFEST_BACKUPS"; then
+    rollback "test-triggered collision rollback" 2>/dev/null || true
+    if [[ "$(cat "$target/lessons.md")" == "most recent user edit" &&
+          "$(cat "$target/lessons.md.user-$collision_stamp")" == "earlier timestamp edit" &&
+          "$(cat "$target/lessons.md.user")" == "first preserved edit" &&
+          ! -e "$collision_backup" ]]; then
+        ok
+    else
+        bad "rollback did not restore latest edit or it altered an older backup"
+    fi
+else
+    bad "same-second backup collision clobbered existing backup or was not tracked"
+fi
+MANIFEST_DIR="$(mktemp -d -t e156-rollback.XXXXXX)"
+MANIFEST_FILES="$MANIFEST_DIR/files"
+MANIFEST_DIRS="$MANIFEST_DIR/dirs"
+MANIFEST_BACKUPS="$MANIFEST_DIR/backups"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+
 # Describe: render_template rules in practice
 start "templated rules have no residual Mahmood paths"
 target="$SANDBOX/rendered/rules"
