@@ -31,6 +31,56 @@ class SourceRightsTests(unittest.TestCase):
     def test_exact_reviewed_fixture_allowed(self):
         self.assertEqual(assess_source(MANIFEST, SOURCE, 'CACHE_READ', on_date=TODAY)[0], 'ALLOW')
 
+    def test_original_doi_must_bind_reviewed_source_and_obey_jama_hold(self):
+        # Invented DOI suffixes only: no real journal material or network I/O.
+        held_doi = "10.1001/synthetic-policy-fixture"
+        for original_doi in (held_doi, "doi:" + held_doi,
+                             "https://dx.doi.org/" + held_doi):
+            with self.subTest(held_original=original_doi):
+                source = {**SOURCE, "original_doi": original_doi}
+                grant = {**PERMISSION, "original_doi": original_doi}
+                manifest = {"schema": "source-permissions-v1", "permissions": [grant]}
+                self.assertTrue(is_jama_source(source))
+                self.assertEqual(assess_source(manifest, source, "CACHE_READ",
+                                               on_date=TODAY)[0], "SOURCE_RIGHTS_HOLD")
+                # The original identity in the reviewed grant also takes precedence.
+                self.assertEqual(assess_source(manifest, SOURCE, "CACHE_READ",
+                                               on_date=TODAY)[0], "SOURCE_RIGHTS_HOLD")
+        same_source = {**SOURCE, "original_doi": SOURCE["doi"]}
+        same_grant = {**PERMISSION, "original_doi": SOURCE["doi"]}
+        matching = {"schema": "source-permissions-v1", "permissions": [same_grant]}
+        self.assertEqual(assess_source(matching, same_source, "CACHE_READ",
+                                       on_date=TODAY)[0], "ALLOW")
+        # An extra asserted original identity is not independently reviewed.
+        for src, grant in (
+            (same_source, PERMISSION),
+            (SOURCE, same_grant),
+            ({**SOURCE, "original_doi": "10.7777/another-synthetic"}, same_grant),
+            ({**SOURCE, "original_doi": "bad-doi"}, {**PERMISSION, "original_doi": "bad-doi"}),
+            ({**SOURCE, "original_doi": ""}, {**PERMISSION, "original_doi": ""}),
+        ):
+            with self.subTest(unbound_original=(src.get("original_doi"), grant.get("original_doi"))):
+                self.assertEqual(assess_source(
+                    {"schema": "source-permissions-v1", "permissions": [grant]},
+                    src, "CACHE_READ", on_date=TODAY)[0], "SOURCE_RIGHTS_HOLD")
+        with TemporaryDirectory() as root:
+            folder = Path(root)
+            manifest_file = folder / "rights.json"
+            manifest_file.write_text(json.dumps({
+                "schema": "source-permissions-v1",
+                "permissions": [{**PERMISSION, "original_doi": held_doi}]}))
+            log = folder / "decisions.jsonl"
+            log.touch()
+            callback = Mock(return_value=b"synthetic-only")
+            with self.assertRaises(PermissionError):
+                execute_source_action({**SOURCE, "original_doi": held_doi},
+                                      "CACHE_READ", callback,
+                                      manifest_path=manifest_file,
+                                      decision_log=log, on_date=TODAY)
+            callback.assert_not_called()
+            self.assertEqual(json.loads(log.read_text().splitlines()[0])["decision"],
+                             "SOURCE_RIGHTS_HOLD")
+
     def test_unreviewed_expired_future_unknown_permissions_hold(self):
         variants = [None, {}, {"schema":"source-permissions-v1", "permissions":[]},
                     {"schema":"source-permissions-v1", "permissions":[dict(PERMISSION,status="UNREVIEWED")]},
