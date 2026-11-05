@@ -272,15 +272,21 @@ with open(out_path, "w", encoding="utf-8", newline="\n") as f:
 PY_EOF
 }
 
-# Before touching user configuration, refuse links that could redirect writes
-# outside the intended agent directory. Check the parent, directory and all
-# destination files BEFORE copying anything; --force never bypasses this.
+# Before touching user configuration, refuse links anywhere in a
+# destination's path, including grandparents and dangling symlinks.
+# Checking only the leaf and immediate parent misses e.g. HOME/link/agent/rules
+# when HOME/link redirects to another directory. --force is not an override.
 refuse_symlink_install_path() {
-    local path="$1"
-    if [[ -L "$path" ]]; then
-        printf 'ERROR: refusing symlink install destination: %s\n' "$path" >&2
-        return 1
-    fi
+    local path="$1" parent
+    while :; do
+        if [[ -L "$path" ]]; then
+            printf 'ERROR: refusing symlink install destination: %s\n' "$path" >&2
+            return 1
+        fi
+        parent="$(dirname "$path")"
+        [[ "$parent" == "$path" || "$parent" == "." ]] && return 0
+        path="$parent"
+    done
 }
 
 copy_rules_to_agent() {
@@ -384,6 +390,13 @@ copy_memory_scaffold() {
     refuse_symlink_install_path "$target" || return 1
     refuse_symlink_install_path "$target/MEMORY.md" || return 1
     refuse_symlink_install_path "$target/templates" || return 1
+    # A normal templates directory can contain a symlinked individual file.
+    # Preflight all nested destinations before copying MEMORY.md.
+    local template_file
+    for template_file in "$src"/templates/*.md; do
+        [[ -f "$template_file" ]] || { echo "ERROR: missing memory template: $template_file" >&2; return 1; }
+        refuse_symlink_install_path "$target/templates/$(basename "$template_file")" || return 1
+    done
     mkdir -p "$target"
     if compgen -G "$target/*.md" > /dev/null; then
         log_ok "${target}  (already has memory -- preserved, templates not overwritten)"
