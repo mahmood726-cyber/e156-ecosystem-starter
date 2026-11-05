@@ -397,13 +397,21 @@ function Copy-MemoryScaffold {
         $tmplDir = Join-Path $TargetMemoryDir 'templates'
         Assert-SafeWindowsInstallPath -Path (Join-Path $TargetMemoryDir 'MEMORY.md')
         Assert-SafeWindowsInstallPath -Path $tmplDir -Directory
-        foreach ($template in @(Get-ChildItem -LiteralPath (Join-Path $SourceMemoryDir 'templates') -Filter '*.md' -File -ErrorAction Stop)) {
+        $sourceTemplates = @(Get-ChildItem -LiteralPath (Join-Path $SourceMemoryDir 'templates') -Filter '*.md' -File -ErrorAction Stop)
+        foreach ($template in $sourceTemplates) {
             Assert-SafeWindowsInstallPath -Path (Join-Path $tmplDir $template.Name)
         }
         New-Item -ItemType Directory -Force -Path $TargetMemoryDir | Out-Null
         Copy-Item (Join-Path $SourceMemoryDir 'MEMORY.md') (Join-Path $TargetMemoryDir 'MEMORY.md')
         New-Item -ItemType Directory -Force -Path $tmplDir | Out-Null
-        Copy-Item (Join-Path $SourceMemoryDir 'templates\*.md') $tmplDir -Force
+        # An empty memory root can contain user-edited nested templates.
+        # Populate only missing files; never replace existing user templates.
+        foreach ($template in $sourceTemplates) {
+            $dest = Join-Path $tmplDir $template.Name
+            if (-not (Test-Path -LiteralPath $dest)) {
+                Copy-Item -LiteralPath $template.FullName -Destination $dest -ErrorAction Stop
+            }
+        }
         return $true
     }
     return $false
