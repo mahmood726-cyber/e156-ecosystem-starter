@@ -1,0 +1,41 @@
+name: Synthesis source rights (synthetic only)
+on:
+  pull_request:
+    paths:
+      - 'scripts/synthesis*.py'
+      - 'scripts/scicoqa*.py'
+      - 'tests/*source_rights*.py'
+      - 'tests/test_synthesis*.py'
+      - 'tests/test_scicoqa*.py'
+      - 'tests/run_synthetic_preflight.py'
+      - 'policies/source-rights.json'
+      - 'docs/SYNTHESIS-SOURCE-RIGHTS.md'
+      - '.github/workflows/synthesis*.yml'
+  push:
+    paths:
+      - 'scripts/synthesis*.py'
+      - 'scripts/scicoqa*.py'
+      - 'tests/*source_rights*.py'
+      - 'tests/test_synthesis*.py'
+      - 'tests/test_scicoqa*.py'
+      - 'tests/run_synthetic_preflight.py'
+      - 'policies/source-rights.json'
+      - 'docs/SYNTHESIS-SOURCE-RIGHTS.md'
+      - '.github/workflows/synthesis*.yml'
+permissions:
+  contents: read
+jobs:
+  offline-permission-boundaries:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Verify synthetic permission and IO boundaries
+        run: |
+          python3 scripts/synthesis_source_rights.py --help > /dev/null
+          python3 -B -m unittest discover -s tests -p 'test_synthesis_source_rights.py' -v
+          python3 -B -m unittest discover -s tests -p 'test_synthesis_capture_evidence.py' -v
+          python3 -B -m unittest discover -s tests -p 'test_synthesis_preflight.py' -v
+          python3 -B -m unittest discover -s tests -p 'test_scicoqa_retrieve_sources.py' -v
+          python3 -B -m unittest discover -s tests -p 'test_scicoqa_paired_inference.py' -v
+          python3 -B tests/run_synthetic_preflight.py --output-dir /tmp/synthesis-rights-smoke

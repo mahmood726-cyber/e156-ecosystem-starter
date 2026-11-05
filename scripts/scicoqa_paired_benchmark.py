@@ -329,16 +329,21 @@ def main() -> None:
     args = parser.parse_args()
     try:
         if args.cmd == "prepare":
+            from synthesis_source_rights import read_authorized
+            # Authorize the exact context bytes before reading any paper excerpt.
+            context_bytes = read_authorized(args.contexts, operation="process")
             decoding = json.loads(args.decoding_config)
-            manifest, rendered = make_prompts(read_jsonl(args.contexts),
+            manifest, rendered = make_prompts([json.loads(line) for line in context_bytes.decode("utf-8").splitlines() if line.strip()],
                                               upstream_plain_prompt(args.upstream_prompts),
                                               args.synthesis_prompt.read_text(encoding="utf-8"),
                                               args.model, args.model_revision, decoding, args.upstream_ref)
             write_prepared(args.out_dir, manifest, rendered)
             print(f"Prepared {len(manifest['cases'])} cases in {args.out_dir}; no model inference performed")
         else:
-            result = score(json.loads(args.manifest.read_text(encoding="utf-8")),
-                           read_jsonl(args.predictions), read_jsonl(args.adjudications))
+            from synthesis_source_rights import read_authorized
+            result = score(json.loads(read_authorized(args.manifest, operation="process")),
+                           [json.loads(line) for line in read_authorized(args.predictions, operation="process").decode("utf-8").splitlines() if line.strip()],
+                           [json.loads(line) for line in read_authorized(args.adjudications, operation="process").decode("utf-8").splitlines() if line.strip()])
             payload = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
             if args.output:
                 if args.output.exists():
@@ -351,3 +356,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

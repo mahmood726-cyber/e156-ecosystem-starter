@@ -15,6 +15,25 @@ This document describes a candidate extension to Synthesis v1.2 and the existing
 
 ## Objective
 
+### Mandatory source-permission prerequisite (5 November 2026)
+
+Use [Synthesis source rights](SYNTHESIS-SOURCE-RIGHTS.md) before any new automated
+acquisition or processing, including cached extraction replay and model input.
+The code gate is `scripts/synthesis_source_rights.py`; the public programme hold
+is `policies/source-rights.json`. JAMA Network content remains blocked under the
+present restriction regardless of host or a claimed open licence. Each other
+source needs reviewed identity and operation-specific permission evidence, with
+a private append-only decision recorded before access. Missing or uncertain
+permissions produce a HOLD, not an error finding. Preserve historical records;
+do not reprocess held article text or silently relabel past evidence. Source
+permission does not itself resolve the separate ethics-review question.
+
+This prerequisite governs new runs without changing the frozen v1.1 prompt,
+v1.2 methodology, prospective cohorts or historical scientific classifications.
+The CI checks use generated synthetic content and make no real-paper accuracy
+or legal-validity claim. An open PR is not a deployed control: operational agents
+must hold article operations until using reviewed code and a verified manifest.
+
 Increase true detection of substantive scientific inconsistencies **without** an unacceptable increase in false alerts, wasted reviewer time or incorrect author allegations. All test cases in this public repository are synthetic; development-case correspondence remains private. A correct arithmetic calculation does not prove that the source endpoint, analysis population or statistical model is correct.
 
 ## Modules and interfaces
@@ -227,3 +246,4 @@ The capture records the PMC version, DOI, declared CC BY or CC0 licence, and SHA
 | Fixed contract | Derived from each public source |
 |---|---|
 | NCBI endpoint, supported licences and XML structure, maximum payload | Identifiers, version, licence, digest, source locations, table cells and linked documents |
+

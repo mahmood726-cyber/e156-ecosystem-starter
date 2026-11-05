@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "jama_hold": "active",
+  "record_id": "SYN-SOURCE-HOLD-JAMA-20261104",
+  "effective_date": "2026-11-04",
+  "scope": "Programme hold on automated acquisition, extraction, mining and reprocessing of JAMA Network article content, including supplements, corrections, cached copies and copies on other hosts.",
+  "evidence": "Operator instruction dated 5 November 2026 documenting the publisher restriction and the commitment already sent on 4 November. Original correspondence remains private; no article content is needed to enforce this hold.",
+  "release": "Reviewed code and policy change supported by documented clarification or permission. A licence flag or a change of host alone cannot release this programme hold.",
+  "default": "HOLD until source identity, operation-specific permission, applicable restrictions and evidence are verified and recorded",
+  "manual_reading": "This gate governs automated processing. It makes no determination prohibiting ordinary scholarly reading.",
+  "ethics": "Ethics review is a separate governance question; this policy makes no determination about whether review is required."
+}

@@ -100,7 +100,8 @@ def evaluate(checks, nma, case, paper):
 
 
 def main():
-    benchmark = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    from synthesis_source_rights import read_authorized
+    benchmark = json.loads(read_authorized(FIXTURE, operation="process"))
     revisions = (benchmark["baseline"], benchmark["candidate_tree"])
     snapshots = [
         (load_snapshot(revision, "synthesis_v13_checks"),
@@ -127,3 +128,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

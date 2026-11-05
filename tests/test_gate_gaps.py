@@ -337,6 +337,7 @@ def real_copy(tmp_path, rgg):
     shutil.copytree(REPO_ROOT / ".github", tmp_path / ".github")
     shutil.copytree(REPO_ROOT / "scripts", tmp_path / "scripts",
                     ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copytree(REPO_ROOT / "policies", tmp_path / "policies")
     (tmp_path / "docs").mkdir()
     for rel in (rgg.REGISTRY_PATH, rgg.DOC_PATH):
         shutil.copy2(REPO_ROOT / rel, tmp_path / rel)
@@ -365,3 +366,4 @@ def test_real_hand_edited_page_is_refused(rgg, real_copy):
     doc = real_copy / rgg.DOC_PATH
     doc.write_text(doc.read_text(encoding="utf-8") + "\nExtra hand-written claim.\n", encoding="utf-8")
     _assert_refused(rgg, real_copy, "GATE_GAPS.md: STALE")
+

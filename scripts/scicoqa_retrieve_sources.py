@@ -19,6 +19,7 @@ import subprocess
 import tarfile
 
 from scicoqa_paired_benchmark import BenchmarkError, canonical, read_jsonl
+from synthesis_source_rights import authorize, read_authorized, RightsError
 
 UPSTREAM_REF = "463162906459be508ed4a2294fcaede9fa072036"
 DATASET_SHA256 = {
@@ -36,8 +37,9 @@ def inventory(dataset_dir: Path, verify_hashes: bool = True) -> tuple[list[dict]
     datasets = {}
     for split in ("real", "synthetic"):
         path = dataset_dir / f"scicoqa-{split}-v1.1.jsonl"
-        rows = read_jsonl(path)
-        content_hash = sha256(path.read_bytes())
+        dataset_bytes = read_authorized(path, operation="process")
+        rows = [json.loads(line) for line in dataset_bytes.decode("utf-8").splitlines() if line.strip()]
+        content_hash = sha256(dataset_bytes)
         if verify_hashes and content_hash != DATASET_SHA256[split]:
             raise BenchmarkError(f"{split} dataset bytes differ from pinned upstream release")
         datasets[split] = {"filename": path.name, "sha256": content_hash,
@@ -87,6 +89,11 @@ def retrieve(asset: dict, output: Path, timeout: int, max_bytes: int,
              previous: dict | None = None) -> dict:
     path = output / asset["relative_path"]
     started = datetime.now(timezone.utc).isoformat()
+    try:
+        authorize(asset["url"], "replay" if previous else "acquire")
+        authorize(asset["url"], "process")
+    except RightsError as exc:
+        return {**asset, "status": "HOLD", "error": str(exc), "attempted_at_utc": started}
     if previous and previous.get("status") == "RETRIEVED" and path.is_file():
         if sha256(path.read_bytes()) == previous.get("sha256"):
             validate_payload(path, asset)
@@ -101,9 +108,11 @@ def retrieve(asset: dict, output: Path, timeout: int, max_bytes: int,
         download_url = "https://arxiv.org/pdf/" + arxiv_abs.group(1) + ".pdf"
     asset = {**asset, "download_url": download_url}
     try:
+        if download_url != asset["url"]:
+            authorize(download_url, "acquire")
         path.parent.mkdir(parents=True, exist_ok=True)
         result = subprocess.run([
-            "curl", "--fail", "--location", "--silent", "--show-error",
+            "curl", "--fail", "--silent", "--show-error",
             "--max-time", str(timeout), "--max-filesize", str(max_bytes),
             "--user-agent", "SciCoQA-source-retrieval/1", "--output", str(part), download_url
         ], capture_output=True, text=True, timeout=timeout + 5, check=False)
@@ -159,3 +168,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

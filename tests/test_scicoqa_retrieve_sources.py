@@ -14,6 +14,15 @@ from scicoqa_retrieve_sources import inventory, retrieve, sha256, validate_paylo
 
 
 class RetrievalTests(unittest.TestCase):
+    def setUp(self):
+        mocked_gate = patch("scicoqa_retrieve_sources.authorize", return_value={"status": "ALLOW"})
+        mocked_gate.start()
+        self.addCleanup(mocked_gate.stop)
+        synthetic_bytes = patch("scicoqa_retrieve_sources.read_authorized",
+                                side_effect=lambda path, **kwargs: Path(path).read_bytes())
+        synthetic_bytes.start()
+        self.addCleanup(synthetic_bytes.stop)
+
     @staticmethod
     def downloader(payload):
         def run(command, **kwargs):
@@ -112,3 +121,4 @@ class RetrievalTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

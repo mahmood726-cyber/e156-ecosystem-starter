@@ -16,8 +16,10 @@ import xml.etree.ElementTree as ET
 
 if __package__:
     from scripts.synthesis_five_journal_corrections import normalize_doi
+    from scripts.synthesis_source_rights import authorize, jama_match, read_authorized, record, RightsError
 else:
     from synthesis_five_journal_corrections import normalize_doi
+    from synthesis_source_rights import authorize, jama_match, read_authorized, record, RightsError
 
 
 EFETCH_HOST = "eutils.ncbi.nlm.nih.gov"
@@ -236,7 +238,8 @@ def locate_quotes(body, tables, quotes):
             else [location for location, value in locations if quote in value] for quote in quotes}
 
 
-def capture(payload, pmcid, expected_doi=None, *, quotes=(), for_archive=False):
+def capture(payload, pmcid, expected_doi=None, *, quotes=(), for_archive=False, rights_resource=None):
+    permission = authorize(rights_resource or "pmc:" + pmcid, "process", doi=expected_doi)
     if not PMCID.fullmatch(pmcid):
         raise ValueError("A canonical PMCID is required")
     articles = article_entries(payload)
@@ -251,6 +254,14 @@ def capture(payload, pmcid, expected_doi=None, *, quotes=(), for_archive=False):
         raise ValueError("Expected exactly one JATS article matching the requested PMCID")
     article = matches[0]
     meta = article.find("front/article-meta")
+    # Defence in depth against incorrect pre-acquisition metadata. Do not extract
+    # body text, quotes or tables from a restricted publication received in error.
+    if jama_match({"doi": article_id(meta, "doi"),
+                   "journal": text(article.find("front/journal-meta/journal-title-group/journal-title")),
+                   "publisher": text(article.find("front/journal-meta/publisher/publisher-name"))}):
+        record(dict(permission, status="DENY", reason_code="JAMA_PROGRAMME_HOLD",
+                    observed_doi=article_id(meta, "doi")))
+        raise RightsError("SOURCE_RIGHTS_HOLD: JAMA_PROGRAMME_HOLD")
     if any(node is not article and node.tag in {"article", "sub-article", "response"} for node in article.iter()):
         raise ValueError("Nested PMC articles and responses require separate rights review")
     article_permissions = meta.findall("permissions")
@@ -261,6 +272,9 @@ def capture(payload, pmcid, expected_doi=None, *, quotes=(), for_archive=False):
     if article_id(meta, "pmcid") != pmcid:
         raise ValueError("Article PMCID is ambiguous")
     doi = normalize_doi(article_id(meta, "doi"))
+    if doi != normalize_doi(permission["doi"]):
+        record(dict(permission, status="HOLD", reason_code="IDENTITY_MISMATCH", observed_doi=doi))
+        raise RightsError("SOURCE_RIGHTS_HOLD: actual DOI differs from the permission grant")
     if expected_doi is not None and doi != normalize_doi(expected_doi):
         raise ValueError("The article DOI does not match the requested DOI")
     version = article_id(meta, "pmcid-ver")
@@ -321,10 +335,8 @@ def is_efetch_origin(url):
 
 class PmcRedirectHandler(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        if not is_efetch_origin(newurl):
-            raise HTTPError(req.full_url, code, "PMC retrieval refused a redirect outside the HTTPS EFetch origin",
-                            headers, fp)
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
+        raise HTTPError(req.full_url, code, "PMC redirect requires a separate source-permission review",
+                        headers, fp)
 
 
 def archive_snapshot(payload, result, directory):
@@ -350,8 +362,7 @@ def archive_snapshot(payload, result, directory):
 
 
 def _read_xml(path):
-    with path.open("rb") as source:
-        return source.read(MAX_BYTES + 1)
+    return read_authorized(path, max_bytes=MAX_BYTES)
 
 
 def retrieve_pmc_evidence(pmcid, *, doi=None, version=None, xml=None, archive=None, quotes=(), correction_of=None):
@@ -367,6 +378,10 @@ def retrieve_pmc_evidence(pmcid, *, doi=None, version=None, xml=None, archive=No
             not isinstance(version, str) or not re.fullmatch(re.escape(pmcid) + r"\.[1-9][0-9]*", version)
         ):
             raise ValueError("The requested version must be a versioned PMCID for the requested article")
+        resource = Path(xml).resolve().as_uri() if xml is not None else "pmc:" + pmcid
+        rights_receipt = authorize(resource, "replay" if xml is not None else "acquire", doi=doi)
+        # Parsing/extraction is a distinct operation, also required for live fetch.
+        authorize(resource, "process", doi=doi)
         if xml is not None:
             payload = _read_xml(xml)
         else:
@@ -378,7 +393,11 @@ def retrieve_pmc_evidence(pmcid, *, doi=None, version=None, xml=None, archive=No
                 if not is_efetch_origin(final_url):
                     raise ValueError("PMC response is outside the HTTPS EFetch origin")
                 payload = source.read(MAX_BYTES + 1)
-        result = capture(payload, pmcid, doi, quotes=quotes, for_archive=archive is not None)
+        result = capture(payload, pmcid, doi, quotes=quotes, for_archive=archive is not None,
+                         rights_resource=resource)
+        result["source_rights_decision_id"] = rights_receipt["decision_id"]
+        if result["source"]["doi"] != normalize_doi(rights_receipt["doi"]):
+            raise RightsError("SOURCE_RIGHTS_HOLD: captured DOI differs from the permission grant")
         if version is not None and result["source"]["version"] != version:
             raise ValueError("The captured PMC version does not match the requested version")
         if xml is None:
@@ -445,7 +464,7 @@ def linked_correction_evidence(original, paths, *, follow=False, archive=None, q
             if len(articles) != 1:
                 raise ValueError("A linked XML file must contain exactly one article")
             pmcid = article_id(articles[0].find("front/article-meta"), "pmcid")
-            captured = capture(payload, pmcid, quotes=quotes)
+            captured = capture(payload, pmcid, quotes=quotes, rights_resource=Path(path).resolve().as_uri())
             captured["capture_mode"] = "ARCHIVED_XML"
             entries.append(_linked_entry(captured, original, archive, payload))
         except (OSError, ValueError, ET.ParseError, LookupError, RecursionError) as exc:
@@ -489,3 +508,4 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

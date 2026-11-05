@@ -11,6 +11,10 @@ import json
 import math
 from pathlib import Path
 from typing import Any
+if __package__ or __name__ != "__main__":
+    from scripts.synthesis_source_rights import read_authorized, authorize, jama_match, record, RightsError
+else:
+    from synthesis_source_rights import read_authorized, authorize, jama_match, record, RightsError
 
 SUPPORT = {"SUPPORTED", "CONTRADICTED", "OVERGENERALIZED", "UNSUPPORTED_CITATION",
            "SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO"}
@@ -395,8 +399,29 @@ def main(argv: list[str] | None=None) -> int:
     p.add_argument("--pmc-follow-corrections", action="store_true",
                    help="With --pmc-live, follow direct typed PMC links to corrections")
     args=p.parse_args(argv)
-    raw=args.packet.read_bytes()
+    try:
+        raw, packet_permission=read_authorized(args.packet, operation="process", return_receipt=True)
+    except RightsError as exc:
+        print(json.dumps({"status": "HOLD", "reason": str(exc)}))
+        return 2
     packet=json.loads(raw.decode("utf-8"))
+    # Inspect identity metadata before running any scientific checks. The input
+    # file grant covers the packet; each cited accessible source also needs its
+    # own permission, rather than inheriting the packet's host or OA label.
+    try:
+        document_meta = packet.get("document", {})
+        metadata = [dict(document_meta, doi=document_meta.get("identifier")),
+                    *[dict(s, resource=s.get("retrieval_path"), doi=s.get("doi") or s.get("id"))
+                      for s in packet.get("sources", []) if isinstance(s, dict)]]
+        if any(jama_match(meta) for meta in metadata):
+            record(dict(packet_permission, status="DENY", reason_code="JAMA_PROGRAMME_HOLD"))
+            raise RightsError("SOURCE_RIGHTS_HOLD: JAMA_PROGRAMME_HOLD")
+        for source in packet.get("sources", []):
+            if source.get("access") == "ACCESSIBLE":
+                authorize(source.get("retrieval_path"), "process", doi=source.get("doi"))
+    except RightsError as exc:
+        print(json.dumps({"status": "HOLD", "reason": str(exc)}))
+        return 2
     document = packet.get("document") if isinstance(packet, dict) else None
     if (args.pmc_live or args.pmc_xml is not None) and not (isinstance(document, dict) and "pmcid" in document):
         p.error("PMC capture requires document.pmcid in the packet")
@@ -415,3 +440,4 @@ def main(argv: list[str] | None=None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
