@@ -620,6 +620,43 @@ class ContactTests(unittest.TestCase):
             {"to": ["unlisted@example.invalid"]}, self.EXCLUSIONS),
             ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
 
+    def test_transport_header_controls_fail_closed(self):
+        # An untrusted address field containing CR/LF can be interpreted as
+        # another header by a transport, while getaddresses may parse no
+        # mailboxes at all. Invented names and domains only.
+        poisoned = "Safe <safe@example.invalid>\r\nBcc: Excluded Test <alias@example.invalid>"
+        exclusions = [{"names": ["Excluded Test"], "aliases": [],
+                       "emails": [], "coauthors": []}]
+        for kind in ("new", "retry", "followup", "queued_send"):
+            for field in ("to", "cc", "bcc", "indirect_recipients",
+                          "recipient_names"):
+                with self.subTest(kind=kind, field=field):
+                    message = {"to": ["safe@example.invalid"],
+                               "kind": kind, field: [poisoned]}
+                    reasons = outgoing_blockers(message, exclusions)
+                    self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                    self.assertTrue(any(
+                        reason.startswith("CONTACT_BLOCKED_NO_CONTACT:")
+                        for reason in reasons))
+                    transport = Mock()
+                    with self.assertRaises(PermissionError):
+                        require_outgoing_allowed(message, exclusions)
+                        transport()
+                    transport.assert_not_called()
+        for field in ("names", "aliases", "emails", "coauthors"):
+            with self.subTest(exclusion_field=field):
+                invalid_exclusion = [{field: [poisoned]}]
+                reasons = outgoing_blockers(
+                    {"to": ["safe@example.invalid"]}, invalid_exclusion)
+                self.assertTrue(any(
+                    reason.startswith("CONTACT_BLOCKED_NO_CONTACT:")
+                    for reason in reasons))
+        # Negative control: a syntactically sound, nonexcluded address is
+        # blocked by the programme pause alone.
+        self.assertEqual(outgoing_blockers(
+            {"to": ["Safe <safe@example.invalid>"]}, exclusions),
+            ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
+
     def test_unavailable_exclusions_also_fail_closed(self):
         reasons=outgoing_blockers({"to":["other@example.invalid"]},None)
         self.assertTrue(any('exclusions unavailable' in x for x in reasons))
