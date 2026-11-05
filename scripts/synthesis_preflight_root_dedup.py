@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from datetime import date
+from datetime import date, datetime, timezone
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -46,7 +46,10 @@ def _valid_date(value: Any) -> bool:
     if not isinstance(value, str):
         return False
     try:
-        return date.fromisoformat(value).isoformat() == value
+        parsed = date.fromisoformat(value)
+        # A receipt dated after the UTC evaluation date cannot attest a
+        # completed review or author confirmation. Reject, never backdate.
+        return parsed.isoformat() == value and parsed <= datetime.now(timezone.utc).date()
     except ValueError:
         return False
 
