@@ -54,6 +54,12 @@ OPTIONAL_METHOD_ABSENCE = frozenset({"not_applicable", "n/a", "na", "none"})
 def _missing_field(value: Any, key: str) -> bool:
     if not isinstance(value, str) or not value.strip():
         return True
+    # Canonical result identities and source locators must not be padded.
+    # Identical malformed labels on both sides cannot establish a matched
+    # source; refuse instead of trimming or treating them as a REVIEW.
+    # Ordinary spaces within printable human-readable labels remain valid.
+    if value != value.strip():
+        return True
     # Reject hidden format and control code points in metadata identities.
     # These can conceal mismatched source versions, result IDs or locators.
     # Refuse rather than rewriting identity bytes.
