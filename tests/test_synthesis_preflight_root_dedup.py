@@ -363,5 +363,56 @@ class RootDedupContractTests(unittest.TestCase):
                 self.assertTrue(result["roots"][0]["all_source_reproduced"])
                 self.assertEqual(result["certified_errors"], 0)
 
+
+    def test_invisible_alias_cannot_claim_independent_human_review(self):
+        # A zero-width separator must not turn the investigator into an
+        # apparently distinct reviewer. All identifiers here are invented.
+        row = self.row_with(
+            maturity="INDEPENDENTLY_ADJUDICATED", human_adjudicated=True,
+            human_receipt=self.human_receipt(
+                reviewer_id="synthetic:reviewer-\\u200bone",
+                investigator_id="synthetic:reviewer-one"))
+        result = group_preflight_roots([row])
+        self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+        self.assertEqual(result["certified_errors"], 0)
+        self.assertFalse(result["email_eligible"])
+
+    def test_invisible_root_and_receipt_identifiers_fail_closed(self):
+        # Unicode format characters and embedded ASCII controls are not
+        # trustworthy identity delimiters; refuse instead of splitting roots.
+        for field, identifier in (
+            ("publication_id", "synthetic:paper-\\u202e1"),
+            ("root_scope_id", "synthetic:family-\\u20601"),
+            ("root_cause_id", "mapping-\\u200b1"),
+            ("affected_output_id", "\\u200b"),
+            ("affected_output_id", "table1:\\x00event"),
+        ):
+            with self.subTest(field=field, identifier=identifier):
+                result = group_preflight_roots(
+                    [self.row_with(**{field: identifier})])
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertIsNone(result["root_count"])
+        row = self.row_with(
+            maturity="INDEPENDENTLY_ADJUDICATED", human_adjudicated=True,
+            human_receipt=self.human_receipt(
+                receipt_locator="private:receipt-\\u2060one"))
+        self.assertEqual(group_preflight_roots([row])["status"],
+                         "NOT_ENOUGH_INFO")
+
+    def test_printable_unicode_identifiers_remain_valid_control(self):
+        # Do not reject ordinary printable non-ASCII identifiers.
+        scope = "synthetic:étude-1"
+        row = self.row_with(
+            root_scope_id=scope, maturity="INDEPENDENTLY_ADJUDICATED",
+            human_adjudicated=True,
+            human_receipt=self.human_receipt(
+                root_scope_id=scope,
+                reviewer_id="synthetic:réviseur-2",
+                investigator_id="synthetic:chercheur-1"))
+        result = group_preflight_roots([row])
+        self.assertEqual(result["status"], "GROUPED")
+        self.assertEqual(result["root_count"], 1)
+        self.assertEqual(result["certified_errors"], 0)
+
 if __name__ == "__main__":
     unittest.main()
