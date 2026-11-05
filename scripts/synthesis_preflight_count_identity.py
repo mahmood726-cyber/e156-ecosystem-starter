@@ -93,6 +93,33 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
         value = record.get("value")
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             return {**base, "reason": f"{side_name}: count must be a nonnegative exact integer"}
+    # A shared denominator *basis* (e.g. randomized) is not evidence that
+    # the two snapshots used the same number of eligible units. When either
+    # caller supplies an exact analysis denominator, require a valid number
+    # on both sides and compare it before interpreting any numerator delta.
+    # Older callers without this optional field retain the screened contract;
+    # absence alone never authenticates denominator comparability.
+    denominator_present = (
+        "analysis_denominator_n" in left,
+        "analysis_denominator_n" in right,
+    )
+    if any(denominator_present):
+        if not all(denominator_present):
+            return {**base, "reason": "analysis denominator size supplied on only one side"}
+        for side_name, record in (("left", left), ("right", right)):
+            size = record["analysis_denominator_n"]
+            if type(size) is not int or size <= 0:
+                return {**base, "reason": f"{side_name}: invalid analysis_denominator_n"}
+            # One patient may have multiple recurrent events, but a unique
+            # participant count cannot exceed its stated eligible cohort.
+            if record["count_basis"] == "unique_participants" and record["value"] > size:
+                return {**base, "reason": f"{side_name}: unique count exceeds analysis denominator"}
+        if left["analysis_denominator_n"] != right["analysis_denominator_n"]:
+            return {
+                **base, "status": "NOT_COMPARABLE",
+                "reason": "reported analysis denominator sizes differ",
+                "mismatched_fields": ["analysis_denominator_n"],
+            }
     differing = tuple(key for key in RESULT_FIELDS if left[key] != right[key])
     if differing:
         return {
