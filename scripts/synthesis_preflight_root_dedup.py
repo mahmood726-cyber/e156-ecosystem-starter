@@ -31,7 +31,7 @@ def _valid_identifier(value: Any) -> bool:
     # A repeated spelling of UNKNOWN is never a valid scope or receipt ID.
     # Preserve original identifiers for grouping: normalize only to reject
     # placeholders, not to equate unrelated outputs or trial families.
-    normalized = re.sub(r"[\\s_-]+", "_", value.casefold())
+    normalized = re.sub(r"[\s_-]+", "_", value.casefold())
     return normalized not in UNKNOWN
 
 
