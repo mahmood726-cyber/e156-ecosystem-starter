@@ -272,9 +272,26 @@ with open(out_path, "w", encoding="utf-8", newline="\n") as f:
 PY_EOF
 }
 
+# Before touching user configuration, refuse links that could redirect writes
+# outside the intended agent directory. Check the parent, directory and all
+# destination files BEFORE copying anything; --force never bypasses this.
+refuse_symlink_install_path() {
+    local path="$1"
+    if [[ -L "$path" ]]; then
+        printf 'ERROR: refusing symlink install destination: %s\n' "$path" >&2
+        return 1
+    fi
+}
+
 copy_rules_to_agent() {
     local src="$1" target="$2"; shift 2
     [[ -d "$src" ]] || { echo "ERROR: source rules dir missing: $src" >&2; return 1; }
+    refuse_symlink_install_path "$(dirname "$target")" || return 1
+    refuse_symlink_install_path "$target" || return 1
+    local preflight_rule
+    for preflight_rule in "$src"/*.md; do
+        refuse_symlink_install_path "$target/$(basename "$preflight_rule")" || return 1
+    done
     if [[ ! -d "$target" ]]; then
         mkdir -p "$target"
         echo "$target" >> "$MANIFEST_DIRS"
@@ -318,6 +335,13 @@ copy_rules_to_agent() {
 
 copy_context_files() {
     local src_root="$1" target="$2"; shift 2
+    refuse_symlink_install_path "$(dirname "$target")" || return 1
+    refuse_symlink_install_path "$target" || return 1
+    local preflight_name
+    for preflight_name in AGENTS.md CLAUDE.md GEMINI.md CODEX.md; do
+        [[ -f "$src_root/$preflight_name" ]] || continue
+        refuse_symlink_install_path "$target/$preflight_name" || return 1
+    done
     if [[ ! -d "$target" ]]; then
         mkdir -p "$target"
         echo "$target" >> "$MANIFEST_DIRS"
@@ -356,6 +380,10 @@ copy_context_files() {
 
 copy_memory_scaffold() {
     local src="$1" target="$2"
+    refuse_symlink_install_path "$(dirname "$target")" || return 1
+    refuse_symlink_install_path "$target" || return 1
+    refuse_symlink_install_path "$target/MEMORY.md" || return 1
+    refuse_symlink_install_path "$target/templates" || return 1
     mkdir -p "$target"
     if compgen -G "$target/*.md" > /dev/null; then
         log_ok "${target}  (already has memory -- preserved, templates not overwritten)"

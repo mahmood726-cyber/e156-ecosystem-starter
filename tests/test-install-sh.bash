@@ -253,6 +253,73 @@ MANIFEST_DIRS="$MANIFEST_DIR/dirs"
 MANIFEST_BACKUPS="$MANIFEST_DIR/backups"
 : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
 
+# Symlinked user destinations must be refused before any other config files
+# are installed. The external fixture is never a real agent configuration.
+start "rules install refuses symlink leaf without partial writes"
+target="$SANDBOX/symlink rules-Ü/rules"
+mkdir -p "$target"
+external="$SANDBOX/outside-rule-content"
+printf 'external sentinel' > "$external"
+ln -s "$external" "$target/lessons.md"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if copy_rules_to_agent "$ROOT/rules" "$target" >/dev/null 2>&1; then
+    bad "rules installer followed an existing leaf symlink"
+elif [[ -L "$target/lessons.md" &&
+        "$(cat "$external")" == "external sentinel" &&
+        ! -e "$target/rules.md" && ! -e "$target/advanced-stats.md" &&
+        ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_BACKUPS" ]]; then
+    ok
+else
+    bad "rules symlink refusal caused changes or partial installation"
+fi
+
+start "context install refuses dangling leaf symlink even with force"
+context_target="$SANDBOX/dangling context-Ü"
+mkdir -p "$context_target"
+external="$SANDBOX/never-created-outside"
+ln -s "$external" "$context_target/AGENTS.md"
+saved_force="$FORCE"; FORCE=1
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if copy_context_files "$ROOT" "$context_target" >/dev/null 2>&1; then
+    bad "context installer accepted a dangling link with force"
+elif [[ -L "$context_target/AGENTS.md" &&
+        ! -e "$external" && ! -e "$context_target/CLAUDE.md" &&
+        ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_BACKUPS" ]]; then
+    ok
+else
+    bad "context symlink refusal modified an external path"
+fi
+FORCE="$saved_force"
+
+start "rules install refuses symlinked agent parent directory"
+agent_parent="$SANDBOX/agent parent-Ü"
+external_dir="$SANDBOX/outside-agent-directory"
+mkdir -p "$agent_parent" "$external_dir"
+ln -s "$external_dir" "$agent_parent/.claude"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if copy_rules_to_agent "$ROOT/rules" "$agent_parent/.claude/rules" >/dev/null 2>&1; then
+    bad "rules installer accepted symlinked agent config parent"
+elif [[ ! -e "$external_dir/rules" && ! -s "$MANIFEST_DIRS" ]]; then
+    ok
+else
+    bad "rules install traversed the symlinked agent parent"
+fi
+
+start "memory scaffold refuses symlinked templates directory"
+memory_target="$SANDBOX/memory path-Ü"
+outside_templates="$SANDBOX/elsewhere-templates"
+mkdir -p "$memory_target" "$outside_templates"
+ln -s "$outside_templates" "$memory_target/templates"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if copy_memory_scaffold "$ROOT/memory" "$memory_target" >/dev/null 2>&1; then
+    bad "memory scaffold followed symlinked templates directory"
+elif [[ -L "$memory_target/templates" && ! -e "$memory_target/MEMORY.md" &&
+        ! -e "$outside_templates/MEMORY.md" && ! -s "$MANIFEST_FILES" ]]; then
+    ok
+else
+    bad "memory symlink refusal modified existing files"
+fi
+
 # Describe: render_template rules in practice
 start "templated rules have no residual Mahmood paths"
 target="$SANDBOX/rendered/rules"
