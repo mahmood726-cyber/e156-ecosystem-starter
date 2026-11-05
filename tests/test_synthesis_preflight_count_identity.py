@@ -230,5 +230,42 @@ class CountIdentityTests(unittest.TestCase):
         self.assertEqual(self.compare(value=12)["status"], "CONSISTENT")
 
 
+    def test_nonprintable_identity_characters_refuse_arithmetic_comparison(self):
+        # Invisible or control characters must not silently become matching
+        # evidence identities: all records here are purely synthetic.
+        for field, bad in (
+            ("publication_id", "synthetic:paper-\\u200bA"),
+            ("source_result_id", "result:\\u202e1"),
+            ("source_version", "snapshot-\\u20601"),
+            ("endpoint", "hospital\\u200bisation"),
+            ("analysis_cell_id", "arm-\\u200b1"),
+            ("locator", "synthetic table\\x00 row"),
+            ("model", "not_applicable\\u2060"),
+        ):
+            with self.subTest(field=field):
+                left = copy.deepcopy(self.source)
+                left[field] = bad
+                right = copy.deepcopy(left)
+                right["value"] = 15
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertEqual(result["disposition"], "HOLD")
+                self.assertFalse(result["arithmetic_reproduced"])
+                self.assertFalse(result["certified_error"])
+
+    def test_printable_unicode_identity_remains_comparable(self):
+        # Do not reject genuine printable international identifiers.
+        left = copy.deepcopy(self.source)
+        left["publication_id"] = "synthetic:étude-1"
+        left["endpoint"] = "réadmission"
+        right = copy.deepcopy(left)
+        right["value"] = 15
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "REVIEW")
+        self.assertEqual(result["difference"], -3)
+        self.assertFalse(result["source_authenticated"])
+        self.assertFalse(result["certified_error"])
+
+
 if __name__ == "__main__":
     unittest.main()
