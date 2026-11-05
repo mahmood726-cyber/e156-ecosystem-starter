@@ -11,6 +11,10 @@ from scicoqa_paired_inference import execute, parse_yaml
 
 class PairedModelRunnerTests(unittest.TestCase):
     def setUp(self):
+        from unittest.mock import patch
+        gate = patch("scicoqa_paired_inference.authorize", return_value={"status": "ALLOW"})
+        gate.start()
+        self.addCleanup(gate.stop)
         self.manifest, self.prompts = make_prompts(
             [{"case_id": "synthetic-1", "paper_family_id": "fixture-family", "split": "synthetic",
               "paper_version": "fixture-v1",
@@ -89,3 +93,4 @@ class PairedModelRunnerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

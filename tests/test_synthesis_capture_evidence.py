@@ -12,6 +12,7 @@ from urllib.request import Request
 
 from scripts import synthesis_capture_evidence as capture
 from scripts import synthesis_preflight as preflight
+from source_rights_fixtures import synthetic_env, synthetic_authorize
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "synthesis_capture_evidence.py"
@@ -42,13 +43,20 @@ CORRECTION = (ARTICLE.replace(b"PMC123", b"PMC124").replace(b"10.1234/synthetic"
 
 
 class CaptureEvidenceTests(unittest.TestCase):
+    def setUp(self):
+        for mocked in (patch.object(capture, "authorize", side_effect=synthetic_authorize),
+                       patch.object(capture, "read_authorized", side_effect=lambda path, **kwargs: Path(path).read_bytes()),
+                       patch.object(capture, "record", side_effect=lambda decision: decision)):
+            mocked.start()
+            self.addCleanup(mocked.stop)
+
     def run_capture(self, payload=ARTICLE, doi="10.1234/synthetic"):
         with tempfile.TemporaryDirectory() as folder:
             xml = Path(folder) / "response.xml"
             xml.write_bytes(payload)
             run = subprocess.run(
                 [sys.executable, "-B", str(SCRIPT), "PMC123", "--doi", doi, "--xml", str(xml)],
-                capture_output=True, text=True, check=False,
+                capture_output=True, text=True, check=False, env=synthetic_env(Path(folder)),
             )
         return run.returncode, json.loads(run.stdout)
 
@@ -283,6 +291,13 @@ class CaptureEvidenceTests(unittest.TestCase):
 
 
 class PmcIntakeTests(unittest.TestCase):
+    def setUp(self):
+        for mocked in (patch.object(capture, "authorize", side_effect=synthetic_authorize),
+                       patch.object(capture, "read_authorized", side_effect=lambda path, **kwargs: Path(path).read_bytes()),
+                       patch.object(capture, "record", side_effect=lambda decision: decision)):
+            mocked.start()
+            self.addCleanup(mocked.stop)
+
     def run_preflight(self, *, doi="10.1234/synthetic", version="PMC123.2", payload=ARTICLE, replay=True,
                       participant_count=None, linked_xml=None):
         with tempfile.TemporaryDirectory() as folder:
@@ -312,7 +327,7 @@ class PmcIntakeTests(unittest.TestCase):
                 linked = root / "correction.xml"
                 linked.write_bytes(linked_xml)
                 command += ["--pmc-linked-xml", str(linked)]
-            run = subprocess.run(command, capture_output=True, text=True, check=False)
+            run = subprocess.run(command, capture_output=True, text=True, check=False, env=synthetic_env(root))
             self.assertTrue((root / "receipt.json").is_file(), run.stderr)
             result = json.loads((root / "receipt.json").read_text(encoding="utf-8"))
             for source in [result.get("pmc_evidence", {}).get("source", {}), *[
@@ -500,3 +515,4 @@ class PmcIntakeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

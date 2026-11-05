@@ -18,6 +18,19 @@ Ship OA-first meta-analysis tools as E156 micro-papers + GitHub repos + HTML das
 4. Fail-closed.
 5. Determinism.
 
+### Article source permissions (5 November 2026)
+
+Before acquiring, parsing, replaying, mining or submitting publication content to
+a model, apply [the source-rights gate](docs/SYNTHESIS-SOURCE-RIGHTS.md).
+JAMA Network content is under programme hold `SYN-SOURCE-HOLD-JAMA-20261104`,
+including copies, cached extractions and supplements on other hosts. Do not
+retrieve additional JAMA article text to test the gate. Other sources require
+current operation-specific permission evidence and a recorded access decision;
+OA/public readability alone is insufficient. Missing gate, grant or decision log
+means HOLD. Preserve historical provenance and all existing correspondence
+controls. Ordinary scholarly reading and the separate ethics-review question are
+outside the automated permission decision. No new JAMA email is required.
+
 ## Workbook Protection
 - `YOUR REWRITE` sections in `{{E156_HOME}}\rewrite-workbook.txt` are sacrosanct. Never touch them.
 - `CURRENT BODY` is editable unless `SUBMITTED: [x]`.
@@ -119,3 +132,4 @@ Two tiers:
 - `.claude/rules/lessons.md` — bug-prevention rules from past sessions
 - `.claude/rules/e156.md` — E156 format + pipeline
 - `.claude/rules/advanced-stats.md` — statistical gotchas
+

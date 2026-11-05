@@ -8,6 +8,7 @@ from copy import deepcopy
 import json
 from pathlib import Path
 import unittest
+from scripts.synthesis_source_rights import read_authorized, RightsError
 
 from scripts.synthesis_five_journal_corrections import (
     normalize_doi, summarize, validate_notice,
@@ -27,7 +28,10 @@ CORPUS = (
 class FiveJournalCorrectionContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.rows = json.loads(CORPUS.read_text(encoding="utf-8"))
+        try:
+            cls.rows = json.loads(read_authorized(CORPUS, operation="process"))
+        except RightsError as exc:
+            raise unittest.SkipTest("Real-source corpus held by source-rights gate: " + str(exc))
 
     def test_pilot_has_exact_source_depth(self):
         result = summarize(self.rows)
@@ -148,7 +152,10 @@ class FiveJournalCorrectionContractTests(unittest.TestCase):
 class OpenOriginalEvidenceContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.rows = json.loads(OA_CORPUS.read_text(encoding="utf-8"))
+        try:
+            cls.rows = json.loads(read_authorized(OA_CORPUS, operation="process"))
+        except RightsError as exc:
+            raise unittest.SkipTest("Real-source corpus held by source-rights gate: " + str(exc))
 
     def test_oa_pair_count_is_separate_from_notice_count(self):
         stats = summarize(self.rows)
@@ -223,3 +230,4 @@ class OpenOriginalEvidenceContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

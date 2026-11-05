@@ -15,6 +15,7 @@ import time
 from pathlib import Path
 
 from scicoqa_paired_benchmark import BenchmarkError, ARMS, SCHEMA, canonical, digest, read_jsonl
+from synthesis_source_rights import read_authorized, authorize
 
 
 def parse_yaml(text: str) -> list[dict]:
@@ -93,6 +94,9 @@ def execute(manifest: dict, prompts: dict, command: list[str], timeout: int = 18
     sha = digest(canonical(manifest))
     for cid in sorted(cases):
         for arm in ARMS:
+            # Fresh grant for the exact rendered prompt, immediately before each
+            # external command. Local-processing permission does not cover upload.
+            authorize("sha256:" + digest(indexed[(cid, arm)]), "model_submit")
             status, findings, output, error, stderr = "COMPLETE", [], "", None, ""
             started = time.monotonic()
             try:
@@ -144,7 +148,9 @@ def main() -> None:
     if not command or a.output.exists():
         p.error("specify a model command and a new output directory")
     manifest = json.loads((a.prepared / "manifest.json").read_text(encoding="utf-8"))
-    prompts = {arm: read_jsonl(a.prepared / f"{arm}-prompts.jsonl") for arm in ARMS}
+    prompts = {arm: [json.loads(line) for line in
+                     read_authorized(a.prepared / f"{arm}-prompts.jsonl", operation="process").decode("utf-8").splitlines()
+                     if line.strip()] for arm in ARMS}
     a.output.mkdir(parents=True)
     metadata = {"manifest_sha256": digest(canonical(manifest)),
                 "command_sha256": digest(canonical(command)),
@@ -173,3 +179,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

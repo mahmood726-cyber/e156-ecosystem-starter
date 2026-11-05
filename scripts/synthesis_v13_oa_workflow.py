@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 from synthesis_v13_oa_benchmark import ROOT, load_snapshot
+from synthesis_source_rights import read_authorized
 
 
 FIXTURE = ROOT / "docs" / "synthesis-v13-oa-workflow.json"
@@ -138,7 +139,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
-    raw = FIXTURE.read_bytes()
+    raw = read_authorized(FIXTURE, operation="process")
     data = json.loads(raw)
     results = []
     for arm in ("baseline", "candidate"):
@@ -181,3 +182,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

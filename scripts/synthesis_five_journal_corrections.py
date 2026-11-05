@@ -274,11 +274,15 @@ def summarize(records: list[dict], *, target: int = 1000) -> dict:
 
 
 def main() -> None:
+    if __package__:
+        from scripts.synthesis_source_rights import read_authorized
+    else:
+        from synthesis_source_rights import read_authorized
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("register", type=Path, help="JSON list of source-notice records")
     parser.add_argument("--target", type=int, default=1000)
     args = parser.parse_args()
-    data = json.loads(args.register.read_text(encoding="utf-8"))
+    data = json.loads(read_authorized(args.register, operation="process"))
     if not isinstance(data, list):
         parser.error("JSON register must be an array")
     print(json.dumps(summarize(data, target=args.target), indent=2, sort_keys=True))
@@ -286,3 +290,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
