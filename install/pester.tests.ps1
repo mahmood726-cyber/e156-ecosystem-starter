@@ -178,6 +178,44 @@ Describe "Copy-MemoryScaffold only bootstraps empty targets" {
     }
 }
 
+# Disposable Windows junctions are deterministic redirection fixtures and do not
+# require privileged symbolic-link creation. All writes remain under tmpRoot.
+Describe "Windows junction destination refusal (Role 05)" {
+    It "rejects a rules destination through a junction ancestor before writing" {
+        $external = Join-Path $tmpRoot "outside rules Ü $([guid]::NewGuid().ToString('N'))"
+        $junction = Join-Path $tmpRoot "rules junction $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $external | Out-Null
+        Set-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Value 'unchanged' -NoNewline
+        New-Item -ItemType Junction -Path $junction -Target $external | Out-Null
+        $target = Join-Path $junction 'nested\rules'
+        { Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target | Out-Null } | Should -Throw '*REFUSED*'
+        (Get-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Raw) | Should -Be 'unchanged'
+        Test-Path -LiteralPath (Join-Path $external 'nested') | Should -BeFalse
+    }
+
+    It "rejects a junctioned context directory without changing the external target" {
+        $external = Join-Path $tmpRoot "outside context $([guid]::NewGuid().ToString('N'))"
+        $junction = Join-Path $tmpRoot "context junction $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $external | Out-Null
+        Set-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Value 'unchanged' -NoNewline
+        New-Item -ItemType Junction -Path $junction -Target $external | Out-Null
+        { Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $junction | Out-Null } | Should -Throw '*REFUSED*'
+        (Get-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Raw) | Should -Be 'unchanged'
+        Test-Path -LiteralPath (Join-Path $external 'AGENTS.md') | Should -BeFalse
+    }
+
+    It "rejects junctioned memory scaffolding before creating MEMORY.md" {
+        $external = Join-Path $tmpRoot "outside memory $([guid]::NewGuid().ToString('N'))"
+        $junction = Join-Path $tmpRoot "memory junction $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $external | Out-Null
+        Set-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Value 'unchanged' -NoNewline
+        New-Item -ItemType Junction -Path $junction -Target $external | Out-Null
+        { Copy-MemoryScaffold -SourceMemoryDir (Join-Path $starterRoot 'memory') -TargetMemoryDir $junction | Out-Null } | Should -Throw '*REFUSED*'
+        (Get-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Raw) | Should -Be 'unchanged'
+        Test-Path -LiteralPath (Join-Path $external 'MEMORY.md') | Should -BeFalse
+    }
+}
+
 Describe "Rollback: manifest-driven undo" {
     It "New-RollbackManifest returns a manifest with empty lists" {
         $m = New-RollbackManifest
