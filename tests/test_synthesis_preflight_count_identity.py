@@ -128,5 +128,49 @@ class CountIdentityTests(unittest.TestCase):
         self.assertFalse(result["certified_error"])
 
 
+    def test_normalized_unreported_core_aliases_refuse(self):
+        # Before this guard, identical unknown markers produced REVIEW for
+        # divergent counts, despite absent endpoint/result/version evidence.
+        for key in ("endpoint", "source_version", "locator"):
+            for marker in ("not_reported", "not-reported", "NOT   REPORTED",
+                           "source_limited", "not-available", "UNCLEAR",
+                           "unavailable"):
+                with self.subTest(key=key, marker=marker):
+                    left = copy.deepcopy(self.source)
+                    left[key] = marker
+                    right = copy.deepcopy(left)
+                    right["value"] = 15
+                    result = compare_raw_counts(left, right)
+                    self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                    self.assertFalse(result["arithmetic_reproduced"])
+                    self.assertFalse(result["certified_error"])
+
+    def test_missing_noncore_method_is_not_accepted_as_known(self):
+        for marker in ("not_reported", "not-reported", "source_limited", "unclear"):
+            with self.subTest(marker=marker):
+                left = copy.deepcopy(self.source)
+                left["variance_method"] = marker
+                right = copy.deepcopy(left)
+                right["value"] = 15
+                self.assertEqual(compare_raw_counts(left, right)["status"],
+                                 "NOT_ENOUGH_INFO")
+
+    def test_actual_no_model_method_markers_are_valid_controls(self):
+        # A raw count can explicitly have no inferential method; unlike a
+        # missing endpoint, this is not a reason to claim unknown identity.
+        for marker in ("not_applicable", "N/A", "none"):
+            with self.subTest(marker=marker):
+                left = copy.deepcopy(self.source)
+                for key in ("model", "adjustment", "variance_method"):
+                    left[key] = marker
+                right = copy.deepcopy(left)
+                right["value"] = 15
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "REVIEW")
+                self.assertFalse(result["source_authenticated"])
+                self.assertFalse(result["human_adjudicated"])
+                self.assertFalse(result["author_confirmed"])
+
+
 if __name__ == "__main__":
     unittest.main()
