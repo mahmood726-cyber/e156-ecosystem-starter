@@ -377,8 +377,10 @@ copy_rules_to_agent() {
         fi
         local pre_existed=0
         [[ -f "$dest" ]] && pre_existed=1
-        render_template "$f" "$dest" "$@"
+        # Register net-new files before rendering: a renderer may fail
+        # after opening the destination and leaving a partial file.
         [[ "$pre_existed" -eq 0 ]] && echo "$dest" >> "$MANIFEST_FILES"
+        render_template "$f" "$dest" "$@"
         copied=$((copied+1))
     done
     log_ok "${target}  (${copied} copied, ${backed} backed up as .user)"
@@ -422,8 +424,9 @@ copy_context_files() {
         fi
         local pre_existed=0
         [[ -f "$dest" ]] && pre_existed=1
-        render_template "$src" "$dest" "$@"
+        # Rollback must see partial new context files on renderer errors.
         [[ "$pre_existed" -eq 0 ]] && echo "$dest" >> "$MANIFEST_FILES"
+        render_template "$src" "$dest" "$@"
         count=$((count+1))
     done
     log_ok "${target}  (${count} context files)"
