@@ -264,6 +264,18 @@ def _title_key(value):
     return " ".join(re.findall(r"[a-z0-9]+", _norm(value)))
 
 
+def _reject_header_controls(value):
+    """Reject header-injection and parser-disagreement characters.
+
+    Check both raw input and decoded RFC 2047 words. Mail transports may
+    interpret line breaks as new recipient headers even when getaddresses
+    silently fails to parse the whole field.
+    """
+    if any(ord(char) < 0x20 or 0x7f <= ord(char) <= 0x9f
+           or char in "\u2028\u2029" for char in value):
+        raise ValueError("control character in recipient identity")
+
+
 def _recipient_keys(value):
     """Match normalized recipient names, display-name aliases, and mailboxes.
 
@@ -273,6 +285,7 @@ def _recipient_keys(value):
     """
     if not isinstance(value, str):
         return set()
+    _reject_header_controls(value)
     # A single transport field may contain several comma-separated
     # mailboxes. parseaddr only sees one (or rejects the whole header), so a
     # protected second recipient could otherwise be missed. Parse every
@@ -283,7 +296,9 @@ def _recipient_keys(value):
     # only parsed display names misses those standalone identities.
     if "=?" in value:
         try:
-            keys.add(_norm(str(make_header(decode_header(value)))))
+            decoded_identity = str(make_header(decode_header(value)))
+            _reject_header_controls(decoded_identity)
+            keys.add(_norm(decoded_identity))
         except (UnicodeError, LookupError, ValueError) as exc:
             raise ValueError("invalid recipient identity encoding") from exc
     for display, mailbox in getaddresses([value]):
@@ -297,6 +312,7 @@ def _recipient_keys(value):
                     decoded = str(make_header(decode_header(display)))
                 except (UnicodeError, LookupError, ValueError) as exc:
                     raise ValueError("invalid recipient display-name encoding") from exc
+                _reject_header_controls(decoded)
                 keys.add(_norm(decoded))
     return {key for key in keys if key}
 
