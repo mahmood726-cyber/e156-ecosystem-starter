@@ -282,6 +282,38 @@ class RootDedupContractTests(unittest.TestCase):
                 self.assertFalse(result["roots"][0]["all_source_reproduced"])
                 self.assertFalse(result["roots"][0]["certified_error"])
 
+    def test_unavailable_source_cannot_be_flagged_as_finding(self):
+        # A screened report without accessible or adequate source evidence
+        # cannot be a verified FLAG, a reconciliation, or a NO_FLAG verdict.
+        # Otherwise a downstream counter can mistake held evidence for a
+        # negative or a confirmed reporting discrepancy.
+        for support in ("SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO"):
+            for disposition in ("FLAG", "RECONCILED", "NO_FLAG", "DISCUSSION"):
+                with self.subTest(support=support, disposition=disposition):
+                    row = self.row_with(source_support=support,
+                                        maturity="SCREENED",
+                                        disposition=disposition)
+                    result = group_preflight_roots([row])
+                    self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                    self.assertIsNone(result["root_count"])
+                    self.assertEqual(result["certified_errors"], 0)
+                    self.assertFalse(result["email_eligible"])
+
+    def test_screened_hold_and_evidenced_flag_remain_valid_controls(self):
+        # Abstention stays countable as a held record; source-backed claims
+        # may still carry a review flag without certification.
+        held = self.row_with(source_support="NOT_ENOUGH_INFO",
+                             maturity="SCREENED", disposition="HOLD")
+        flagged = self.row_with(source_support="CONTRADICTED",
+                                maturity="SOURCE_BACKED", disposition="FLAG",
+                                affected_output_id="figure:claim")
+        result = group_preflight_roots([held, flagged])
+        self.assertEqual(result["status"], "GROUPED")
+        self.assertEqual(result["root_count"], 1)
+        self.assertEqual(result["roots"][0]["affected_output_count"], 2)
+        self.assertFalse(result["roots"][0]["all_source_reproduced"])
+        self.assertEqual(result["certified_errors"], 0)
+
     def test_supported_source_reproduction_and_refutation_remain_valid(self):
         # Source-backed flags and independent refutations share the same
         # administrative maturity but neither certifies a scientific error.
