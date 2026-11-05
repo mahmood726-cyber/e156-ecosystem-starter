@@ -328,6 +328,18 @@ def outgoing_blockers(message, exclusions=None):
     if any(not isinstance(message.get(k, []), list) or
            any(not isinstance(x, str) for x in message.get(k, [])) for k in collections):
         return reasons + ["CONTACT_BLOCKED_NO_CONTACT: malformed publication identifiers"]
+    # A retry or forwarded message may reference an excluded prior thread even
+    # when its active thread differs. Never silently discard malformed IDs.
+    thread_id = message.get("thread_id")
+    related_threads = message.get("related_thread_ids", [])
+    if ((thread_id is not None and
+         (not isinstance(thread_id, str) or not thread_id.strip())) or
+        not isinstance(related_threads, list) or
+        any(not isinstance(x, str) or not x.strip() for x in related_threads)):
+        return reasons + ["CONTACT_BLOCKED_NO_CONTACT: malformed thread identifiers"]
+    thread_ids = {_norm(x) for x in related_threads}
+    if thread_id is not None:
+        thread_ids.add(_norm(thread_id))
     dois = {_doi(v) for v in (message.get("doi"), *message.get("related_dois", []))} - {""}
     titles = {_title_key(v) for v in (message.get("title"), *message.get("related_titles", []))} - {""}
     families = {_title_key(v) for v in (message.get("trial_family"), *message.get("related_trial_families", []))} - {""}
@@ -351,10 +363,10 @@ def outgoing_blockers(message, exclusions=None):
         blocked_dois = {_doi(x) for x in exclusion.get("dois", [])} - {""}
         blocked_titles = {_title_key(x) for x in exclusion.get("titles", [])} - {""}
         blocked_families = {_title_key(x) for x in exclusion.get("trial_families", [])} - {""}
-        thread = _norm(message.get("thread_id"))
+        blocked_threads = {_norm(x) for x in exclusion.get("threads", [])} - {""}
         if ((identities & blocked_identities) or (dois & blocked_dois) or
                 (titles & blocked_titles) or (families & blocked_families) or
-                (thread and thread in {_norm(x) for x in exclusion.get("threads", [])})):
+                (thread_ids & blocked_threads)):
             reasons.append("CONTACT_BLOCKED_NO_CONTACT: recipient/publication/thread exclusion")
     return reasons
 
