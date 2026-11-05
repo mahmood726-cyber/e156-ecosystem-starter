@@ -597,6 +597,7 @@ class ContactTests(unittest.TestCase):
                         require_outgoing_allowed(
                             {"to": ["unlisted@example.invalid"], "kind": kind},
                             [exclusion])
+                        stub()  # A blocked preflight cannot reach a transport.
                     stub.assert_not_called()
         # A transport recipient or standalone recipient-name field containing
         # only whitespace is likewise unknown, not a reviewed safe identity.
@@ -608,6 +609,11 @@ class ContactTests(unittest.TestCase):
                     reasons = outgoing_blockers(msg, self.EXCLUSIONS)
                     self.assertTrue(any(x.startswith("CONTACT_BLOCKED_NO_CONTACT:")
                                         for x in reasons))
+                    stub = Mock()
+                    with self.assertRaises(PermissionError):
+                        require_outgoing_allowed(msg, self.EXCLUSIONS)
+                        stub()
+                    stub.assert_not_called()
         # Negative control: a valid unrelated address and populated exclusion
         # must not be reported as an additional no-contact violation.
         self.assertEqual(outgoing_blockers(
