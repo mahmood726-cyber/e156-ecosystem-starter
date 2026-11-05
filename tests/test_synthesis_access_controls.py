@@ -422,6 +422,45 @@ class ContactTests(unittest.TestCase):
         )
         self.assertEqual(unrelated, ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
 
+    def test_mime_encoded_standalone_recipient_name_and_exclusion_alias(self):
+        # Separate recipient_names metadata does not necessarily contain a
+        # formatted mailbox. Encoded aliases still must be matched, including
+        # an unknown To address and a retry of a queued send.
+        encoded = "=?utf-8?Q?Fictional_Researcher?="
+        for kind in ("new", "retry", "followup", "queued_send"):
+            message = {"to": ["different@example.invalid"],
+                       "recipient_names": [encoded], "kind": kind}
+            with self.subTest(kind=kind):
+                reasons = outgoing_blockers(message, self.EXCLUSIONS)
+                self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                self.assertIn(
+                    "CONTACT_BLOCKED_NO_CONTACT: recipient/publication/thread exclusion",
+                    reasons,
+                )
+                with self.assertRaises(PermissionError):
+                    require_outgoing_allowed(message, self.EXCLUSIONS)
+
+        encoded_exclusions = [{
+            "names": [encoded], "emails": [], "aliases": [],
+            "coauthors": [], "dois": [], "threads": [], "titles": [],
+            "trial_families": [],
+        }]
+        for kind in ("new", "retry", "followup", "queued_send"):
+            with self.subTest(exclusion_kind=kind):
+                message = {"to": ["Fictional Researcher <unknown@example.invalid>"],
+                           "kind": kind}
+                reasons = outgoing_blockers(message, encoded_exclusions)
+                self.assertIn(
+                    "CONTACT_BLOCKED_NO_CONTACT: recipient/publication/thread exclusion",
+                    reasons,
+                )
+
+        # An unrelated synthetic name must not manufacture a no-contact match.
+        unrelated = {"to": ["unrelated@example.invalid"],
+                     "recipient_names": ["=?utf-8?Q?Different_Person?="]}
+        self.assertEqual(outgoing_blockers(unrelated, self.EXCLUSIONS),
+                         ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
+
     def test_invalid_encoded_display_and_exclusion_hold(self):
         # Deliberately invalid UTF-8 encoded-word (synthetic), not a real
         # recipient. A decoding error must never turn into an implicit allow.
