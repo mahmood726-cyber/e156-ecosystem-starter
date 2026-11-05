@@ -414,5 +414,39 @@ class RootDedupContractTests(unittest.TestCase):
         self.assertEqual(result["root_count"], 1)
         self.assertEqual(result["certified_errors"], 0)
 
+    def test_future_dated_receipts_cannot_claim_completed_review(self):
+        # A correctly formatted but future-dated receipt cannot document a
+        # completed human adjudication or explicit author confirmation.
+        # Both examples are invented metadata; no publication is accessed.
+        human = self.row_with(
+            maturity="INDEPENDENTLY_ADJUDICATED",
+            human_adjudicated=True,
+            human_receipt=self.human_receipt(adjudicated_at="9999-12-31"))
+        author = self.row_with(
+            author_confirmed=True,
+            author_confirmation=self.author_receipt(confirmed_at="9999-12-31"))
+        for row in (human, author):
+            with self.subTest(kind="human" if row["human_adjudicated"] else "author"):
+                result = group_preflight_roots([row])
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertIsNone(result["root_count"])
+                self.assertEqual(result["certified_errors"], 0)
+                self.assertFalse(result["email_eligible"])
+
+    def test_completed_historical_receipt_dates_are_valid_controls(self):
+        human = self.row_with(
+            maturity="INDEPENDENTLY_ADJUDICATED",
+            human_adjudicated=True,
+            human_receipt=self.human_receipt(adjudicated_at="2026-01-02"))
+        author = self.row_with(
+            author_confirmed=True,
+            author_confirmation=self.author_receipt(confirmed_at="2026-01-03"))
+        for row in (human, author):
+            with self.subTest(kind="human" if row["human_adjudicated"] else "author"):
+                result = group_preflight_roots([row])
+                self.assertEqual(result["status"], "GROUPED")
+                self.assertEqual(result["certified_errors"], 0)
+                self.assertFalse(result["email_eligible"])
+
 if __name__ == "__main__":
     unittest.main()
