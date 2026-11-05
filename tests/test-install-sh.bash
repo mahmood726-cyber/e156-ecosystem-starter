@@ -353,6 +353,80 @@ else
     bad "memory symlink refusal modified existing files"
 fi
 
+# A memory root with no top-level Markdown may contain user-edited nested
+# templates. An installer must not clobber them when bootstrapping MEMORY.md.
+start "memory scaffold preserves existing nested templates and adds missing files"
+memory_target="$SANDBOX/memory nested edit-Ü"
+mkdir -p "$memory_target/templates"
+fixture_template=""
+for fixture in "$ROOT"/memory/templates/*.md; do
+    fixture_template="$fixture"
+    break
+done
+if [[ -f "$fixture_template" ]]; then
+    fixture_name="$(basename "$fixture_template")"
+    printf 'user-edited nested memory' > "$memory_target/templates/$fixture_name"
+    : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+    if copy_memory_scaffold "$ROOT/memory" "$memory_target" >/dev/null 2>&1 &&
+       [[ "$(cat "$memory_target/templates/$fixture_name")" == "user-edited nested memory" &&
+          -f "$memory_target/MEMORY.md" &&
+          "$(find "$memory_target/templates" -maxdepth 1 -type f -name '*.md' | wc -l)" -eq "$(find "$ROOT/memory/templates" -maxdepth 1 -type f -name '*.md' | wc -l)" ]]; then
+        ok
+    else
+        bad "memory scaffold lost a user-edited nested template or missed new templates"
+    fi
+else
+    bad "memory source template fixture missing"
+fi
+
+# A later install failure must undo only files/directories created by the
+# current memory bootstrap. Newly created empty directories must not linger.
+start "memory rollback removes newly scaffolded directory tree"
+memory_target="$SANDBOX/memory new rollback-Ü"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if copy_memory_scaffold "$ROOT/memory" "$memory_target" >/dev/null 2>&1; then
+    rollback "synthetic later-step failure" >/dev/null 2>&1 || true
+    if [[ ! -e "$memory_target" ]]; then
+        ok
+    else
+        bad "rollback left net-new memory directories behind"
+    fi
+else
+    bad "clean memory bootstrap failed"
+fi
+MANIFEST_DIR="$(mktemp -d -t e156-rollback.XXXXXX)"
+MANIFEST_FILES="$MANIFEST_DIR/files"
+MANIFEST_DIRS="$MANIFEST_DIR/dirs"
+MANIFEST_BACKUPS="$MANIFEST_DIR/backups"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+
+start "memory rollback keeps pre-existing nested user templates"
+memory_target="$SANDBOX/memory existing rollback-Ü"
+mkdir -p "$memory_target/templates"
+printf 'keep user edit' > "$memory_target/templates/$fixture_name"
+if [[ -f "$fixture_template" ]]; then
+    : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+    if copy_memory_scaffold "$ROOT/memory" "$memory_target" >/dev/null 2>&1; then
+        rollback "synthetic later-step failure" >/dev/null 2>&1 || true
+        if [[ "$(cat "$memory_target/templates/$fixture_name")" == "keep user edit" &&
+              ! -e "$memory_target/MEMORY.md" &&
+              "$(find "$memory_target/templates" -maxdepth 1 -type f -name '*.md' | wc -l)" -eq 1 ]]; then
+            ok
+        else
+            bad "rollback removed existing template or left new memory files"
+        fi
+    else
+        bad "memory bootstrap failed with user nested template"
+    fi
+else
+    bad "memory source template fixture missing"
+fi
+MANIFEST_DIR="$(mktemp -d -t e156-rollback.XXXXXX)"
+MANIFEST_FILES="$MANIFEST_DIR/files"
+MANIFEST_DIRS="$MANIFEST_DIR/dirs"
+MANIFEST_BACKUPS="$MANIFEST_DIR/backups"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+
 # A symlinked grandparent redirects writes even when the target and its
 # immediate parent are real directories. All paths remain in this test sandbox.
 start "rules install refuses an ancestor symlink, without external writes"
