@@ -5,6 +5,8 @@ adjudication, or eligibility for correspondence. Frozen v1.1/v1.2 unchanged.
 """
 from __future__ import annotations
 
+import re
+from datetime import date
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -15,13 +17,61 @@ SUPPORT = frozenset({"SUPPORTED", "CONTRADICTED", "OVERGENERALIZED",
                      "UNSUPPORTED_CITATION", "SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO"})
 MATURITY = ("SCREENED", "SOURCE_BACKED", "REPRODUCED", "INDEPENDENTLY_ADJUDICATED")
 DISPOSITIONS = frozenset({"FLAG", "RECONCILED", "DISCUSSION", "HOLD", "NO_FLAG"})
-UNKNOWN = frozenset({"", "unknown", "unverified", "not_applicable", "not reported",
-                     "not_reported", "none", "null", "missing", "tbd", "?"})
+UNKNOWN = frozenset({
+    "", "unknown", "unverified", "not_applicable", "not_reported",
+    "not_specified", "not_available", "source_limited", "unavailable",
+    "none", "null", "missing", "n/a", "na", "unclear", "undetermined",
+    "tbd", "?",
+})
 
 
 def _valid_identifier(value: Any) -> bool:
-    return (isinstance(value, str) and value == value.strip()
-            and value.strip().casefold() not in UNKNOWN)
+    if not isinstance(value, str) or value != value.strip():
+        return False
+    # A repeated spelling of UNKNOWN is never a valid scope or receipt ID.
+    # Preserve original identifiers for grouping: normalize only to reject
+    # placeholders, not to equate unrelated outputs or trial families.
+    normalized = re.sub(r"[\\s_-]+", "_", value.casefold())
+    return normalized not in UNKNOWN
+
+
+def _valid_date(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        return date.fromisoformat(value).isoformat() == value
+    except ValueError:
+        return False
+
+
+def _receipt_matches_scope(receipt: Any, record: Mapping[str, Any]) -> bool:
+    return (isinstance(receipt, Mapping)
+            and all(receipt.get(key) == record[key]
+                    for key in ROOT_KEYS + ("affected_output_id",)))
+
+
+def _human_receipt_valid(record: Mapping[str, Any]) -> bool:
+    receipt = record.get("human_receipt")
+    return (
+        _receipt_matches_scope(receipt, record)
+        and receipt.get("reviewer_kind") == "independent_human"
+        and _valid_identifier(receipt.get("reviewer_id"))
+        and _valid_identifier(receipt.get("investigator_id"))
+        and receipt["reviewer_id"] != receipt["investigator_id"]
+        and _valid_identifier(receipt.get("receipt_locator"))
+        and _valid_date(receipt.get("adjudicated_at"))
+        and receipt.get("conflict_check") is True
+    )
+
+
+def _author_receipt_valid(record: Mapping[str, Any]) -> bool:
+    receipt = record.get("author_confirmation")
+    return (
+        _receipt_matches_scope(receipt, record)
+        and receipt.get("confirmation_kind") == "explicit_error_confirmation"
+        and _valid_identifier(receipt.get("confirmation_reference"))
+        and _valid_date(receipt.get("confirmed_at"))
+    )
 
 
 def group_preflight_roots(observations: Any) -> dict[str, Any]:
@@ -51,11 +101,22 @@ def group_preflight_roots(observations: Any) -> dict[str, Any]:
                 or type(record.get("human_adjudicated")) is not bool
                 or type(record.get("author_confirmed")) is not bool):
             return {**held, "reason": f"record {index}: unknown evidence status or boolean"}
-        # An independent adjudication state cannot be created by flagging a
-        # source as REPRODUCED: explicit human status remains mandatory.
-        if (record["maturity"] == "INDEPENDENTLY_ADJUDICATED"
-                and not record["human_adjudicated"]):
-            return {**held, "reason": f"record {index}: maturity contradicts human status"}
+        # Booleans alone do not evidence human independence or explicit author
+        # agreement. Exact dated, conflict-checked, scope-bound private receipt
+        # metadata are required before either status may be reported. Even these
+        # caller-supplied declarations are NOT authenticated by this helper.
+        if record["human_adjudicated"]:
+            if (record["maturity"] != "INDEPENDENTLY_ADJUDICATED"
+                    or not _human_receipt_valid(record)):
+                return {**held, "reason": f"record {index}: independent human receipt missing, invalid or mismatched"}
+        elif (record["maturity"] == "INDEPENDENTLY_ADJUDICATED"
+              or record.get("human_receipt") is not None):
+            return {**held, "reason": f"record {index}: human maturity or receipt contradicts status"}
+        if record["author_confirmed"]:
+            if not _author_receipt_valid(record):
+                return {**held, "reason": f"record {index}: explicit author-confirmation receipt missing, invalid or mismatched"}
+        elif record.get("author_confirmation") is not None:
+            return {**held, "reason": f"record {index}: author receipt contradicts status"}
         key = tuple(record[k] for k in ROOT_KEYS)
         output = record["affected_output_id"]
         # The same output within a publication/version must not be counted
@@ -93,6 +154,7 @@ def group_preflight_roots(observations: Any) -> dict[str, Any]:
             "dispositions": sorted(dispositions),
             "certified_error": False,  # no tool-based human/scientific certification
             "email_eligible": False,
+            "attestations_authenticated": False,
         })
     return {"status": "GROUPED", "disposition": "HOLD", "roots": roots,
             "root_count": len(roots), "certified_errors": 0, "email_eligible": False,
