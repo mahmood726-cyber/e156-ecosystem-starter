@@ -43,6 +43,30 @@ class SourceRightsTests(unittest.TestCase):
             with self.subTest(manifest=m):
                 self.assertEqual(assess_source(m, SOURCE, 'CACHE_READ', on_date=TODAY)[0], 'SOURCE_RIGHTS_HOLD')
 
+    def test_original_publication_identity_requires_exact_reviewed_match_before_io(self):
+        for changes in ({"original_journal": "Different Fictional Journal"},
+                        {"original_publisher": "Unreviewed Publisher"},
+                        {"original_url": "https://other.invalid/replaced"},
+                        {"original_journal": None},
+                        {"original_publisher": "  "},
+                        {"original_url": None}):
+            with self.subTest(changes=changes):
+                changed = {**SOURCE, **changes}
+                self.assertEqual(assess_source(MANIFEST, changed, 'CACHE_READ', on_date=TODAY)[0],
+                                 'SOURCE_RIGHTS_HOLD')
+        with TemporaryDirectory() as root:
+            p = Path(root)
+            manifest = p / 'rights.json'; manifest.write_text(json.dumps(MANIFEST))
+            log = p / 'decisions.jsonl'; log.touch()
+            probe = Mock(return_value=b'synthetic fixture')
+            with self.assertRaises(PermissionError):
+                execute_source_action({**SOURCE, 'original_publisher': 'Unreviewed Publisher'},
+                                      'CACHE_READ', probe, manifest_path=manifest,
+                                      decision_log=log, on_date=TODAY)
+            probe.assert_not_called()
+            self.assertEqual(json.loads(log.read_text().splitlines()[0])['decision'],
+                             'SOURCE_RIGHTS_HOLD')
+
     def test_wrong_version_route_resource_and_operation_hold(self):
         for changes in ({"version":"v3"}, {"access_route":"OTHER_MIRROR"},
                         {"resource_ref":"different-cache"}, {"doi":"10.7777/other"},
