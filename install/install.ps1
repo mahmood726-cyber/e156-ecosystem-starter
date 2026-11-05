@@ -279,8 +279,16 @@ function Copy-RulesToAgent {
     $idxSrc = Join-Path $SourceRulesDir '_index.yaml'
     if (Test-Path $idxSrc) {
         $idxDest = Join-Path $TargetRulesDir '_index.yaml'
-        $idxPreExisted = Test-Path $idxDest
-        Copy-Item $idxSrc $idxDest -Force
+        $idxPreExisted = Test-Path -LiteralPath $idxDest
+        # The routing index is user-editable configuration, not disposable
+        # installer metadata. Apply the same non-overwriting backup contract
+        # as rules/*.md, including rollback and repeat installations.
+        if ($idxPreExisted -and -not $Force) {
+            $actualBackup = Save-InstallUserBackup -Path $idxDest
+            $backed += '_index.yaml'
+            if ($Manifest) { $Manifest.BackedUp.Add($actualBackup) }
+        }
+        Copy-Item -LiteralPath $idxSrc -Destination $idxDest -Force -ErrorAction Stop
         if (-not $idxPreExisted -and $Manifest) { $Manifest.CreatedFiles.Add($idxDest) }
         $copied += '_index.yaml'
     }
