@@ -69,8 +69,10 @@ def is_jama_source(source):
     """Match original publication identity, never just its current mirror host."""
     if not isinstance(source, dict):
         return False
-    doi = _doi(source.get("doi"))
-    if doi.startswith("10.1001/"):
+    # Identity supplied as the original DOI remains held even when a mirror
+    # or derivative is represented by a different current DOI.
+    if any(_doi(source.get(field)).startswith("10.1001/")
+           for field in ("doi", "original_doi")):
         return True
     host_names = (_host(source.get(k)) for k in ("source_url", "original_url"))
     if any(h == "jamanetwork.com" or h.endswith(".jamanetwork.com") or
@@ -113,6 +115,16 @@ def assess_source(manifest, source, operation, *, on_date=None):
         return "SOURCE_RIGHTS_HOLD", "original publisher/journal identity not reviewed"
     if is_jama_source(p):
         return "SOURCE_RIGHTS_HOLD", "programme-wide JAMA original-publication hold"
+    # An asserted original DOI must be reviewed and identical on both sides.
+    # A different originating work is linked provenance needing its own grant,
+    # never an implicit alias authorized by this DOI/version/route record.
+    if "original_doi" in source or "original_doi" in p:
+        claimed_original = _doi(source.get("original_doi"))
+        reviewed_original = _doi(p.get("original_doi"))
+        if (not claimed_original or not reviewed_original
+                or claimed_original != reviewed_original
+                or claimed_original != doi):
+            return "SOURCE_RIGHTS_HOLD", "original DOI identity not bound to reviewed source"
     # Bind the caller's original-publication identity to the reviewed grant.
     # The same DOI/version/cache route must not authorize changed source identity.
     original_fields = ("original_journal", "original_publisher", "original_url")
