@@ -206,6 +206,57 @@ Describe "Copy-RulesToAgent timestamp-suffixes second-rerun backups (P2)" {
     }
 }
 
+Describe "Windows reinstall backups preserve edits and rollback" {
+    It "captures second context edit when the first .user backup exists" {
+        $target = Join-Path $tmpRoot "ctx-rerun-$([guid]::NewGuid().ToString('N'))-雪"
+        New-Item -ItemType Directory -Force -LiteralPath $target | Out-Null
+        $dst = Join-Path $target 'AGENTS.md'
+        Set-Content -LiteralPath $dst -Value 'first edit' -NoNewline -Encoding UTF8
+        Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $target | Out-Null
+        Set-Content -LiteralPath $dst -Value 'second edit' -NoNewline -Encoding UTF8
+        $m = New-RollbackManifest
+        Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $target -Manifest $m | Out-Null
+        (Get-Content -LiteralPath "$dst.user" -Raw).Trim() | Should -Be 'first edit'
+        $m.BackedUp.Count | Should -Be 4
+        $second = @($m.BackedUp | Where-Object { $_ -like "$dst.user-*" })
+        $second.Count | Should -Be 1
+        (Get-Content -LiteralPath $second[0] -Raw).Trim() | Should -Be 'second edit'
+    }
+
+    It "restores current context edit on rollback without removing older .user" {
+        $target = Join-Path $tmpRoot "ctx-rollback-$([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -LiteralPath $target | Out-Null
+        $dst = Join-Path $target 'AGENTS.md'
+        Set-Content -LiteralPath $dst -Value 'older edit' -NoNewline -Encoding UTF8
+        Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $target | Out-Null
+        Set-Content -LiteralPath $dst -Value 'newest edit' -NoNewline -Encoding UTF8
+        $m = New-RollbackManifest
+        Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $target -Manifest $m | Out-Null
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic context rollback'
+        (Get-Content -LiteralPath $dst -Raw).Trim() | Should -Be 'newest edit'
+        (Get-Content -LiteralPath "$dst.user" -Raw).Trim() | Should -Be 'older edit'
+        @(Get-ChildItem -LiteralPath $target -Filter 'AGENTS.md.user-*').Count | Should -Be 0
+    }
+
+    It "does not overwrite an existing same-second rules backup and can roll back" {
+        $target = Join-Path $tmpRoot "rules-collision-$([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -LiteralPath $target | Out-Null
+        $dst = Join-Path $target 'lessons.md'
+        Set-Content -LiteralPath $dst -Value 'first edit' -NoNewline -Encoding UTF8
+        Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target | Out-Null
+        Set-Content -LiteralPath $dst -Value 'latest edit' -NoNewline -Encoding UTF8
+        $sameSecond = "$dst.user-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        Set-Content -LiteralPath $sameSecond -Value 'older snapshot' -NoNewline -Encoding UTF8
+        $m = New-RollbackManifest
+        Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target -Manifest $m | Out-Null
+        (Get-Content -LiteralPath $sameSecond -Raw).Trim() | Should -Be 'older snapshot'
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic rules rollback'
+        (Get-Content -LiteralPath $dst -Raw).Trim() | Should -Be 'latest edit'
+        (Get-Content -LiteralPath "$dst.user" -Raw).Trim() | Should -Be 'first edit'
+        (Get-Content -LiteralPath $sameSecond -Raw).Trim() | Should -Be 'older snapshot'
+    }
+}
+
 Describe "Invoke-LogRedaction scrubs secrets from transcripts (P1)" {
     BeforeAll {
         $script:redactDir = Join-Path $tmpRoot 'redact'
