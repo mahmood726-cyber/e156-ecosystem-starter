@@ -289,14 +289,35 @@ refuse_symlink_install_path() {
     done
 }
 
+# Config destinations must be regular files, never FIFOs, devices, sockets
+# or directories. Validate every target before the first write to prevent a
+# blocked write or accidental placement inside an existing directory.
+refuse_nonregular_install_file() {
+    local path="$1"
+    refuse_symlink_install_path "$path" || return 1
+    if [[ -e "$path" && ! -f "$path" ]]; then
+        printf 'ERROR: refusing non-regular install file: %s\n' "$path" >&2
+        return 1
+    fi
+}
+
+refuse_nondirectory_install_path() {
+    local path="$1"
+    refuse_symlink_install_path "$path" || return 1
+    if [[ -e "$path" && ! -d "$path" ]]; then
+        printf 'ERROR: refusing non-directory install path: %s\n' "$path" >&2
+        return 1
+    fi
+}
+
 copy_rules_to_agent() {
     local src="$1" target="$2"; shift 2
     [[ -d "$src" ]] || { echo "ERROR: source rules dir missing: $src" >&2; return 1; }
     refuse_symlink_install_path "$(dirname "$target")" || return 1
-    refuse_symlink_install_path "$target" || return 1
+    refuse_nondirectory_install_path "$target" || return 1
     local preflight_rule
     for preflight_rule in "$src"/*.md; do
-        refuse_symlink_install_path "$target/$(basename "$preflight_rule")" || return 1
+        refuse_nonregular_install_file "$target/$(basename "$preflight_rule")" || return 1
     done
     if [[ ! -d "$target" ]]; then
         mkdir -p "$target"
@@ -342,11 +363,11 @@ copy_rules_to_agent() {
 copy_context_files() {
     local src_root="$1" target="$2"; shift 2
     refuse_symlink_install_path "$(dirname "$target")" || return 1
-    refuse_symlink_install_path "$target" || return 1
+    refuse_nondirectory_install_path "$target" || return 1
     local preflight_name
     for preflight_name in AGENTS.md CLAUDE.md GEMINI.md CODEX.md; do
         [[ -f "$src_root/$preflight_name" ]] || continue
-        refuse_symlink_install_path "$target/$preflight_name" || return 1
+        refuse_nonregular_install_file "$target/$preflight_name" || return 1
     done
     if [[ ! -d "$target" ]]; then
         mkdir -p "$target"
@@ -387,15 +408,15 @@ copy_context_files() {
 copy_memory_scaffold() {
     local src="$1" target="$2"
     refuse_symlink_install_path "$(dirname "$target")" || return 1
-    refuse_symlink_install_path "$target" || return 1
-    refuse_symlink_install_path "$target/MEMORY.md" || return 1
-    refuse_symlink_install_path "$target/templates" || return 1
+    refuse_nondirectory_install_path "$target" || return 1
+    refuse_nonregular_install_file "$target/MEMORY.md" || return 1
+    refuse_nondirectory_install_path "$target/templates" || return 1
     # A normal templates directory can contain a symlinked individual file.
     # Preflight all nested destinations before copying MEMORY.md.
     local template_file
     for template_file in "$src"/templates/*.md; do
         [[ -f "$template_file" ]] || { echo "ERROR: missing memory template: $template_file" >&2; return 1; }
-        refuse_symlink_install_path "$target/templates/$(basename "$template_file")" || return 1
+        refuse_nonregular_install_file "$target/templates/$(basename "$template_file")" || return 1
     done
     mkdir -p "$target"
     if compgen -G "$target/*.md" > /dev/null; then
