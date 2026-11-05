@@ -58,7 +58,9 @@ class SourceRightsTests(unittest.TestCase):
                         {"original_journal":"Archives of Synthetic Medicine"},
                         {"original_publisher":"American Medical Association"},
                         {"original_url":"https://jamanetwork.com/journals/test"},
-                        {"source_url":"https://jama.ama-assn.org/test"}):
+                        {"source_url":"https://jama.ama-assn.org/test"},
+                        {"original_url":"https://archinte.ama-assn.org/test"},
+                        {"original_journal":"Journal of the American Medical Association"}):
             source = {**SOURCE, **changes, "source_url": changes.get("source_url", "https://mirror.invalid/test")}
             with self.subTest(changes=changes):
                 self.assertTrue(is_jama_source(source))
@@ -104,7 +106,8 @@ class SourceRightsTests(unittest.TestCase):
 class ContactTests(unittest.TestCase):
     EXCLUSIONS=[{"names":["Fictional Researcher"],"aliases":["F. Researcher"],
                  "emails":["fictional@example.invalid"],"coauthors":["coauthor@example.invalid"],
-                 "dois":["10.7777/fictional-publication"],"threads":["thread-fixture"]}]
+                 "dois":["10.7777/fictional-publication"],"threads":["thread-fixture"],
+                 "titles":["Synthetic STROKE Trial — analysis"], "trial_families":["Invented TRIAL Alpha"]}]
 
     def test_global_pause_blocks_new_replies_drafts_followups_retries(self):
         stub=Mock()
@@ -120,12 +123,35 @@ class ContactTests(unittest.TestCase):
                   {"bcc":["COAUTHOR@example.invalid"]},
                   {"indirect_recipients":["fictional@example.invalid"]},
                   {"to":["other@example.invalid"],"doi":"10.7777/fictional-publication"},
-                  {"to":["other@example.invalid"],"thread_id":"thread-fixture"}]
+                  {"to":["other@example.invalid"],"thread_id":"thread-fixture"},
+                  {"to":["Fictional Researcher <fictional@example.invalid>"]},
+                  {"cc":["Dr Someone <coauthor@example.invalid>"]},
+                  {"to":["other@example.invalid"],"title":"synthetic-stroke trial: ANALYSIS"},
+                  {"to":["other@example.invalid"],"related_titles":["SYNTHETIC stroke trial analysis"]},
+                  {"to":["other@example.invalid"],"trial_family":"Invented-Trial ALPHA"},
+                  {"to":["other@example.invalid"],"related_trial_families":["Invented TRIAL Alpha"]}]
         for m in messages:
             with self.subTest(msg=m):
                 blocked=outgoing_blockers(m,self.EXCLUSIONS)
                 self.assertIn('PROGRAMME_OUTGOING_QUERY_PAUSE',blocked)
                 self.assertTrue(any(x.startswith('CONTACT_BLOCKED_NO_CONTACT: recipient/publication') for x in blocked))
+
+    def test_malformed_publication_and_exclusion_lists_fail_closed(self):
+        malformed_messages = (
+            {"to":["other@example.invalid"],"related_dois":"10.7777/fictional-publication"},
+            {"to":["other@example.invalid"],"related_titles":[None]},
+            {"to":["other@example.invalid"],"related_trial_families":{"bad":"shape"}},
+            {"to":["other@example.invalid"],"recipient_names":[42]},
+        )
+        for msg in malformed_messages:
+            with self.subTest(msg=msg):
+                self.assertTrue(any("CONTACT_BLOCKED_NO_CONTACT" in reason
+                                    for reason in outgoing_blockers(msg,self.EXCLUSIONS)))
+        malformed_exclusions = [{**self.EXCLUSIONS[0], "titles":"not-list"},
+                                {**self.EXCLUSIONS[0], "emails":[None]}]
+        for entry in malformed_exclusions:
+            self.assertTrue(any("CONTACT_BLOCKED_NO_CONTACT: malformed exclusion" in reason
+                                for reason in outgoing_blockers({"to":["other@example.invalid"]},[entry])))
 
     def test_unavailable_exclusions_also_fail_closed(self):
         reasons=outgoing_blockers({"to":["other@example.invalid"]},None)
