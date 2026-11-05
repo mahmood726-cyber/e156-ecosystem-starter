@@ -74,7 +74,9 @@ def _host(value):
     if not isinstance(value, str):
         return ""
     try:
-        # A terminal DNS dot denotes the same absolute host; do not let\n        # this spelling bypass a held publisher/domain identity.\n        return (urlsplit(value).hostname or "").casefold().rstrip(".")
+        # A terminal DNS dot denotes the same absolute host; do not let
+        # this spelling bypass a held publisher/domain identity.
+        return (urlsplit(value).hostname or "").casefold().rstrip(".")
     except ValueError:
         return ""
 
