@@ -7,6 +7,7 @@ Call at every source ingress and every outgoing-transport boundary.
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from email.utils import parseaddr
 from hashlib import sha256
 import json
 import os
@@ -55,12 +56,12 @@ def is_jama_source(source):
         return True
     host_names = (_host(source.get(k)) for k in ("source_url", "original_url"))
     if any(h == "jamanetwork.com" or h.endswith(".jamanetwork.com") or
-           h == "jama.ama-assn.org" or h.endswith(".jama.ama-assn.org")
+           h == "ama-assn.org" or h.endswith(".ama-assn.org")
            for h in host_names):
         return True
     journal = str(source.get("original_journal") or "").casefold()
     publisher = str(source.get("original_publisher") or "").casefold()
-    return (bool(re.search(r"\bjama\b|\barchives of\b", journal)) or
+    return (bool(re.search(r"\bjama\b|\barchives of\b|\bjournal of the american medical association\b", journal)) or
             "american medical association" in publisher or
             publisher in {"ama", "ama publishing", "jama network"})
 
@@ -170,34 +171,59 @@ def _norm(value):
     return " ".join(value.casefold().strip().split()) if isinstance(value, str) else ""
 
 
+def _title_key(value):
+    return " ".join(re.findall(r"[a-z0-9]+", _norm(value)))
+
+
+def _recipient_keys(value):
+    """Match both display-name recipients and their extracted mailbox."""
+    raw = _norm(value)
+    address = _norm(parseaddr(value)[1]) if isinstance(value, str) else ""
+    return {x for x in (raw, address) if x}
+
+
 def outgoing_blockers(message, exclusions=None):
     """Inspect all recipients/aliases and publication/thread IDs, without a send."""
     reasons = ["PROGRAMME_OUTGOING_QUERY_PAUSE"] if OUTGOING_PAUSED else []
     if not isinstance(message, dict) or not isinstance(exclusions, list):
         return reasons + ["CONTACT_BLOCKED_NO_CONTACT: exclusions unavailable"]
-    all_recipients = []
+    identities = set()
     for k in ("to", "cc", "bcc", "indirect_recipients"):
         val = message.get(k, [])
         if not isinstance(val, list) or any(not isinstance(x, str) for x in val):
             return reasons + ["CONTACT_BLOCKED_NO_CONTACT: invalid recipient list"]
-        all_recipients.extend(_norm(x) for x in val)
+        for recipient in val:
+            identities.update(_recipient_keys(recipient))
     names = message.get("recipient_names", [])
-    if not isinstance(names, list):
+    if not isinstance(names, list) or any(not isinstance(x, str) for x in names):
         return reasons + ["CONTACT_BLOCKED_NO_CONTACT: invalid names"]
-    identities = set(all_recipients + [_norm(x) for x in names])
-    dois = {_doi(v) for v in (message.get("doi"), *message.get("related_dois", []))} if isinstance(message.get("related_dois", []), list) else set()
+    identities.update(_norm(x) for x in names)
+    collections = ("related_dois", "related_titles", "related_trial_families")
+    if any(not isinstance(message.get(k, []), list) or
+           any(not isinstance(x, str) for x in message.get(k, [])) for k in collections):
+        return reasons + ["CONTACT_BLOCKED_NO_CONTACT: malformed publication identifiers"]
+    dois = {_doi(v) for v in (message.get("doi"), *message.get("related_dois", []))} - {""}
+    titles = {_title_key(v) for v in (message.get("title"), *message.get("related_titles", []))} - {""}
+    families = {_title_key(v) for v in (message.get("trial_family"), *message.get("related_trial_families", []))} - {""}
     for exclusion in exclusions:
         if not isinstance(exclusion, dict):
             reasons.append("CONTACT_BLOCKED_NO_CONTACT: invalid exclusion")
             continue
-        fields = ("names", "aliases", "emails", "coauthors", "dois", "threads")
-        if any(not isinstance(exclusion.get(k, []), list) for k in fields):
+        fields = ("names", "aliases", "emails", "coauthors", "dois", "threads", "titles", "trial_families")
+        if any(not isinstance(exclusion.get(k, []), list) or
+               any(not isinstance(x, str) for x in exclusion.get(k, [])) for k in fields):
             reasons.append("CONTACT_BLOCKED_NO_CONTACT: malformed exclusion")
             continue
-        blocked_identities = {_norm(x) for k in ("names", "aliases", "emails", "coauthors") for x in exclusion.get(k, []) if isinstance(x, str)}
-        blocked_dois = {_doi(x) for x in exclusion.get("dois", []) if isinstance(x, str)}
+        blocked_identities = set()
+        for k in ("names", "aliases", "emails", "coauthors"):
+            for x in exclusion.get(k, []):
+                blocked_identities.update(_recipient_keys(x))
+        blocked_dois = {_doi(x) for x in exclusion.get("dois", [])} - {""}
+        blocked_titles = {_title_key(x) for x in exclusion.get("titles", [])} - {""}
+        blocked_families = {_title_key(x) for x in exclusion.get("trial_families", [])} - {""}
         thread = _norm(message.get("thread_id"))
-        if ((identities & blocked_identities) or (dois & blocked_dois - {""}) or
+        if ((identities & blocked_identities) or (dois & blocked_dois) or
+                (titles & blocked_titles) or (families & blocked_families) or
                 (thread and thread in {_norm(x) for x in exclusion.get("threads", [])})):
             reasons.append("CONTACT_BLOCKED_NO_CONTACT: recipient/publication/thread exclusion")
     return reasons
