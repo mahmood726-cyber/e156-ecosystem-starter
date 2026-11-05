@@ -299,6 +299,29 @@ refuse_nonregular_install_file() {
         printf 'ERROR: refusing non-regular install file: %s\n' "$path" >&2
         return 1
     fi
+    # A hardlink passes -f and -L checks, but rendering in place would
+    # also overwrite any other name for that inode, potentially outside
+    # the agent configuration tree. Python is already a required installer
+    # dependency; lstat works on Linux/macOS and avoids following links.
+    # Fail closed if link metadata cannot be read.
+    if [[ -f "$path" ]]; then
+        if ! "$PYTHON" - "$path" <<'PY_LINK_CHECK'
+import os
+import stat
+import sys
+
+try:
+    info = os.lstat(sys.argv[1])
+    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+        sys.exit(1)
+except OSError:
+    sys.exit(1)
+PY_LINK_CHECK
+        then
+            printf 'ERROR: refusing multiply-linked or unreadable install file: %s\n' "$path" >&2
+            return 1
+        fi
+    fi
 }
 
 refuse_nondirectory_install_path() {
