@@ -218,10 +218,21 @@ def _title_key(value):
 
 
 def _recipient_keys(value):
-    """Match both display-name recipients and their extracted mailbox."""
-    raw = _norm(value)
-    address = _norm(parseaddr(value)[1]) if isinstance(value, str) else ""
-    return {x for x in (raw, address) if x}
+    """Match normalized recipient names, display-name aliases, and mailboxes.
+
+    A withheld correspondent may appear under a previously unseen mailbox.
+    Checking only the complete formatted recipient or mailbox can miss an
+    excluded name, including when the recipient is routed indirectly.
+    """
+    if not isinstance(value, str):
+        return set()
+    display, mailbox = parseaddr(value)
+    keys = {_norm(value)}
+    if "@" in mailbox:
+        keys.add(_norm(mailbox))
+        if display:
+            keys.add(_norm(display))
+    return {key for key in keys if key}
 
 
 def outgoing_blockers(message, exclusions=None):
