@@ -578,6 +578,42 @@ class ContactTests(unittest.TestCase):
             ["PROGRAMME_OUTGOING_QUERY_PAUSE"],
         )
 
+    def test_blank_suppression_values_and_recipients_fail_closed(self):
+        # Invented-only metadata. A blank record in the private register must
+        # not be silently discarded as though it contained no exclusions.
+        for field in ("names", "aliases", "emails", "coauthors",
+                      "dois", "threads", "titles", "trial_families"):
+            for kind in ("new", "retry", "followup", "queued_send"):
+                with self.subTest(field=field, kind=kind):
+                    exclusion = {field: ["  \t "]}
+                    reasons = outgoing_blockers(
+                        {"to": ["unlisted@example.invalid"], "kind": kind},
+                        [exclusion])
+                    self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                    self.assertTrue(any(x.startswith("CONTACT_BLOCKED_NO_CONTACT:")
+                                        for x in reasons))
+                    stub = Mock()
+                    with self.assertRaises(PermissionError):
+                        require_outgoing_allowed(
+                            {"to": ["unlisted@example.invalid"], "kind": kind},
+                            [exclusion])
+                    stub.assert_not_called()
+        # A transport recipient or standalone recipient-name field containing
+        # only whitespace is likewise unknown, not a reviewed safe identity.
+        for field in ("to", "cc", "bcc", "indirect_recipients", "recipient_names"):
+            for kind in ("new", "retry", "followup", "queued_send"):
+                with self.subTest(recipient_field=field, kind=kind):
+                    msg = {"to": ["unlisted@example.invalid"], field: [" \t "],
+                           "kind": kind}
+                    reasons = outgoing_blockers(msg, self.EXCLUSIONS)
+                    self.assertTrue(any(x.startswith("CONTACT_BLOCKED_NO_CONTACT:")
+                                        for x in reasons))
+        # Negative control: a valid unrelated address and populated exclusion
+        # must not be reported as an additional no-contact violation.
+        self.assertEqual(outgoing_blockers(
+            {"to": ["unlisted@example.invalid"]}, self.EXCLUSIONS),
+            ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
+
     def test_unavailable_exclusions_also_fail_closed(self):
         reasons=outgoing_blockers({"to":["other@example.invalid"]},None)
         self.assertTrue(any('exclusions unavailable' in x for x in reasons))
