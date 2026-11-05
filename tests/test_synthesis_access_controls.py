@@ -76,6 +76,43 @@ class SourceRightsTests(unittest.TestCase):
         for op in ('NETWORK_FETCH','EXTRACT','MODEL_SUBMISSION','SOME_OTHER_ACTION'):
             self.assertEqual(assess_source(MANIFEST,SOURCE,op,on_date=TODAY)[0], 'SOURCE_RIGHTS_HOLD')
 
+    def test_network_fetch_requires_reviewed_absolute_url_before_action(self):
+        # Invented source metadata only. A reviewed publication identity and
+        # operation must not authorize an unspecified or non-network address.
+        grant = dict(PERMISSION, operations=["NETWORK_FETCH"])
+        manifest = {"schema": "source-permissions-v1", "permissions": [grant]}
+        self.assertEqual(assess_source(manifest, SOURCE, "NETWORK_FETCH",
+                                       on_date=TODAY)[0], "SOURCE_RIGHTS_HOLD")
+        approved_url = "https://fictional.invalid/v2/approved.xml"
+        grant["source_url"] = approved_url
+        approved = {**SOURCE, "source_url": approved_url}
+        self.assertEqual(assess_source(manifest, approved, "NETWORK_FETCH",
+                                       on_date=TODAY)[0], "ALLOW")
+        for invalid in ("", "/v2/approved.xml", "file:///tmp/synthetic.xml",
+                        "ftp://fictional.invalid/v2.xml",
+                        "https://reviewer@fictional.invalid/v2.xml",
+                        "https://fictional.invalid:invalid/v2.xml"):
+            with self.subTest(invalid=invalid):
+                grant["source_url"] = invalid
+                request = {**SOURCE, "source_url": invalid}
+                self.assertEqual(assess_source(manifest, request, "NETWORK_FETCH",
+                                               on_date=TODAY)[0], "SOURCE_RIGHTS_HOLD")
+        with TemporaryDirectory() as root:
+            p = Path(root)
+            manifest_file = p / "permissions.json"
+            manifest_file.write_text(json.dumps({"schema": "source-permissions-v1",
+                                                  "permissions": [dict(PERMISSION, operations=["NETWORK_FETCH"])]}))
+            log = p / "decisions.jsonl"
+            log.touch()
+            network_probe = Mock(return_value=b"synthetic-only")
+            with self.assertRaises(PermissionError):
+                execute_source_action(SOURCE, "NETWORK_FETCH", network_probe,
+                                      manifest_path=manifest_file, decision_log=log,
+                                      on_date=TODAY)
+            network_probe.assert_not_called()
+            self.assertEqual(json.loads(log.read_text().splitlines()[0])["decision"],
+                             "SOURCE_RIGHTS_HOLD")
+
     def test_jama_original_identity_held_even_from_mirror_and_reviewed_entry(self):
         for changes in ({"doi":"10.1001/synthetic-fixture"},
                         {"original_journal":"JAMA Network Open"},
