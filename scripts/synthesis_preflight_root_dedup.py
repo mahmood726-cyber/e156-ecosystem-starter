@@ -6,6 +6,7 @@ adjudication, or eligibility for correspondence. Frozen v1.1/v1.2 unchanged.
 from __future__ import annotations
 
 import re
+import unicodedata
 from datetime import date
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -57,7 +58,11 @@ def _human_receipt_valid(record: Mapping[str, Any]) -> bool:
         and receipt.get("reviewer_kind") == "independent_human"
         and _valid_identifier(receipt.get("reviewer_id"))
         and _valid_identifier(receipt.get("investigator_id"))
-        and receipt["reviewer_id"] != receipt["investigator_id"]
+        # Reviewer/investigator IDs may be case-insensitive or use Unicode
+        # compatibility spellings. A merely differently cased/encoded alias
+        # is not evidence of independent human review; conservatively hold.
+        and unicodedata.normalize("NFKC", receipt["reviewer_id"]).casefold()
+            != unicodedata.normalize("NFKC", receipt["investigator_id"]).casefold()
         and _valid_identifier(receipt.get("receipt_locator"))
         and _valid_date(receipt.get("adjudicated_at"))
         and receipt.get("conflict_check") is True
