@@ -461,6 +461,24 @@ class ContactTests(unittest.TestCase):
         self.assertEqual(outgoing_blockers(unrelated, self.EXCLUSIONS),
                          ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
 
+        malformed = "=?utf-8?B?////?="
+        invalid_metadata = {"to": ["unrelated@example.invalid"],
+                            "recipient_names": [malformed], "kind": "retry"}
+        self.assertIn(
+            "CONTACT_BLOCKED_NO_CONTACT: invalid recipient encoding",
+            outgoing_blockers(invalid_metadata, self.EXCLUSIONS),
+        )
+        malformed_exclusions = [{
+            "names": [malformed], "emails": [], "aliases": [],
+            "coauthors": [], "dois": [], "threads": [], "titles": [],
+            "trial_families": [],
+        }]
+        self.assertIn(
+            "CONTACT_BLOCKED_NO_CONTACT: invalid exclusion encoding",
+            outgoing_blockers({"to": ["unrelated@example.invalid"]},
+                              malformed_exclusions),
+        )
+
     def test_invalid_encoded_display_and_exclusion_hold(self):
         # Deliberately invalid UTF-8 encoded-word (synthetic), not a real
         # recipient. A decoding error must never turn into an implicit allow.
