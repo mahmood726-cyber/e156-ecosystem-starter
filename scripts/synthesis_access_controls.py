@@ -196,7 +196,25 @@ def source_preflight(source, operation, *, manifest_path=None, decision_log=None
     decision_log = decision_log or os.getenv("SYNTHESIS_SOURCE_ACCESS_LOG")
     manifest, manifest_digest = None, None
     try:
-        raw = Path(manifest_path).read_bytes() if manifest_path else None
+        raw = None
+        if manifest_path:
+            path = Path(manifest_path)
+            # Permission evidence is part of the authorization boundary.
+            # Do not let links silently substitute another private manifest.
+            if any(component.is_symlink() for component in (path, *path.parents)):
+                raise OSError("permission manifest path contains a symlink")
+            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+            descriptor = os.open(path, flags)
+            try:
+                opened = os.fstat(descriptor)
+                if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
+                    raise OSError("permission manifest must be an unaliased regular file")
+                with os.fdopen(descriptor, "rb") as handle:
+                    descriptor = None
+                    raw = handle.read()
+            finally:
+                if descriptor is not None:
+                    os.close(descriptor)
         if raw:
             manifest_digest = sha256(raw).hexdigest()
             manifest = json.loads(raw)
