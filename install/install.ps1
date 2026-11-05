@@ -387,28 +387,41 @@ function Copy-MemoryScaffold {
     [CmdletBinding()]
     param(
         [string]$SourceMemoryDir,
-        [string]$TargetMemoryDir
+        [string]$TargetMemoryDir,
+        [PSCustomObject]$Manifest = $null
     )
     # Memory is PRESERVED by default (student's ongoing work). We only drop
-    # templates + initial MEMORY.md if the target is empty.
+    # templates + initial MEMORY.md if the target has no top-level Markdown.
     Assert-SafeWindowsInstallPath -Path $TargetMemoryDir -Directory
     $existingFiles = @(Get-ChildItem -LiteralPath $TargetMemoryDir -Filter "*.md" -ErrorAction SilentlyContinue)
     if ($existingFiles.Count -eq 0) {
         $tmplDir = Join-Path $TargetMemoryDir 'templates'
-        Assert-SafeWindowsInstallPath -Path (Join-Path $TargetMemoryDir 'MEMORY.md')
+        $memoryFile = Join-Path $TargetMemoryDir 'MEMORY.md'
+        Assert-SafeWindowsInstallPath -Path $memoryFile
         Assert-SafeWindowsInstallPath -Path $tmplDir -Directory
         $sourceTemplates = @(Get-ChildItem -LiteralPath (Join-Path $SourceMemoryDir 'templates') -Filter '*.md' -File -ErrorAction Stop)
         foreach ($template in $sourceTemplates) {
             Assert-SafeWindowsInstallPath -Path (Join-Path $tmplDir $template.Name)
         }
-        New-Item -ItemType Directory -Force -Path $TargetMemoryDir | Out-Null
-        Copy-Item (Join-Path $SourceMemoryDir 'MEMORY.md') (Join-Path $TargetMemoryDir 'MEMORY.md')
-        New-Item -ItemType Directory -Force -Path $tmplDir | Out-Null
+        # Record net-new paths before writes, so even a partially failed copy
+        # can be rolled back. Existing directories and user templates are never
+        # recorded as disposable installation artifacts.
+        if (-not (Test-Path -LiteralPath $TargetMemoryDir -PathType Container) -and $Manifest) {
+            $Manifest.CreatedDirs.Add($TargetMemoryDir)
+        }
+        New-Item -ItemType Directory -Force -Path $TargetMemoryDir -ErrorAction Stop | Out-Null
+        if ($Manifest) { $Manifest.CreatedFiles.Add($memoryFile) }
+        Copy-Item -LiteralPath (Join-Path $SourceMemoryDir 'MEMORY.md') -Destination $memoryFile -ErrorAction Stop
+        if (-not (Test-Path -LiteralPath $tmplDir -PathType Container) -and $Manifest) {
+            $Manifest.CreatedDirs.Add($tmplDir)
+        }
+        New-Item -ItemType Directory -Force -Path $tmplDir -ErrorAction Stop | Out-Null
         # An empty memory root can contain user-edited nested templates.
         # Populate only missing files; never replace existing user templates.
         foreach ($template in $sourceTemplates) {
             $dest = Join-Path $tmplDir $template.Name
             if (-not (Test-Path -LiteralPath $dest)) {
+                if ($Manifest) { $Manifest.CreatedFiles.Add($dest) }
                 Copy-Item -LiteralPath $template.FullName -Destination $dest -ErrorAction Stop
             }
         }
@@ -448,8 +461,8 @@ function Invoke-InstallRollback {
     # Delete net-new files first (in reverse order so nested paths go before parents)
     $createdReversed = @($Manifest.CreatedFiles) ; [Array]::Reverse($createdReversed)
     foreach ($f in $createdReversed) {
-        if (Test-Path $f) {
-            Remove-Item $f -Force -ErrorAction SilentlyContinue
+        if (Test-Path -LiteralPath $f) {
+            Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue
         }
     }
     # Restore first-install and timestamped backups. Reverse order
@@ -467,9 +480,9 @@ function Invoke-InstallRollback {
     # Then remove net-new directories (in reverse so deepest first)
     $dirsReversed = @($Manifest.CreatedDirs) ; [Array]::Reverse($dirsReversed)
     foreach ($d in $dirsReversed) {
-        if ((Test-Path $d) -and
-            ((Get-ChildItem $d -Force -ErrorAction SilentlyContinue).Count -eq 0)) {
-            Remove-Item $d -Force -ErrorAction SilentlyContinue
+        if ((Test-Path -LiteralPath $d) -and
+            ((Get-ChildItem -LiteralPath $d -Force -ErrorAction SilentlyContinue).Count -eq 0)) {
+            Remove-Item -LiteralPath $d -Force -ErrorAction SilentlyContinue
         }
     }
     Write-Host "Rollback complete. Any pre-existing user files were restored." -ForegroundColor Green
@@ -577,7 +590,7 @@ $claudeMemoryDir = Join-Path $userHome '.claude\memory'
 $geminiMemoryDir = Join-Path $userHome '.gemini\memory'
 
 foreach ($target in @($claudeMemoryDir, $geminiMemoryDir)) {
-    $bootstrapped = Copy-MemoryScaffold -SourceMemoryDir $sourceMemory -TargetMemoryDir $target
+    $bootstrapped = Copy-MemoryScaffold -SourceMemoryDir $sourceMemory -TargetMemoryDir $target -Manifest $manifest
     if ($bootstrapped) {
         Write-Ok "$target  (bootstrapped -- starter MEMORY.md + 4 templates)"
     } else {
