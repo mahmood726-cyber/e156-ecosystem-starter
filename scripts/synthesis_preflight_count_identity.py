@@ -8,6 +8,7 @@ Callers must independently authenticate all source records and permissions.
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Mapping
 from typing import Any
 
@@ -52,6 +53,11 @@ OPTIONAL_METHOD_ABSENCE = frozenset({"not_applicable", "n/a", "na", "none"})
 
 def _missing_field(value: Any, key: str) -> bool:
     if not isinstance(value, str) or not value.strip():
+        return True
+    # Reject hidden format and control code points in metadata identities.
+    # These can conceal mismatched source versions, result IDs or locators.
+    # Refuse rather than rewriting identity bytes.
+    if any(unicodedata.category(char).startswith("C") for char in value):
         return True
     normalized = re.sub(r"[\s_-]+", "_", value.strip().casefold())
     if normalized not in UNKNOWN_LITERALS:
