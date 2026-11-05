@@ -101,6 +101,14 @@ def group_preflight_roots(observations: Any) -> dict[str, Any]:
                 or type(record.get("human_adjudicated")) is not bool
                 or type(record.get("author_confirmed")) is not bool):
             return {**held, "reason": f"record {index}: unknown evidence status or boolean"}
+        # A source that is unavailable or explicitly insufficient cannot
+        # support source-backed, reproduced, or human-adjudicated maturity.
+        # A scoped human receipt is separate evidence, not proof that the
+        # underlying source claim was reproduced. Preserve SCREENED/HOLD as
+        # a legitimate negative/abstention record.
+        if (record["source_support"] in ("SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO")
+                and record["maturity"] != "SCREENED"):
+            return {**held, "reason": f"record {index}: source status cannot support claimed evidence maturity"}
         # Booleans alone do not evidence human independence or explicit author
         # agreement. Exact dated, conflict-checked, scope-bound private receipt
         # metadata are required before either status may be reported. Even these
