@@ -200,6 +200,62 @@ Describe "Memory bootstrap preserves nested user templates (Role 05)" {
     }
 }
 
+# A later installer failure must undo starter-created memory without touching
+# existing user templates, even if memory/templates existed before install.
+Describe "Memory scaffold rollback manifest (Role 05)" {
+    It "removes newly bootstrapped memory files and directories after a later failure" {
+        $target = Join-Path $tmpRoot "memory rollback clean Ü $([guid]::NewGuid().ToString('N'))"
+        $m = New-RollbackManifest
+        Copy-MemoryScaffold -SourceMemoryDir (Join-Path $starterRoot 'memory') -TargetMemoryDir $target -Manifest $m | Out-Null
+        $m.CreatedFiles.Count | Should -BeGreaterThan 1
+        $m.CreatedDirs.Count | Should -Be 2
+
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic later-step failure'
+
+        Test-Path -LiteralPath $target | Should -BeFalse
+    }
+
+    It "removes only new templates and preserves user edits under an existing directory" {
+        $source = Join-Path $starterRoot 'memory'
+        $sourceTemplates = @(Get-ChildItem -LiteralPath (Join-Path $source 'templates') -Filter '*.md' -File | Sort-Object Name)
+        $sourceTemplates.Count | Should -BeGreaterThan 1
+        $target = Join-Path $tmpRoot "memory rollback existing Ü $([guid]::NewGuid().ToString('N'))"
+        $templateDir = Join-Path $target 'templates'
+        New-Item -ItemType Directory -Force -Path $templateDir | Out-Null
+        $custom = Join-Path $templateDir $sourceTemplates[0].Name
+        [System.IO.File]::WriteAllText($custom, 'user template remains', [System.Text.Encoding]::UTF8)
+        $userConfig = Join-Path $target 'settings.yaml'
+        Set-Content -LiteralPath $userConfig -Value 'user configuration' -NoNewline
+
+        $m = New-RollbackManifest
+        Copy-MemoryScaffold -SourceMemoryDir $source -TargetMemoryDir $target -Manifest $m | Out-Null
+        $m.CreatedDirs.Count | Should -Be 0
+        (Get-Content -LiteralPath $custom -Raw) | Should -Be 'user template remains'
+
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic later-step failure'
+
+        (Get-Content -LiteralPath $custom -Raw) | Should -Be 'user template remains'
+        (Get-Content -LiteralPath $userConfig -Raw) | Should -Be 'user configuration'
+        Test-Path -LiteralPath $templateDir | Should -BeTrue
+        Test-Path -LiteralPath (Join-Path $target 'MEMORY.md') | Should -BeFalse
+        Test-Path -LiteralPath (Join-Path $templateDir $sourceTemplates[1].Name) | Should -BeFalse
+    }
+
+    It "leaves pre-existing top-level memory untouched and untracked" {
+        $target = Join-Path $tmpRoot "memory rollback user Ü $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        $custom = Join-Path $target 'custom.md'
+        Set-Content -LiteralPath $custom -Value 'existing memory' -NoNewline
+        $m = New-RollbackManifest
+        $created = Copy-MemoryScaffold -SourceMemoryDir (Join-Path $starterRoot 'memory') -TargetMemoryDir $target -Manifest $m
+        $created | Should -BeFalse
+        $m.CreatedFiles.Count | Should -Be 0
+        $m.CreatedDirs.Count | Should -Be 0
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic no-op'
+        (Get-Content -LiteralPath $custom -Raw) | Should -Be 'existing memory'
+    }
+}
+
 # Disposable Windows junctions are deterministic redirection fixtures and do not
 # require privileged symbolic-link creation. All writes remain under tmpRoot.
 Describe "Windows junction destination refusal (Role 05)" {
