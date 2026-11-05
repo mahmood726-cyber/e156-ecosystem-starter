@@ -334,6 +334,34 @@ refuse_nondirectory_install_path() {
     fi
 }
 
+# Register every newly created ancestor so rollback can remove the entire
+# empty scaffold, not just its leaf directory. A plain mkdir (not mkdir -p)
+# refuses a concurrent change to an unexpected parent instead of following it.
+# Existing parent directories are never entered into the rollback manifest.
+make_tracked_install_dir() {
+    local desired="$1" cursor="$1" parent i
+    local -a missing=()
+    refuse_nondirectory_install_path "$desired" || return 1
+    [[ -d "$desired" ]] && return 0
+    while [[ ! -d "$cursor" ]]; do
+        if [[ -e "$cursor" || -L "$cursor" ]]; then
+            printf 'ERROR: refusing non-directory install ancestor: %s\n' "$cursor" >&2
+            return 1
+        fi
+        missing+=("$cursor")
+        parent="$(dirname "$cursor")"
+        if [[ "$parent" == "$cursor" || "$parent" == "." ]]; then
+            printf 'ERROR: cannot resolve install directory ancestor: %s\n' "$desired" >&2
+            return 1
+        fi
+        cursor="$parent"
+    done
+    for ((i=${#missing[@]}-1; i>=0; i--)); do
+        printf '%s\n' "${missing[$i]}" >> "$MANIFEST_DIRS"
+        mkdir -- "${missing[$i]}" || return 1
+    done
+}
+
 copy_rules_to_agent() {
     local src="$1" target="$2"; shift 2
     [[ -d "$src" ]] || { echo "ERROR: source rules dir missing: $src" >&2; return 1; }
@@ -343,10 +371,7 @@ copy_rules_to_agent() {
     for preflight_rule in "$src"/*.md; do
         refuse_nonregular_install_file "$target/$(basename "$preflight_rule")" || return 1
     done
-    if [[ ! -d "$target" ]]; then
-        mkdir -p "$target"
-        echo "$target" >> "$MANIFEST_DIRS"
-    fi
+    make_tracked_install_dir "$target" || return 1
     local copied=0 backed=0
     for f in "$src"/*.md; do
         local name dest backup actual_backup
@@ -395,10 +420,7 @@ copy_context_files() {
         [[ -f "$src_root/$preflight_name" ]] || continue
         refuse_nonregular_install_file "$target/$preflight_name" || return 1
     done
-    if [[ ! -d "$target" ]]; then
-        mkdir -p "$target"
-        echo "$target" >> "$MANIFEST_DIRS"
-    fi
+    make_tracked_install_dir "$target" || return 1
     local count=0
     for name in AGENTS.md CLAUDE.md GEMINI.md CODEX.md; do
         local src="$src_root/$name"
@@ -447,10 +469,7 @@ copy_memory_scaffold() {
     done
     # Track created directories before writes, so a later step's failure
     # can remove only scaffolding introduced by this installation.
-    if [[ ! -d "$target" ]]; then
-        echo "$target" >> "$MANIFEST_DIRS"
-    fi
-    mkdir -p -- "$target"
+    make_tracked_install_dir "$target" || return 1
     if compgen -G "$target/*.md" > /dev/null; then
         log_ok "${target}  (already has memory -- preserved, templates not overwritten)"
         return
@@ -459,10 +478,7 @@ copy_memory_scaffold() {
     # content which rollback must also remove.
     echo "$target/MEMORY.md" >> "$MANIFEST_FILES"
     cp -- "$src/MEMORY.md" "$target/MEMORY.md"
-    if [[ ! -d "$target/templates" ]]; then
-        echo "$target/templates" >> "$MANIFEST_DIRS"
-    fi
-    mkdir -p -- "$target/templates"
+    make_tracked_install_dir "$target/templates" || return 1
     for f in "$src/templates"/*.md; do
         local template_dest="$target/templates/$(basename "$f")"
         # A memory root with no top-level Markdown can still contain
