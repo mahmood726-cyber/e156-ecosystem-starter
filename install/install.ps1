@@ -214,6 +214,26 @@ function Render-Template {
     return $Text
 }
 
+function Save-InstallUserBackup {
+    # Preserve each user edit without replacing an earlier backup. File.Copy
+    # refuses a newly occupied destination as well (no silent overwrite).
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Path)
+    $base = "$Path.user"
+    $candidate = $base
+    if (Test-Path -LiteralPath $candidate) {
+        $timestampBase = "$base-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        $candidate = $timestampBase
+        $suffix = 0
+        while (Test-Path -LiteralPath $candidate) {
+            $suffix++
+            $candidate = "$timestampBase-$suffix"
+        }
+    }
+    [System.IO.File]::Copy($Path, $candidate, $false)
+    return $candidate
+}
+
 function Copy-RulesToAgent {
     [CmdletBinding()]
     param(
@@ -236,19 +256,8 @@ function Copy-RulesToAgent {
     Get-ChildItem -Path $SourceRulesDir -Filter "*.md" | ForEach-Object {
         $dest = Join-Path $TargetRulesDir $_.Name
         $preExisted = Test-Path $dest
-        $backupPath = "$dest.user"
-        $newBackup = $false
         if ($preExisted -and -not $Force) {
-            # First re-install: back up to <name>.md.user
-            # Subsequent re-installs: back up to <name>.md.user-<timestamp> so
-            # we never silently overwrite a re-edited file (the original .user
-            # backup is preserved as the "first-known-edit" copy).
-            $actualBackup = $backupPath
-            if (Test-Path $backupPath) {
-                $actualBackup = "$dest.user-" + (Get-Date -Format 'yyyyMMdd-HHmmss')
-            }
-            Copy-Item $dest $actualBackup
-            $newBackup = $true
+            $actualBackup = Save-InstallUserBackup -Path $dest
             $backed += $_.Name
             if ($Manifest) { $Manifest.BackedUp.Add($actualBackup) }
         }
@@ -299,11 +308,10 @@ function Copy-ContextFiles {
         $dst = Join-Path $TargetDir $name
         $preExisted = Test-Path $dst
         if ($preExisted -and -not $Force) {
-            $backupPath = "$dst.user"
-            if (-not (Test-Path $backupPath)) {
-                Copy-Item $dst $backupPath
-                if ($Manifest) { $Manifest.BackedUp.Add($backupPath) }
-            }
+            # A .user snapshot from an earlier reinstall must not suppress
+            # preservation of the latest user edit.
+            $actualBackup = Save-InstallUserBackup -Path $dst
+            if ($Manifest) { $Manifest.BackedUp.Add($actualBackup) }
         }
         if ($Vars) {
             $text = [System.IO.File]::ReadAllText($src, [System.Text.Encoding]::UTF8)
@@ -373,12 +381,931 @@ function Invoke-InstallRollback {
             Remove-Item $f -Force -ErrorAction SilentlyContinue
         }
     }
-    # Restore .user backups back to their original names. Each entry is the
-    # backup path ("<orig>.user"); we move it back to <orig>.
-    foreach ($backup in $Manifest.BackedUp) {
-        if (Test-Path $backup) {
-            $orig = $backup.Substring(0, $backup.Length - 5)  # strip ".user"
-            Move-Item $backup $orig -Force -ErrorAction SilentlyContinue
+    # Restore both first-install .user and timestamped .user-YYYYMMDD-HHMMSS
+    # backups. Reverse order protects the newest snapshot if an install
+    # touched the same destination more than once.
+    $backupsReversed = @($Manifest.BackedUp) ; [Array]::Reverse($backupsReversed)
+    foreach ($backup in $backupsReversed) {
+        if (Test-Path -LiteralPath $backup) {
+            if ($backup -notmatch '\.user(?:-\d{8}-\d{6}(?:-\d+)?)?
+    # Then remove net-new directories (in reverse so deepest first)
+    $dirsReversed = @($Manifest.CreatedDirs) ; [Array]::Reverse($dirsReversed)
+    foreach ($d in $dirsReversed) {
+        if ((Test-Path $d) -and
+            ((Get-ChildItem $d -Force -ErrorAction SilentlyContinue).Count -eq 0)) {
+            Remove-Item $d -Force -ErrorAction SilentlyContinue
+        }
+    }
+    Write-Host "Rollback complete. Any pre-existing user files were restored." -ForegroundColor Green
+}
+
+# Refuse missing requested core install scripts before the component can be
+# reported as silently "skipped". A missing file is not an optional opt-out.
+function Assert-RequiredCoreInstallerPresent {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Component,
+        [Parameter(Mandatory = $true)][string]$ScriptPath
+    )
+    if (-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)) {
+        throw "REFUSED: requested $Component installer is missing: $ScriptPath"
+    }
+    return $true
+}
+
+if ($Import) { return }   # dot-sourced by tests -- no execution
+
+# === Real install flow =====================================================
+
+function Write-Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
+function Write-Ok($msg)   { Write-Host "    $msg" -ForegroundColor Green }
+function Write-Warn2($msg){ Write-Warning $msg }
+
+$starterRoot = Get-EcoStarterRoot
+$userHome = $env:USERPROFILE
+if (-not $userHome) { $userHome = $HOME }
+
+Write-Host ""
+Write-Host "e156-ecosystem-starter bootstrap" -ForegroundColor Cyan
+Write-Host "Installing Mahmood's quality-dev environment to $userHome"
+Write-Host ""
+
+# Manifest drives rollback. Steps 2-4 push onto it via helper functions.
+# If any step throws, Invoke-InstallRollback undoes everything it did.
+$manifest = New-RollbackManifest
+
+try {
+
+# --- Step 1: agent CLI detection -------------------------------------------
+
+Write-Step "Detecting agent CLIs"
+$foundClaude = Test-ToolInstalled -Cmd 'claude'
+$foundGemini = Test-ToolInstalled -Cmd 'gemini'
+$foundCodex = Test-ToolInstalled -Cmd 'codex'
+
+if ($foundClaude) { Write-Ok "claude: found" } else { Write-Host "    claude: not on PATH (install: https://docs.anthropic.com/en/docs/claude-code)" -ForegroundColor DarkGray }
+if ($foundGemini) { Write-Ok "gemini: found" } else { Write-Host "    gemini: not on PATH (install: https://github.com/google-gemini/gemini-cli)" -ForegroundColor DarkGray }
+if ($foundCodex)  { Write-Ok "codex: found"  } else { Write-Host "    codex: not on PATH (install: https://github.com/openai/codex)" -ForegroundColor DarkGray }
+
+if (-not ($foundClaude -or $foundGemini -or $foundCodex)) {
+    Write-Warn2 "No agent CLI found. Install at least one of claude/gemini/codex, then re-run."
+    Write-Host "  (We'll still copy rules + context files for when you do install.)" -ForegroundColor DarkGray
+}
+
+# --- Step 1.5: resolve rules-template vars ---------------------------------
+# These are substituted into {{E156_HOME}}, {{PROJECTINDEX_ROOT}}, etc.
+# Prompt only for GitHub user (no reasonable default); others already have
+# defaults from the param block (Mahmood-style layout). Students can override
+# any of them with install.ps1 -E156Home D:\MyE156 etc.
+
+if (-not $GitHubUser -and -not $NonInteractive -and [Console]::IsInputRedirected -eq $false) {
+    $GitHubUser = (Read-Host "Your GitHub username (or Enter to leave placeholder)").Trim()
+}
+
+$rulesVars = @{
+    'E156_HOME'              = $E156Home
+    'PROJECTINDEX_ROOT'      = $PortfolioRoot
+    'SENTINEL_ROOT'          = $SentinelRoot
+    'OVERMIND_ROOT'          = $OvermindRoot
+    'ECOSYSTEM_STARTER_ROOT' = $starterRoot
+    'GITHUB_USER'            = if ($GitHubUser) { $GitHubUser } else { '{{GITHUB_USER}}' }
+}
+
+# --- Step 2: copy rules to each detected agent's config dir -----------------
+
+Write-Step "Copying rules/*.md (with your paths substituted in)"
+$sourceRules = Join-Path $starterRoot 'rules'
+
+$claudeRulesDir = Join-Path $userHome '.claude\rules'
+$geminiRulesDir = Join-Path $userHome '.gemini\rules'
+$codexRulesDir  = Join-Path $userHome '.codex\rules'
+
+foreach ($target in @($claudeRulesDir, $geminiRulesDir, $codexRulesDir)) {
+    $r = Copy-RulesToAgent -SourceRulesDir $sourceRules -TargetRulesDir $target -Force:$Force -Vars $rulesVars -Manifest $manifest
+    Write-Ok "$target  ($($r.Copied.Count) files copied, $($r.Backed.Count) backed up as .user)"
+}
+
+# --- Step 3: drop context files (AGENTS.md / CLAUDE.md / GEMINI.md / CODEX.md)
+
+Write-Step "Writing context files to ~/.claude, ~/.gemini, ~/.codex"
+foreach ($dir in @((Join-Path $userHome '.claude'), (Join-Path $userHome '.gemini'), (Join-Path $userHome '.codex'))) {
+    $r = Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $dir -Force:$Force -Vars $rulesVars -Manifest $manifest
+    Write-Ok "$dir  ($($r.Count) context files)"
+}
+
+# --- Step 4: memory scaffold (only if the target is empty) ------------------
+
+Write-Step "Setting up memory scaffolding"
+$sourceMemory = Join-Path $starterRoot 'memory'
+$claudeMemoryDir = Join-Path $userHome '.claude\memory'
+$geminiMemoryDir = Join-Path $userHome '.gemini\memory'
+
+foreach ($target in @($claudeMemoryDir, $geminiMemoryDir)) {
+    $bootstrapped = Copy-MemoryScaffold -SourceMemoryDir $sourceMemory -TargetMemoryDir $target
+    if ($bootstrapped) {
+        Write-Ok "$target  (bootstrapped -- starter MEMORY.md + 4 templates)"
+    } else {
+        Write-Ok "$target  (already has memory -- preserved, templates not overwritten)"
+    }
+}
+
+# --- Step 5: chain sub-installers -----------------------------------------
+#
+# Three optional chains: Sentinel (pre-push hook), Overmind (verifier), and
+# ProjectIndex (portfolio seed). Under -Full, all three run with defaults.
+# Under -NonInteractive (or piped stdin), all three skip unless an explicit
+# -InstallXxx flag was passed. Otherwise we prompt.
+
+function Test-CanPrompt {
+    return -not $NonInteractive -and -not [Console]::IsInputRedirected
+}
+
+function Prompt-YesNo {
+    param([string]$Question, [bool]$DefaultYes = $true)
+    $hint = if ($DefaultYes) { '[Y/n]' } else { '[y/N]' }
+    $ans = (Read-Host "$Question $hint").Trim().ToLower()
+    if ($ans -eq '') { return $DefaultYes }
+    return $ans -in @('y', 'yes')
+}
+
+$scriptsDir = Join-Path $starterRoot 'scripts'
+
+# Track per-chain outcomes for the honest end-of-run summary.
+# Status values: 'ok' | 'failed' | 'skipped'
+$chainStatus = [ordered]@{
+    'rules+memory'  = 'ok'   # we got this far, so step 1-4 succeeded
+    'sentinel'      = 'skipped'
+    'overmind'      = 'skipped'
+    'projectindex'  = 'skipped'
+    'extractor'     = 'skipped'
+}
+$chainDetails = [ordered]@{}
+
+# Default install location for student-typed relative paths.
+$studentCodeRoot = Join-Path $env:USERPROFILE 'code'
+
+# 5a: Sentinel
+$doSentinel = $false
+$sentinelRepo = $null
+if ($InstallSentinel) {
+    $doSentinel = $true
+    $sentinelRepo = Resolve-StarterPath -Input $InstallSentinel -Default $InstallSentinel
+} elseif ($Full) {
+    $doSentinel = $true
+    $sentinelRepo = Join-Path $studentCodeRoot 'my-first-repo'
+    Write-Host "    (-Full) Will install Sentinel hook in: $sentinelRepo" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "Sentinel pre-push hook (blocks 20 defect patterns before git push)"
+    if (Prompt-YesNo -Question "Install Sentinel in a repo now?") {
+        $defaultRepo = Join-Path $studentCodeRoot 'my-first-repo'
+        $userInput = (Read-Host "Target repo path (absolute, or name only -> goes under $studentCodeRoot\) [default: $defaultRepo]").Trim()
+        try {
+            $sentinelRepo = Resolve-StarterPath -Input $userInput -Default $defaultRepo
+            $doSentinel = $true
+        } catch {
+            Write-Warning $_.Exception.Message
+            $chainStatus['sentinel'] = 'failed'
+            $chainDetails['sentinel'] = "rejected target: $($_.Exception.Message)"
+        }
+    }
+}
+if ($doSentinel) {
+    $sentinelScript = Join-Path $scriptsDir 'install-sentinel.ps1'
+    if (Assert-RequiredCoreInstallerPresent -Component 'Sentinel' -ScriptPath $sentinelScript) {
+        Write-Step "Chaining: install-sentinel.ps1 -Repo $sentinelRepo"
+        # Ensure the repo directory exists (create if missing) and is initialized as a git repo.
+        if (-not (Test-Path $sentinelRepo)) {
+            try {
+                New-Item -ItemType Directory -Force -Path $sentinelRepo | Out-Null
+                Write-Host "    Created $sentinelRepo"
+            } catch {
+                Write-Warning "Could not create $sentinelRepo : $($_.Exception.Message)"
+                $chainStatus['sentinel'] = 'failed'
+                $chainDetails['sentinel'] = "could not create directory $sentinelRepo"
+                $doSentinel = $false
+            }
+        }
+        if ($doSentinel -and -not (Test-Path (Join-Path $sentinelRepo '.git'))) {
+            try {
+                & git -C $sentinelRepo init --quiet 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+                Write-Host "    git init at $sentinelRepo"
+            } catch {
+                Write-Warning "Could not git init in $sentinelRepo : $($_.Exception.Message)"
+            }
+        }
+        if ($doSentinel) {
+            try {
+                & powershell -NoProfile -ExecutionPolicy Bypass -File $sentinelScript -Repo $sentinelRepo
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warning "install-sentinel.ps1 exited $LASTEXITCODE"
+                    $chainStatus['sentinel'] = 'failed'
+                    $chainDetails['sentinel'] = "exited $LASTEXITCODE (often: Python on PATH is the Microsoft Store stub -- see prereqs)"
+                } else {
+                    $chainStatus['sentinel'] = 'ok'
+                    $chainDetails['sentinel'] = "installed in $sentinelRepo"
+                }
+            } catch {
+                Write-Warning "install-sentinel.ps1 failed: $($_.Exception.Message)"
+                $chainStatus['sentinel'] = 'failed'
+                $chainDetails['sentinel'] = $_.Exception.Message
+            }
+        }
+    }
+}
+
+# 5b: Overmind
+$doOvermind = $false
+if ($InstallOvermind) {
+    $doOvermind = $true
+} elseif ($Full) {
+    $doOvermind = $true
+    Write-Host "    (-Full) Will install Overmind + TruthCert" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "Overmind verifier + TruthCert HMAC signing (~5 MB pip deps)"
+    if (Prompt-YesNo -Question "Install Overmind + TruthCert now?") { $doOvermind = $true }
+}
+if ($doOvermind) {
+    $overmindScript = Join-Path $scriptsDir 'install-overmind.ps1'
+    if (Assert-RequiredCoreInstallerPresent -Component 'Overmind/TruthCert' -ScriptPath $overmindScript) {
+        Write-Step "Chaining: install-overmind.ps1"
+        try {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $overmindScript
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "install-overmind.ps1 exited $LASTEXITCODE"
+                $chainStatus['overmind'] = 'failed'
+                $chainDetails['overmind'] = "exited $LASTEXITCODE (often: Python stub -- see prereqs)"
+            } else {
+                $chainStatus['overmind'] = 'ok'
+                $chainDetails['overmind'] = "installed"
+            }
+        } catch {
+            Write-Warning "install-overmind.ps1 failed: $($_.Exception.Message)"
+            $chainStatus['overmind'] = 'failed'
+            $chainDetails['overmind'] = $_.Exception.Message
+        }
+    }
+}
+
+# 5c: ProjectIndex
+$doProjectIndex = $false
+$piRoot = $null
+$piDefault = Join-Path $studentCodeRoot 'ProjectIndex'
+if ($ProjectIndexRoot) {
+    $doProjectIndex = $true
+    $piRoot = Resolve-StarterPath -Input $ProjectIndexRoot -Default $ProjectIndexRoot
+} elseif ($Full) {
+    $doProjectIndex = $true
+    $piRoot = $piDefault
+    Write-Host "    (-Full) Will seed ProjectIndex at: $piRoot" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "ProjectIndex seed (portfolio INDEX.md + reconcile_counts.py)"
+    if (Prompt-YesNo -Question "Seed ProjectIndex now?") {
+        $userInput = (Read-Host "Target dir (absolute, or name only -> goes under $studentCodeRoot\) [default: $piDefault]").Trim()
+        try {
+            $piRoot = Resolve-StarterPath -Input $userInput -Default $piDefault
+            $doProjectIndex = $true
+        } catch {
+            Write-Warning $_.Exception.Message
+            $chainStatus['projectindex'] = 'failed'
+            $chainDetails['projectindex'] = "rejected target: $($_.Exception.Message)"
+        }
+    }
+}
+if ($doProjectIndex) {
+    $piScript = Join-Path $scriptsDir 'install-projectindex.ps1'
+    if (Test-Path $piScript) {
+        Write-Step "Chaining: install-projectindex.ps1 -Root $piRoot"
+        try {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $piScript -Root $piRoot
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "install-projectindex.ps1 exited $LASTEXITCODE"
+                $chainStatus['projectindex'] = 'failed'
+                $chainDetails['projectindex'] = "exited $LASTEXITCODE"
+            } else {
+                $chainStatus['projectindex'] = 'ok'
+                $chainDetails['projectindex'] = "seeded at $piRoot"
+            }
+        } catch {
+            Write-Warning "install-projectindex.ps1 failed: $($_.Exception.Message)"
+            $chainStatus['projectindex'] = 'failed'
+            $chainDetails['projectindex'] = $_.Exception.Message
+        }
+    }
+}
+
+# 5d: Extractor (rct-extractor-v2: 17 disease specialties -> meta-kit config)
+$doExtractor = $false
+$extractorTgt = $null
+$extractorDefault = Join-Path $studentCodeRoot 'rct-extractor-v2'
+if ($InstallExtractor) {
+    $doExtractor = $true
+    $extractorTgt = if ($ExtractorTarget) { Resolve-StarterPath -Input $ExtractorTarget -Default $ExtractorTarget } else { $extractorDefault }
+} elseif ($Full) {
+    $doExtractor = $true
+    $extractorTgt = if ($ExtractorTarget) { $ExtractorTarget } else { $extractorDefault }
+    Write-Host "    (-Full) Will install extractor (core only) at: $extractorTgt" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "RCT extractor (17 disease specialties -> meta-starter-kit config; core is stdlib-only)"
+    if (Prompt-YesNo -Question "Install the extractor now?") {
+        $userInput = (Read-Host "Target dir (absolute, or name only -> goes under $studentCodeRoot\) [default: $extractorDefault]").Trim()
+        try {
+            $extractorTgt = Resolve-StarterPath -Input $userInput -Default $extractorDefault
+            $doExtractor = $true
+        } catch {
+            Write-Warning $_.Exception.Message
+            $chainStatus['extractor'] = 'failed'
+            $chainDetails['extractor'] = "rejected target: $($_.Exception.Message)"
+        }
+    }
+}
+if ($doExtractor) {
+    $extractorScript = Join-Path $scriptsDir 'install-extractor.ps1'
+    if (Test-Path $extractorScript) {
+        Write-Step "Chaining: install-extractor.ps1 -Target $extractorTgt"
+        try {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $extractorScript -Target $extractorTgt
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "install-extractor.ps1 exited $LASTEXITCODE"
+                $chainStatus['extractor'] = 'failed'
+                $chainDetails['extractor'] = "exited $LASTEXITCODE"
+            } else {
+                $chainStatus['extractor'] = 'ok'
+                $chainDetails['extractor'] = "installed at $extractorTgt (core; -WithPdfDeps for PDFs)"
+            }
+        } catch {
+            Write-Warning "install-extractor.ps1 failed: $($_.Exception.Message)"
+            $chainStatus['extractor'] = 'failed'
+            $chainDetails['extractor'] = $_.Exception.Message
+        }
+    }
+}
+
+# --- Step 6: honest summary ------------------------------------------------
+
+$nFailed = ($chainStatus.Values | Where-Object { $_ -eq 'failed' }).Count
+$nOk     = ($chainStatus.Values | Where-Object { $_ -eq 'ok' }).Count
+
+$bannerColor = if ($nFailed -gt 0) { 'Yellow' } else { 'Green' }
+$bannerText  = if ($nFailed -gt 0) { "Install completed with $nFailed component(s) failing -- see below" } else { "Ecosystem installed cleanly" }
+
+Write-Host ""
+Write-Host "=====================================================" -ForegroundColor $bannerColor
+Write-Host "  $bannerText" -ForegroundColor $bannerColor
+Write-Host "=====================================================" -ForegroundColor $bannerColor
+
+# Per-chain breakdown
+foreach ($chain in $chainStatus.Keys) {
+    $status = $chainStatus[$chain]
+    $detail = $chainDetails[$chain]
+    switch ($status) {
+        'ok'      { $sym = '[OK]'; $color = 'Green' }
+        'failed'  { $sym = '[X]'; $color = 'Red' }
+        default   { $sym = '-'; $color = 'DarkGray' }
+    }
+    $line = "  $sym  $($chain.PadRight(14)) $status"
+    if ($detail) { $line += "  -- $detail" }
+    Write-Host $line -ForegroundColor $color
+}
+
+Write-Host ""
+Write-Host "Next steps:" -ForegroundColor Cyan
+Write-Host "    1. Read STUDENT-WORKFLOW.md  (brainstorm -> spec-lock -> plan-lock -> TDD -> audit method,"
+Write-Host "       worked-example repos, quality gates):" -ForegroundColor DarkGray
+Write-Host "         https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"
+Write-Host "    2. Run 'claude' or 'gemini' in any repo"
+Write-Host "    3. Edit ~/.claude/memory/*.md as you learn preferences"
+if ($chainStatus['sentinel'] -ne 'ok') {
+    Write-Host "    4. Re-try Sentinel later:"
+    Write-Host "         .\scripts\install-sentinel.ps1 -Repo $studentCodeRoot\<your-repo>"
+}
+if ($chainStatus['overmind'] -ne 'ok') {
+    Write-Host "    5. Re-try Overmind + TruthCert later:"
+    Write-Host "         .\scripts\install-overmind.ps1"
+}
+if ($chainStatus['projectindex'] -ne 'ok') {
+    Write-Host "    6. Re-try ProjectIndex later:"
+    Write-Host "         .\scripts\install-projectindex.ps1 -Root $studentCodeRoot\ProjectIndex"
+}
+if ($chainStatus['extractor'] -ne 'ok') {
+    Write-Host "    7. Re-try the extractor later:"
+    Write-Host "         .\scripts\install-extractor.ps1 -Target $studentCodeRoot\rct-extractor-v2"
+}
+if ($nFailed -gt 0) {
+    Write-Host ""
+    Write-Host "If a sub-installer reported a Python error, the most common cause is that 'python' on PATH is the Microsoft Store alias rather than a real Python. Install Python 3.11+ from https://www.python.org/downloads/ (tick 'Add to PATH'), reopen PowerShell, then re-run a sub-installer." -ForegroundColor Yellow
+}
+Write-Host ""
+
+# --- Step 7: Gemini-CLI handoff (one-paste install completion) -------------
+# Even after `install.ps1 -Full`, students still need to run agent CLIs and
+# pick a first project. Rather than walk them through that interactively in
+# PowerShell, we write a self-contained handoff prompt to their clipboard and
+# Desktop. They paste it into `gemini` / `claude` / `codex` and the agent
+# finishes the bootstrap. Non-fatal if it fails.
+$handoffScript = Join-Path $scriptsDir 'write-gemini-handoff.ps1'
+if (Test-Path $handoffScript) {
+    try {
+        & $handoffScript -StarterRoot $starterRoot
+    } catch {
+        Write-Warning "handoff prompt staging failed: $($_.Exception.Message)"
+    }
+}
+
+# Stop the install transcript before exit (non-fatal if it never started).
+# Then scrub the log of API keys / tokens / HMAC values that may have been
+# pasted, echoed, or otherwise captured during the run -- so attaching the
+# log to an issue or sharing it doesn't leak credentials.
+if ($script:__transcriptStarted) {
+    try { Stop-Transcript | Out-Null } catch { }
+    if ($logFile -and (Test-Path $logFile)) {
+        try { Invoke-LogRedaction -Path $logFile } catch { }
+    }
+}
+
+# Exit non-zero if ANY chain failed, so the .bat wrapper / CI / parent
+# scripts can detect partial-failure rather than reporting a green
+# "INSTALL COMPLETE" off our exit code. Base install (rules + memory)
+# succeeded if we got here; the failure(s) are in the sub-installers,
+# enumerated above. Code 2 = "rules ok, sub-chain failed".
+if ($nFailed -gt 0) { exit 2 } else { exit 0 }
+
+}  # end try
+catch {
+    Invoke-InstallRollback -Manifest $manifest -Reason $_.Exception.Message
+    Write-Host ""
+    Write-Host "Install FAILED. No partial state left on disk." -ForegroundColor Red
+    Write-Host "If you want to report this, include:"
+    Write-Host "  - error: $($_.Exception.Message)"
+    Write-Host "  - rolled-back files: $($manifest.CreatedFiles.Count)"
+    Write-Host "  - restored backups:  $($manifest.BackedUp.Count)"
+    exit 1
+}
+) {
+                throw "REFUSED: unrecognised rollback backup path: $backup"
+            }
+            $orig = $backup -replace '\.user(?:-\d{8}-\d{6}(?:-\d+)?)?
+    # Then remove net-new directories (in reverse so deepest first)
+    $dirsReversed = @($Manifest.CreatedDirs) ; [Array]::Reverse($dirsReversed)
+    foreach ($d in $dirsReversed) {
+        if ((Test-Path $d) -and
+            ((Get-ChildItem $d -Force -ErrorAction SilentlyContinue).Count -eq 0)) {
+            Remove-Item $d -Force -ErrorAction SilentlyContinue
+        }
+    }
+    Write-Host "Rollback complete. Any pre-existing user files were restored." -ForegroundColor Green
+}
+
+# Refuse missing requested core install scripts before the component can be
+# reported as silently "skipped". A missing file is not an optional opt-out.
+function Assert-RequiredCoreInstallerPresent {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Component,
+        [Parameter(Mandatory = $true)][string]$ScriptPath
+    )
+    if (-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)) {
+        throw "REFUSED: requested $Component installer is missing: $ScriptPath"
+    }
+    return $true
+}
+
+if ($Import) { return }   # dot-sourced by tests -- no execution
+
+# === Real install flow =====================================================
+
+function Write-Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
+function Write-Ok($msg)   { Write-Host "    $msg" -ForegroundColor Green }
+function Write-Warn2($msg){ Write-Warning $msg }
+
+$starterRoot = Get-EcoStarterRoot
+$userHome = $env:USERPROFILE
+if (-not $userHome) { $userHome = $HOME }
+
+Write-Host ""
+Write-Host "e156-ecosystem-starter bootstrap" -ForegroundColor Cyan
+Write-Host "Installing Mahmood's quality-dev environment to $userHome"
+Write-Host ""
+
+# Manifest drives rollback. Steps 2-4 push onto it via helper functions.
+# If any step throws, Invoke-InstallRollback undoes everything it did.
+$manifest = New-RollbackManifest
+
+try {
+
+# --- Step 1: agent CLI detection -------------------------------------------
+
+Write-Step "Detecting agent CLIs"
+$foundClaude = Test-ToolInstalled -Cmd 'claude'
+$foundGemini = Test-ToolInstalled -Cmd 'gemini'
+$foundCodex = Test-ToolInstalled -Cmd 'codex'
+
+if ($foundClaude) { Write-Ok "claude: found" } else { Write-Host "    claude: not on PATH (install: https://docs.anthropic.com/en/docs/claude-code)" -ForegroundColor DarkGray }
+if ($foundGemini) { Write-Ok "gemini: found" } else { Write-Host "    gemini: not on PATH (install: https://github.com/google-gemini/gemini-cli)" -ForegroundColor DarkGray }
+if ($foundCodex)  { Write-Ok "codex: found"  } else { Write-Host "    codex: not on PATH (install: https://github.com/openai/codex)" -ForegroundColor DarkGray }
+
+if (-not ($foundClaude -or $foundGemini -or $foundCodex)) {
+    Write-Warn2 "No agent CLI found. Install at least one of claude/gemini/codex, then re-run."
+    Write-Host "  (We'll still copy rules + context files for when you do install.)" -ForegroundColor DarkGray
+}
+
+# --- Step 1.5: resolve rules-template vars ---------------------------------
+# These are substituted into {{E156_HOME}}, {{PROJECTINDEX_ROOT}}, etc.
+# Prompt only for GitHub user (no reasonable default); others already have
+# defaults from the param block (Mahmood-style layout). Students can override
+# any of them with install.ps1 -E156Home D:\MyE156 etc.
+
+if (-not $GitHubUser -and -not $NonInteractive -and [Console]::IsInputRedirected -eq $false) {
+    $GitHubUser = (Read-Host "Your GitHub username (or Enter to leave placeholder)").Trim()
+}
+
+$rulesVars = @{
+    'E156_HOME'              = $E156Home
+    'PROJECTINDEX_ROOT'      = $PortfolioRoot
+    'SENTINEL_ROOT'          = $SentinelRoot
+    'OVERMIND_ROOT'          = $OvermindRoot
+    'ECOSYSTEM_STARTER_ROOT' = $starterRoot
+    'GITHUB_USER'            = if ($GitHubUser) { $GitHubUser } else { '{{GITHUB_USER}}' }
+}
+
+# --- Step 2: copy rules to each detected agent's config dir -----------------
+
+Write-Step "Copying rules/*.md (with your paths substituted in)"
+$sourceRules = Join-Path $starterRoot 'rules'
+
+$claudeRulesDir = Join-Path $userHome '.claude\rules'
+$geminiRulesDir = Join-Path $userHome '.gemini\rules'
+$codexRulesDir  = Join-Path $userHome '.codex\rules'
+
+foreach ($target in @($claudeRulesDir, $geminiRulesDir, $codexRulesDir)) {
+    $r = Copy-RulesToAgent -SourceRulesDir $sourceRules -TargetRulesDir $target -Force:$Force -Vars $rulesVars -Manifest $manifest
+    Write-Ok "$target  ($($r.Copied.Count) files copied, $($r.Backed.Count) backed up as .user)"
+}
+
+# --- Step 3: drop context files (AGENTS.md / CLAUDE.md / GEMINI.md / CODEX.md)
+
+Write-Step "Writing context files to ~/.claude, ~/.gemini, ~/.codex"
+foreach ($dir in @((Join-Path $userHome '.claude'), (Join-Path $userHome '.gemini'), (Join-Path $userHome '.codex'))) {
+    $r = Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $dir -Force:$Force -Vars $rulesVars -Manifest $manifest
+    Write-Ok "$dir  ($($r.Count) context files)"
+}
+
+# --- Step 4: memory scaffold (only if the target is empty) ------------------
+
+Write-Step "Setting up memory scaffolding"
+$sourceMemory = Join-Path $starterRoot 'memory'
+$claudeMemoryDir = Join-Path $userHome '.claude\memory'
+$geminiMemoryDir = Join-Path $userHome '.gemini\memory'
+
+foreach ($target in @($claudeMemoryDir, $geminiMemoryDir)) {
+    $bootstrapped = Copy-MemoryScaffold -SourceMemoryDir $sourceMemory -TargetMemoryDir $target
+    if ($bootstrapped) {
+        Write-Ok "$target  (bootstrapped -- starter MEMORY.md + 4 templates)"
+    } else {
+        Write-Ok "$target  (already has memory -- preserved, templates not overwritten)"
+    }
+}
+
+# --- Step 5: chain sub-installers -----------------------------------------
+#
+# Three optional chains: Sentinel (pre-push hook), Overmind (verifier), and
+# ProjectIndex (portfolio seed). Under -Full, all three run with defaults.
+# Under -NonInteractive (or piped stdin), all three skip unless an explicit
+# -InstallXxx flag was passed. Otherwise we prompt.
+
+function Test-CanPrompt {
+    return -not $NonInteractive -and -not [Console]::IsInputRedirected
+}
+
+function Prompt-YesNo {
+    param([string]$Question, [bool]$DefaultYes = $true)
+    $hint = if ($DefaultYes) { '[Y/n]' } else { '[y/N]' }
+    $ans = (Read-Host "$Question $hint").Trim().ToLower()
+    if ($ans -eq '') { return $DefaultYes }
+    return $ans -in @('y', 'yes')
+}
+
+$scriptsDir = Join-Path $starterRoot 'scripts'
+
+# Track per-chain outcomes for the honest end-of-run summary.
+# Status values: 'ok' | 'failed' | 'skipped'
+$chainStatus = [ordered]@{
+    'rules+memory'  = 'ok'   # we got this far, so step 1-4 succeeded
+    'sentinel'      = 'skipped'
+    'overmind'      = 'skipped'
+    'projectindex'  = 'skipped'
+    'extractor'     = 'skipped'
+}
+$chainDetails = [ordered]@{}
+
+# Default install location for student-typed relative paths.
+$studentCodeRoot = Join-Path $env:USERPROFILE 'code'
+
+# 5a: Sentinel
+$doSentinel = $false
+$sentinelRepo = $null
+if ($InstallSentinel) {
+    $doSentinel = $true
+    $sentinelRepo = Resolve-StarterPath -Input $InstallSentinel -Default $InstallSentinel
+} elseif ($Full) {
+    $doSentinel = $true
+    $sentinelRepo = Join-Path $studentCodeRoot 'my-first-repo'
+    Write-Host "    (-Full) Will install Sentinel hook in: $sentinelRepo" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "Sentinel pre-push hook (blocks 20 defect patterns before git push)"
+    if (Prompt-YesNo -Question "Install Sentinel in a repo now?") {
+        $defaultRepo = Join-Path $studentCodeRoot 'my-first-repo'
+        $userInput = (Read-Host "Target repo path (absolute, or name only -> goes under $studentCodeRoot\) [default: $defaultRepo]").Trim()
+        try {
+            $sentinelRepo = Resolve-StarterPath -Input $userInput -Default $defaultRepo
+            $doSentinel = $true
+        } catch {
+            Write-Warning $_.Exception.Message
+            $chainStatus['sentinel'] = 'failed'
+            $chainDetails['sentinel'] = "rejected target: $($_.Exception.Message)"
+        }
+    }
+}
+if ($doSentinel) {
+    $sentinelScript = Join-Path $scriptsDir 'install-sentinel.ps1'
+    if (Assert-RequiredCoreInstallerPresent -Component 'Sentinel' -ScriptPath $sentinelScript) {
+        Write-Step "Chaining: install-sentinel.ps1 -Repo $sentinelRepo"
+        # Ensure the repo directory exists (create if missing) and is initialized as a git repo.
+        if (-not (Test-Path $sentinelRepo)) {
+            try {
+                New-Item -ItemType Directory -Force -Path $sentinelRepo | Out-Null
+                Write-Host "    Created $sentinelRepo"
+            } catch {
+                Write-Warning "Could not create $sentinelRepo : $($_.Exception.Message)"
+                $chainStatus['sentinel'] = 'failed'
+                $chainDetails['sentinel'] = "could not create directory $sentinelRepo"
+                $doSentinel = $false
+            }
+        }
+        if ($doSentinel -and -not (Test-Path (Join-Path $sentinelRepo '.git'))) {
+            try {
+                & git -C $sentinelRepo init --quiet 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+                Write-Host "    git init at $sentinelRepo"
+            } catch {
+                Write-Warning "Could not git init in $sentinelRepo : $($_.Exception.Message)"
+            }
+        }
+        if ($doSentinel) {
+            try {
+                & powershell -NoProfile -ExecutionPolicy Bypass -File $sentinelScript -Repo $sentinelRepo
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warning "install-sentinel.ps1 exited $LASTEXITCODE"
+                    $chainStatus['sentinel'] = 'failed'
+                    $chainDetails['sentinel'] = "exited $LASTEXITCODE (often: Python on PATH is the Microsoft Store stub -- see prereqs)"
+                } else {
+                    $chainStatus['sentinel'] = 'ok'
+                    $chainDetails['sentinel'] = "installed in $sentinelRepo"
+                }
+            } catch {
+                Write-Warning "install-sentinel.ps1 failed: $($_.Exception.Message)"
+                $chainStatus['sentinel'] = 'failed'
+                $chainDetails['sentinel'] = $_.Exception.Message
+            }
+        }
+    }
+}
+
+# 5b: Overmind
+$doOvermind = $false
+if ($InstallOvermind) {
+    $doOvermind = $true
+} elseif ($Full) {
+    $doOvermind = $true
+    Write-Host "    (-Full) Will install Overmind + TruthCert" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "Overmind verifier + TruthCert HMAC signing (~5 MB pip deps)"
+    if (Prompt-YesNo -Question "Install Overmind + TruthCert now?") { $doOvermind = $true }
+}
+if ($doOvermind) {
+    $overmindScript = Join-Path $scriptsDir 'install-overmind.ps1'
+    if (Assert-RequiredCoreInstallerPresent -Component 'Overmind/TruthCert' -ScriptPath $overmindScript) {
+        Write-Step "Chaining: install-overmind.ps1"
+        try {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $overmindScript
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "install-overmind.ps1 exited $LASTEXITCODE"
+                $chainStatus['overmind'] = 'failed'
+                $chainDetails['overmind'] = "exited $LASTEXITCODE (often: Python stub -- see prereqs)"
+            } else {
+                $chainStatus['overmind'] = 'ok'
+                $chainDetails['overmind'] = "installed"
+            }
+        } catch {
+            Write-Warning "install-overmind.ps1 failed: $($_.Exception.Message)"
+            $chainStatus['overmind'] = 'failed'
+            $chainDetails['overmind'] = $_.Exception.Message
+        }
+    }
+}
+
+# 5c: ProjectIndex
+$doProjectIndex = $false
+$piRoot = $null
+$piDefault = Join-Path $studentCodeRoot 'ProjectIndex'
+if ($ProjectIndexRoot) {
+    $doProjectIndex = $true
+    $piRoot = Resolve-StarterPath -Input $ProjectIndexRoot -Default $ProjectIndexRoot
+} elseif ($Full) {
+    $doProjectIndex = $true
+    $piRoot = $piDefault
+    Write-Host "    (-Full) Will seed ProjectIndex at: $piRoot" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "ProjectIndex seed (portfolio INDEX.md + reconcile_counts.py)"
+    if (Prompt-YesNo -Question "Seed ProjectIndex now?") {
+        $userInput = (Read-Host "Target dir (absolute, or name only -> goes under $studentCodeRoot\) [default: $piDefault]").Trim()
+        try {
+            $piRoot = Resolve-StarterPath -Input $userInput -Default $piDefault
+            $doProjectIndex = $true
+        } catch {
+            Write-Warning $_.Exception.Message
+            $chainStatus['projectindex'] = 'failed'
+            $chainDetails['projectindex'] = "rejected target: $($_.Exception.Message)"
+        }
+    }
+}
+if ($doProjectIndex) {
+    $piScript = Join-Path $scriptsDir 'install-projectindex.ps1'
+    if (Test-Path $piScript) {
+        Write-Step "Chaining: install-projectindex.ps1 -Root $piRoot"
+        try {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $piScript -Root $piRoot
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "install-projectindex.ps1 exited $LASTEXITCODE"
+                $chainStatus['projectindex'] = 'failed'
+                $chainDetails['projectindex'] = "exited $LASTEXITCODE"
+            } else {
+                $chainStatus['projectindex'] = 'ok'
+                $chainDetails['projectindex'] = "seeded at $piRoot"
+            }
+        } catch {
+            Write-Warning "install-projectindex.ps1 failed: $($_.Exception.Message)"
+            $chainStatus['projectindex'] = 'failed'
+            $chainDetails['projectindex'] = $_.Exception.Message
+        }
+    }
+}
+
+# 5d: Extractor (rct-extractor-v2: 17 disease specialties -> meta-kit config)
+$doExtractor = $false
+$extractorTgt = $null
+$extractorDefault = Join-Path $studentCodeRoot 'rct-extractor-v2'
+if ($InstallExtractor) {
+    $doExtractor = $true
+    $extractorTgt = if ($ExtractorTarget) { Resolve-StarterPath -Input $ExtractorTarget -Default $ExtractorTarget } else { $extractorDefault }
+} elseif ($Full) {
+    $doExtractor = $true
+    $extractorTgt = if ($ExtractorTarget) { $ExtractorTarget } else { $extractorDefault }
+    Write-Host "    (-Full) Will install extractor (core only) at: $extractorTgt" -ForegroundColor DarkGray
+} elseif (Test-CanPrompt) {
+    Write-Host ""
+    Write-Step "RCT extractor (17 disease specialties -> meta-starter-kit config; core is stdlib-only)"
+    if (Prompt-YesNo -Question "Install the extractor now?") {
+        $userInput = (Read-Host "Target dir (absolute, or name only -> goes under $studentCodeRoot\) [default: $extractorDefault]").Trim()
+        try {
+            $extractorTgt = Resolve-StarterPath -Input $userInput -Default $extractorDefault
+            $doExtractor = $true
+        } catch {
+            Write-Warning $_.Exception.Message
+            $chainStatus['extractor'] = 'failed'
+            $chainDetails['extractor'] = "rejected target: $($_.Exception.Message)"
+        }
+    }
+}
+if ($doExtractor) {
+    $extractorScript = Join-Path $scriptsDir 'install-extractor.ps1'
+    if (Test-Path $extractorScript) {
+        Write-Step "Chaining: install-extractor.ps1 -Target $extractorTgt"
+        try {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $extractorScript -Target $extractorTgt
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "install-extractor.ps1 exited $LASTEXITCODE"
+                $chainStatus['extractor'] = 'failed'
+                $chainDetails['extractor'] = "exited $LASTEXITCODE"
+            } else {
+                $chainStatus['extractor'] = 'ok'
+                $chainDetails['extractor'] = "installed at $extractorTgt (core; -WithPdfDeps for PDFs)"
+            }
+        } catch {
+            Write-Warning "install-extractor.ps1 failed: $($_.Exception.Message)"
+            $chainStatus['extractor'] = 'failed'
+            $chainDetails['extractor'] = $_.Exception.Message
+        }
+    }
+}
+
+# --- Step 6: honest summary ------------------------------------------------
+
+$nFailed = ($chainStatus.Values | Where-Object { $_ -eq 'failed' }).Count
+$nOk     = ($chainStatus.Values | Where-Object { $_ -eq 'ok' }).Count
+
+$bannerColor = if ($nFailed -gt 0) { 'Yellow' } else { 'Green' }
+$bannerText  = if ($nFailed -gt 0) { "Install completed with $nFailed component(s) failing -- see below" } else { "Ecosystem installed cleanly" }
+
+Write-Host ""
+Write-Host "=====================================================" -ForegroundColor $bannerColor
+Write-Host "  $bannerText" -ForegroundColor $bannerColor
+Write-Host "=====================================================" -ForegroundColor $bannerColor
+
+# Per-chain breakdown
+foreach ($chain in $chainStatus.Keys) {
+    $status = $chainStatus[$chain]
+    $detail = $chainDetails[$chain]
+    switch ($status) {
+        'ok'      { $sym = '[OK]'; $color = 'Green' }
+        'failed'  { $sym = '[X]'; $color = 'Red' }
+        default   { $sym = '-'; $color = 'DarkGray' }
+    }
+    $line = "  $sym  $($chain.PadRight(14)) $status"
+    if ($detail) { $line += "  -- $detail" }
+    Write-Host $line -ForegroundColor $color
+}
+
+Write-Host ""
+Write-Host "Next steps:" -ForegroundColor Cyan
+Write-Host "    1. Read STUDENT-WORKFLOW.md  (brainstorm -> spec-lock -> plan-lock -> TDD -> audit method,"
+Write-Host "       worked-example repos, quality gates):" -ForegroundColor DarkGray
+Write-Host "         https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md"
+Write-Host "    2. Run 'claude' or 'gemini' in any repo"
+Write-Host "    3. Edit ~/.claude/memory/*.md as you learn preferences"
+if ($chainStatus['sentinel'] -ne 'ok') {
+    Write-Host "    4. Re-try Sentinel later:"
+    Write-Host "         .\scripts\install-sentinel.ps1 -Repo $studentCodeRoot\<your-repo>"
+}
+if ($chainStatus['overmind'] -ne 'ok') {
+    Write-Host "    5. Re-try Overmind + TruthCert later:"
+    Write-Host "         .\scripts\install-overmind.ps1"
+}
+if ($chainStatus['projectindex'] -ne 'ok') {
+    Write-Host "    6. Re-try ProjectIndex later:"
+    Write-Host "         .\scripts\install-projectindex.ps1 -Root $studentCodeRoot\ProjectIndex"
+}
+if ($chainStatus['extractor'] -ne 'ok') {
+    Write-Host "    7. Re-try the extractor later:"
+    Write-Host "         .\scripts\install-extractor.ps1 -Target $studentCodeRoot\rct-extractor-v2"
+}
+if ($nFailed -gt 0) {
+    Write-Host ""
+    Write-Host "If a sub-installer reported a Python error, the most common cause is that 'python' on PATH is the Microsoft Store alias rather than a real Python. Install Python 3.11+ from https://www.python.org/downloads/ (tick 'Add to PATH'), reopen PowerShell, then re-run a sub-installer." -ForegroundColor Yellow
+}
+Write-Host ""
+
+# --- Step 7: Gemini-CLI handoff (one-paste install completion) -------------
+# Even after `install.ps1 -Full`, students still need to run agent CLIs and
+# pick a first project. Rather than walk them through that interactively in
+# PowerShell, we write a self-contained handoff prompt to their clipboard and
+# Desktop. They paste it into `gemini` / `claude` / `codex` and the agent
+# finishes the bootstrap. Non-fatal if it fails.
+$handoffScript = Join-Path $scriptsDir 'write-gemini-handoff.ps1'
+if (Test-Path $handoffScript) {
+    try {
+        & $handoffScript -StarterRoot $starterRoot
+    } catch {
+        Write-Warning "handoff prompt staging failed: $($_.Exception.Message)"
+    }
+}
+
+# Stop the install transcript before exit (non-fatal if it never started).
+# Then scrub the log of API keys / tokens / HMAC values that may have been
+# pasted, echoed, or otherwise captured during the run -- so attaching the
+# log to an issue or sharing it doesn't leak credentials.
+if ($script:__transcriptStarted) {
+    try { Stop-Transcript | Out-Null } catch { }
+    if ($logFile -and (Test-Path $logFile)) {
+        try { Invoke-LogRedaction -Path $logFile } catch { }
+    }
+}
+
+# Exit non-zero if ANY chain failed, so the .bat wrapper / CI / parent
+# scripts can detect partial-failure rather than reporting a green
+# "INSTALL COMPLETE" off our exit code. Base install (rules + memory)
+# succeeded if we got here; the failure(s) are in the sub-installers,
+# enumerated above. Code 2 = "rules ok, sub-chain failed".
+if ($nFailed -gt 0) { exit 2 } else { exit 0 }
+
+}  # end try
+catch {
+    Invoke-InstallRollback -Manifest $manifest -Reason $_.Exception.Message
+    Write-Host ""
+    Write-Host "Install FAILED. No partial state left on disk." -ForegroundColor Red
+    Write-Host "If you want to report this, include:"
+    Write-Host "  - error: $($_.Exception.Message)"
+    Write-Host "  - rolled-back files: $($manifest.CreatedFiles.Count)"
+    Write-Host "  - restored backups:  $($manifest.BackedUp.Count)"
+    exit 1
+}
+, ''
+            Move-Item -LiteralPath $backup -Destination $orig -Force -ErrorAction Stop
         }
     }
     # Then remove net-new directories (in reverse so deepest first)
