@@ -326,6 +326,61 @@ else
     bad "context renderer failure left a partial user configuration file"
 fi
 
+# Creating nested install roots with mkdir -p previously recorded only the
+# leaf directory. Rollback then left intermediate empty directories behind.
+# All tests use temporary Unicode/space-containing directories.
+start "rules interrupted render rolls back newly created ancestor directories"
+parent="$SANDBOX/rules parent sentinel-Ü"
+mkdir -p "$parent"
+printf 'keep parent' > "$parent/existing.txt"
+target="$parent/deep one-Ü/deep two/rules"
+if ROOT="$ROOT" KIND=rules TARGET="$target" bash "$partial_render_driver" >/dev/null 2>&1; then
+    bad "synthetic rules renderer error was swallowed"
+elif [[ ! -e "$parent/deep one-Ü" && -f "$parent/existing.txt" &&
+        "$(cat "$parent/existing.txt")" == "keep parent" ]]; then
+    ok
+else
+    bad "rules rollback left newly created ancestor directories or changed existing parent"
+fi
+
+start "context interrupted render rolls back newly created ancestor directories"
+parent="$SANDBOX/context parent sentinel-Ü"
+mkdir -p "$parent"
+printf 'keep context parent' > "$parent/existing.txt"
+context_target="$parent/deep one-Ü/deep two/context"
+if ROOT="$ROOT" KIND=context TARGET="$context_target" bash "$partial_render_driver" >/dev/null 2>&1; then
+    bad "synthetic context renderer error was swallowed"
+elif [[ ! -e "$parent/deep one-Ü" && -f "$parent/existing.txt" &&
+        "$(cat "$parent/existing.txt")" == "keep context parent" ]]; then
+    ok
+else
+    bad "context rollback left newly created ancestor directories or changed existing parent"
+fi
+
+# Simulate an unrelated subsequent failure after memory scaffolding succeeds.
+# The ERR trap must remove all new ancestors but retain a pre-existing parent.
+memory_ancestor_driver="$SANDBOX/memory-ancestor-driver.bash"
+cat > "$memory_ancestor_driver" <<'BASH_MEMORY_ANCESTOR_DRIVER'
+set -eEuo pipefail
+source "$ROOT/install/install.sh" --import
+trap 'rollback "synthetic later failure" >/dev/null 2>&1' ERR
+copy_memory_scaffold "$ROOT/memory" "$TARGET"
+false
+BASH_MEMORY_ANCESTOR_DRIVER
+start "memory late failure rolls back newly created ancestors and preserves parent"
+parent="$SANDBOX/memory parent sentinel-Ü"
+mkdir -p "$parent"
+printf 'keep memory parent' > "$parent/existing.txt"
+memory_target="$parent/deep one-Ü/deep two/memory"
+if ROOT="$ROOT" TARGET="$memory_target" bash "$memory_ancestor_driver" >/dev/null 2>&1; then
+    bad "synthetic memory later failure was swallowed"
+elif [[ ! -e "$parent/deep one-Ü" && -f "$parent/existing.txt" &&
+        "$(cat "$parent/existing.txt")" == "keep memory parent" ]]; then
+    ok
+else
+    bad "memory rollback left newly created ancestors or changed existing parent"
+fi
+
 # Symlinked user destinations must be refused before any other config files
 # are installed. The external fixture is never a real agent configuration.
 start "rules install refuses symlink leaf without partial writes"
