@@ -533,6 +533,49 @@ class ContactTests(unittest.TestCase):
         self.assertEqual(outgoing_blockers(unrelated, self.EXCLUSIONS),
                          ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
 
+    def test_malformed_publication_values_cannot_disappear_from_matching(self):
+        # Invented metadata only. A malformed primary or linked identifier
+        # must not silently disappear from publication-level no-contact checks.
+        # The programme pause is an independent safeguard, not proof the
+        # publication exclusion was actually evaluated.
+        malformed = (
+            {"doi": ["10.7777/fictional-publication"]},
+            {"doi": {"value": "10.7777/fictional-publication"}},
+            {"doi": "https://untrusted-doi.invalid/10.7777/fictional-publication"},
+            {"related_dois": ["not-a-doi"]},
+            {"title": ["Synthetic STROKE Trial — analysis"]},
+            {"title": "  "},
+            {"trial_family": {"name": "Invented TRIAL Alpha"}},
+            {"related_titles": ["  "]},
+            {"related_trial_families": [""]},
+        )
+        for item in malformed:
+            for kind in ("new", "retry", "followup", "queued_send"):
+                with self.subTest(item=item, kind=kind):
+                    message = {"to": ["unlisted@example.invalid"], "kind": kind, **item}
+                    reasons = outgoing_blockers(message, self.EXCLUSIONS)
+                    self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                    self.assertTrue(any(x.startswith("CONTACT_BLOCKED_NO_CONTACT:")
+                                        for x in reasons))
+                    stub = Mock()
+                    with self.assertRaises(PermissionError):
+                        require_outgoing_allowed(message, self.EXCLUSIONS)
+                    stub.assert_not_called()
+        # A malformed private exclusion DOI is not an empty exclusion.
+        exclusions = [{**self.EXCLUSIONS[0], "dois": ["not-a-doi"]}]
+        reasons = outgoing_blockers({"to": ["unlisted@example.invalid"]}, exclusions)
+        self.assertTrue(any(x.startswith("CONTACT_BLOCKED_NO_CONTACT:")
+                            for x in reasons))
+        # Valid unrelated identifiers must not be spuriously classified as
+        # a person/publication no-contact match.
+        self.assertEqual(
+            outgoing_blockers({"to": ["unlisted@example.invalid"],
+                               "doi": "10.7777/another-synthetic-source",
+                               "title": "Unrelated invented study",
+                               "trial_family": "Other invented trial"}, self.EXCLUSIONS),
+            ["PROGRAMME_OUTGOING_QUERY_PAUSE"],
+        )
+
     def test_unavailable_exclusions_also_fail_closed(self):
         reasons=outgoing_blockers({"to":["other@example.invalid"]},None)
         self.assertTrue(any('exclusions unavailable' in x for x in reasons))
