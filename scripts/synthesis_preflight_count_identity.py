@@ -24,6 +24,20 @@ RESULT_FIELDS = (
 ) + ESTIMATOR_FIELDS
 COUNT_BASES = frozenset({"unique_participants", "events", "trial_families", "visits"})
 SHA256 = re.compile(r"[0-9a-fA-F]{64}\Z")
+# An unknown/irrelevant population, outcome or version is not a matched
+# identity, even when both records use the same placeholder. Explicit
+# not_applicable remains valid for optional statistical mechanics (e.g. model
+# for a descriptive raw count), never for the core result identity.
+CORE_IDENTITY_FIELDS = frozenset({
+    "publication_id", "source_result_id", "data_version", "source_version",
+    "denominator_basis", "population", "endpoint", "time_window",
+    "effect_measure", "estimand", "locator",
+})
+UNKNOWN_LITERALS = frozenset({
+    "unknown", "unverified", "not_enough_info", "not enough info",
+    "not_applicable", "not applicable", "n/a", "na", "none", "null",
+    "missing", "not specified", "not available", "undetermined", "tbd", "?",
+})
 
 
 def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
@@ -45,7 +59,11 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
     for side_name, record in (("left", left), ("right", right)):
         for key in RESULT_FIELDS + ("locator", "source_sha256"):
             value = record.get(key)
-            if not isinstance(value, str) or not value.strip() or value.strip().lower() in {"unknown", "unverified", "not_enough_info"}:
+            if (not isinstance(value, str) or not value.strip()
+                    or value.strip().casefold() in (
+                        UNKNOWN_LITERALS if key in CORE_IDENTITY_FIELDS
+                        else {"unknown", "unverified", "not_enough_info"}
+                    )):
                 return {**base, "reason": f"{side_name}: missing/unverified {key}"}
         if SHA256.fullmatch(record["source_sha256"]) is None:
             return {**base, "reason": f"{side_name}: invalid source_sha256"}
