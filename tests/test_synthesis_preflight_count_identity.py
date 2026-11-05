@@ -12,6 +12,7 @@ class CountIdentityTests(unittest.TestCase):
             "publication_id": "synthetic:study-A", "source_result_id": "result:1",
             "data_version": "snapshot-1", "source_version": "current-v1",
             "count_basis": "unique_participants", "denominator_basis": "randomized",
+            "analysis_cell_id": "overall",
             "population": "intention-to-treat", "endpoint": "hospitalisation",
             "time_window": "52-weeks", "effect_measure": "raw_count",
             "estimand": "participants_with_event", "model": "not_applicable",
@@ -43,6 +44,34 @@ class CountIdentityTests(unittest.TestCase):
         self.assertFalse(result["human_adjudicated"])
         self.assertFalse(result["author_confirmed"])
         self.assertFalse(result["email_eligible"])
+
+    def test_distinct_arm_or_stratum_cells_are_not_same_result(self):
+        # Same paper, endpoint, and estimator; different treatment arms
+        # legitimately have different raw counts, not an error candidate.
+        result = self.compare(analysis_cell_id="treatment-arm", value=15)
+        self.assertEqual(result["status"], "NOT_COMPARABLE")
+        self.assertEqual(result["disposition"], "HOLD")
+        self.assertIn("analysis_cell_id", result["mismatched_fields"])
+        self.assertFalse(result["arithmetic_reproduced"])
+        self.assertFalse(result["certified_error"])
+
+    def test_missing_or_placeholder_analysis_cell_cannot_be_compared(self):
+        for cell in (None, "", "not_reported", "unknown"):
+            with self.subTest(cell=cell):
+                self.assertEqual(
+                    self.compare(analysis_cell_id=cell, value=15)["status"],
+                    "NOT_ENOUGH_INFO",
+                )
+        left = copy.deepcopy(self.source)
+        right = copy.deepcopy(left)
+        del right["analysis_cell_id"]
+        self.assertEqual(compare_raw_counts(left, right)["status"], "NOT_ENOUGH_INFO")
+
+    def test_matched_analysis_cell_preserves_legitimate_comparison(self):
+        result = self.compare(analysis_cell_id="overall", value=15)
+        self.assertEqual(result["status"], "REVIEW")
+        self.assertEqual(result["difference"], -3)
+        self.assertFalse(result["certified_error"])
 
     def test_patient_versus_recurrent_events_is_not_comparable(self):
         result = self.compare(count_basis="events", value=15)
