@@ -95,6 +95,12 @@ def assess_source(manifest, source, operation, *, on_date=None):
         return "SOURCE_RIGHTS_HOLD", "original publisher/journal identity not reviewed"
     if is_jama_source(p):
         return "SOURCE_RIGHTS_HOLD", "programme-wide JAMA original-publication hold"
+    # Bind the caller's original-publication identity to the reviewed grant.
+    # The same DOI/version/cache route must not authorize changed source identity.
+    original_fields = ("original_journal", "original_publisher", "original_url")
+    if any(not isinstance(source.get(k), str) or not source[k].strip() or
+           source[k].strip() != p[k].strip() for k in original_fields):
+        return "SOURCE_RIGHTS_HOLD", "original publication identity differs from reviewed permission"
     if p.get("status") != "REVIEWED_ALLOW" or p.get("conditions_satisfied") is not True:
         return "SOURCE_RIGHTS_HOLD", "unreviewed/denied permission or unmet conditions"
     if not all(isinstance(p.get(k), str) and p[k].strip() for k in ("reviewer", "evidence_reference")):
