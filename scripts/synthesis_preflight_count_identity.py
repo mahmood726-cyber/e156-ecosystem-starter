@@ -11,6 +11,9 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
+# analysis_cell_id is a mandatory arm/subgroup/stratum identifier (use
+# "overall" when genuinely unstratified). Different arms can legitimately have
+# different event counts despite sharing endpoint, time and source result IDs.
 # All twelve estimator fields are required even for a descriptive count. An
 # explicit "not_applicable" is preferred to pretending an unknown is matched.
 ESTIMATOR_FIELDS = (
@@ -20,7 +23,7 @@ ESTIMATOR_FIELDS = (
 )
 RESULT_FIELDS = (
     "publication_id", "source_result_id", "data_version", "source_version",
-    "count_basis", "denominator_basis",
+    "count_basis", "denominator_basis", "analysis_cell_id",
 ) + ESTIMATOR_FIELDS
 COUNT_BASES = frozenset({"unique_participants", "events", "trial_families", "visits"})
 SHA256 = re.compile(r"[0-9a-fA-F]{64}\Z")
@@ -30,7 +33,7 @@ SHA256 = re.compile(r"[0-9a-fA-F]{64}\Z")
 # for a descriptive raw count), never for the core result identity.
 CORE_IDENTITY_FIELDS = frozenset({
     "publication_id", "source_result_id", "data_version", "source_version",
-    "denominator_basis", "population", "endpoint", "time_window",
+    "denominator_basis", "analysis_cell_id", "population", "endpoint", "time_window",
     "effect_measure", "estimand", "locator",
 })
 # Compare *normalized* missing-value markers. Without this, two synthetic
@@ -57,7 +60,7 @@ def _missing_field(value: Any, key: str) -> bool:
 
 
 def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
-    """Compare counts *only* for an explicitly matched result and source version.
+    """Compare counts only for the same result, arm/stratum and source version.
 
     Return CONSISTENT, REVIEW (a candidate, never a confirmed error),
     NOT_COMPARABLE (verified different identity), or NOT_ENOUGH_INFO.
