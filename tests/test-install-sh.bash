@@ -463,6 +463,76 @@ else
     bad "memory template source missing"
 fi
 
+# Hardlinks are regular files, so symlink/nonregular checks alone miss
+# external data reachable through a second inode name. A template renderer
+# opening that path for writing would clobber the other hardlink's content.
+# Use only temporary, synthetic files; skip if host filesystem cannot hardlink.
+start "rules installer refuses hardlinked rule destination before copying"
+target="$SANDBOX/hardlink rules-Ü/rules"
+mkdir -p "$target"
+outside_hardlink="$SANDBOX/external rule hardlink-Ü"
+printf 'outside rule must survive' > "$outside_hardlink"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if ln "$outside_hardlink" "$target/lessons.md" 2>/dev/null; then
+    if copy_rules_to_agent "$ROOT/rules" "$target" >/dev/null 2>&1; then
+        bad "rules accepted a hardlinked destination"
+    elif [[ "$(cat "$outside_hardlink")" == "outside rule must survive" &&
+            ! -e "$target/rules.md" && ! -e "$target/e156.md" &&
+            ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_BACKUPS" ]]; then
+        ok
+    else
+        bad "rules hardlink refusal changed other files or manifest"
+    fi
+else
+    printf '  [~] hardlinks unavailable for rules fixture\n'
+fi
+
+start "context installer refuses hardlinked AGENTS.md before copying"
+context_target="$SANDBOX/hardlink context-Ü"
+mkdir -p "$context_target"
+outside_hardlink="$SANDBOX/external context hardlink-Ü"
+printf 'outside context must survive' > "$outside_hardlink"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if ln "$outside_hardlink" "$context_target/AGENTS.md" 2>/dev/null; then
+    if copy_context_files "$ROOT" "$context_target" >/dev/null 2>&1; then
+        bad "context accepted hardlinked AGENTS.md"
+    elif [[ "$(cat "$outside_hardlink")" == "outside context must survive" &&
+            ! -e "$context_target/CLAUDE.md" &&
+            ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_BACKUPS" ]]; then
+        ok
+    else
+        bad "context hardlink refusal changed other files or manifest"
+    fi
+else
+    printf '  [~] hardlinks unavailable for context fixture\n'
+fi
+
+start "memory installer refuses hardlinked nested template before writing MEMORY.md"
+memory_target="$SANDBOX/hardlink memory-Ü"
+mkdir -p "$memory_target/templates"
+outside_hardlink="$SANDBOX/external template hardlink-Ü"
+printf 'outside template must survive' > "$outside_hardlink"
+template_fixture=""
+for src_template in "$ROOT"/memory/templates/*.md; do
+    template_fixture="$src_template"
+    break
+done
+if [[ -f "$template_fixture" ]] &&
+   ln "$outside_hardlink" "$memory_target/templates/$(basename "$template_fixture")" 2>/dev/null; then
+    : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+    if copy_memory_scaffold "$ROOT/memory" "$memory_target" >/dev/null 2>&1; then
+        bad "memory installer accepted a hardlinked nested template"
+    elif [[ "$(cat "$outside_hardlink")" == "outside template must survive" &&
+            ! -e "$memory_target/MEMORY.md" &&
+            ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_BACKUPS" ]]; then
+        ok
+    else
+        bad "memory hardlink refusal left partial install or clobbered external file"
+    fi
+else
+    printf '  [~] hardlink/template fixture unavailable on this host\n'
+fi
+
 # Describe: render_template rules in practice
 start "templated rules have no residual Mahmood paths"
 target="$SANDBOX/rendered/rules"
