@@ -7,6 +7,7 @@ Call at every source ingress and every outgoing-transport boundary.
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from email.header import decode_header, make_header
 from email.utils import getaddresses
 from hashlib import sha256
 import json
@@ -281,7 +282,14 @@ def _recipient_keys(value):
         if "@" in mailbox:
             keys.add(_norm(mailbox))
             if display:
-                keys.add(_norm(display))
+                # RFC 2047 encoded-word display names must resolve to the
+                # same identity as the human-readable no-contact alias.
+                # Invalid encodings must fail closed, not silently disappear.
+                try:
+                    decoded = str(make_header(decode_header(display)))
+                except (UnicodeError, LookupError, ValueError) as exc:
+                    raise ValueError("invalid recipient display-name encoding") from exc
+                keys.add(_norm(decoded))
     return {key for key in keys if key}
 
 
@@ -296,7 +304,10 @@ def outgoing_blockers(message, exclusions=None):
         if not isinstance(val, list) or any(not isinstance(x, str) for x in val):
             return reasons + ["CONTACT_BLOCKED_NO_CONTACT: invalid recipient list"]
         for recipient in val:
-            identities.update(_recipient_keys(recipient))
+            try:
+                identities.update(_recipient_keys(recipient))
+            except ValueError:
+                return reasons + ["CONTACT_BLOCKED_NO_CONTACT: invalid recipient encoding"]
     names = message.get("recipient_names", [])
     if not isinstance(names, list) or any(not isinstance(x, str) for x in names):
         return reasons + ["CONTACT_BLOCKED_NO_CONTACT: invalid names"]
@@ -318,9 +329,13 @@ def outgoing_blockers(message, exclusions=None):
             reasons.append("CONTACT_BLOCKED_NO_CONTACT: malformed exclusion")
             continue
         blocked_identities = set()
-        for k in ("names", "aliases", "emails", "coauthors"):
-            for x in exclusion.get(k, []):
-                blocked_identities.update(_recipient_keys(x))
+        try:
+            for k in ("names", "aliases", "emails", "coauthors"):
+                for x in exclusion.get(k, []):
+                    blocked_identities.update(_recipient_keys(x))
+        except ValueError:
+            reasons.append("CONTACT_BLOCKED_NO_CONTACT: invalid exclusion encoding")
+            continue
         blocked_dois = {_doi(x) for x in exclusion.get("dois", [])} - {""}
         blocked_titles = {_title_key(x) for x in exclusion.get("titles", [])} - {""}
         blocked_families = {_title_key(x) for x in exclusion.get("trial_families", [])} - {""}
