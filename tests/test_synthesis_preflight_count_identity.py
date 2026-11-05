@@ -267,5 +267,71 @@ class CountIdentityTests(unittest.TestCase):
         self.assertFalse(result["certified_error"])
 
 
+    def test_optional_denominator_size_must_match_for_same_result(self):
+        # Both records claim randomized denominators, but the actual cohort
+        # sizes differ. A raw-count difference is NOT a reproduced issue.
+        for right_count in (12, 15):
+            with self.subTest(right_count=right_count):
+                left = copy.deepcopy(self.source)
+                left["analysis_denominator_n"] = 100
+                right = copy.deepcopy(left)
+                right.update(analysis_denominator_n=120, value=right_count)
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "NOT_COMPARABLE")
+                self.assertIn("analysis_denominator_n", result["mismatched_fields"])
+                self.assertFalse(result["arithmetic_reproduced"])
+                self.assertFalse(result["certified_error"])
+
+    def test_partial_or_invalid_denominator_size_abstains(self):
+        # Absence on only one side, floats, bools and zero cannot silently
+        # be interpreted as a verified cohort size.
+        for denominator in (None, 0, -1, 100.0, True):
+            with self.subTest(denominator=denominator):
+                left = copy.deepcopy(self.source)
+                right = copy.deepcopy(left)
+                left["analysis_denominator_n"] = 100
+                right["analysis_denominator_n"] = denominator
+                right["value"] = 15
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertFalse(result["arithmetic_reproduced"])
+        left = copy.deepcopy(self.source)
+        right = copy.deepcopy(left)
+        right["analysis_denominator_n"] = 100
+        self.assertEqual(compare_raw_counts(left, right)["status"],
+                         "NOT_ENOUGH_INFO")
+
+    def test_unique_participant_count_above_denominator_abstains(self):
+        # With a supplied exact cohort size, more unique participants than
+        # the cohort is an invalid input, not a plausible REVIEW finding.
+        left = copy.deepcopy(self.source)
+        left.update(analysis_denominator_n=100, value=101)
+        right = copy.deepcopy(left)
+        right["value"] = 99
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+        self.assertFalse(result["arithmetic_reproduced"])
+        self.assertFalse(result["certified_error"])
+
+    def test_matched_cohort_and_recurrent_event_controls(self):
+        # A matched denominator does not obstruct a legitimate comparison.
+        self.assertEqual(
+            self.compare(analysis_denominator_n=100)["status"],
+            "NOT_ENOUGH_INFO",  # one-sided field is not sufficient
+        )
+        left = copy.deepcopy(self.source)
+        left["analysis_denominator_n"] = 100
+        right = copy.deepcopy(left)
+        right["value"] = 15
+        self.assertEqual(compare_raw_counts(left, right)["status"], "REVIEW")
+        right["value"] = 12
+        self.assertEqual(compare_raw_counts(left, right)["status"], "CONSISTENT")
+        # Recurrent events may exceed the number of enrolled individuals.
+        left.update(count_basis="events", estimand="recurrent_events", value=120)
+        right = copy.deepcopy(left)
+        right["value"] = 125
+        self.assertEqual(compare_raw_counts(left, right)["status"], "REVIEW")
+
+
 if __name__ == "__main__":
     unittest.main()
