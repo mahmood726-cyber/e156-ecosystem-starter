@@ -643,6 +643,20 @@ class ContactTests(unittest.TestCase):
                         require_outgoing_allowed(message, exclusions)
                         transport()
                     transport.assert_not_called()
+        # Encoded words must be inspected after RFC 2047 decoding too:
+        # the raw header contains no literal CR/LF, but decoding restores it.
+        encoded_poison = (
+            "=?utf-8?B?U2FmZSA8c2FmZUBleGFtcGxlLmludmFsaWQ+"
+            "DQpCY2M6IEV4Y2x1ZGVkIFRlc3QgPGFsaWFzQGV4YW1wbGUuaW52YWxpZD4=?="
+        )
+        for field in ("to", "cc", "bcc", "indirect_recipients",
+                      "recipient_names"):
+            with self.subTest(encoded_field=field):
+                message = {"to": ["safe@example.invalid"], field: [encoded_poison]}
+                reasons = outgoing_blockers(message, exclusions)
+                self.assertTrue(any(
+                    reason.startswith("CONTACT_BLOCKED_NO_CONTACT:")
+                    for reason in reasons))
         for field in ("names", "aliases", "emails", "coauthors"):
             with self.subTest(exclusion_field=field):
                 invalid_exclusion = [{field: [poisoned]}]
