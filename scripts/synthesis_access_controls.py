@@ -130,12 +130,27 @@ def source_preflight(source, operation, *, manifest_path=None, decision_log=None
     except (OSError, ValueError, TypeError):
         pass
     outcome, reason = assess_source(manifest, source, operation, on_date=on_date)
+    matched_permission = None
+    if outcome == "ALLOW":
+        # Bind the successful decision to the precise reviewed permission
+        # evidence; do not expose these private details in public CI logs.
+        matches = [p for p in manifest["permissions"]
+                   if isinstance(p, dict) and _doi(p.get("doi")) == _doi(source["doi"])
+                   and p.get("version") == source["version"]
+                   and p.get("resource_ref") == source["resource_ref"]
+                   and p.get("access_route") == source["access_route"]]
+        if len(matches) == 1:
+            matched_permission = matches[0]
     receipt = {"when_utc": datetime.now(timezone.utc).isoformat(),
                "policy": SOURCE_POLICY, "policy_sha256": sha256(SOURCE_POLICY.encode()).hexdigest(),
                "manifest_sha256": manifest_digest, "doi": _doi(source.get("doi")) if isinstance(source, dict) else "",
                "version": source.get("version") if isinstance(source, dict) else None,
                "resource_ref": source.get("resource_ref") if isinstance(source, dict) else None,
-               "operation": operation, "decision": outcome, "reason": reason}
+               "access_route": source.get("access_route") if isinstance(source, dict) else None,
+               "operation": operation, "decision": outcome, "reason": reason,
+               **({key: matched_permission.get(key) for key in
+                   ("evidence_reference", "evidence_sha256", "reviewer", "reviewed_on", "expires_on")}
+                  if matched_permission else {})}
     if not decision_log:
         return {**receipt, "decision": "SOURCE_RIGHTS_HOLD", "reason": "private decision log unavailable"}
     try:
