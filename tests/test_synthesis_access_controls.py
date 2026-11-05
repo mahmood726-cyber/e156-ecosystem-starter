@@ -396,7 +396,9 @@ class ContactTests(unittest.TestCase):
         self.assertEqual(outgoing_blockers(
             {"to": ["unknown@example.invalid"],
              "doi": "https://doi.org.untrusted.invalid/10.7777/fictional-publication"},
-            self.EXCLUSIONS), ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
+            self.EXCLUSIONS),
+            ["PROGRAMME_OUTGOING_QUERY_PAUSE",
+             "CONTACT_BLOCKED_NO_CONTACT: malformed publication identifiers"])
 
     def test_mime_encoded_display_alias_in_all_recipient_fields(self):
         # RFC 2047 encoded words may appear in real address headers; use

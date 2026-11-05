@@ -328,6 +328,19 @@ def outgoing_blockers(message, exclusions=None):
     if any(not isinstance(message.get(k, []), list) or
            any(not isinstance(x, str) for x in message.get(k, [])) for k in collections):
         return reasons + ["CONTACT_BLOCKED_NO_CONTACT: malformed publication identifiers"]
+    # A malformed publication identifier must not vanish from matching.
+    # Missing identifiers are allowed, but when supplied they must be
+    # structurally valid and canonicalizable before checking exclusions.
+    for field in ("doi", "title", "trial_family"):
+        if field in message:
+            value = message[field]
+            key = _doi(value) if field == "doi" else _title_key(value)
+            if not isinstance(value, str) or not value.strip() or not key:
+                return reasons + ["CONTACT_BLOCKED_NO_CONTACT: malformed publication identifiers"]
+    if (any(not _doi(value) for value in message.get("related_dois", [])) or
+        any(not _title_key(value) for value in message.get("related_titles", [])) or
+        any(not _title_key(value) for value in message.get("related_trial_families", []))):
+        return reasons + ["CONTACT_BLOCKED_NO_CONTACT: malformed publication identifiers"]
     # A retry or forwarded message may reference an excluded prior thread even
     # when its active thread differs. Never silently discard malformed IDs.
     thread_id = message.get("thread_id")
@@ -351,6 +364,13 @@ def outgoing_blockers(message, exclusions=None):
         if any(not isinstance(exclusion.get(k, []), list) or
                any(not isinstance(x, str) for x in exclusion.get(k, [])) for k in fields):
             reasons.append("CONTACT_BLOCKED_NO_CONTACT: malformed exclusion")
+            continue
+        # An invalid private exclusion must never be treated as an empty
+        # set, which could remove the last publication-level contact block.
+        if (any(not _doi(value) for value in exclusion.get("dois", [])) or
+            any(not _title_key(value) for value in exclusion.get("titles", [])) or
+            any(not _title_key(value) for value in exclusion.get("trial_families", []))):
+            reasons.append("CONTACT_BLOCKED_NO_CONTACT: malformed exclusion identifiers")
             continue
         blocked_identities = set()
         try:
