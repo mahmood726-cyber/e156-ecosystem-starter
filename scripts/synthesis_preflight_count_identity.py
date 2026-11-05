@@ -38,6 +38,7 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
         "source_support": "NOT_ENOUGH_INFO", "maturity": "SCREENED",
         "human_adjudicated": False, "author_confirmed": False,
         "certified_error": False, "email_eligible": False,
+        "arithmetic_reproduced": False, "source_authenticated": False,
     }
     if not isinstance(left, Mapping) or not isinstance(right, Mapping):
         return {**base, "reason": "both records must be mappings"}
@@ -64,13 +65,15 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
     if lhs == rhs:
         return {
             **base, "status": "CONSISTENT", "disposition": "NO_FLAG",
-            "source_support": "SUPPORTED", "maturity": "REPRODUCED",
+            "source_support": "NOT_ENOUGH_INFO", "maturity": "SCREENED",
+            "arithmetic_reproduced": True,
             "reason": "exact matched-result integer counts agree", "left": lhs,
             "right": rhs, "difference": 0,
         }
     return {
         **base, "status": "REVIEW", "disposition": "HOLD",
-        "source_support": "CONTRADICTED", "maturity": "REPRODUCED",
+        "source_support": "NOT_ENOUGH_INFO", "maturity": "SCREENED",
+        "arithmetic_reproduced": True,
         "reason": "same-result counts differ; inspect source/denominator before alleging error",
         "left": lhs, "right": rhs, "difference": lhs - rhs,
     }
