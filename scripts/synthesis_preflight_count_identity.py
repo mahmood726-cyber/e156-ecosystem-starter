@@ -33,11 +33,27 @@ CORE_IDENTITY_FIELDS = frozenset({
     "denominator_basis", "population", "endpoint", "time_window",
     "effect_measure", "estimand", "locator",
 })
+# Compare *normalized* missing-value markers. Without this, two synthetic
+# "not-reported" or "source_limited" result IDs can wrongly pass identity
+# matching and produce a misleading arithmetic REVIEW candidate.
 UNKNOWN_LITERALS = frozenset({
-    "unknown", "unverified", "not_enough_info", "not enough info",
-    "not_applicable", "not applicable", "n/a", "na", "none", "null",
-    "missing", "not specified", "not available", "undetermined", "tbd", "?",
+    "unknown", "unverified", "not_enough_info", "not_applicable", "n/a",
+    "na", "none", "null", "missing", "not_specified", "not_available",
+    "not_reported", "source_limited", "unavailable", "unclear",
+    "undetermined", "tbd", "?",
 })
+# In raw descriptive counts, statistical mechanics can explicitly be absent.
+# This is not permission to omit an endpoint, source result, or source version.
+OPTIONAL_METHOD_ABSENCE = frozenset({"not_applicable", "n/a", "na", "none"})
+
+
+def _missing_field(value: Any, key: str) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return True
+    normalized = re.sub(r"[\s_-]+", "_", value.strip().casefold())
+    if normalized not in UNKNOWN_LITERALS:
+        return False
+    return key in CORE_IDENTITY_FIELDS or normalized not in OPTIONAL_METHOD_ABSENCE
 
 
 def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
@@ -59,11 +75,7 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
     for side_name, record in (("left", left), ("right", right)):
         for key in RESULT_FIELDS + ("locator", "source_sha256"):
             value = record.get(key)
-            if (not isinstance(value, str) or not value.strip()
-                    or value.strip().casefold() in (
-                        UNKNOWN_LITERALS if key in CORE_IDENTITY_FIELDS
-                        else {"unknown", "unverified", "not_enough_info"}
-                    )):
+            if _missing_field(value, key):
                 return {**base, "reason": f"{side_name}: missing/unverified {key}"}
         if SHA256.fullmatch(record["source_sha256"]) is None:
             return {**base, "reason": f"{side_name}: invalid source_sha256"}
