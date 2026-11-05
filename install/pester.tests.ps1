@@ -298,6 +298,46 @@ Describe "Invoke-LogRedaction scrubs secrets from transcripts (P1)" {
     }
 }
 
+# SHA-only checks must not initialise the transcript directory in LOCALAPPDATA.
+# All paths are isolated test fixtures; the real user profile is never touched.
+Describe "Dry-run must not initialize LOCALAPPDATA" {
+    It "verifies a matching SHA without creating a transcript directory" {
+        $stateRoot = Join-Path $script:tmpRoot 'valid dry run state-Ü'
+        $prior = $env:LOCALAPPDATA
+        try {
+            $env:LOCALAPPDATA = $stateRoot
+            $output = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script:InstallPs1 -DryRun 2>&1
+            $LASTEXITCODE | Should -Be 0
+            ($output -join ' ') | Should -Match 'Dry run: self-SHA verified'
+            Test-Path -LiteralPath $stateRoot | Should -BeFalse
+        }
+        finally {
+            $env:LOCALAPPDATA = $prior
+        }
+    }
+
+    It "rejects a mismatched SHA without creating a transcript directory" {
+        $fixtureRoot = Join-Path $script:tmpRoot 'bad SHA fixture-Ü with spaces'
+        $fixtureInstall = Join-Path $fixtureRoot 'install'
+        $fixtureDocs = Join-Path $fixtureRoot 'docs'
+        New-Item -ItemType Directory -Force -Path $fixtureInstall, $fixtureDocs | Out-Null
+        Copy-Item -LiteralPath $script:InstallPs1 -Destination (Join-Path $fixtureInstall 'install.ps1')
+        Set-Content -LiteralPath (Join-Path $fixtureDocs 'HASH.txt') -Value ('0' * 64) -NoNewline -Encoding ASCII
+        $stateRoot = Join-Path $script:tmpRoot 'bad dry run state-Ü'
+        $prior = $env:LOCALAPPDATA
+        try {
+            $env:LOCALAPPDATA = $stateRoot
+            $output = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $fixtureInstall 'install.ps1') -DryRun 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
+            ($output -join ' ') | Should -Match 'SHA does not match'
+            Test-Path -LiteralPath $stateRoot | Should -BeFalse
+        }
+        finally {
+            $env:LOCALAPPDATA = $prior
+        }
+    }
+}
+
 Describe "Self-SHA gate exits 0 under -DryRun" {
     It "writes HASH.txt with install.ps1's SHA and the DryRun shortcut succeeds" {
         # Regenerate HASH.txt for the current install.ps1 (may have been edited)
