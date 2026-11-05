@@ -448,5 +448,44 @@ class RootDedupContractTests(unittest.TestCase):
                 self.assertEqual(result["certified_errors"], 0)
                 self.assertFalse(result["email_eligible"])
 
+    def test_screened_record_cannot_claim_source_backed_support(self):
+        # A screening-only finding is not evidence that the source has been
+        # checked, even when a caller supplies a plausible source status.
+        for support, disposition in (
+            ("CONTRADICTED", "FLAG"),
+            ("SUPPORTED", "RECONCILED"),
+            ("OVERGENERALIZED", "DISCUSSION"),
+            ("UNSUPPORTED_CITATION", "HOLD"),
+        ):
+            with self.subTest(support=support, disposition=disposition):
+                row = self.row_with(
+                    maturity="SCREENED", source_support=support,
+                    disposition=disposition)
+                result = group_preflight_roots([row])
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertIsNone(result["root_count"])
+                self.assertEqual(result["certified_errors"], 0)
+                self.assertFalse(result["email_eligible"])
+
+    def test_screened_abstention_and_source_backed_controls_still_valid(self):
+        for support in ("NOT_ENOUGH_INFO", "SOURCE_UNAVAILABLE"):
+            with self.subTest(control="screened hold", support=support):
+                row = self.row_with(
+                    maturity="SCREENED", source_support=support,
+                    disposition="HOLD")
+                result = group_preflight_roots([row])
+                self.assertEqual(result["status"], "GROUPED")
+                self.assertFalse(result["roots"][0]["all_source_reproduced"])
+        for support, disposition in (("CONTRADICTED", "FLAG"),
+                                     ("SUPPORTED", "RECONCILED")):
+            with self.subTest(control="source backed", support=support):
+                row = self.row_with(
+                    maturity="SOURCE_BACKED", source_support=support,
+                    disposition=disposition)
+                result = group_preflight_roots([row])
+                self.assertEqual(result["status"], "GROUPED")
+                self.assertEqual(result["certified_errors"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()
