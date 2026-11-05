@@ -7,7 +7,7 @@ Call at every source ingress and every outgoing-transport boundary.
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from email.utils import parseaddr
+from email.utils import getaddresses
 from hashlib import sha256
 import json
 import os
@@ -226,12 +226,16 @@ def _recipient_keys(value):
     """
     if not isinstance(value, str):
         return set()
-    display, mailbox = parseaddr(value)
+    # A single transport field may contain several comma-separated
+    # mailboxes. parseaddr only sees one (or rejects the whole header), so a
+    # protected second recipient could otherwise be missed. Parse every
+    # address, preserving quoted commas inside display names.
     keys = {_norm(value)}
-    if "@" in mailbox:
-        keys.add(_norm(mailbox))
-        if display:
-            keys.add(_norm(display))
+    for display, mailbox in getaddresses([value]):
+        if "@" in mailbox:
+            keys.add(_norm(mailbox))
+            if display:
+                keys.add(_norm(display))
     return {key for key in keys if key}
 
 
