@@ -183,6 +183,58 @@ class RootDedupContractTests(unittest.TestCase):
         self.assertFalse(result["email_eligible"])
 
 
+    def test_duplicate_output_divergent_human_receipt_is_held(self):
+        first = self.row_with(
+            maturity="INDEPENDENTLY_ADJUDICATED", human_adjudicated=True,
+            human_receipt=self.human_receipt())
+        duplicate = copy.deepcopy(first)
+        # Both receipts are individually valid and claims/statuses are equal,
+        # but they attest different reviewers for the same output.
+        duplicate["human_receipt"]["reviewer_id"] = "synthetic:reviewer-3"
+        result = group_preflight_roots([first, duplicate])
+        self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+        self.assertIsNone(result["root_count"])
+        self.assertEqual(result["certified_errors"], 0)
+
+    def test_duplicate_output_divergent_author_receipt_is_held(self):
+        first = self.row_with(
+            author_confirmed=True,
+            author_confirmation=self.author_receipt())
+        duplicate = copy.deepcopy(first)
+        # Distinct individually valid confirmation references cannot be
+        # discarded as if they were an exact replay.
+        duplicate["author_confirmation"]["confirmation_reference"] = (
+            "private:synthetic-author-receipt-second")
+        result = group_preflight_roots([first, duplicate])
+        self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+        self.assertEqual(result["certified_errors"], 0)
+
+    def test_exact_receipt_replay_keeps_single_output(self):
+        first = self.row_with(
+            maturity="INDEPENDENTLY_ADJUDICATED", human_adjudicated=True,
+            human_receipt=self.human_receipt(), author_confirmed=True,
+            author_confirmation=self.author_receipt())
+        result = group_preflight_roots([first, copy.deepcopy(first)])
+        self.assertEqual(result["status"], "GROUPED")
+        self.assertEqual(result["root_count"], 1)
+        self.assertEqual(result["roots"][0]["affected_output_count"], 1)
+        self.assertFalse(result["roots"][0]["certified_error"])
+
+    def test_distinct_outputs_can_have_distinct_valid_receipts(self):
+        first = self.row_with(
+            maturity="INDEPENDENTLY_ADJUDICATED", human_adjudicated=True,
+            human_receipt=self.human_receipt())
+        second = self.row_with(
+            affected_output_id="figure2:secondary",
+            maturity="INDEPENDENTLY_ADJUDICATED", human_adjudicated=True,
+            human_receipt=self.human_receipt(
+                affected_output_id="figure2:secondary",
+                receipt_locator="private:synthetic-second-review"))
+        result = group_preflight_roots([first, second])
+        self.assertEqual(result["status"], "GROUPED")
+        self.assertEqual(result["root_count"], 1)
+        self.assertEqual(result["roots"][0]["affected_output_count"], 2)
+
     def test_normalized_unknown_root_and_receipt_id_aliases_hold(self):
         for key in ("root_scope_id", "root_cause_id", "affected_output_id"):
             for marker in ("not-reported", "NOT   REPORTED",
