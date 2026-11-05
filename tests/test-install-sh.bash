@@ -106,6 +106,37 @@ assert_file_missing "$target/rules.md" && \
     [[ -f "$target/lessons.md" && "$(cat "$target/lessons.md")" == "pre-existing" ]] && \
     [[ ! -f "$target/lessons.md.user" ]] && ok
 
+# Reinstallation must restore the *latest* user edit when a subsequent
+# install fails. A pre-existing first-install .user backup stays intact.
+# This also exercises quoting for spaces and non-ASCII paths.
+start "rollback restores timestamped user backup after reinstall"
+target="$SANDBOX/reinstall path-Ü/rules"
+mkdir -p "$target"
+printf 'first user edit' > "$target/lessons.md"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+copy_rules_to_agent "$ROOT/rules" "$target" >/dev/null 2>&1
+printf 'second user edit' > "$target/lessons.md"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+copy_rules_to_agent "$ROOT/rules" "$target" >/dev/null 2>&1
+timestamp_backup="$(grep -F "$target/lessons.md.user-" "$MANIFEST_BACKUPS" | head -1)"
+if [[ -n "$timestamp_backup" && -f "$timestamp_backup" ]]; then
+    rollback "test-triggered timestamped rollback" 2>/dev/null || true
+    if [[ "$(cat "$target/lessons.md")" == "second user edit" &&
+          "$(cat "$target/lessons.md.user")" == "first user edit" &&
+          ! -f "$timestamp_backup" ]]; then
+        ok
+    else
+        bad "the latest edit was not restored, or the first .user backup changed"
+    fi
+else
+    bad "timestamped reinstall backup was not recorded"
+fi
+MANIFEST_DIR="$(mktemp -d -t e156-rollback.XXXXXX)"
+MANIFEST_FILES="$MANIFEST_DIR/files"
+MANIFEST_DIRS="$MANIFEST_DIR/dirs"
+MANIFEST_BACKUPS="$MANIFEST_DIR/backups"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+
 # Describe: render_template rules in practice
 start "templated rules have no residual Mahmood paths"
 target="$SANDBOX/rendered/rules"

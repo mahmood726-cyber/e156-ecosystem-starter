@@ -224,12 +224,20 @@ rollback() {
             [[ -n "$f" && -f "$f" ]] && rm -f "$f"
         done
     fi
-    # Restore backups (.user -> original)
+    # Restore both first-install (.user) and later reinstall
+    # (.user-YYYYmmdd-HHMMSS) backups. Stripping only ".user" from a
+    # timestamped name leaves the name unchanged, so mv fails and the
+    # pre-existing user edit stays overwritten after a failed install.
     if [[ -s "$MANIFEST_BACKUPS" ]]; then
         while IFS= read -r b; do
             if [[ -n "$b" && -f "$b" ]]; then
-                local orig="${b%.user}"
-                mv -f "$b" "$orig"
+                local orig
+                case "$b" in
+                    *.user)   orig="${b%.user}" ;;
+                    *.user-*) orig="${b%.user-*}" ;;
+                    *) echo "WARNING: unrecognised rollback backup: $b" >&2; continue ;;
+                esac
+                mv -f -- "$b" "$orig"
             fi
         done < "$MANIFEST_BACKUPS"
     fi
