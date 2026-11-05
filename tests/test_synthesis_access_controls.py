@@ -262,6 +262,57 @@ class SourceRightsTests(unittest.TestCase):
                     self.assertEqual((nested_log if alias == aliased_dir / "log.jsonl"
                                       else external).read_bytes(), before)
 
+    def test_permission_manifest_path_aliases_hold_before_source_action(self):
+        # The rights manifest is a trust boundary. A symlink, hardlink,
+        # or symlinked ancestor must not substitute another permission file,
+        # even when it contains a syntactically reviewed synthetic grant.
+        import os
+        with TemporaryDirectory() as root:
+            base = Path(root)
+            trusted_dir = base / "trusted"
+            trusted_dir.mkdir()
+            trusted = trusted_dir / "rights.json"
+            trusted.write_text(json.dumps(MANIFEST))
+            decision_log = base / "decisions.jsonl"
+            decision_log.touch()
+            legitimate = Mock(return_value=b"synthetic")
+            self.assertEqual(execute_source_action(
+                SOURCE, "CACHE_READ", legitimate, manifest_path=trusted,
+                decision_log=decision_log, on_date=TODAY), b"synthetic")
+            legitimate.assert_called_once()
+
+            aliases = []
+            symlink = base / "rights-symlink.json"
+            try:
+                symlink.symlink_to(trusted)
+                aliases.append(symlink)
+            except (OSError, NotImplementedError):
+                pass
+            hardlink = base / "rights-hardlink.json"
+            try:
+                os.link(trusted, hardlink)
+                aliases.append(hardlink)
+            except (OSError, NotImplementedError):
+                pass
+            parent_link = base / "redirected-directory"
+            try:
+                parent_link.symlink_to(trusted_dir, target_is_directory=True)
+                aliases.append(parent_link / "rights.json")
+            except (OSError, NotImplementedError):
+                pass
+            if not aliases:
+                self.skipTest("filesystem does not support manifest link fixtures")
+            for alias in aliases:
+                with self.subTest(manifest=alias.name):
+                    probe = Mock(return_value=b"should-not-be-read")
+                    with self.assertRaises(PermissionError):
+                        execute_source_action(
+                            SOURCE, "CACHE_READ", probe, manifest_path=alias,
+                            decision_log=decision_log, on_date=TODAY)
+                    probe.assert_not_called()
+                    last = json.loads(decision_log.read_text().splitlines()[-1])
+                    self.assertEqual(last["decision"], "SOURCE_RIGHTS_HOLD")
+
     def test_missing_manifest_or_log_never_reaches_cache_or_network_callback(self):
         with TemporaryDirectory() as root:
             p = Path(root)
