@@ -442,17 +442,32 @@ copy_memory_scaffold() {
         [[ -f "$template_file" ]] || { echo "ERROR: missing memory template: $template_file" >&2; return 1; }
         refuse_nonregular_install_file "$target/templates/$(basename "$template_file")" || return 1
     done
-    mkdir -p "$target"
+    # Track created directories before writes, so a later step's failure
+    # can remove only scaffolding introduced by this installation.
+    if [[ ! -d "$target" ]]; then
+        echo "$target" >> "$MANIFEST_DIRS"
+    fi
+    mkdir -p -- "$target"
     if compgen -G "$target/*.md" > /dev/null; then
         log_ok "${target}  (already has memory -- preserved, templates not overwritten)"
         return
     fi
-    cp "$src/MEMORY.md" "$target/MEMORY.md"
+    # Record each new file before copying: a failed copy may leave partial
+    # content which rollback must also remove.
     echo "$target/MEMORY.md" >> "$MANIFEST_FILES"
-    mkdir -p "$target/templates"
+    cp -- "$src/MEMORY.md" "$target/MEMORY.md"
+    if [[ ! -d "$target/templates" ]]; then
+        echo "$target/templates" >> "$MANIFEST_DIRS"
+    fi
+    mkdir -p -- "$target/templates"
     for f in "$src/templates"/*.md; do
-        cp "$f" "$target/templates/"
-        echo "$target/templates/$(basename "$f")" >> "$MANIFEST_FILES"
+        local template_dest="$target/templates/$(basename "$f")"
+        # A memory root with no top-level Markdown can still contain
+        # user-edited nested templates; never overwrite those files.
+        if [[ ! -e "$template_dest" ]]; then
+            echo "$template_dest" >> "$MANIFEST_FILES"
+            cp -- "$f" "$template_dest"
+        fi
     done
     log_ok "${target}  (bootstrapped -- starter MEMORY.md + type templates)"
 }
