@@ -126,7 +126,8 @@ redact_secrets_in_log() {
         "$f" > "$tmp" 2>/dev/null && mv "$tmp" "$f" || rm -f "$tmp"
 }
 
-if [[ "$IMPORT" -eq 0 ]]; then
+# --dry-run must be a read-only SHA check: do not create HOME/XDG log files.
+if [[ "$IMPORT" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
     case "$(uname -s)" in
         Darwin) E156_LOG_DIR="${HOME}/Library/Logs/e156" ;;
         *)      E156_LOG_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/e156/logs" ;;
