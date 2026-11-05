@@ -497,6 +497,42 @@ class ContactTests(unittest.TestCase):
                                     invalid_exclusions)
         self.assertIn("CONTACT_BLOCKED_NO_CONTACT: invalid exclusion encoding", reasons)
 
+    def test_related_threads_and_malformed_thread_metadata_fail_closed(self):
+        # Invented Gmail-thread identifiers only. A resend can be linked to
+        # multiple prior threads even when the active thread is a new ID.
+        for kind in ("new", "retry", "followup", "queued_send"):
+            msg = {"to": ["unlisted@example.invalid"], "kind": kind,
+                   "thread_id": "new-synthetic-thread",
+                   "related_thread_ids": ["other-synthetic-thread", "thread-fixture"]}
+            with self.subTest(kind=kind):
+                reasons = outgoing_blockers(msg, self.EXCLUSIONS)
+                self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                self.assertIn(
+                    "CONTACT_BLOCKED_NO_CONTACT: recipient/publication/thread exclusion",
+                    reasons,
+                )
+                stub = Mock()
+                with self.assertRaises(PermissionError):
+                    require_outgoing_allowed(msg, self.EXCLUSIONS)
+                stub.assert_not_called()
+
+        for malformed in (
+            {"thread_id": ["thread-fixture"]},
+            {"thread_id": 72},
+            {"related_thread_ids": "thread-fixture"},
+            {"related_thread_ids": [None]},
+        ):
+            with self.subTest(malformed=malformed):
+                msg = {"to": ["unlisted@example.invalid"], **malformed}
+                reasons = outgoing_blockers(msg, self.EXCLUSIONS)
+                self.assertTrue(any("CONTACT_BLOCKED_NO_CONTACT" in x for x in reasons))
+
+        unrelated = {"to": ["unlisted@example.invalid"],
+                     "thread_id": "other-synthetic-thread",
+                     "related_thread_ids": ["unrelated-synthetic-thread"]}
+        self.assertEqual(outgoing_blockers(unrelated, self.EXCLUSIONS),
+                         ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
+
     def test_unavailable_exclusions_also_fail_closed(self):
         reasons=outgoing_blockers({"to":["other@example.invalid"]},None)
         self.assertTrue(any('exclusions unavailable' in x for x in reasons))
