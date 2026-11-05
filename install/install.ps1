@@ -214,6 +214,40 @@ function Render-Template {
     return $Text
 }
 
+function Assert-SafeWindowsInstallPath {
+    # Reject junctions and other reparse points at any existing component,
+    # including ancestors above the agent directory. LiteralPath avoids glob
+    # interpretation of user directories containing [ or ].
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Path,
+        [switch]$Directory
+    )
+    $full = [System.IO.Path]::GetFullPath($Path)
+    $current = $full
+    while ($current) {
+        $item = Get-Item -LiteralPath $current -Force -ErrorAction SilentlyContinue
+        if ($null -ne $item) {
+            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "REFUSED: reparse-point or junction in installation path: $current"
+            }
+            if ($current -eq $full) {
+                if ($Directory -and -not $item.PSIsContainer) {
+                    throw "REFUSED: expected an installation directory: $current"
+                }
+                if (-not $Directory -and $item.PSIsContainer) {
+                    throw "REFUSED: expected an installation file: $current"
+                }
+            } elseif (-not $item.PSIsContainer) {
+                throw "REFUSED: non-directory installation ancestor: $current"
+            }
+        }
+        $parent = [System.IO.Path]::GetDirectoryName($current)
+        if ([string]::IsNullOrEmpty($parent) -or $parent -eq $current) { break }
+        $current = $parent
+    }
+}
+
 function Save-InstallUserBackup {
     # Preserve each user edit without replacing an earlier backup. File.Copy
     # refuses a newly occupied destination as well (no silent overwrite).
@@ -245,6 +279,15 @@ function Copy-RulesToAgent {
     )
     if (-not (Test-Path $SourceRulesDir)) {
         throw "Source rules dir not found: $SourceRulesDir"
+    }
+    # Preflight every concrete destination before creating the rules directory.
+    Assert-SafeWindowsInstallPath -Path $TargetRulesDir -Directory
+    foreach ($sourceRule in @(Get-ChildItem -LiteralPath $SourceRulesDir -Filter '*.md' -File -ErrorAction Stop)) {
+        Assert-SafeWindowsInstallPath -Path (Join-Path $TargetRulesDir $sourceRule.Name)
+    }
+    $sourceIndex = Join-Path $SourceRulesDir '_index.yaml'
+    if (Test-Path -LiteralPath $sourceIndex -PathType Leaf) {
+        Assert-SafeWindowsInstallPath -Path (Join-Path $TargetRulesDir '_index.yaml')
     }
     $newDir = -not (Test-Path $TargetRulesDir)
     New-Item -ItemType Directory -Force -Path $TargetRulesDir | Out-Null
@@ -304,6 +347,12 @@ function Copy-ContextFiles {
         [hashtable]$Vars = $null,
         [PSCustomObject]$Manifest = $null
     )
+    Assert-SafeWindowsInstallPath -Path $TargetDir -Directory
+    foreach ($name in @('AGENTS.md', 'CLAUDE.md', 'GEMINI.md', 'CODEX.md')) {
+        if (Test-Path -LiteralPath (Join-Path $SourceRoot $name) -PathType Leaf) {
+            Assert-SafeWindowsInstallPath -Path (Join-Path $TargetDir $name)
+        }
+    }
     $newDir = -not (Test-Path $TargetDir)
     New-Item -ItemType Directory -Force -Path $TargetDir | Out-Null
     if ($newDir -and $Manifest) { $Manifest.CreatedDirs.Add($TargetDir) }
@@ -342,11 +391,17 @@ function Copy-MemoryScaffold {
     )
     # Memory is PRESERVED by default (student's ongoing work). We only drop
     # templates + initial MEMORY.md if the target is empty.
-    New-Item -ItemType Directory -Force -Path $TargetMemoryDir | Out-Null
-    $existingFiles = @(Get-ChildItem -Path $TargetMemoryDir -Filter "*.md" -ErrorAction SilentlyContinue)
+    Assert-SafeWindowsInstallPath -Path $TargetMemoryDir -Directory
+    $existingFiles = @(Get-ChildItem -LiteralPath $TargetMemoryDir -Filter "*.md" -ErrorAction SilentlyContinue)
     if ($existingFiles.Count -eq 0) {
-        Copy-Item (Join-Path $SourceMemoryDir 'MEMORY.md') (Join-Path $TargetMemoryDir 'MEMORY.md')
         $tmplDir = Join-Path $TargetMemoryDir 'templates'
+        Assert-SafeWindowsInstallPath -Path (Join-Path $TargetMemoryDir 'MEMORY.md')
+        Assert-SafeWindowsInstallPath -Path $tmplDir -Directory
+        foreach ($template in @(Get-ChildItem -LiteralPath (Join-Path $SourceMemoryDir 'templates') -Filter '*.md' -File -ErrorAction Stop)) {
+            Assert-SafeWindowsInstallPath -Path (Join-Path $tmplDir $template.Name)
+        }
+        New-Item -ItemType Directory -Force -Path $TargetMemoryDir | Out-Null
+        Copy-Item (Join-Path $SourceMemoryDir 'MEMORY.md') (Join-Path $TargetMemoryDir 'MEMORY.md')
         New-Item -ItemType Directory -Force -Path $tmplDir | Out-Null
         Copy-Item (Join-Path $SourceMemoryDir 'templates\*.md') $tmplDir -Force
         return $true
