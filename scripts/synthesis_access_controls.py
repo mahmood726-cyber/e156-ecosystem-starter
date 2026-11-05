@@ -126,6 +126,22 @@ def assess_source(manifest, source, operation, *, on_date=None):
                 or not isinstance(reviewed_url, str) or not reviewed_url.strip()
                 or requested_url.strip() != reviewed_url.strip()):
             return "SOURCE_RIGHTS_HOLD", "source URL differs from exact reviewed access route"
+    # A network grant without an exact absolute retrieval address is not
+    # operation-specific: it could authorize arbitrary mirror access even when
+    # DOI, version and the caller-supplied route label are unchanged.
+    if operation == "NETWORK_FETCH":
+        if not isinstance(requested_url, str) or not requested_url.strip():
+            return "SOURCE_RIGHTS_HOLD", "network retrieval URL not reviewed"
+        try:
+            target = urlsplit(requested_url.strip())
+            if (target.scheme.casefold() not in {"http", "https"}
+                    or not target.hostname or target.username is not None
+                    or target.password is not None
+                    or any(char.isspace() for char in target.netloc)):
+                return "SOURCE_RIGHTS_HOLD", "invalid reviewed network retrieval URL"
+            target.port  # Validate optional port syntax; a malformed port is not a URL grant.
+        except ValueError:
+            return "SOURCE_RIGHTS_HOLD", "invalid reviewed network retrieval URL"
     # This helper's v1 manifest has no way to authenticate each linked source
     # in a derived item. Hold declared ancestry rather than silently granting
     # linked-source operations via the top-level DOI. The separately reviewed
