@@ -172,5 +172,34 @@ class CountIdentityTests(unittest.TestCase):
                 self.assertFalse(result["author_confirmed"])
 
 
+    def test_same_locator_with_divergent_source_digests_abstains(self):
+        # Two allegedly identical source locations and versions with
+        # different bytes do not establish an authenticated comparison.
+        for next_value in (12, 15):
+            with self.subTest(next_value=next_value):
+                right = copy.deepcopy(self.source)
+                right["source_sha256"] = "b" * 64
+                right["value"] = next_value
+                result = compare_raw_counts(self.source, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertFalse(result["arithmetic_reproduced"])
+                self.assertFalse(result["certified_error"])
+
+    def test_distinct_locators_may_have_distinct_source_digests(self):
+        # PDF versus HTML or abstract versus supplement can have different
+        # raw bytes; differing locators stay an explicitly reviewable case.
+        right = copy.deepcopy(self.source)
+        right.update(locator="synthetic alternate representation",
+                     source_sha256="b" * 64, value=15)
+        result = compare_raw_counts(self.source, right)
+        self.assertEqual(result["status"], "REVIEW")
+        self.assertEqual(result["difference"], -3)
+        self.assertFalse(result["source_authenticated"])
+
+    def test_same_locator_and_identical_digest_retains_exact_count_checks(self):
+        self.assertEqual(self.compare(value=15)["status"], "REVIEW")
+        self.assertEqual(self.compare(value=12)["status"], "CONSISTENT")
+
+
 if __name__ == "__main__":
     unittest.main()
