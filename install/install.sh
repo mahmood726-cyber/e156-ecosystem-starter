@@ -328,9 +328,22 @@ copy_context_files() {
         [[ -f "$src" ]] || continue
         local dest="$target/$name"
         local backup="${dest}.user"
-        if [[ -f "$dest" && "$FORCE" -eq 0 && ! -f "$backup" ]]; then
-            cp "$dest" "$backup"
-            echo "$backup" >> "$MANIFEST_BACKUPS"
+        if [[ -f "$dest" && "$FORCE" -eq 0 ]]; then
+            # Like rules, context files need a fresh backup on every reinstall.
+            # A pre-existing .user snapshot must not suppress preservation of
+            # newer edits. Avoid same-second filename collisions as well.
+            local actual_backup="$backup"
+            if [[ -e "$backup" || -L "$backup" ]]; then
+                local timestamp_backup="${dest}.user-$(date +%Y%m%d-%H%M%S)"
+                local backup_index=0
+                actual_backup="$timestamp_backup"
+                while [[ -e "$actual_backup" || -L "$actual_backup" ]]; do
+                    backup_index=$((backup_index + 1))
+                    actual_backup="${timestamp_backup}-${backup_index}"
+                done
+            fi
+            cp -- "$dest" "$actual_backup"
+            echo "$actual_backup" >> "$MANIFEST_BACKUPS"
         fi
         local pre_existed=0
         [[ -f "$dest" ]] && pre_existed=1

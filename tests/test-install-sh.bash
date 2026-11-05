@@ -181,6 +181,78 @@ MANIFEST_DIRS="$MANIFEST_DIR/dirs"
 MANIFEST_BACKUPS="$MANIFEST_DIR/backups"
 : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
 
+# Context files must preserve successive user edits, just like rules. The
+# old helper skipped backups whenever AGENTS.md.user already existed.
+start "context reinstall backs up the latest edit even with a .user snapshot"
+context_target="$SANDBOX/context path-Ü"
+mkdir -p "$context_target"
+printf 'earliest context edit' > "$context_target/AGENTS.md.user"
+printf 'latest context edit' > "$context_target/AGENTS.md"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+copy_context_files "$ROOT" "$context_target" >/dev/null 2>&1
+context_backup="$(grep -F "$context_target/AGENTS.md.user-" "$MANIFEST_BACKUPS" | head -1)"
+if [[ -n "$context_backup" && -f "$context_backup" &&
+      "$(cat "$context_backup")" == "latest context edit" &&
+      "$(cat "$context_target/AGENTS.md.user")" == "earliest context edit" ]]; then
+    rollback "test-triggered context rollback" 2>/dev/null || true
+    if [[ "$(cat "$context_target/AGENTS.md")" == "latest context edit" &&
+          "$(cat "$context_target/AGENTS.md.user")" == "earliest context edit" &&
+          ! -e "$context_backup" ]]; then
+        ok
+    else
+        bad "context rollback did not restore latest edit or preserve first backup"
+    fi
+else
+    bad "context reinstall did not back up the latest edit"
+fi
+MANIFEST_DIR="$(mktemp -d -t e156-rollback.XXXXXX)"
+MANIFEST_FILES="$MANIFEST_DIR/files"
+MANIFEST_DIRS="$MANIFEST_DIR/dirs"
+MANIFEST_BACKUPS="$MANIFEST_DIR/backups"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+
+# Force a collision deterministically without touching the real clock.
+# Both older backups must survive, and rollback must restore the newest edit.
+start "same-second context reinstall preserves prior timestamp backup"
+context_target="$SANDBOX/context collision path-Ü"
+mkdir -p "$context_target"
+printf 'first context snapshot' > "$context_target/AGENTS.md.user"
+printf 'older timestamp snapshot' > "$context_target/AGENTS.md.user-20261105-092000"
+printf 'latest context edit' > "$context_target/AGENTS.md"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+date() {
+    if [[ "$#" -eq 1 && "$1" == "+%Y%m%d-%H%M%S" ]]; then
+        printf '%s\\n' "20261105-092000"
+    else
+        command date "$@"
+    fi
+}
+copy_context_files "$ROOT" "$context_target" >/dev/null 2>&1
+unset -f date
+context_collision="$context_target/AGENTS.md.user-20261105-092000-1"
+if [[ -f "$context_collision" &&
+      "$(cat "$context_collision")" == "latest context edit" &&
+      "$(cat "$context_target/AGENTS.md.user")" == "first context snapshot" &&
+      "$(cat "$context_target/AGENTS.md.user-20261105-092000")" == "older timestamp snapshot" ]] &&
+   grep -Fxq "$context_collision" "$MANIFEST_BACKUPS"; then
+    rollback "test-triggered context collision rollback" 2>/dev/null || true
+    if [[ "$(cat "$context_target/AGENTS.md")" == "latest context edit" &&
+          "$(cat "$context_target/AGENTS.md.user")" == "first context snapshot" &&
+          "$(cat "$context_target/AGENTS.md.user-20261105-092000")" == "older timestamp snapshot" &&
+          ! -e "$context_collision" ]]; then
+        ok
+    else
+        bad "context collision rollback altered an earlier backup or failed to restore"
+    fi
+else
+    bad "same-second context backup was overwritten or not recorded"
+fi
+MANIFEST_DIR="$(mktemp -d -t e156-rollback.XXXXXX)"
+MANIFEST_FILES="$MANIFEST_DIR/files"
+MANIFEST_DIRS="$MANIFEST_DIR/dirs"
+MANIFEST_BACKUPS="$MANIFEST_DIR/backups"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+
 # Describe: render_template rules in practice
 start "templated rules have no residual Mahmood paths"
 target="$SANDBOX/rendered/rules"
