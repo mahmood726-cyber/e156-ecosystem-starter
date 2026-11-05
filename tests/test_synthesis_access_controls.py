@@ -384,6 +384,48 @@ class SourceRightsTests(unittest.TestCase):
 
 
 
+    def test_duplicate_json_keys_in_reviewed_manifest_fail_closed(self):
+        # A JSON parser's last-wins handling of duplicate keys must not turn
+        # a conflicting synthetic permission record into a reviewed grant.
+        # No network, article fixtures, or real recipients are used.
+        canonical = json.dumps(MANIFEST)
+        variants = {
+            "permission-status": canonical.replace(
+                '"status": "REVIEWED_ALLOW"',
+                '"status": "DENIED", "status": "REVIEWED_ALLOW"', 1),
+            "operation-grant": canonical.replace(
+                '"operations": ["CACHE_READ", "REPLAY"]',
+                '"operations": [], "operations": ["CACHE_READ", "REPLAY"]', 1),
+            "manifest-schema": canonical.replace(
+                '"schema": "source-permissions-v1"',
+                '"schema": "unknown", "schema": "source-permissions-v1"', 1),
+        }
+        with TemporaryDirectory() as root:
+            folder = Path(root)
+            manifest = folder / "permissions.json"
+            log = folder / "access.jsonl"
+            log.touch()
+            for label, payload in variants.items():
+                with self.subTest(duplicate=label):
+                    self.assertNotEqual(payload, canonical)
+                    manifest.write_text(payload, encoding="utf-8")
+                    callback = Mock(return_value=b"synthetic-cache")
+                    with self.assertRaises(PermissionError):
+                        execute_source_action(SOURCE, "CACHE_READ", callback,
+                                              manifest_path=manifest,
+                                              decision_log=log, on_date=TODAY)
+                    callback.assert_not_called()
+                    receipt = json.loads(log.read_text(encoding="utf-8").splitlines()[-1])
+                    self.assertEqual(receipt["decision"], "SOURCE_RIGHTS_HOLD")
+            # A canonical, unambiguous reviewed fixture remains permitted.
+            manifest.write_text(canonical, encoding="utf-8")
+            callback = Mock(return_value=b"synthetic-cache")
+            self.assertEqual(execute_source_action(
+                SOURCE, "CACHE_READ", callback, manifest_path=manifest,
+                decision_log=log, on_date=TODAY), b"synthetic-cache")
+            callback.assert_called_once()
+
+
 class ContactTests(unittest.TestCase):
     EXCLUSIONS=[{"names":["Fictional Researcher"],"aliases":["F. Researcher"],
                  "emails":["fictional@example.invalid"],"coauthors":["coauthor@example.invalid"],
