@@ -278,6 +278,14 @@ def _recipient_keys(value):
     # protected second recipient could otherwise be missed. Parse every
     # address, preserving quoted commas inside display names.
     keys = {_norm(value)}
+    # Names supplied separately from a mailbox (recipient_names and private
+    # name/alias exclusions) may still use RFC 2047 encoded words. Decoding
+    # only parsed display names misses those standalone identities.
+    if "=?" in value:
+        try:
+            keys.add(_norm(str(make_header(decode_header(value)))))
+        except (UnicodeError, LookupError, ValueError) as exc:
+            raise ValueError("invalid recipient identity encoding") from exc
     for display, mailbox in getaddresses([value]):
         if "@" in mailbox:
             keys.add(_norm(mailbox))
@@ -311,7 +319,11 @@ def outgoing_blockers(message, exclusions=None):
     names = message.get("recipient_names", [])
     if not isinstance(names, list) or any(not isinstance(x, str) for x in names):
         return reasons + ["CONTACT_BLOCKED_NO_CONTACT: invalid names"]
-    identities.update(_norm(x) for x in names)
+    try:
+        for name in names:
+            identities.update(_recipient_keys(name))
+    except ValueError:
+        return reasons + ["CONTACT_BLOCKED_NO_CONTACT: invalid recipient encoding"]
     collections = ("related_dois", "related_titles", "related_trial_families")
     if any(not isinstance(message.get(k, []), list) or
            any(not isinstance(x, str) for x in message.get(k, [])) for k in collections):
