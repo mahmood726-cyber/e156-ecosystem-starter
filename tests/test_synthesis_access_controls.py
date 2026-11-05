@@ -422,6 +422,24 @@ class ContactTests(unittest.TestCase):
         )
         self.assertEqual(unrelated, ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
 
+    def test_invalid_encoded_display_and_exclusion_hold(self):
+        # Deliberately invalid UTF-8 encoded-word (synthetic), not a real
+        # recipient. A decoding error must never turn into an implicit allow.
+        invalid = "=?utf-8?B?////?= <alternate@example.invalid>"
+        message = {"to": [invalid], "kind": "retry"}
+        reasons = outgoing_blockers(message, self.EXCLUSIONS)
+        self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+        self.assertIn("CONTACT_BLOCKED_NO_CONTACT: invalid recipient encoding", reasons)
+        with self.assertRaises(PermissionError):
+            require_outgoing_allowed(message, self.EXCLUSIONS)
+
+        invalid_exclusions = [{
+            "names": [invalid], "emails": [], "aliases": [], "coauthors": []
+        }]
+        reasons = outgoing_blockers({"to": ["other@example.invalid"]},
+                                    invalid_exclusions)
+        self.assertIn("CONTACT_BLOCKED_NO_CONTACT: invalid exclusion encoding", reasons)
+
     def test_unavailable_exclusions_also_fail_closed(self):
         reasons=outgoing_blockers({"to":["other@example.invalid"]},None)
         self.assertTrue(any('exclusions unavailable' in x for x in reasons))
