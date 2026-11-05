@@ -115,6 +115,14 @@ def group_preflight_roots(observations: Any) -> dict[str, Any]:
                 or type(record.get("human_adjudicated")) is not bool
                 or type(record.get("author_confirmed")) is not bool):
             return {**held, "reason": f"record {index}: unknown evidence status or boolean"}
+        # Screening has not established what the source actually supports.
+        # A caller cannot label source evidence as checked/contradicted at
+        # SCREENED maturity, even when the claimed disposition is HOLD.
+        # Such claims require SOURCE_BACKED or later; preserve the genuine
+        # screened/unknown negative control below.
+        if (record["maturity"] == "SCREENED"
+                and record["source_support"] not in ("SOURCE_UNAVAILABLE", "NOT_ENOUGH_INFO")):
+            return {**held, "reason": f"record {index}: screened status cannot claim source-backed support"}
         # A source that is unavailable or explicitly insufficient cannot
         # support source-backed, reproduced, or human-adjudicated maturity.
         # A scoped human receipt is separate evidence, not proof that the
