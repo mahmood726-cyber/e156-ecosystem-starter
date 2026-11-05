@@ -165,6 +165,53 @@ class SourceRightsTests(unittest.TestCase):
             self.assertEqual(lines[0]['access_route'], SOURCE['access_route'])
             self.assertNotIn('evidence_reference', lines[1])
 
+    def test_log_aliases_hold_before_receipt_or_source_action(self):
+        # A private append log cannot silently be a symlink, hardlink, or a
+        # file reached through a symlinked parent directory. Synthetic only.
+        with TemporaryDirectory() as root:
+            base = Path(root)
+            manifest = base / "permissions.json"
+            manifest.write_text(json.dumps(MANIFEST))
+            external = base / "unapproved-receipts.jsonl"
+            external.write_text("synthetic sentinel\\n")
+            aliases = []
+            hardlink = base / "hardlink.jsonl"
+            try:
+                import os
+                os.link(external, hardlink)
+                aliases.append(hardlink)
+            except (OSError, NotImplementedError):
+                pass
+            symlink = base / "symlink.jsonl"
+            try:
+                symlink.symlink_to(external)
+                aliases.append(symlink)
+            except (OSError, NotImplementedError):
+                pass
+            external_dir = base / "external"
+            external_dir.mkdir()
+            nested_log = external_dir / "log.jsonl"
+            nested_log.write_text("nested sentinel\\n")
+            aliased_dir = base / "indirect"
+            try:
+                aliased_dir.symlink_to(external_dir, target_is_directory=True)
+                aliases.append(aliased_dir / "log.jsonl")
+            except (OSError, NotImplementedError):
+                pass
+            self.assertTrue(aliases, "synthetic alias setup needs link support")
+            for alias in aliases:
+                with self.subTest(log=str(alias)):
+                    before = (nested_log if alias == aliased_dir / "log.jsonl"
+                              else external).read_bytes()
+                    callback = Mock(return_value=b"synthetic")
+                    with self.assertRaises(PermissionError):
+                        execute_source_action(SOURCE, "CACHE_READ", callback,
+                                              manifest_path=manifest,
+                                              decision_log=alias, on_date=TODAY)
+                    callback.assert_not_called()
+                    self.assertEqual((nested_log if alias == aliased_dir / "log.jsonl"
+                                      else external).read_bytes(), before)
+
     def test_missing_manifest_or_log_never_reaches_cache_or_network_callback(self):
         with TemporaryDirectory() as root:
             p = Path(root)
