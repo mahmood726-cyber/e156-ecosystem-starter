@@ -234,13 +234,13 @@ class CountIdentityTests(unittest.TestCase):
         # Invisible or control characters must not silently become matching
         # evidence identities: all records here are purely synthetic.
         for field, bad in (
-            ("publication_id", "synthetic:paper-\\u200bA"),
-            ("source_result_id", "result:\\u202e1"),
-            ("source_version", "snapshot-\\u20601"),
-            ("endpoint", "hospital\\u200bisation"),
-            ("analysis_cell_id", "arm-\\u200b1"),
-            ("locator", "synthetic table\\x00 row"),
-            ("model", "not_applicable\\u2060"),
+            ("publication_id", "synthetic:paper-\u200bA"),
+            ("source_result_id", "result:\u202e1"),
+            ("source_version", "snapshot-\u20601"),
+            ("endpoint", "hospital\u200bisation"),
+            ("analysis_cell_id", "arm-\u200b1"),
+            ("locator", "synthetic table\x00 row"),
+            ("model", "not_applicable\u2060"),
         ):
             with self.subTest(field=field):
                 left = copy.deepcopy(self.source)
