@@ -157,6 +157,42 @@ class RootDedupContractTests(unittest.TestCase):
                 self.assertEqual(group_preflight_roots([row])["status"],
                                  "NOT_ENOUGH_INFO")
 
+    def test_same_human_with_case_or_compatibility_alias_must_not_adjudicate(self):
+        # A different spelling is not sufficient evidence of a distinct
+        # independent reviewer. Fail closed on identity ambiguity.
+        for reviewer_id, investigator_id in (
+            ("synthetic:Reviewer-One", "synthetic:reviewer-one"),
+            ("SYNTHETIC:REVIEWER", "synthetic:reviewer"),
+            ("synthetic:Ｒｅｖｉｅｗｅｒ", "synthetic:reviewer"),
+        ):
+            with self.subTest(reviewer_id=reviewer_id):
+                row = self.row_with(
+                    maturity="INDEPENDENTLY_ADJUDICATED",
+                    human_adjudicated=True,
+                    human_receipt=self.human_receipt(
+                        reviewer_id=reviewer_id,
+                        investigator_id=investigator_id,
+                    ),
+                )
+                result = group_preflight_roots([row])
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertEqual(result["certified_errors"], 0)
+                self.assertFalse(result["email_eligible"])
+
+    def test_distinct_human_receipt_ids_still_group_without_certification(self):
+        row = self.row_with(
+            maturity="INDEPENDENTLY_ADJUDICATED",
+            human_adjudicated=True,
+            human_receipt=self.human_receipt(
+                reviewer_id="synthetic:independent-reviewer",
+                investigator_id="synthetic:investigator",
+            ),
+        )
+        result = group_preflight_roots([row])
+        self.assertEqual(result["status"], "GROUPED")
+        self.assertEqual(result["certified_errors"], 0)
+        self.assertFalse(result["email_eligible"])
+
     def test_author_acknowledgement_or_wrong_scope_is_not_confirmation(self):
         for change in (dict(confirmation_kind="acknowledged"),
                        dict(root_cause_id="another-root"),
