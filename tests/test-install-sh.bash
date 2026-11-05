@@ -394,6 +394,75 @@ else
     bad "memory template fixture missing"
 fi
 
+# Non-regular nodes are unsafe config destinations: a FIFO write could
+# block indefinitely. All fixtures are isolated; reject before any writes.
+start "rules install refuses FIFO leaf with no partial writes"
+target="$SANDBOX/fifo rules-Ü/rules"
+mkdir -p "$target"
+mkfifo "$target/lessons.md"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if copy_rules_to_agent "$ROOT/rules" "$target" >/dev/null 2>&1; then
+    bad "rules installer accepted FIFO destination"
+elif [[ -p "$target/lessons.md" && ! -e "$target/rules.md" &&
+        ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_BACKUPS" ]]; then
+    ok
+else
+    bad "rules FIFO refusal changed filesystem or manifest"
+fi
+
+start "context install rejects a directory at context-file leaf"
+context_target="$SANDBOX/directory context-Ü"
+mkdir -p "$context_target/AGENTS.md"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if copy_context_files "$ROOT" "$context_target" >/dev/null 2>&1; then
+    bad "context installer accepted directory as a document"
+elif [[ -d "$context_target/AGENTS.md" &&
+        ! -e "$context_target/CLAUDE.md" &&
+        ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_BACKUPS" ]]; then
+    ok
+else
+    bad "context directory refusal left partial copies"
+fi
+
+start "memory scaffold refuses a file in place of templates directory"
+memory_target="$SANDBOX/file templates-Ü"
+mkdir -p "$memory_target"
+printf 'preserve original templates sentinel' > "$memory_target/templates"
+: > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+if copy_memory_scaffold "$ROOT/memory" "$memory_target" >/dev/null 2>&1; then
+    bad "memory scaffold accepted file as templates directory"
+elif [[ "$(cat "$memory_target/templates")" == "preserve original templates sentinel" &&
+        ! -e "$memory_target/MEMORY.md" &&
+        ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_BACKUPS" ]]; then
+    ok
+else
+    bad "memory templates refusal changed user files or manifest"
+fi
+
+start "memory scaffold refuses FIFO inside normal templates directory"
+memory_target="$SANDBOX/fifo template-Ü"
+mkdir -p "$memory_target/templates"
+template_fixture=""
+for src_template in "$ROOT"/memory/templates/*.md; do
+    template_fixture="$src_template"
+    break
+done
+if [[ -f "$template_fixture" ]]; then
+    mkfifo "$memory_target/templates/$(basename "$template_fixture")"
+    : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+    if copy_memory_scaffold "$ROOT/memory" "$memory_target" >/dev/null 2>&1; then
+        bad "memory scaffold accepted a template FIFO"
+    elif [[ -p "$memory_target/templates/$(basename "$template_fixture")" &&
+            ! -e "$memory_target/MEMORY.md" &&
+            ! -s "$MANIFEST_FILES" && ! -s "$MANIFEST_BACKUPS" ]]; then
+        ok
+    else
+        bad "memory FIFO refusal left partial installation"
+    fi
+else
+    bad "memory template source missing"
+fi
+
 # Describe: render_template rules in practice
 start "templated rules have no residual Mahmood paths"
 target="$SANDBOX/rendered/rules"
