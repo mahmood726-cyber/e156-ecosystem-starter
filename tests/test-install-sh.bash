@@ -222,7 +222,7 @@ printf 'latest context edit' > "$context_target/AGENTS.md"
 : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
 date() {
     if [[ "$#" -eq 1 && "$1" == "+%Y%m%d-%H%M%S" ]]; then
-        printf '%s\\n' "20261105-092000"
+        printf '%s\n' "20261105-092000"
     else
         command date "$@"
     fi
