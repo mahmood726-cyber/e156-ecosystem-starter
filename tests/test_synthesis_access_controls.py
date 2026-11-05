@@ -235,6 +235,34 @@ class ContactTests(unittest.TestCase):
             self.EXCLUSIONS)
         self.assertEqual(unrelated, ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
 
+    def test_multi_address_header_all_routes_fails_closed(self):
+        # A recipient-list element can itself be an RFC 5322 address header,
+        # with a second or later suppressed person. The first address must not
+        # hide the second. Only invented names and mailboxes are used.
+        headers = (
+            'Allowed <allowed@example.invalid>, "Fictional Researcher" <new@example.invalid>',
+            'Allowed <allowed@example.invalid>, "F. Researcher" <new@example.invalid>',
+            'Allowed <allowed@example.invalid>, Coauthor <coauthor@example.invalid>',
+            '"Another, Invented" <allowed@example.invalid>, "Fictional Researcher" <new@example.invalid>',
+        )
+        for route in ("to", "cc", "bcc", "indirect_recipients"):
+            for header in headers:
+                for kind in ("new", "retry", "followup", "queued_send"):
+                    with self.subTest(route=route, header=header, kind=kind):
+                        message = {route: [header], "kind": kind}
+                        reasons = outgoing_blockers(message, self.EXCLUSIONS)
+                        self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                        self.assertTrue(any("recipient/publication/thread exclusion" in x
+                                            for x in reasons))
+                        stub = Mock()
+                        with self.assertRaises(PermissionError):
+                            require_outgoing_allowed(message, self.EXCLUSIONS)
+                        stub.assert_not_called()
+        unrelated = outgoing_blockers(
+            {"to": ['Allowed <allowed@example.invalid>, "Unrelated, Invented" <new@example.invalid>']},
+            self.EXCLUSIONS)
+        self.assertEqual(unrelated, ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
+
     def test_malformed_publication_and_exclusion_lists_fail_closed(self):
         malformed_messages = (
             {"to":["other@example.invalid"],"related_dois":"10.7777/fictional-publication"},
