@@ -178,6 +178,55 @@ class SourceRightsTests(unittest.TestCase):
                 self.assertEqual(assess_source(MANIFEST,source,'CACHE_READ',on_date=TODAY)[0], 'SOURCE_RIGHTS_HOLD')
 
 
+    def test_jama_trailing_dot_fqdn_hosts_fail_closed(self):
+        # A terminal dot is the DNS absolute-name spelling of the same host.
+        # All DOI suffixes and URL paths are synthetic; no URL is fetched.
+        cases = (
+            ("original_url", "jamanetwork.com."),
+            ("source_url", "sub.jamanetwork.com."),
+            ("original_url", "www.ama-assn.org."),
+            ("source_url", "ama-assn.org."),
+        )
+        for field, host in cases:
+            with self.subTest(identity_field=field, host=host):
+                url = f"https://{host}/fictional-source"
+                source = {**SOURCE, field: url}
+                grant = {**PERMISSION, field: url}
+                reviewed = {"schema": "source-permissions-v1", "permissions": [grant]}
+                self.assertTrue(is_jama_source(source))
+                self.assertEqual(assess_source(
+                    reviewed, source, "CACHE_READ", on_date=TODAY)[0],
+                    "SOURCE_RIGHTS_HOLD")
+
+        # The preflight must stop the callback and append an actual HOLD receipt.
+        with TemporaryDirectory() as root:
+            folder = Path(root)
+            url = "https://jamanetwork.com./fictional-source"
+            source = {**SOURCE, "original_url": url}
+            grant = {**PERMISSION, "original_url": url}
+            manifest = folder / "rights.json"
+            manifest.write_text(json.dumps({
+                "schema": "source-permissions-v1", "permissions": [grant]}))
+            log = folder / "decisions.jsonl"
+            log.touch()
+            callback = Mock(return_value=b"synthetic-only")
+            with self.assertRaises(PermissionError):
+                execute_source_action(source, "CACHE_READ", callback,
+                                      manifest_path=manifest, decision_log=log,
+                                      on_date=TODAY)
+            callback.assert_not_called()
+            self.assertEqual(json.loads(log.read_text().splitlines()[-1])["decision"],
+                             "SOURCE_RIGHTS_HOLD")
+
+        # A deceptive suffix on an unrelated synthetic host must not match.
+        unrelated = "https://jamanetwork.com.fictional.invalid/fictional-source"
+        source = {**SOURCE, "original_url": unrelated}
+        grant = {**PERMISSION, "original_url": unrelated}
+        reviewed = {"schema": "source-permissions-v1", "permissions": [grant]}
+        self.assertFalse(is_jama_source(source))
+        self.assertEqual(assess_source(reviewed, source, "CACHE_READ",
+                                       on_date=TODAY)[0], "ALLOW")
+
     def test_resolver_alias_cannot_hide_jama_identity(self):
         # Invented DOIs: a resolver alias is still the same held publication.
         for doi in (
