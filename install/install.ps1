@@ -62,7 +62,8 @@ $ErrorActionPreference = 'Stop'
 # so doctor-report.ps1 has something to read when a student hits a problem.
 # Failure here is non-fatal (Start-Transcript failures shouldn't kill an
 # otherwise-fine install).
-if (-not $Import) {
+# SHA-only dry runs must never create a transcript or LOCALAPPDATA state.
+if (-not $Import -and -not $DryRun) {
     try {
         $logDir = Join-Path $env:LOCALAPPDATA 'e156\logs'
         New-Item -ItemType Directory -Force -Path $logDir | Out-Null
