@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 from urllib.parse import urlsplit
 
 SOURCE_POLICY = "SYN-SOURCE-HOLD-JAMA-20261104|reviewed-operation-specific-permissions-v1"
@@ -214,12 +215,25 @@ def source_preflight(source, operation, *, manifest_path=None, decision_log=None
         return {**receipt, "decision": "SOURCE_RIGHTS_HOLD", "reason": "private decision log unavailable"}
     try:
         path = Path(decision_log)
-        if not path.is_file():
-            raise OSError("decision log must pre-exist")
-        with path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(receipt, sort_keys=True) + "\n")
-            handle.flush()
-            os.fsync(handle.fileno())
+        # A permission receipt is sensitive: aliases must not redirect writes
+        # into another file or a location outside the intended private log.
+        # Keep this path check, and protect the final component at open time.
+        if any(component.is_symlink() for component in (path, *path.parents)):
+            raise OSError("decision log path contains a symlink")
+        flags = os.O_WRONLY | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
+        descriptor = os.open(path, flags)  # Never create an absent log.
+        try:
+            opened = os.fstat(descriptor)
+            if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
+                raise OSError("decision log must be an unaliased regular file")
+            with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
+                descriptor = None  # fdopen now owns the descriptor.
+                handle.write(json.dumps(receipt, sort_keys=True) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
     except OSError:
         return {**receipt, "decision": "SOURCE_RIGHTS_HOLD", "reason": "private decision log missing/unwritable"}
     return receipt
