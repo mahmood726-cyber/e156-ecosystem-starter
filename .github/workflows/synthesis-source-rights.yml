@@ -32,6 +32,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Verify synthetic permission and IO boundaries
         run: |
+          python3 scripts/synthesis_source_rights.py --help > /dev/null
           python3 -B -m unittest discover -s tests -p 'test_synthesis_source_rights.py' -v
           python3 -B -m unittest discover -s tests -p 'test_synthesis_capture_evidence.py' -v
           python3 -B -m unittest discover -s tests -p 'test_synthesis_preflight.py' -v

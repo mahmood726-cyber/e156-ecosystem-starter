@@ -38,6 +38,7 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_synthesis_capture_evidence.py' -v
       - name: Check exact prompt binding and receipt generation
         run: |
+          python3 scripts/synthesis_preflight.py --help > /dev/null
           python3 tests/run_synthetic_preflight.py --output-dir /tmp/synthesis-preflight-receipt
           python3 -c 'import json; d=json.load(open("/tmp/synthesis-preflight-receipt/receipt.json")); assert d["intake_valid"] and d["claim_count"]==2 and d["checks"][0]["status"]=="REVIEW" and d["checks"][1]["status"]=="NOT_COMPARABLE"'
 
