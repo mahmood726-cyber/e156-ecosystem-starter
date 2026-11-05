@@ -333,5 +333,42 @@ class CountIdentityTests(unittest.TestCase):
         self.assertEqual(compare_raw_counts(left, right)["status"], "REVIEW")
 
 
+
+    def test_padded_source_identity_cannot_support_raw_count_review(self):
+        # An identity may be nonempty but still ambiguous if its first or
+        # last character is whitespace. Both synthetic records use the same
+        # invalid identity; repetition must not promote it to a comparison.
+        for field in ("publication_id", "source_result_id", "data_version",
+                      "source_version", "denominator_basis", "analysis_cell_id",
+                      "population", "endpoint", "time_window", "effect_measure",
+                      "estimand", "locator"):
+            for padded in (" " + self.source[field],
+                           self.source[field] + " ", "\u00a0" + self.source[field]):
+                with self.subTest(field=field, padded=repr(padded)):
+                    left = copy.deepcopy(self.source)
+                    left[field] = padded
+                    right = copy.deepcopy(left)
+                    right["value"] = 15
+                    result = compare_raw_counts(left, right)
+                    self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                    self.assertEqual(result["disposition"], "HOLD")
+                    self.assertFalse(result["arithmetic_reproduced"])
+                    self.assertFalse(result["certified_error"])
+
+    def test_internal_spaces_in_result_labels_remain_valid(self):
+        # Human-readable endpoint and population labels often contain spaces.
+        # Boundary whitespace refusal must not invalidate such labels.
+        left = copy.deepcopy(self.source)
+        left["population"] = "adult outpatient population"
+        left["endpoint"] = "first hospital admission"
+        left["locator"] = "synthetic table 1 row 3"
+        right = copy.deepcopy(left)
+        right["value"] = 15
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "REVIEW")
+        self.assertTrue(result["arithmetic_reproduced"])
+        self.assertFalse(result["certified_error"])
+
+
 if __name__ == "__main__":
     unittest.main()
