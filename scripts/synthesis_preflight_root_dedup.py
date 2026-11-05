@@ -136,12 +136,22 @@ def group_preflight_roots(observations: Any) -> dict[str, Any]:
         evidence = (record["source_support"], record["maturity"],
                     record["disposition"], record["human_adjudicated"],
                     record["author_confirmed"])
-        group = groups.setdefault(key, {"outputs": {}, "evidence": []})
+        # Identical status flags do not make two attestations an exact replay.
+        # Keep a private in-call snapshot for comparison only; the returned
+        # public grouping never includes human/author receipt identifiers.
+        receipts = (
+            dict(record["human_receipt"]) if record["human_adjudicated"] else None,
+            dict(record["author_confirmation"]) if record["author_confirmed"] else None,
+        )
+        group = groups.setdefault(key, {"outputs": {}, "receipts": {}, "evidence": []})
         if output in group["outputs"]:
             if group["outputs"][output] != evidence:
                 return {**held, "reason": f"record {index}: conflicting repeated output evidence"}
-            continue  # exact replay, not another affected output
+            if group["receipts"][output] != receipts:
+                return {**held, "reason": f"record {index}: conflicting repeated output receipts"}
+            continue  # exact replay of both evidence and receipts
         group["outputs"][output] = evidence
+        group["receipts"][output] = receipts
         group["evidence"].append(evidence)
     roots = []
     for key, group in sorted(groups.items()):
