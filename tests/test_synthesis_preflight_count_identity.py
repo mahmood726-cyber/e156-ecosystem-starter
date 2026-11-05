@@ -99,5 +99,34 @@ class CountIdentityTests(unittest.TestCase):
         self.assertEqual(compare_raw_counts([], self.source)["status"], "NOT_ENOUGH_INFO")
 
 
+    def test_placeholder_core_identities_refuse_even_if_both_sides_agree(self):
+        # Same placeholder on both sides is not a verified matching endpoint.
+        for key in ("publication_id", "source_result_id", "data_version",
+                    "source_version", "denominator_basis", "population",
+                    "endpoint", "time_window", "effect_measure", "estimand",
+                    "locator"):
+            for marker in ("not_applicable", "N/A", " none ", "not specified",
+                           "missing", "undetermined", "tbd", "?"):
+                with self.subTest(key=key, marker=marker):
+                    left = copy.deepcopy(self.source)
+                    left[key] = marker
+                    right = copy.deepcopy(left)
+                    right["value"] = 15
+                    result = compare_raw_counts(left, right)
+                    self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                    self.assertEqual(result["disposition"], "HOLD")
+                    self.assertFalse(result["arithmetic_reproduced"])
+                    self.assertFalse(result["certified_error"])
+
+    def test_explicit_nonapplicable_statistical_methods_are_valid_control(self):
+        # A raw count needs endpoint identity but not an inferential model.
+        result = self.compare(value=15, model="not_applicable",
+                              adjustment="not_applicable",
+                              variance_method="not_applicable")
+        self.assertEqual(result["status"], "REVIEW")
+        self.assertEqual(result["difference"], -3)
+        self.assertFalse(result["certified_error"])
+
+
 if __name__ == "__main__":
     unittest.main()
