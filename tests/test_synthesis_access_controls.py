@@ -84,6 +84,11 @@ class SourceRightsTests(unittest.TestCase):
             self.assertEqual([x['decision'] for x in lines], ['ALLOW','SOURCE_RIGHTS_HOLD'])
             self.assertEqual(len(lines[0]['manifest_sha256']),64)
             self.assertEqual(len(lines[0]['policy_sha256']),64)
+            self.assertEqual(lines[0]['evidence_reference'], PERMISSION['evidence_reference'])
+            self.assertEqual(lines[0]['evidence_sha256'], PERMISSION['evidence_sha256'])
+            self.assertEqual(lines[0]['reviewer'], PERMISSION['reviewer'])
+            self.assertEqual(lines[0]['access_route'], SOURCE['access_route'])
+            self.assertNotIn('evidence_reference', lines[1])
 
     def test_missing_manifest_or_log_never_reaches_cache_or_network_callback(self):
         with TemporaryDirectory() as root:
