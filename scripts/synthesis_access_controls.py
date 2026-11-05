@@ -22,6 +22,20 @@ OUTGOING_POLICY = "SYN-OUTGOING-PAUSE-20261105|SYN-NOCONTACT-ZUIN-20261105"
 OUTGOING_PAUSED = True  # Explicit user instruction; no environment override.
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
+def _unique_manifest_object(pairs):
+    """Reject ambiguous JSON keys at every depth in a private rights manifest.
+
+    Default json.loads silently keeps the last occurrence, potentially
+    converting a conflicting denied/unreviewed grant into REVIEWED_ALLOW.
+    """
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate key in source-rights permission manifest")
+        result[key] = value
+    return result
+
+
 
 def _day(value):
     if not isinstance(value, str):
@@ -217,7 +231,7 @@ def source_preflight(source, operation, *, manifest_path=None, decision_log=None
                     os.close(descriptor)
         if raw:
             manifest_digest = sha256(raw).hexdigest()
-            manifest = json.loads(raw)
+            manifest = json.loads(raw, object_pairs_hook=_unique_manifest_object)
     except (OSError, ValueError, TypeError):
         pass
     outcome, reason = assess_source(manifest, source, operation, on_date=on_date)
