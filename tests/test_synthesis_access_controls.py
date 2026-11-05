@@ -398,6 +398,30 @@ class ContactTests(unittest.TestCase):
              "doi": "https://doi.org.untrusted.invalid/10.7777/fictional-publication"},
             self.EXCLUSIONS), ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
 
+    def test_mime_encoded_display_alias_in_all_recipient_fields(self):
+        # RFC 2047 encoded words may appear in real address headers; use
+        # invented names/mailboxes and never touch an outgoing transport.
+        # Merely comparing getaddresses()' raw display text misses aliases.
+        encoded = "=?utf-8?Q?Fictional_Researcher?="
+        for route in ("to", "cc", "bcc", "indirect_recipients"):
+            for kind in ("new", "retry", "followup", "queued_send"):
+                message = {route: [f"{encoded} <alternate@example.invalid>"],
+                           "kind": kind}
+                with self.subTest(route=route, kind=kind):
+                    reasons = outgoing_blockers(message, self.EXCLUSIONS)
+                    self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                    self.assertTrue(any(
+                        "CONTACT_BLOCKED_NO_CONTACT: recipient/publication/thread exclusion"
+                        in reason for reason in reasons
+                    ))
+                    with self.assertRaises(PermissionError):
+                        require_outgoing_allowed(message, self.EXCLUSIONS)
+        unrelated = outgoing_blockers(
+            {"to": ["=?utf-8?Q?Unrelated_Person?= <alternate@example.invalid>"]},
+            self.EXCLUSIONS,
+        )
+        self.assertEqual(unrelated, ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
+
     def test_unavailable_exclusions_also_fail_closed(self):
         reasons=outgoing_blockers({"to":["other@example.invalid"]},None)
         self.assertTrue(any('exclusions unavailable' in x for x in reasons))
