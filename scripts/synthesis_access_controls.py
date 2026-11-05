@@ -28,13 +28,29 @@ def _day(value):
 
 
 def _doi(value):
+    """Canonicalize a DOI literal or trusted resolver URL for identity checks.
+
+    Host comparison uses parsed hostname (not string prefix) so an impostor
+    host cannot impersonate doi.org. Query/fragment belong to the resolver
+    request, not the DOI identity. Non-resolver URLs fail closed.
+    """
     if not isinstance(value, str):
         return ""
-    value = value.strip().casefold()
-    for prefix in ("https://doi.org/", "http://doi.org/", "doi:"):
-        if value.startswith(prefix):
-            value = value[len(prefix):]
-            break
+    value = value.strip()
+    if value.casefold().startswith("doi:"):
+        value = value[4:].strip()
+    elif "://" in value:
+        try:
+            parsed = urlsplit(value)
+            if (parsed.scheme.casefold() not in {"https", "http"}
+                    or (parsed.hostname or "").casefold() not in
+                    {"doi.org", "dx.doi.org"}
+                    or parsed.username is not None or parsed.password is not None):
+                return ""
+        except ValueError:
+            return ""
+        value = parsed.path.lstrip("/")
+    value = value.casefold()
     return value if re.fullmatch(r"10\.\d{4,9}/[^\s?#]+", value) else ""
 
 
