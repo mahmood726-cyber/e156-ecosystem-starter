@@ -209,7 +209,7 @@ Describe "Copy-RulesToAgent timestamp-suffixes second-rerun backups (P2)" {
 Describe "Windows reinstall backups preserve edits and rollback" {
     It "captures second context edit when the first .user backup exists" {
         $target = Join-Path $tmpRoot "ctx-rerun-$([guid]::NewGuid().ToString('N'))-雪"
-        New-Item -ItemType Directory -Force -LiteralPath $target | Out-Null
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
         $dst = Join-Path $target 'AGENTS.md'
         Set-Content -LiteralPath $dst -Value 'first edit' -NoNewline -Encoding UTF8
         Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $target | Out-Null
@@ -225,7 +225,7 @@ Describe "Windows reinstall backups preserve edits and rollback" {
 
     It "restores current context edit on rollback without removing older .user" {
         $target = Join-Path $tmpRoot "ctx-rollback-$([guid]::NewGuid().ToString('N'))"
-        New-Item -ItemType Directory -Force -LiteralPath $target | Out-Null
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
         $dst = Join-Path $target 'AGENTS.md'
         Set-Content -LiteralPath $dst -Value 'older edit' -NoNewline -Encoding UTF8
         Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $target | Out-Null
@@ -240,7 +240,7 @@ Describe "Windows reinstall backups preserve edits and rollback" {
 
     It "does not overwrite an existing same-second rules backup and can roll back" {
         $target = Join-Path $tmpRoot "rules-collision-$([guid]::NewGuid().ToString('N'))"
-        New-Item -ItemType Directory -Force -LiteralPath $target | Out-Null
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
         $dst = Join-Path $target 'lessons.md'
         Set-Content -LiteralPath $dst -Value 'first edit' -NoNewline -Encoding UTF8
         Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target | Out-Null
