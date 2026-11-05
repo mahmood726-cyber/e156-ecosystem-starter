@@ -309,7 +309,7 @@ def outgoing_blockers(message, exclusions=None):
     identities = set()
     for k in ("to", "cc", "bcc", "indirect_recipients"):
         val = message.get(k, [])
-        if not isinstance(val, list) or any(not isinstance(x, str) for x in val):
+        if not isinstance(val, list) or any(not isinstance(x, str) or not x.strip() for x in val):
             return reasons + ["CONTACT_BLOCKED_NO_CONTACT: invalid recipient list"]
         for recipient in val:
             try:
@@ -317,7 +317,7 @@ def outgoing_blockers(message, exclusions=None):
             except ValueError:
                 return reasons + ["CONTACT_BLOCKED_NO_CONTACT: invalid recipient encoding"]
     names = message.get("recipient_names", [])
-    if not isinstance(names, list) or any(not isinstance(x, str) for x in names):
+    if not isinstance(names, list) or any(not isinstance(x, str) or not x.strip() for x in names):
         return reasons + ["CONTACT_BLOCKED_NO_CONTACT: invalid names"]
     try:
         for name in names:
@@ -360,9 +360,11 @@ def outgoing_blockers(message, exclusions=None):
         if not isinstance(exclusion, dict):
             reasons.append("CONTACT_BLOCKED_NO_CONTACT: invalid exclusion")
             continue
+        # Private suppression entries must not lose their last blocking key
+        # because a blank identity/thread entry normalizes to the empty set.
         fields = ("names", "aliases", "emails", "coauthors", "dois", "threads", "titles", "trial_families")
         if any(not isinstance(exclusion.get(k, []), list) or
-               any(not isinstance(x, str) for x in exclusion.get(k, [])) for k in fields):
+               any(not isinstance(x, str) or not x.strip() for x in exclusion.get(k, [])) for k in fields):
             reasons.append("CONTACT_BLOCKED_NO_CONTACT: malformed exclusion")
             continue
         # An invalid private exclusion must never be treated as an empty
