@@ -182,5 +182,26 @@ class RootDedupContractTests(unittest.TestCase):
         self.assertEqual(result["certified_errors"], 0)
         self.assertFalse(result["email_eligible"])
 
+
+    def test_normalized_unknown_root_and_receipt_id_aliases_hold(self):
+        for key in ("root_scope_id", "root_cause_id", "affected_output_id"):
+            for marker in ("not-reported", "NOT   REPORTED",
+                           "source_limited", "not-available", "UnClEaR"):
+                with self.subTest(key=key, marker=marker):
+                    self.assertEqual(
+                        group_preflight_roots([self.row_with(**{key: marker})])["status"],
+                        "NOT_ENOUGH_INFO")
+        row = self.row_with(maturity="INDEPENDENTLY_ADJUDICATED",
+                            human_adjudicated=True,
+                            human_receipt=self.human_receipt(receipt_locator="NOT   REPORTED"))
+        self.assertEqual(group_preflight_roots([row])["status"], "NOT_ENOUGH_INFO")
+
+    def test_legitimate_hyphenated_scope_and_underscored_output_pass(self):
+        result = group_preflight_roots([
+            self.row_with(root_scope_id="synthetic:family-1_v2",
+                          affected_output_id="table1:unique_patient_count")])
+        self.assertEqual(result["status"], "GROUPED")
+        self.assertEqual(result["root_count"], 1)
+
 if __name__ == "__main__":
     unittest.main()
