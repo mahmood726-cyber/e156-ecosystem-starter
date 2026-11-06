@@ -32,6 +32,44 @@ class SourceRightsTests(unittest.TestCase):
     def test_exact_reviewed_fixture_allowed(self):
         self.assertEqual(assess_source(MANIFEST, SOURCE, 'CACHE_READ', on_date=TODAY)[0], 'ALLOW')
 
+    def test_unicode_decimal_doi_prefix_fails_closed_before_cached_action(self):
+        # Invented DOI suffixes only. Unicode decimal digits can resemble the
+        # restricted ASCII registrant prefix, but they are not a reviewed DOI.
+        # A same-string source/manifest must never turn them into permission.
+        malformed = (
+            "10.１００１/synthetic-policy-fixture",
+            "doi:10.١٠٠١/synthetic-policy-fixture",
+            "https://doi.org/10.１００١/synthetic-policy-fixture",
+        )
+        for doi in malformed:
+            with self.subTest(doi=doi):
+                source = {**SOURCE, "doi": doi}
+                permission = {**PERMISSION, "doi": doi}
+                manifest = {"schema": "source-permissions-v1", "permissions": [permission]}
+                self.assertEqual(
+                    assess_source(manifest, source, "CACHE_READ", on_date=TODAY)[0],
+                    "SOURCE_RIGHTS_HOLD")
+        with TemporaryDirectory() as root:
+            folder = Path(root)
+            manifest_file = folder / "permissions.json"
+            invalid = malformed[0]
+            manifest_file.write_text(json.dumps({
+                "schema": "source-permissions-v1",
+                "permissions": [{**PERMISSION, "doi": invalid}]}), encoding="utf-8")
+            log = folder / "decisions.jsonl"
+            log.touch()
+            callback = Mock(return_value=b"synthetic-only")
+            with self.assertRaises(PermissionError):
+                execute_source_action({**SOURCE, "doi": invalid}, "CACHE_READ", callback,
+                                      manifest_path=manifest_file, decision_log=log,
+                                      on_date=TODAY)
+            callback.assert_not_called()
+            self.assertEqual(json.loads(log.read_text().splitlines()[0])["decision"],
+                             "SOURCE_RIGHTS_HOLD")
+        # A genuinely reviewed ASCII synthetic DOI remains an allowed control.
+        self.assertEqual(assess_source(MANIFEST, SOURCE, "CACHE_READ",
+                                       on_date=TODAY)[0], "ALLOW")
+
     def test_original_doi_must_bind_reviewed_source_and_obey_jama_hold(self):
         # Invented DOI suffixes only: no real journal material or network I/O.
         held_doi = "10.1001/synthetic-policy-fixture"
