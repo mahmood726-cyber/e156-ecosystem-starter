@@ -388,7 +388,9 @@ def _recipient_keys(value):
 def outgoing_blockers(message, exclusions=None):
     """Inspect all recipients/aliases and publication/thread IDs, without a send."""
     reasons = ["PROGRAMME_OUTGOING_QUERY_PAUSE"] if OUTGOING_PAUSED else []
-    if not isinstance(message, dict) or not isinstance(exclusions, list):
+    if not isinstance(message, dict) or not isinstance(exclusions, list) or not exclusions:
+        # An empty registry is not evidence that the programme has no active
+        # exclusions. It may be missing or have failed to load completely.
         return reasons + ["CONTACT_BLOCKED_NO_CONTACT: exclusions unavailable"]
     identities = set()
     for k in ("to", "cc", "bcc", "indirect_recipients"):
@@ -450,6 +452,12 @@ def outgoing_blockers(message, exclusions=None):
         if any(not isinstance(exclusion.get(k, []), list) or
                any(not isinstance(x, str) or not x.strip() for x in exclusion.get(k, [])) for k in fields):
             reasons.append("CONTACT_BLOCKED_NO_CONTACT: malformed exclusion")
+            continue
+        # A structurally present record with no recipient, publication, or
+        # thread identity cannot enforce a private no-contact instruction.
+        # Do not treat an emptied register row as a legitimate empty match.
+        if not any(exclusion.get(k) for k in fields):
+            reasons.append("CONTACT_BLOCKED_NO_CONTACT: exclusion has no matching identifiers")
             continue
         # An invalid private exclusion must never be treated as an empty
         # set, which could remove the last publication-level contact block.
