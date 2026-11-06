@@ -187,6 +187,12 @@ def assess_source(manifest, source, operation, *, on_date=None):
                 or not isinstance(reviewed_url, str) or not reviewed_url.strip()
                 or requested_url.strip() != reviewed_url.strip()):
             return "SOURCE_RIGHTS_HOLD", "source URL differs from exact reviewed access route"
+    # Even on cache reads, replay, extraction and model submission, a
+    # supplied source_url is part of the reviewed route identity. Python's
+    # URL parser can silently drop controls; identical malformed strings in
+    # the request and manifest are not a sufficient permission boundary.
+    if requested_url is not None and not _valid_original_publication_url(requested_url):
+        return "SOURCE_RIGHTS_HOLD", "retrieval URL is not an unambiguous absolute HTTP(S) location"
     # A network grant without an exact absolute retrieval address is not
     # operation-specific: it could authorize arbitrary mirror access even when
     # DOI, version and the caller-supplied route label are unchanged.
