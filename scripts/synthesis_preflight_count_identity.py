@@ -175,6 +175,24 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
             # Matching spelling is required across sources; case/Unicode
             # aliases without reviewed equivalence cannot prove membership.
             family_sets[side_name] = frozenset(members)
+    # Resolve ambiguous cross-record family aliases before declaring any
+    # denominator-size or unit mismatch. Valid numeric differences cannot
+    # establish that differently spelled family IDs are distinct identities.
+    if any(membership_present) and family_sets["left"] != family_sets["right"]:
+        left_aliases = {
+            unicodedata.normalize("NFKC", member).casefold(): member
+            for member in family_sets["left"]
+        }
+        right_aliases = {
+            unicodedata.normalize("NFKC", member).casefold(): member
+            for member in family_sets["right"]
+        }
+        if any(left_aliases[alias] != right_aliases[alias]
+               for alias in left_aliases.keys() & right_aliases.keys()):
+            return {
+                **base,
+                "reason": "unresolved cross-record trial-family identity alias",
+            }
     if any(denominator_present):
         for side_name, record in (("left", left), ("right", right)):
             size = record["analysis_denominator_n"]
@@ -198,30 +216,12 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
                 "reason": "reported analysis denominator sizes differ",
                 "mismatched_fields": ["analysis_denominator_n"],
             }
-    if any(membership_present):
-        if family_sets["left"] != family_sets["right"]:
-            # A changed spelling is not necessarily a distinct trial family.
-            # Cross-record NFKC/case aliases require a reviewed identity
-            # crosswalk; they cannot establish an authenticated difference.
-            left_aliases = {
-                unicodedata.normalize("NFKC", member).casefold(): member
-                for member in family_sets["left"]
-            }
-            right_aliases = {
-                unicodedata.normalize("NFKC", member).casefold(): member
-                for member in family_sets["right"]
-            }
-            if any(left_aliases[alias] != right_aliases[alias]
-                   for alias in left_aliases.keys() & right_aliases.keys()):
-                return {
-                    **base,
-                    "reason": "unresolved cross-record trial-family identity alias",
-                }
-            return {
-                **base, "status": "NOT_COMPARABLE",
-                "reason": "trial-family membership differs",
-                "mismatched_fields": ["trial_family_ids"],
-            }
+    if any(membership_present) and family_sets["left"] != family_sets["right"]:
+        return {
+            **base, "status": "NOT_COMPARABLE",
+            "reason": "trial-family membership differs",
+            "mismatched_fields": ["trial_family_ids"],
+        }
     differing = tuple(key for key in RESULT_FIELDS if left[key] != right[key])
     if differing:
         return {
