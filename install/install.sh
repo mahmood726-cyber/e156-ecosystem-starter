@@ -546,28 +546,32 @@ if [[ "$IMPORT" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
     # installation without logging rather than write outside the state tree.
     if refuse_nondirectory_install_path "$E156_LOG_DIR" 2>/dev/null &&
        mkdir -p "$E156_LOG_DIR" 2>/dev/null; then
-        # Atomically reserve a new private transcript, never reopen a
-        # timestamp-only filename that a previous run or symlink may own.
-        # Python is already a required bootstrap dependency. mkstemp uses
-        # O_EXCL and mode 0600 and keeps .log extension on Linux and macOS.
-        E156_LOG_FILE="$("$PYTHON" - "$E156_LOG_DIR" "$(date +%Y%m%d-%H%M%S)" <<'PYLOG'
-import os
-import sys
-import tempfile
-try:
-    fd, path = tempfile.mkstemp(
-        prefix="install-" + sys.argv[2] + "-", suffix=".log", dir=sys.argv[1]
-    )
-    os.close(fd)
-    print(path)
-except OSError:
-    sys.exit(1)
-PYLOG
-        )" || E156_LOG_FILE=""
+        # Keep the exclusive-create descriptor open until tee inherits it.
+        # Previously mkstemp closed the descriptor, then tee reopened a
+        # pathname: a symlink substitution between those operations redirected
+        # log output. Bash noclobber creates the unpredictable name atomically
+        # while the descriptor stays attached to the original inode.
+        E156_LOG_FILE=""
+        E156_LOG_FD=""
+        saved_umask="$(umask)"
+        had_noclobber=0
+        case $- in *C*) had_noclobber=1 ;; esac
+        umask 077
+        set -C
+        for attempt in 1 2 3; do
+            nonce="$("$PYTHON" -c 'import secrets; print(secrets.token_hex(12))' 2>/dev/null)" || break
+            candidate="$E156_LOG_DIR/install-$(date +%Y%m%d-%H%M%S)-$nonce.log"
+            if { exec {E156_LOG_FD}> "$candidate"; } 2>/dev/null; then
+                E156_LOG_FILE="$candidate"
+                break
+            fi
+        done
+        if [[ "$had_noclobber" -eq 0 ]]; then set +C; fi
+        umask "$saved_umask"
         if [[ -n "$E156_LOG_FILE" ]]; then
-            # Tee stdout+stderr through the log without breaking interactive
-            # prompts: process substitution leaves the controlling tty in place.
-            exec > >(tee -a "$E156_LOG_FILE") 2>&1
+            # Tee writes to the already-open descriptor, never to the
+            # replaceable pathname. Process substitution preserves terminal IO.
+            exec > >(tee "/dev/fd/$E156_LOG_FD") 2>&1
             echo "(transcript: $E156_LOG_FILE)"
             # Redact secrets from the transcript on exit (success or failure).
             # Close stdout/stderr first so the tee subshell flushes and exits;
