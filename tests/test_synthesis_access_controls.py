@@ -863,6 +863,39 @@ class ContactTests(unittest.TestCase):
             {"to": ["Safe <safe@example.invalid>"]}, exclusions),
             ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
 
+    def test_gmail_delivery_aliases_block_no_contact(self):
+        # Entirely invented recipients. Consumer Gmail delivery ignores dots
+        # and plus-tag suffixes; googlemail.com is an equivalent mailbox host.
+        # An unrecognized alias must never evade the private contact block.
+        exclusion = [{"emails": ["fictionalresearcher@gmail.com"]}]
+        aliases = (
+            "Fictional Researcher <fictional.researcher+queue@gmail.com>",
+            "fictionalresearcher+retry@googlemail.com",
+        )
+        for kind in ("new", "retry", "followup", "queued_send"):
+            for field in ("to", "cc", "bcc", "indirect_recipients"):
+                for alias in aliases:
+                    with self.subTest(kind=kind, field=field, alias=alias):
+                        message = {"to": ["safe@example.invalid"], field: [alias],
+                                   "kind": kind}
+                        reasons = outgoing_blockers(message, exclusion)
+                        self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                        self.assertIn(
+                            "CONTACT_BLOCKED_NO_CONTACT: recipient/publication/thread exclusion",
+                            reasons)
+                        transport = Mock()
+                        with self.assertRaises(PermissionError):
+                            require_outgoing_allowed(message, exclusion)
+                            transport()
+                        transport.assert_not_called()
+        # Negative controls: unrelated Gmail accounts and non-Gmail domains
+        # must not be folded together merely because they contain a dot/tag.
+        for unrelated in ("differentresearcher@gmail.com",
+                          "fictional.researcher+queue@example.invalid"):
+            self.assertEqual(
+                outgoing_blockers({"to": [unrelated]}, exclusion),
+                ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
+
     def test_unavailable_exclusions_also_fail_closed(self):
         reasons=outgoing_blockers({"to":["other@example.invalid"]},None)
         self.assertTrue(any('exclusions unavailable' in x for x in reasons))
