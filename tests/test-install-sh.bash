@@ -284,7 +284,7 @@ log_redact_dir="$log_redact_state/e156/logs"
 log_redact_bin="$SANDBOX/log redaction bin-Ü"
 log_redact_outside="$SANDBOX/log redaction external sentinel-Ü"
 mkdir -p "$log_redact_home" "$log_redact_dir" "$log_redact_bin"
-printf 'external sentinel must remain unchanged\\n' > "$log_redact_outside"
+printf 'external sentinel must remain unchanged\n' > "$log_redact_outside"
 cat > "$log_redact_bin/tee" <<'TEE_REDACT_SWAP'
 #!/usr/bin/env bash
 for leaf in "$E156_SWAP_LOG_DIR"/install-*.log; do
@@ -292,12 +292,12 @@ for leaf in "$E156_SWAP_LOG_DIR"/install-*.log; do
     mv -- "$leaf" "$leaf.original"
     ln -s -- "$E156_SWAP_TARGET" "$leaf"
 done
-{ printf '%s\\n' 'GH_TOKEN=ghp_1234567890abcdef1234567890abcdef1234'; cat; } | /usr/bin/tee "$@"
+{ printf '%s\n' 'GH_TOKEN=ghp_1234567890abcdef1234567890abcdef1234'; cat; } | /usr/bin/tee "$@"
 TEE_REDACT_SWAP
 chmod +x "$log_redact_bin/tee"
 log_redact_rc=0
-HOME="$log_redact_home" XDG_STATE_HOME="$log_redact_state" PATH="$log_redact_bin:$PATH" \\
-    E156_SWAP_LOG_DIR="$log_redact_dir" E156_SWAP_TARGET="$log_redact_outside" \\
+HOME="$log_redact_home" XDG_STATE_HOME="$log_redact_state" PATH="$log_redact_bin:$PATH" \
+    E156_SWAP_LOG_DIR="$log_redact_dir" E156_SWAP_TARGET="$log_redact_outside" \
     bash "$ROOT/install/install.sh" --non-interactive >/dev/null 2>&1 || log_redact_rc=$?
 redact_originals=( "$log_redact_dir"/install-*.log.original )
 if [[ "$log_redact_rc" -eq 0 && -f "${redact_originals[0]}" &&
