@@ -13,6 +13,8 @@ Synthesis organises established checks for numerical consistency, denominators, 
 
 The reviewer must investigate alternative explanations for an apparent discrepancy, including rounding, different models, estimands, populations or document versions. A failed check is not automatically a confirmed error. Insufficient evidence requires abstention.
 
+**Review safeguards updated 6 November 2026:** The checklist and optional prompt now require exact-quotation checks, saved calculation evidence and point-by-point source rechecks of replies. See [reviewing explanations and preventing false positives](SYNTHESIS-RESPONSE-REVIEW.md). A disagreement alone does not refute a concern; an acknowledgement of one point does not validate an entire enquiry.
+
 ## How was it developed?
 
 Synthesis brings together established mathematical, statistical, source-verification and methodological review principles into a structured workflow. Its current version incorporates conservative comparability, evidence-recording and refutation safeguards. The accompanying implementation has undergone synthetic software tests, but independent prospective validation of real-world detection accuracy has **not** been completed.

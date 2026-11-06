@@ -1,10 +1,12 @@
 # Synthesis — human review checklist (v1.3 companion)
 
-**Start here if you are an editor, author, peer reviewer or clinician.** This is a human-readable front end to the [Synthesis v1.3 candidate methodology](SYNTHESIS-v1.3-CANDIDATE.md), not a replacement or a validated error detector. It can be completed with a printed manuscript and source documents. No code or AI is required. The underlying rules, evidence standards and software are unchanged.
+**Start here if you are an editor, author, peer reviewer or clinician.** This is a human-readable front end to the [Synthesis v1.3 candidate methodology](SYNTHESIS-v1.3-CANDIDATE.md), not a replacement or a validated error detector. It can be completed with a printed manuscript and source documents. No code or AI is required. **Review safeguards updated 6 November 2026.**
 
 **Before starting:** Confirm that you are permitted to access and process each source. Respect publisher terms, requests not to contact authors and any research-ethics requirements. Do not upload restricted manuscripts or personal data into external AI systems without permission.
 
 **How to use:** For each item mark **Yes / No / Unclear / N/A**, cite the precise page/table/figure and record your calculation or evidence. **No** means *review needed*, not *confirmed error*. **Unclear** means evidence is insufficient; do not guess. A checklist alone cannot establish sensitivity, accuracy or journal compliance.
+
+**Routine core:** Check the exact current claim, its source, denominator, analysis identity, calculation and strongest alternative explanation. Use the full table for a detailed review. For a long paper, review fixed sections in batches and keep the claim ledger across batches; do not claim complete coverage until every planned section is recorded.
 
 | Item | Human-readable question | Yes / No / Unclear / N/A | Evidence or notes |
 |---|---|---|---|
@@ -30,17 +32,26 @@
 | 20 | Have I actively sought the strongest benign explanation and recorded what would refute my concern? | | |
 | 21 | Is the available evidence sufficient to make a claim, or must I abstain? | | |
 | 22 | Have I recorded both flagged and unflagged items, rather than reporting only apparent problems? | | |
+| 23 | Have I verified that each quoted phrase actually occurs in this exact paper and section, including the rendered table or figure where extraction is uncertain? | | |
+| 24 | Before linking a coefficient to an HR/OR, have I checked predictor coding, reference category, contrast size and units? | | |
+| 25 | Have I distinguished observed counts, respondent-specific denominators, exposure-adjusted rates, weighted estimates and marginal standardisation? | | |
+| 26 | For a numerical claim, are the inputs, formula and actual working saved; if code was run, are its script, versions and raw output saved? | | |
+| 27 | If there is a reply, have I compared it with the original question and rechecked its explanation and counterevidence for each separate point? | | |
 
 ## Review record (copy once for each possible discrepancy)
 
 - **Paper and version / DOI:**
 - **Source permission and access route:**
 - **Exact claim location and wording:**
+- **Original enquiry:** clarification request / error allegation (record each point separately)
 - **Comparison source, version and location:**
 - **What seems inconsistent (without assuming an error):**
 - **Recalculation or methodological check, with assumptions:**
+- **Saved inputs and working / script and raw output (if executed):**
 - **Are the estimates genuinely comparable?** Yes / No / Unclear
 - **Strongest benign explanation and how checked:**
+- **Reply, source recheck and counterevidence (if any):**
+- **Point outcome:** concern persists / resolved enquiry / false-positive allegation / version-limited / methodological discussion / unresolved
 - **Source-support:** SUPPORTED / CONTRADICTED / OVERGENERALIZED / UNSUPPORTED_CITATION / SOURCE_UNAVAILABLE / NOT_ENOUGH_INFO
 - **Evidence maturity:** SCREENED / SOURCE_BACKED / REPRODUCED / INDEPENDENTLY_ADJUDICATED
 - **Disposition:** FLAG / RECONCILED / DISCUSSION / HOLD / NO_FLAG
@@ -49,5 +60,7 @@
 - **Follow-up:** None / independent review / seek clarification subject to contact permissions
 
 **Decision rule:** A mismatch is not automatically an error. If sources, versions, endpoint identity, estimator or precision are insufficient, record **HOLD / NOT_ENOUGH_INFO** or **NOT_COMPARABLE** rather than alleging a mistake. An email acknowledgement is not author confirmation; author confirmation is not a published correction. Preserve a record of negative and abstained checks. Do not contact authors automatically.
+
+**Handling a reply:** Disagreement alone does not prove the enquiry wrong, and acknowledgement of one typo does not validate all its other points. A resolved clarification question is not automatically a false-positive error allegation. See the [response-review procedure](SYNTHESIS-RESPONSE-REVIEW.md) for the evidence needed to close, retain or withdraw a concern.
 
 **Technical detail and limits:** [Full v1.3 candidate](SYNTHESIS-v1.3-CANDIDATE.md) · [Blinded validation plan](SYNTHESIS-v1.3-BLINDED-VALIDATION-PLAN.md) · [Audit packet](SYNTHESIS-v1.3-AUDIT-PACKET.md). The v1.3 candidate remains experimental and has not undergone independent real-paper validation.

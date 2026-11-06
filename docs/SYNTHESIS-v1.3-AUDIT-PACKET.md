@@ -1,10 +1,10 @@
-# Synthesis v1.3 — auditable evidence packet and Google audit accounting
+# Synthesis v1.3 — auditable evidence packet and response review
 
-**3 November 2026 · development contract; no real records in this repository**
+**Updated 6 November 2026 · development contract; no real records in this repository**
 
 ## Scope and privacy
 
-This specification supports the Google Research/Google DeepMind 300-error audit and other scientific-error lanes. Keep original manuscripts where licensed, private correspondence, sender/recipient details, sent-message IDs and reviewer identities **in private append-only records**, never in GitHub. Public repository tests use invented synthetic identifiers.
+This specification supports private scientific-verification records. Keep original manuscripts where licensed, private correspondence, sender/recipient details, sent-message IDs and reviewer identities **in private append-only records**, never in GitHub. Public repository tests use invented synthetic identifiers. This procedure does not authorise contact, override operational holds or set error/email quotas.
 
 A true target item is **one distinct, substantive, independently source-verified error root that has actually been emailed**. A candidate discrepancy, methodological question, withdrawn concern, metadata-only issue, author acknowledgement without an error finding, correction learned after publication, draft, or unverified send does not qualify. Multiple affected cells from one underlying root count once; one consolidated email may document multiple distinct roots.
 
@@ -30,14 +30,14 @@ reconciliation_summary(records) groups by (root_scope_id, root_cause_id), report
 2. Identify the current published version, all relevant correction notices, underlying original report, protocol, SAP, registry and code; record access path and stop point for inaccessible material.
 3. Match unique trial populations, outcome/estimand, follow-up, test/statistical model, missingness, censoring, units and rounding precision. Investigate plausible benign explanations; abstain when not comparable.
 4. Independently reproduce the exact original source numbers. For NMA/IPD, replay the published model before corrected data, assess shared control and trial-family dependence, RoB 2/RoB NMA and conclusion impact.
-5. Record human source verification and distinct root ID. Only after the case-specific threshold is met, send a concise, factual, supportive enquiry to verified recipients; preserve actual send evidence. An independent tool must not claim author confirmation or publication correction prematurely.
-6. Follow up at an appropriate two-week interval where justified, deduplicating prior correspondence. Update the private record and only non-sensitive public aggregate/verified case descriptions after review.
+5. Record human source verification and distinct root ID. Any external contact needs a separate explicit human decision and source-rights/no-contact checks. Preserve actual send evidence only if a message was sent. A tool must not claim author confirmation or publication correction prematurely.
+6. When feedback exists, follow the [response-review procedure](SYNTHESIS-RESPONSE-REVIEW.md): compare each point with the original enquiry, source-check both positions and retain unresolved counterevidence. Record resolved enquiries, false-positive allegations, persistent concerns and version-limited discrepancies separately. Do not schedule automatic reminders.
 
 ## Status displays
 
 Keep independently source-verified errors, author-confirmed errors, published corrections, candidates/clarifications, refuted issues, sent emails and actual replies as **separate numbers**. Do not transform a large number of outgoing emails into a count of discovered errors.
 
-Google exclusions include previously withdrawn GRAFT allegations and publication-page ingestion metadata problems that do not affect a study claim. Preserve author responses and corrections privately, and amend a record when a version update resolves the issue.
+Exclude withdrawn allegations and publication-page ingestion metadata problems that do not affect a study claim. Preserve author responses and corrections privately, and amend a record when a version update resolves the issue. An explained clarification request is not an erroneous allegation; a mixed response cannot establish that every point was correct or incorrect.
 
 ## Required validation link
 

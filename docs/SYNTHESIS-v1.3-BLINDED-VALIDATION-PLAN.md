@@ -8,6 +8,7 @@ This is a prospective evaluation design, **not** a frozen or executed study. It 
 
 - Preserve the existing frozen Simo v0.10 36-claim/12-trial-family cohort, all signed e156 evidence, previously reviewed controls and correspondence unchanged. Never use held-out labels to tune v1.3.
 - Do not treat earlier correspondence, correction notices, selected known-error cases, synthetic tests or emailed queries as unbiased validation.
+- Any feedback case used to revise checks or prompts, including its linked paper/trial family, is development material and must not enter the untouched test split. Preserve the original question type: a resolved clarification request is not automatically a false-positive allegation.
 - A newly proposed feasibility design is **24 paper/trial families with at least 12 NMA/IPD families**; this number is not a completed sample, approval or prospective freeze. Stratification, sample size and test fractions remain subject to independent protocol review.
 - A separate reviewer must not adjudicate their own paper, any conflicted work, or a development example they already know. Record familiarity before allocation. Mask output source (manual/v1.2/v1.3) where feasible.
 
