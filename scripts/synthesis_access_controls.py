@@ -84,6 +84,32 @@ def _host(value):
         return ""
 
 
+def _valid_original_publication_url(value):
+    """Require a definite HTTP(S) publication origin, not an arbitrary label.
+
+    This identity is required for every operation, including offline cache
+    reads: a malformed or parser-dependent origin must never act as a
+    reviewed permission binding. URL parsing may strip ASCII control chars.
+    """
+    if (not isinstance(value, str) or not value or value != value.strip()
+            or "\\" in value
+            or any(char.isspace() or ord(char) < 0x20 or ord(char) == 0x7f
+                   for char in value)):
+        return False
+    try:
+        parsed = urlsplit(value)
+        host = parsed.hostname
+        if (parsed.scheme.casefold() not in {"http", "https"}
+                or not host or "%" in host
+                or parsed.username is not None or parsed.password is not None):
+            return False
+        parsed.port  # Invalid port syntax is not a reviewed original location.
+        host.encode("idna")  # Unknown host encodings are not an identity.
+        return True
+    except (ValueError, UnicodeError):
+        return False
+
+
 def is_jama_source(source):
     """Match original publication identity, never just its current mirror host."""
     if not isinstance(source, dict):
@@ -150,6 +176,8 @@ def assess_source(manifest, source, operation, *, on_date=None):
     if any(not isinstance(source.get(k), str) or not source[k].strip() or
            source[k].strip() != p[k].strip() for k in original_fields):
         return "SOURCE_RIGHTS_HOLD", "original publication identity differs from reviewed permission"
+    if not _valid_original_publication_url(source["original_url"]):
+        return "SOURCE_RIGHTS_HOLD", "original publication URL is not a valid absolute HTTP(S) location"
     # A grant for the original publication cannot be reused on a different
     # retrieval URL. Both source and reviewed record must agree on the exact
     # route URL when either declares it; aliases need separate review.
