@@ -35,6 +35,11 @@ def _valid_identifier(value: Any) -> bool:
     # evidence identities. Ordinary printable non-ASCII names remain valid.
     if any(unicodedata.category(ch).startswith("C") for ch in value):
         return False
+    # Canonically equivalent Unicode labels (e.g. composed vs combining
+    # accents) cannot represent separate roots, outputs or receipt identities.
+    # Require caller-provided NFC; never silently rewrite evidence identifiers.
+    if unicodedata.normalize("NFC", value) != value:
+        return False
     # A repeated spelling of UNKNOWN is never a valid scope or receipt ID.
     # Preserve original identifiers for grouping: normalize only to reject
     # placeholders, not to equate unrelated outputs or trial families.
