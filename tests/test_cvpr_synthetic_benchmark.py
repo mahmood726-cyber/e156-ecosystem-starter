@@ -74,3 +74,39 @@ def test_nonfinite_json_blocks(tmp_path):
     p.write_text('{"schema_version":1,"fixture_type":"invented_synthetic","rights":"first_party_synthetic","cases":[NaN]}')
     with pytest.raises(ValueError, match='Nonfinite'):
         mod.load_fixture(p)
+
+
+def test_duplicate_json_keys_fail_closed(tmp_path):
+    """Conflicting duplicate rights or labels must not be last-key-wins."""
+    import json
+
+    sample = json.dumps(CASES[0], sort_keys=True)
+    sample = sample.replace(
+        '"source_rights": "first_party_synthetic"',
+        '"source_rights": "unreviewed_publication", "source_rights": "first_party_synthetic"',
+        1,
+    )
+    assert 'unreviewed_publication' in sample
+    fragments = [
+        # Root rights conflicts: silently taking the last value would admit the fixture.
+        '{"schema_version":1,"fixture_type":"invented_synthetic",'
+        '"rights":"unreviewed_publication","rights":"first_party_synthetic","cases":[]}',
+        # A case-level source-rights conflict must also be rejected.
+        '{"schema_version":1,"fixture_type":"invented_synthetic",'
+        '"rights":"first_party_synthetic","cases":[' + sample + ']}',
+        # A JSON escape cannot hide a duplicate rights key.
+        '{"schema_version":1,"fixture_type":"invented_synthetic",'
+        '"rights":"unreviewed_publication","righ\\u0074s":"first_party_synthetic","cases":[]}',
+    ]
+    for i, payload in enumerate(fragments):
+        path = tmp_path / f'duplicate_{i}.json'
+        path.write_text(payload, encoding='utf-8')
+        with pytest.raises(ValueError, match='[Dd]uplicate'):
+            mod.load_fixture(path)
+    # Negative control: ordinary, unique-key invented synthetic input still works.
+    clean = tmp_path / 'clean.json'
+    clean.write_text(json.dumps({
+        'schema_version': 1, 'fixture_type': 'invented_synthetic',
+        'rights': 'first_party_synthetic', 'cases': [CASES[0]],
+    }), encoding='utf-8')
+    assert len(mod.load_fixture(clean)) == 1
