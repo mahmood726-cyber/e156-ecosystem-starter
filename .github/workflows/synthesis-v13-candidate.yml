@@ -4,7 +4,11 @@ on:
     paths:
       - 'scripts/synthesis_v13_checks.py'
       - 'tests/test_synthesis_v13_checks.py'
+      - 'tests/test_synthesis_v13_feedback.py'
       - 'docs/SYNTHESIS-v1.3-CANDIDATE.md'
+      - 'docs/SYNTHESIS-HUMAN-CHECKLIST.md'
+      - 'docs/SYNTHESIS-COPY-PASTE-AI-PROMPT.md'
+      - 'docs/SYNTHESIS-RESPONSE-REVIEW.md'
       - 'scripts/synthesis_v13_evidence.py'
       - 'scripts/synthesis_v13_nma_preflight.py'
       - 'tests/test_synthesis_v13_evidence.py'
@@ -16,7 +20,11 @@ on:
     paths:
       - 'scripts/synthesis_v13_checks.py'
       - 'tests/test_synthesis_v13_checks.py'
+      - 'tests/test_synthesis_v13_feedback.py'
       - 'docs/SYNTHESIS-v1.3-CANDIDATE.md'
+      - 'docs/SYNTHESIS-HUMAN-CHECKLIST.md'
+      - 'docs/SYNTHESIS-COPY-PASTE-AI-PROMPT.md'
+      - 'docs/SYNTHESIS-RESPONSE-REVIEW.md'
       - 'scripts/synthesis_v13_evidence.py'
       - 'scripts/synthesis_v13_nma_preflight.py'
       - 'tests/test_synthesis_v13_evidence.py'

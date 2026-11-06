@@ -611,10 +611,80 @@ def version(status: str) -> dict:
     return result("INVALID", "unknown version state")
 
 
+def feedback_recheck(record: Mapping) -> dict:
+    """Validate a reviewer-attested, single-claim response review.
+
+    This checks bookkeeping, not email authenticity or scientific truth. An
+    author's disagreement/confirmation alone cannot close or uphold a claim.
+    Private correspondence and real case identifiers belong outside this repo.
+    """
+    if not isinstance(record, Mapping):
+        return result("HOLD", "feedback review must be a single-claim mapping")
+    required = ("claim_id", "original_claim_reference", "reply_reference")
+    if any(_missing_identity(record.get(k)) for k in required):
+        return result("HOLD", "original claim and reply references incomplete")
+    if (record.get("original_claim_reviewed") is not True
+            or record.get("reply_reviewed") is not True
+            or record.get("same_claim_verified") is not True):
+        return result("HOLD", "review original wording and reply at single-claim scope")
+    kind = record.get("original_item_kind")
+    if kind not in {"ERROR_ALLEGATION", "CLARIFICATION_REQUEST"}:
+        return result("HOLD", "distinguish an alleged error from a clarification request")
+    outcome = record.get("outcome")
+    if outcome == "UNRESOLVED":
+        return result("HOLD", "reply does not yet resolve the original claim")
+    if outcome not in {"EXPLANATION_SUPPORTED", "CONCERN_PERSISTS",
+                       "VERSION_RESOLVED", "METHODOLOGICAL_DISCUSSION"}:
+        return result("HOLD", "unknown feedback outcome")
+    source_fields = ("source_version", "source_locator", "recheck_reference")
+    if (record.get("sources_rechecked") is not True
+            or record.get("counterevidence_checked") is not True
+            or any(_missing_identity(record.get(k)) for k in source_fields)):
+        return result("HOLD", "reply needs a source recheck and counterevidence review")
+    # A plausible explanation or a claimed calculation is not an executed check.
+    calculation = record.get("calculation_kind")
+    if calculation == "CODE":
+        needed = ("input_reference", "script_reference", "raw_output_reference")
+        if (record.get("calculation_executed") is not True
+                or any(_missing_identity(record.get(k)) for k in needed)):
+            return result("HOLD", "calculation needs saved inputs, script and raw output")
+    elif calculation == "MANUAL":
+        if _missing_identity(record.get("working_reference")):
+            return result("HOLD", "manual calculation needs recorded inputs and working")
+    elif calculation != "NOT_NEEDED":
+        return result("HOLD", "calculation trail not assessed")
+    common = {"claim_id": record["claim_id"],
+              "evidence_basis": "REVIEWER_ATTESTATION_ONLY"}
+    if outcome == "EXPLANATION_SUPPORTED":
+        return result("RECONCILED", "source-checked explanation resolves this point",
+                      feedback_outcome=("FALSE_POSITIVE_RECORDED" if kind == "ERROR_ALLEGATION"
+                                        else "RESOLVED_ENQUIRY"), **common)
+    if outcome == "VERSION_RESOLVED":
+        return result("RECONCILED", "discrepancy confined to an earlier version",
+                      feedback_outcome="VERSION_LIMITED", **common)
+    if outcome == "METHODOLOGICAL_DISCUSSION":
+        return result("DISCUSSION", "methodological disagreement without established contradiction",
+                      feedback_outcome="METHOD_DISCUSSION", **common)
+    return result("READY_FOR_INDEPENDENT_REVIEW",
+                  "source recheck addresses reply; original concern still requires adjudication",
+                  feedback_outcome="CONCERN_PERSISTS", **common)
+
+
 def gate(record: Mapping) -> dict:
     """At most a source-backed flag *candidate*, never a confirmed error."""
     if not isinstance(record, Mapping):
         return result("INVALID", "candidate must be a mapping")
+    if "feedback_review" in record:
+        review = record["feedback_review"]
+        if (not isinstance(review, Mapping)
+                or _missing_identity(record.get("claim_id"))
+                or review.get("claim_id") != record.get("claim_id")):
+            return result("HOLD", "feedback must address this exact candidate claim")
+        feedback = feedback_recheck(review)
+        if feedback["status"] != "READY_FOR_INDEPENDENT_REVIEW":
+            return feedback
+    elif record.get("correspondence_status") == "AUTHOR_DISAGREED":
+        return result("HOLD", "author disagreement requires a documented source recheck")
     if record.get("severity") not in SEVERITIES or version(record.get("version", "UNKNOWN"))["status"] != "CURRENT":
         return result("HOLD", "severity or current publication version not established")
     if record.get("source_access") != "ACCESSIBLE" or _missing_identity(record.get("source_locator")):
