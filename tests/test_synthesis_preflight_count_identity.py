@@ -504,5 +504,23 @@ class CountIdentityTests(unittest.TestCase):
         self.assertEqual(compare_raw_counts(left, right)["status"], "CONSISTENT")
 
 
+    def test_person_time_exposure_does_not_cap_unique_patient_count(self):
+        # The exposure 100 person-years need not equal 100 people:
+        # a count of 120 individuals is structurally possible.
+        left = copy.deepcopy(self.source)
+        left.update(value=120, analysis_denominator_n=100,
+                    analysis_denominator_unit="person_years")
+        right = copy.deepcopy(left)
+        right["value"] = 119
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "REVIEW")
+        self.assertEqual(result["difference"], 1)
+        self.assertFalse(result["certified_error"])
+        # A true 100-participant cohort cannot contain 120 unique participants.
+        left["analysis_denominator_unit"] = "unique_participants"
+        right["analysis_denominator_unit"] = "unique_participants"
+        self.assertEqual(compare_raw_counts(left, right)["status"], "NOT_ENOUGH_INFO")
+
+
 if __name__ == "__main__":
     unittest.main()
