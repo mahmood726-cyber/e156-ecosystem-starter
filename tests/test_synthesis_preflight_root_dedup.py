@@ -492,7 +492,7 @@ class RootDedupContractTests(unittest.TestCase):
         # NFD and NFC spellings identify the same Unicode label. Refuse the
         # noncanonical representation rather than count it as a new root/output.
         canonical = "synthetic:étude-1"
-        decomposed = "synthetic:e\\u0301tude-1"
+        decomposed = "synthetic:e\u0301tude-1"
         for field in ("publication_id", "source_version", "root_scope_id",
                       "root_cause_id", "affected_output_id"):
             with self.subTest(field=field):
@@ -510,8 +510,8 @@ class RootDedupContractTests(unittest.TestCase):
         # Identifiers from different normalization forms are not safe
         # evidence provenance, even with otherwise valid receipt metadata.
         human_fields = (
-            {"reviewer_id": "synthetic:re\\u0301viseur-2"},
-            {"receipt_locator": "private:re\\u0301sume\\u0301"},
+            {"reviewer_id": "synthetic:re\u0301viseur-2"},
+            {"receipt_locator": "private:re\u0301sume\u0301"},
         )
         for change in human_fields:
             with self.subTest(human_field=change):
@@ -526,7 +526,7 @@ class RootDedupContractTests(unittest.TestCase):
         row = self.row_with(
             author_confirmed=True,
             author_confirmation=self.author_receipt(
-                confirmation_reference="private:re\\u0301sume\\u0301"),
+                confirmation_reference="private:re\u0301sume\u0301"),
         )
         result = group_preflight_roots([row])
         self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
