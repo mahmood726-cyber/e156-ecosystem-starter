@@ -657,6 +657,51 @@ class SourceRightsTests(unittest.TestCase):
             callback.assert_called_once()
 
 
+    def test_nonfinite_constants_reject_ambiguous_json_permission_manifests(self):
+        # Python's default JSON parser accepts NaN/Infinity tokens even
+        # though they are not JSON. Any malformed *reviewed* manifest must
+        # fail closed, including unknown fields and nested metadata.
+        canonical = json.dumps(MANIFEST)
+        variants = {}
+        for token in ("NaN", "Infinity", "-Infinity"):
+            variants["root-" + token] = (
+                canonical[:-1] + ', "unchecked_value": ' + token + '}')
+            variants["permission-" + token] = canonical.replace(
+                '"status": "REVIEWED_ALLOW"',
+                '"unchecked_value": ' + token + ', "status": "REVIEWED_ALLOW"', 1)
+            variants["nested-" + token] = canonical.replace(
+                '"permissions": [',
+                '"unchecked": {"metadata": [' + token + ']}, "permissions": [', 1)
+        with TemporaryDirectory() as root:
+            folder = Path(root)
+            manifest_file = folder / "permissions.json"
+            log = folder / "decisions.jsonl"
+            log.touch()
+            for label, payload in variants.items():
+                with self.subTest(nonfinite=label):
+                    self.assertNotEqual(payload, canonical)
+                    manifest_file.write_text(payload, encoding="utf-8")
+                    callback = Mock(return_value=b"invented-cache")
+                    with self.assertRaises(PermissionError):
+                        execute_source_action(
+                            SOURCE, "CACHE_READ", callback,
+                            manifest_path=manifest_file, decision_log=log,
+                            on_date=TODAY)
+                    callback.assert_not_called()
+                    self.assertEqual(
+                        json.loads(log.read_text(encoding="utf-8").splitlines()[-1])["decision"],
+                        "SOURCE_RIGHTS_HOLD")
+            # Valid JSON may contain the literal *string* "NaN"; do not
+            # prohibit review notes or previously accepted reviewed grants.
+            good = {**MANIFEST, "review_note": "NaN"}
+            manifest_file.write_text(json.dumps(good), encoding="utf-8")
+            callback = Mock(return_value=b"invented-cache")
+            self.assertEqual(execute_source_action(
+                SOURCE, "CACHE_READ", callback, manifest_path=manifest_file,
+                decision_log=log, on_date=TODAY), b"invented-cache")
+            callback.assert_called_once()
+
+
 class ContactTests(unittest.TestCase):
     EXCLUSIONS=[{"names":["Fictional Researcher"],"aliases":["F. Researcher"],
                  "emails":["fictional@example.invalid"],"coauthors":["coauthor@example.invalid"],
