@@ -553,6 +553,50 @@ Describe "Dry-run must not initialize LOCALAPPDATA" {
     }
 }
 
+# Only synthetic, isolated HOME fixtures are used; never install into the real profile.
+Describe "Windows per-home installer lock (Role 05)" {
+    It "refuses a second lease without disturbing the first owner" {
+        $homeFixture = Join-Path $script:tmpRoot "lock home Ü $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $homeFixture | Out-Null
+        $owner = Enter-InstallLock -UserHome $homeFixture
+        try {
+            Test-Path -LiteralPath $owner.Path -PathType Leaf | Should -BeTrue
+            { Enter-InstallLock -UserHome $homeFixture } | Should -Throw '*REFUSED*'
+            (Get-Content -LiteralPath $owner.Path -Raw) | Should -Be $owner.Token
+        }
+        finally {
+            Exit-InstallLock -Lease $owner
+        }
+        Test-Path -LiteralPath $owner.Path | Should -BeFalse
+    }
+
+    It "does not remove a pre-existing stale lock directory or marker" {
+        $homeFixture = Join-Path $script:tmpRoot "stale lock Ü $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $homeFixture | Out-Null
+        $lockPath = Join-Path $homeFixture '.e156-ecosystem-starter-install.lock'
+        New-Item -ItemType Directory -Path $lockPath | Out-Null
+        $marker = Join-Path $lockPath 'owner.txt'
+        Set-Content -LiteralPath $marker -Value 'prior installation' -NoNewline
+        { Enter-InstallLock -UserHome $homeFixture } | Should -Throw '*REFUSED*'
+        (Get-Content -LiteralPath $marker -Raw) | Should -Be 'prior installation'
+        Test-Path -LiteralPath $lockPath -PathType Container | Should -BeTrue
+    }
+
+    It "releases after a simulated error and never deletes a replaced owner's marker" {
+        $homeFixture = Join-Path $script:tmpRoot "lock failed Ü $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $homeFixture | Out-Null
+        $owner = Enter-InstallLock -UserHome $homeFixture
+        try { throw 'synthetic later-step failure' }
+        catch { $_.Exception.Message | Should -Match 'synthetic later-step failure' }
+        finally { Exit-InstallLock -Lease $owner }
+        Test-Path -LiteralPath $owner.Path | Should -BeFalse
+        $other = Enter-InstallLock -UserHome $homeFixture
+        Set-Content -LiteralPath $other.Path -Value 'different owner' -NoNewline
+        Exit-InstallLock -Lease $other
+        (Get-Content -LiteralPath $other.Path -Raw) | Should -Be 'different owner'
+    }
+}
+
 Describe "Self-SHA gate exits 0 under -DryRun" {
     It "writes HASH.txt with install.ps1's SHA and the DryRun shortcut succeeds" {
         # Regenerate HASH.txt for the current install.ps1 (may have been edited)
