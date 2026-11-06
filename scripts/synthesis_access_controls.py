@@ -67,7 +67,10 @@ def _doi(value):
             return ""
         value = parsed.path.lstrip("/")
     value = value.casefold()
-    return value if re.fullmatch(r"10\.\d{4,9}/[^\s?#]+", value) else ""
+    # DOI registrant digits are ASCII. Python regex \\d also matches Unicode
+    # decimal numerals; permitting them makes a visually JAMA-like prefix
+    # look different from the exact held ASCII 10.1001/ identity.
+    return value if re.fullmatch(r"10\.[0-9]{4,9}/[^\s?#]+", value) else ""
 
 
 def _host(value):
