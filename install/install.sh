@@ -126,32 +126,6 @@ redact_secrets_in_log() {
         "$f" > "$tmp" 2>/dev/null && mv "$tmp" "$f" || rm -f "$tmp"
 }
 
-# --dry-run must be a read-only SHA check: do not create HOME/XDG log files.
-if [[ "$IMPORT" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
-    case "$(uname -s)" in
-        Darwin) E156_LOG_DIR="${HOME}/Library/Logs/e156" ;;
-        *)      E156_LOG_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/e156/logs" ;;
-    esac
-    if mkdir -p "$E156_LOG_DIR" 2>/dev/null; then
-        E156_LOG_FILE="${E156_LOG_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
-        # Tee stdout+stderr through the log without breaking interactive
-        # prompts: process substitution leaves the controlling tty in place.
-        exec > >(tee -a "$E156_LOG_FILE") 2>&1
-        echo "(transcript: $E156_LOG_FILE)"
-        # Redact secrets from the transcript on exit (success or failure).
-        # Close stdout/stderr first so the tee subshell flushes and exits;
-        # then sed-substitute in place. Failure-safe: if redaction fails the
-        # raw log is still on disk for the student to clean up manually.
-        _e156_finalize_log() {
-            [[ -n "${E156_LOG_FILE:-}" ]] || return 0
-            exec >&- 2>&- 2>/dev/null || :
-            sleep 0.2 2>/dev/null || :
-            redact_secrets_in_log "$E156_LOG_FILE" 2>/dev/null || :
-        }
-        trap _e156_finalize_log EXIT
-    fi
-fi
-
 # --------------------------- layout + self-SHA ----------------------------
 
 SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || greadlink -f "$0" 2>/dev/null || echo "$0")"
@@ -559,6 +533,34 @@ if ! acquire_install_lock; then
     exit 3
 fi
 trap _e156_exit_cleanup EXIT
+
+# A competing installer and a SHA-only dry run must not create HOME/XDG
+# transcripts. Initialize logging only AFTER claiming the per-HOME lock.
+if [[ "$IMPORT" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
+    case "$(uname -s)" in
+        Darwin) E156_LOG_DIR="${HOME}/Library/Logs/e156" ;;
+        *)      E156_LOG_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/e156/logs" ;;
+    esac
+    if mkdir -p "$E156_LOG_DIR" 2>/dev/null; then
+        E156_LOG_FILE="${E156_LOG_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
+        # Tee stdout+stderr through the log without breaking interactive
+        # prompts: process substitution leaves the controlling tty in place.
+        exec > >(tee -a "$E156_LOG_FILE") 2>&1
+        echo "(transcript: $E156_LOG_FILE)"
+        # Redact secrets from the transcript on exit (success or failure).
+        # Close stdout/stderr first so the tee subshell flushes and exits;
+        # then sed-substitute in place. Failure-safe: if redaction fails the
+        # raw log is still on disk for the student to clean up manually.
+        _e156_finalize_log() {
+            [[ -n "${E156_LOG_FILE:-}" ]] || return 0
+            exec >&- 2>&- 2>/dev/null || :
+            sleep 0.2 2>/dev/null || :
+            redact_secrets_in_log "$E156_LOG_FILE" 2>/dev/null || :
+        }
+        # Lock cleanup invokes _e156_finalize_log after releasing the lock.
+    fi
+fi
+
 
 # --------------------------- real install flow ---------------------------
 
