@@ -258,13 +258,13 @@ class CountIdentityTests(unittest.TestCase):
         # Repeated decomposed metadata must not be accepted as a matched
         # source identity merely because both inputs use the same spelling.
         for field, decomposed in (
-            ("publication_id", "synthetic:e\\u0301tude"),
-            ("source_result_id", "re\\u0301sultat:1"),
-            ("source_version", "re\\u0301vision:1"),
-            ("analysis_cell_id", "bras:re\\u0301gional"),
-            ("population", "re\\u0301gion"),
-            ("endpoint", "re\\u0301admission"),
-            ("locator", "synthetic table: re\\u0301sultat"),
+            ("publication_id", "synthetic:e\u0301tude"),
+            ("source_result_id", "re\u0301sultat:1"),
+            ("source_version", "re\u0301vision:1"),
+            ("analysis_cell_id", "bras:re\u0301gional"),
+            ("population", "re\u0301gion"),
+            ("endpoint", "re\u0301admission"),
+            ("locator", "synthetic table: re\u0301sultat"),
         ):
             with self.subTest(field=field):
                 left = copy.deepcopy(self.source)
