@@ -644,6 +644,54 @@ class CountIdentityTests(unittest.TestCase):
         self.assertEqual(compare_raw_counts(left, right)["status"], "CONSISTENT")
 
 
+    def test_cross_record_family_alias_holds_despite_denominator_size_difference(self):
+        # A valid numeric size mismatch must not mask unresolved family IDs.
+        # Synthetic records only; no publication identities are asserted.
+        for left_id, right_id in (
+            ("fam-A", "FAM-a"),
+            ("Fam-①", "Fam-1"),
+            ("fam-ﬃ", "fam-ffi"),
+        ):
+            with self.subTest(left_id=left_id, right_id=right_id):
+                left = copy.deepcopy(self.source)
+                left.update(
+                    count_basis="trial_families", estimand="included_trial_families",
+                    value=2, trial_family_ids=[left_id, "fam-B"],
+                    analysis_denominator_n=10,
+                    analysis_denominator_unit="trial_families",
+                )
+                right = copy.deepcopy(left)
+                right.update(
+                    trial_family_ids=[right_id, "fam-B"],
+                    analysis_denominator_n=20,
+                )
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertEqual(result["disposition"], "HOLD")
+                self.assertIn("alias", result["reason"])
+                self.assertFalse(result["arithmetic_reproduced"])
+                self.assertFalse(result["certified_error"])
+                self.assertFalse(result["email_eligible"])
+
+        # Negative controls: verified distinct family IDs and exact matching
+        # IDs retain the legitimate numeric denominator mismatch verdict.
+        left = copy.deepcopy(self.source)
+        left.update(
+            count_basis="trial_families", estimand="included_trial_families",
+            value=2, trial_family_ids=["fam-A", "fam-B"],
+            analysis_denominator_n=10, analysis_denominator_unit="trial_families",
+        )
+        right = copy.deepcopy(left)
+        right.update(trial_family_ids=["fam-C", "fam-B"], analysis_denominator_n=20)
+        self.assertEqual(
+            compare_raw_counts(left, right)["status"], "NOT_COMPARABLE"
+        )
+        right["trial_family_ids"] = ["fam-B", "fam-A"]
+        self.assertEqual(
+            compare_raw_counts(left, right)["status"], "NOT_COMPARABLE"
+        )
+
+
     def test_cross_record_trial_family_aliases_require_reviewed_resolution(self):
         # Invented family labels can have different bytes but the same
         # compatibility/case-folded identity. Do not claim distinct families
