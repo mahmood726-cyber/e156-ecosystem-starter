@@ -227,6 +227,50 @@ class SourceRightsTests(unittest.TestCase):
         self.assertEqual(assess_source(reviewed, source, "CACHE_READ",
                                        on_date=TODAY)[0], "ALLOW")
 
+    def test_idna_equivalent_jama_host_spellings_are_held(self):
+        # Synthetic-only: DNS IDNA maps these Unicode separators to '.'.
+        # A cache on an equivalent publisher host must never pass the hold.
+        for separator in ("\u3002", "\uff0e", "\uff61"):
+            with self.subTest(separator=ascii(separator)):
+                source_url = f"https://jamanetwork{separator}com/synthetic-cache.xml"
+                source = {**SOURCE, "source_url": source_url}
+                grant = {**PERMISSION, "source_url": source_url}
+                permission = {"schema": "source-permissions-v1", "permissions": [grant]}
+                self.assertTrue(is_jama_source(source))
+                self.assertEqual(
+                    assess_source(permission, source, "CACHE_READ", on_date=TODAY)[0],
+                    "SOURCE_RIGHTS_HOLD")
+
+        with TemporaryDirectory() as root:
+            folder = Path(root)
+            url = "https://jamanetwork\u3002com/synthetic-cache.xml"
+            source = {**SOURCE, "source_url": url}
+            grant = {**PERMISSION, "source_url": url}
+            manifest = folder / "rights.json"
+            manifest.write_text(json.dumps(
+                {"schema": "source-permissions-v1", "permissions": [grant]}))
+            decision_log = folder / "decisions.jsonl"
+            decision_log.touch()
+            callback = Mock(return_value=b"invented-only")
+            with self.assertRaises(PermissionError):
+                execute_source_action(
+                    source, "CACHE_READ", callback, manifest_path=manifest,
+                    decision_log=decision_log, on_date=TODAY)
+            callback.assert_not_called()
+            self.assertEqual(
+                json.loads(decision_log.read_text().splitlines()[-1])["decision"],
+                "SOURCE_RIGHTS_HOLD")
+
+        # IDNA-equivalent prefix on another domain must remain unrelated.
+        unrelated_url = "https://jamanetwork\u3002com.fictional.invalid/file"
+        source = {**SOURCE, "source_url": unrelated_url}
+        grant = {**PERMISSION, "source_url": unrelated_url}
+        permission = {"schema": "source-permissions-v1", "permissions": [grant]}
+        self.assertFalse(is_jama_source(source))
+        self.assertEqual(
+            assess_source(permission, source, "CACHE_READ", on_date=TODAY)[0],
+            "ALLOW")
+
     def test_resolver_alias_cannot_hide_jama_identity(self):
         # Invented DOIs: a resolver alias is still the same held publication.
         for doi in (
