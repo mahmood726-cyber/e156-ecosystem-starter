@@ -142,6 +142,43 @@ else
 fi
 
 
+# A replacement lock must not be removed by a different installer that
+# originally claimed the path. Simulate a same-user rename without touching
+# any real HOME: old code removes the replacement directory on cleanup.
+start "lock cleanup refuses a swapped/replaced lock directory"
+lock_owner_home="$SANDBOX/lock ownership home-Ü"
+mkdir -p "$lock_owner_home"
+if (
+    export HOME="$lock_owner_home"
+    acquire_install_lock || exit 1
+    owned_lock="$INSTALL_LOCK_DIR"
+    mv -- "$owned_lock" "$owned_lock.original" || exit 1
+    mkdir -- "$owned_lock" || exit 1
+    if release_install_lock 2>/dev/null; then exit 1; fi
+    [[ -d "$owned_lock" && -d "$owned_lock.original" ]]
+); then
+    ok
+else
+    bad "lock cleanup removed a replacement lock owned by another process"
+fi
+
+# Negative control: normal successful ownership still releases a lock.
+start "lock cleanup removes its own unchanged lock"
+normal_owner_home="$SANDBOX/normal lock ownership home-Ü"
+mkdir -p "$normal_owner_home"
+if (
+    export HOME="$normal_owner_home"
+    acquire_install_lock || exit 1
+    owned_lock="$INSTALL_LOCK_DIR"
+    release_install_lock || exit 1
+    [[ ! -e "$owned_lock" ]]
+); then
+    ok
+else
+    bad "normal lock was not released by its installer"
+fi
+
+
 # An XDG transcript directory must not follow a symlink into an unrelated
 # location. Installation remains allowed without a transcript; no agent data
 # or logs should be written outside the isolated target home.
