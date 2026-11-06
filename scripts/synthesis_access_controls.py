@@ -322,6 +322,20 @@ def _reject_header_controls(value):
         raise ValueError("control character in recipient identity")
 
 
+def _gmail_delivery_key(mailbox):
+    """Canonical delivery identity for *consumer* Gmail addresses only.
+
+    Consumer gmail.com / googlemail.com delivery ignores local-part dots and
+    text after the first plus. Do not apply this to Workspace/custom domains,
+    whose mailbox rules can differ. Keep the raw mailbox key as well.
+    """
+    local, separator, domain = mailbox.rpartition("@")
+    if not separator or not local or domain.casefold() not in {"gmail.com", "googlemail.com"}:
+        return ""
+    user = local.split("+", 1)[0].replace(".", "").casefold()
+    return user + "@gmail.com" if user else ""
+
+
 def _recipient_keys(value):
     """Match normalized recipient names, display-name aliases, and mailboxes.
 
@@ -350,6 +364,11 @@ def _recipient_keys(value):
     for display, mailbox in getaddresses([value]):
         if "@" in mailbox:
             keys.add(_norm(mailbox))
+            # A dot/plus-tagged consumer Gmail alias reaches the same account
+            # as its untagged spelling. Check both in exclusion matching.
+            delivery_key = _gmail_delivery_key(mailbox)
+            if delivery_key:
+                keys.add(delivery_key)
             if display:
                 # RFC 2047 encoded-word display names must resolve to the
                 # same identity as the human-readable no-contact alias.
