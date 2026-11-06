@@ -554,6 +554,8 @@ fi
 # Lock before the first agent configuration write. An occupied lock is a
 # fail-closed refusal, not an invitation to overwrite or break another run.
 if ! acquire_install_lock; then
+    # The transaction has not begun; discard its temporary empty manifest.
+    rm -rf -- "$MANIFEST_DIR"
     exit 3
 fi
 trap _e156_exit_cleanup EXIT
