@@ -487,5 +487,58 @@ class RootDedupContractTests(unittest.TestCase):
                 self.assertEqual(result["certified_errors"], 0)
 
 
+
+    def test_non_nfc_root_or_output_id_must_not_split_a_canonical_root(self):
+        # NFD and NFC spellings identify the same Unicode label. Refuse the
+        # noncanonical representation rather than count it as a new root/output.
+        canonical = "synthetic:étude-1"
+        decomposed = "synthetic:e\\u0301tude-1"
+        for field in ("publication_id", "source_version", "root_scope_id",
+                      "root_cause_id", "affected_output_id"):
+            with self.subTest(field=field):
+                row = self.row_with(**{field: decomposed})
+                result = group_preflight_roots([self.row, row])
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertIsNone(result["root_count"])
+                self.assertFalse(result["email_eligible"])
+        valid = group_preflight_roots([
+            self.row_with(root_scope_id=canonical)])
+        self.assertEqual(valid["status"], "GROUPED")
+        self.assertEqual(valid["root_count"], 1)
+
+    def test_non_nfc_attestation_identifiers_cannot_prove_review(self):
+        # Identifiers from different normalization forms are not safe
+        # evidence provenance, even with otherwise valid receipt metadata.
+        human_fields = (
+            {"reviewer_id": "synthetic:re\\u0301viseur-2"},
+            {"receipt_locator": "private:re\\u0301sume\\u0301"},
+        )
+        for change in human_fields:
+            with self.subTest(human_field=change):
+                row = self.row_with(
+                    maturity="INDEPENDENTLY_ADJUDICATED",
+                    human_adjudicated=True,
+                    human_receipt=self.human_receipt(**change),
+                )
+                result = group_preflight_roots([row])
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertFalse(result["email_eligible"])
+        row = self.row_with(
+            author_confirmed=True,
+            author_confirmation=self.author_receipt(
+                confirmation_reference="private:re\\u0301sume\\u0301"),
+        )
+        result = group_preflight_roots([row])
+        self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+        # Precomposed printable Unicode names remain valid controls.
+        valid = self.row_with(
+            maturity="INDEPENDENTLY_ADJUDICATED",
+            human_adjudicated=True,
+            human_receipt=self.human_receipt(
+                reviewer_id="synthetic:réviseur-2",
+                receipt_locator="private:résumé"),
+        )
+        self.assertEqual(group_preflight_roots([valid])["status"], "GROUPED")
+
 if __name__ == "__main__":
     unittest.main()
