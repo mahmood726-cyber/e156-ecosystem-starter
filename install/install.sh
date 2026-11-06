@@ -623,7 +623,13 @@ if [[ "$IMPORT" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
                 # Sleep cannot guarantee an asynchronous tee has flushed.
                 # Wait for its exact PID before truncating the original inode.
                 wait "$E156_LOG_TEE_PID" 2>/dev/null || :
-                redact_secrets_in_log "$E156_LOG_FILE" "$E156_LOG_FD" 2>/dev/null || :
+                # Never leave a raw transcript available if filtering fails.
+                # Truncate the original inode through its still-open FD, not
+                # the replaceable pathname. Any remaining write failure must
+                # not redirect cleanup into an unrelated user file.
+                if ! redact_secrets_in_log "$E156_LOG_FILE" "$E156_LOG_FD" 2>/dev/null; then
+                    : >| "/dev/fd/$E156_LOG_FD" 2>/dev/null || :
+                fi
             }
             # Lock cleanup invokes _e156_finalize_log after releasing the lock.
         fi
