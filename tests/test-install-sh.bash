@@ -101,6 +101,51 @@ else
 fi
 
 
+# A concurrent installer must not touch any of the same agent configuration.
+# Use only synthetic HOME paths, never the actual user's configuration.
+start "refuses a competing installation before changing agent files"
+concurrent_home="$SANDBOX/concurrent install home-Ü"
+concurrent_lock="$concurrent_home/.e156-ecosystem-starter-install.lock"
+mkdir -p "$concurrent_lock"
+printf 'untouched\n' > "$concurrent_lock/existing-marker"
+concurrent_rc=0
+concurrent_output="$(HOME="$concurrent_home" XDG_STATE_HOME="$SANDBOX/concurrent state" bash "$ROOT/install/install.sh" --non-interactive 2>&1)" || concurrent_rc=$?
+if [[ "$concurrent_rc" -ne 0 && "$concurrent_output" == *"another installation"* &&
+      "$(cat "$concurrent_lock/existing-marker")" == "untouched" &&
+      ! -e "$concurrent_home/.claude" && ! -e "$concurrent_home/.gemini" &&
+      ! -e "$concurrent_home/.codex" ]]; then
+    ok
+else
+    bad "concurrent install bypassed occupied lock, modified config, or altered existing lock"
+fi
+
+start "successful isolated install releases its lock"
+single_home="$SANDBOX/single install home-Ü"
+mkdir -p "$single_home"
+single_rc=0
+HOME="$single_home" XDG_STATE_HOME="$SANDBOX/single state" bash "$ROOT/install/install.sh" --non-interactive >/dev/null 2>&1 || single_rc=$?
+if [[ "$single_rc" -eq 0 && ! -e "$single_home/.e156-ecosystem-starter-install.lock" &&
+      -f "$single_home/.claude/rules/rules.md" ]]; then
+    ok
+else
+    bad "isolated installation failed, retained lock, or omitted rules"
+fi
+
+start "failed isolated install releases its lock without following symlink"
+failed_home="$SANDBOX/failed install home-Ü"
+outside_dir="$SANDBOX/outside for failed install"
+mkdir -p "$failed_home/.gemini" "$outside_dir"
+ln -s "$outside_dir" "$failed_home/.gemini/rules"
+failed_rc=0
+HOME="$failed_home" XDG_STATE_HOME="$SANDBOX/failed state" bash "$ROOT/install/install.sh" --non-interactive >/dev/null 2>&1 || failed_rc=$?
+if [[ "$failed_rc" -ne 0 && ! -e "$failed_home/.e156-ecosystem-starter-install.lock" &&
+      -L "$failed_home/.gemini/rules" && ! -e "$outside_dir/rules.md" ]]; then
+    ok
+else
+    bad "failing installer left a lock, followed a symlink, or did not reject destination"
+fi
+
+
 start "copy_rules_to_agent copies 4 rules files into an empty target"
 target="$SANDBOX/agent1/rules"
 : > "$MANIFEST_FILES"  # reset manifest
