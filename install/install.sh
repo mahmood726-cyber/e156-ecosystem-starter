@@ -387,6 +387,26 @@ make_tracked_install_dir() {
 # an abandoned lock after a crash: a stale-looking lock may still be in use.
 # --dry-run and --import never acquire a lock or write to HOME.
 INSTALL_LOCK_DIR=""
+INSTALL_LOCK_ID=""
+
+# Bind the lock to its original directory identity, not a replaceable name.
+# Python is already required by this installer on Linux and macOS.
+lock_directory_identity() {
+    "$PYTHON" - "$1" <<'PY_LOCK_ID'
+import os
+import stat
+import sys
+
+try:
+    entry = os.lstat(sys.argv[1])
+    if not stat.S_ISDIR(entry.st_mode):
+        sys.exit(1)
+    print(f"{entry.st_dev}:{entry.st_ino}")
+except OSError:
+    sys.exit(1)
+PY_LOCK_ID
+}
+
 acquire_install_lock() {
     local candidate="${HOME}/.e156-ecosystem-starter-install.lock"
     refuse_symlink_install_path "$candidate" || return 1
@@ -394,17 +414,31 @@ acquire_install_lock() {
         printf 'ERROR: another installation may be running (lock exists): %s\n' "$candidate" >&2
         return 1
     fi
+    local identity
+    if ! identity="$(lock_directory_identity "$candidate")"; then
+        printf 'ERROR: cannot establish installation lock identity: %s\n' "$candidate" >&2
+        # Unknown ownership: leave the directory untouched for inspection.
+        return 1
+    fi
+    INSTALL_LOCK_ID="$identity"
     INSTALL_LOCK_DIR="$candidate"
 }
 
 release_install_lock() {
     [[ -n "${INSTALL_LOCK_DIR:-}" ]] || return 0
-    # rmdir never removes a pre-existing marker or other user-owned contents.
+    local current_identity=""
+    current_identity="$(lock_directory_identity "$INSTALL_LOCK_DIR" 2>/dev/null)" || current_identity=""
+    if [[ -z "$current_identity" || "$current_identity" != "${INSTALL_LOCK_ID:-}" ]]; then
+        printf 'WARNING: installation lock ownership changed; refusing cleanup: %s\n' "$INSTALL_LOCK_DIR" >&2
+        return 1
+    fi
+    # A concurrent rename after the identity check remains a filesystem race.
     if ! rmdir -- "$INSTALL_LOCK_DIR" 2>/dev/null; then
         printf 'WARNING: installation lock could not be released safely: %s\n' "$INSTALL_LOCK_DIR" >&2
         return 1
     fi
     INSTALL_LOCK_DIR=""
+    INSTALL_LOCK_ID=""
 }
 
 _e156_exit_cleanup() {
