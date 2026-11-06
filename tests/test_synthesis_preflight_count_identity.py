@@ -402,7 +402,8 @@ class CountIdentityTests(unittest.TestCase):
         ):
             with self.subTest(members=members):
                 left = copy.deepcopy(self.source)
-                left.update(count_basis="trial_families", value=2,
+                left.update(count_basis="trial_families", estimand="included_trial_families",
+                            value=2,
                             trial_family_ids=members)
                 right = copy.deepcopy(left)
                 result = compare_raw_counts(left, right)
@@ -413,7 +414,8 @@ class CountIdentityTests(unittest.TestCase):
 
     def test_opt_in_trial_family_membership_requires_consistent_sets(self):
         left = copy.deepcopy(self.source)
-        left.update(count_basis="trial_families", value=2,
+        left.update(count_basis="trial_families", estimand="included_trial_families",
+                            value=2,
                     trial_family_ids=["fam-A", "fam-B"])
         right = copy.deepcopy(left)
         right["trial_family_ids"] = ["fam-A", "fam-C"]
@@ -435,7 +437,8 @@ class CountIdentityTests(unittest.TestCase):
 
     def test_opt_in_trial_family_valid_membership_negative_control(self):
         left = copy.deepcopy(self.source)
-        left.update(count_basis="trial_families", value=2,
+        left.update(count_basis="trial_families", estimand="included_trial_families",
+                            value=2,
                     trial_family_ids=["fam-A", "fam-B"])
         right = copy.deepcopy(left)
         right["trial_family_ids"] = ["fam-B", "fam-A"]
