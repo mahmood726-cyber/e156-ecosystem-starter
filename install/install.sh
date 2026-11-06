@@ -227,6 +227,13 @@ MANIFEST_BACKUPS="${MANIFEST_DIR}/backups"
 : > "$MANIFEST_DIRS"
 : > "$MANIFEST_BACKUPS"
 
+# BSD/macOS does not ship GNU tac. awk is available on both platforms
+# (and already required by the installer self-SHA check). Reverse each
+# manifest in memory without changing its lines or touching user paths.
+reverse_manifest_lines() {
+    awk '{ lines[NR] = $0 } END { for (i = NR; i > 0; i--) print lines[i] }' "$1"
+}
+
 rollback() {
     local reason="$1"
     echo
@@ -234,7 +241,7 @@ rollback() {
 
     # Delete net-new files (reverse order so nested paths go first)
     if [[ -s "$MANIFEST_FILES" ]]; then
-        tac "$MANIFEST_FILES" | while IFS= read -r f; do
+        reverse_manifest_lines "$MANIFEST_FILES" | while IFS= read -r f; do
             [[ -n "$f" && -f "$f" ]] && rm -f "$f"
         done
     fi
@@ -257,7 +264,7 @@ rollback() {
     fi
     # Remove empty net-new dirs (reverse order)
     if [[ -s "$MANIFEST_DIRS" ]]; then
-        tac "$MANIFEST_DIRS" | while IFS= read -r d; do
+        reverse_manifest_lines "$MANIFEST_DIRS" | while IFS= read -r d; do
             [[ -n "$d" && -d "$d" ]] && rmdir "$d" 2>/dev/null || true
         done
     fi
