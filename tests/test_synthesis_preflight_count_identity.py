@@ -454,5 +454,55 @@ class CountIdentityTests(unittest.TestCase):
                          "NOT_ENOUGH_INFO")
 
 
+    def test_optional_denominator_unit_mismatch_holds_arithmetic(self):
+        # Equal numeric denominators can represent people vs person-years.
+        # These two synthetic event snapshots are not the same measure.
+        left = copy.deepcopy(self.source)
+        left.update(count_basis="events", value=12,
+                    analysis_denominator_n=100,
+                    analysis_denominator_unit="unique_participants")
+        right = copy.deepcopy(left)
+        right.update(analysis_denominator_unit="person_years", value=15)
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "NOT_COMPARABLE")
+        self.assertIn("analysis_denominator_unit", result["mismatched_fields"])
+        self.assertFalse(result["arithmetic_reproduced"])
+        self.assertFalse(result["certified_error"])
+
+    def test_optional_denominator_unit_requires_two_complete_valid_sides(self):
+        left = copy.deepcopy(self.source)
+        left.update(analysis_denominator_n=100,
+                    analysis_denominator_unit="unique_participants")
+        for unit in (None, "", "unknown", "patients", 100, True):
+            with self.subTest(unit=unit):
+                right = copy.deepcopy(left)
+                right.update(analysis_denominator_unit=unit, value=15)
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertEqual(result["disposition"], "HOLD")
+                self.assertFalse(result["certified_error"])
+        right = copy.deepcopy(left)
+        del right["analysis_denominator_unit"]
+        self.assertEqual(compare_raw_counts(left, right)["status"], "NOT_ENOUGH_INFO")
+        left.pop("analysis_denominator_n")
+        right.pop("analysis_denominator_n")
+        self.assertEqual(compare_raw_counts(left, right)["status"], "NOT_ENOUGH_INFO")
+
+    def test_optional_denominator_unit_matching_valid_control(self):
+        left = copy.deepcopy(self.source)
+        left.update(count_basis="events", value=12,
+                    analysis_denominator_n=100,
+                    analysis_denominator_unit="person_years")
+        right = copy.deepcopy(left)
+        right["value"] = 15
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "REVIEW")
+        self.assertEqual(result["difference"], -3)
+        self.assertFalse(result["source_authenticated"])
+        self.assertFalse(result["certified_error"])
+        right["value"] = 12
+        self.assertEqual(compare_raw_counts(left, right)["status"], "CONSISTENT")
+
+
 if __name__ == "__main__":
     unittest.main()
