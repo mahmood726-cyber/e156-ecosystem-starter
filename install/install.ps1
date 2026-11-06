@@ -549,6 +549,10 @@ Write-Host ""
 # Manifest drives rollback. Steps 2-4 push onto it via helper functions.
 # If any step throws, Invoke-InstallRollback undoes everything it did.
 $manifest = New-RollbackManifest
+# Reset session state BEFORE the lock attempt, including on failed re-entry.
+$script:__installLease = $null
+$script:__transcriptStarted = $false
+$logFile = $null
 
 try {
     # Claim before opening a transcript or changing any agent files.
@@ -556,8 +560,6 @@ try {
 
     # Transcript starts only for a lock owner; failed contenders leave no
     # LOCALAPPDATA log state. Logging errors are non-fatal.
-    $script:__transcriptStarted = $false
-    $logFile = $null
     try {
         $logDir = Join-Path $env:LOCALAPPDATA 'e156\\logs'
         New-Item -ItemType Directory -Force -Path $logDir | Out-Null
