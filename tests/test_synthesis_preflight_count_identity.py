@@ -643,5 +643,42 @@ class CountIdentityTests(unittest.TestCase):
         right["analysis_denominator_n"] = 10
         self.assertEqual(compare_raw_counts(left, right)["status"], "CONSISTENT")
 
+
+    def test_cross_record_trial_family_aliases_require_reviewed_resolution(self):
+        # Invented family labels can have different bytes but the same
+        # compatibility/case-folded identity. Do not claim distinct families
+        # solely from the different spellings.
+        for left_id, right_id in (
+            ("fam-A", "FAM-a"),
+            ("Fam-①", "Fam-1"),
+            ("fam-ﬃ", "fam-ffi"),
+        ):
+            with self.subTest(left_id=left_id, right_id=right_id):
+                left = copy.deepcopy(self.source)
+                left.update(count_basis="trial_families",
+                            estimand="included_trial_families", value=2,
+                            trial_family_ids=[left_id, "fam-B"])
+                right = copy.deepcopy(left)
+                right["trial_family_ids"] = [right_id, "fam-B"]
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertEqual(result["disposition"], "HOLD")
+                self.assertFalse(result["arithmetic_reproduced"])
+                self.assertFalse(result["certified_error"])
+
+    def test_distinct_family_memberships_remain_not_comparable(self):
+        left = copy.deepcopy(self.source)
+        left.update(count_basis="trial_families",
+                    estimand="included_trial_families", value=2,
+                    trial_family_ids=["fam-A", "fam-B"])
+        right = copy.deepcopy(left)
+        right["trial_family_ids"] = ["fam-C", "fam-B"]
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "NOT_COMPARABLE")
+        self.assertEqual(result["mismatched_fields"], ["trial_family_ids"])
+        self.assertFalse(result["certified_error"])
+        right["trial_family_ids"] = ["fam-B", "fam-A"]
+        self.assertEqual(compare_raw_counts(left, right)["status"], "CONSISTENT")
+
 if __name__ == "__main__":
     unittest.main()
