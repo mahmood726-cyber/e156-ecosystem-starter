@@ -1044,6 +1044,36 @@ class ContactTests(unittest.TestCase):
             ["PROGRAMME_OUTGOING_QUERY_PAUSE"],
         )
 
+    def test_unparseable_multiple_mailboxes_are_not_silently_ignored(self):
+        # A malformed header with two angle-bracket mailboxes may parse to
+        # one empty tuple. Neither a decoded header nor a queued resend may
+        # silently discard a hidden excluded recipient. Invented data only.
+        raw = "Invented Safe <safe@example.invalid> <blocked@example.invalid>"
+        encoded = "=?utf-8?b?" + b64encode(raw.encode("utf-8")).decode("ascii") + "?="
+        exclusions = [{"emails": ["blocked@example.invalid"]}]
+        for kind in ("new", "retry", "followup", "queued_send"):
+            for field in ("to", "cc", "bcc", "indirect_recipients"):
+                for recipient in (raw, encoded):
+                    with self.subTest(kind=kind, field=field, encoded=(recipient == encoded)):
+                        message = {"to": ["safe@example.invalid"], field: [recipient],
+                                   "kind": kind}
+                        reasons = outgoing_blockers(message, exclusions)
+                        self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                        self.assertTrue(
+                            any(reason.startswith("CONTACT_BLOCKED_NO_CONTACT:") for reason in reasons),
+                            "an unparseable second mailbox must fail closed independently of the pause")
+                        transport = Mock()
+                        with self.assertRaises(PermissionError):
+                            require_outgoing_allowed(message, exclusions)
+                            transport()
+                        transport.assert_not_called()
+        # Valid, distinctly parseable nonexcluded multiple-address headers
+        # remain subject only to the programme-wide outgoing pause.
+        ordinary = "Invented Safe <safe@example.invalid>, Other Safe <other@example.invalid>"
+        self.assertEqual(
+            outgoing_blockers({"to": [ordinary]}, exclusions),
+            ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
+
     def test_gmail_delivery_aliases_block_no_contact(self):
         # Entirely invented recipients. Consumer Gmail delivery ignores dots
         # and plus-tag suffixes; googlemail.com is an equivalent mailbox host.
