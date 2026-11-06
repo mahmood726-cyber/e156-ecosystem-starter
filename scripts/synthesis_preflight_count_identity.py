@@ -144,29 +144,9 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
             if type(unit) is not str or unit not in DENOMINATOR_UNITS:
                 return {**base, "reason": f"{side_name}: unsupported analysis_denominator_unit"}
 
-    if any(denominator_present):
-        for side_name, record in (("left", left), ("right", right)):
-            size = record["analysis_denominator_n"]
-            # When numerator and denominator represent the same unit,
-            # the reported numerator cannot exceed the stated total.
-            # Recurrent events per participant and counts per person-time
-            # are *not* same-unit and must not be capped as cohort sizes.
-            # Legacy unlabelled denominators retain the participant cap.
-            unit = record.get("analysis_denominator_unit", "unique_participants")
-            if record["count_basis"] == unit and record["value"] > size:
-                return {**base, "reason": f"{side_name}: count exceeds same-unit analysis denominator"}
-        if unit_present[0] and left["analysis_denominator_unit"] != right["analysis_denominator_unit"]:
-            return {
-                **base, "status": "NOT_COMPARABLE",
-                "reason": "analysis denominator units differ",
-                "mismatched_fields": ["analysis_denominator_unit"],
-            }
-        if left["analysis_denominator_n"] != right["analysis_denominator_n"]:
-            return {
-                **base, "status": "NOT_COMPARABLE",
-                "reason": "reported analysis denominator sizes differ",
-                "mismatched_fields": ["analysis_denominator_n"],
-            }
+    # Validate optional trial-family manifests before a valid denominator-size
+    # mismatch may conclude NOT_COMPARABLE. Invalid membership must fail
+    # closed even if the two denominators differ.
     # Optional caller-supplied family membership contract. A reported
     # trial-family total is not a count of distinct families if its membership
     # includes duplicates or aliases of the same family. This is metadata
@@ -195,6 +175,30 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
             # Matching spelling is required across sources; case/Unicode
             # aliases without reviewed equivalence cannot prove membership.
             family_sets[side_name] = frozenset(members)
+    if any(denominator_present):
+        for side_name, record in (("left", left), ("right", right)):
+            size = record["analysis_denominator_n"]
+            # When numerator and denominator represent the same unit,
+            # the reported numerator cannot exceed the stated total.
+            # Recurrent events per participant and counts per person-time
+            # are *not* same-unit and must not be capped as cohort sizes.
+            # Legacy unlabelled denominators retain the participant cap.
+            unit = record.get("analysis_denominator_unit", "unique_participants")
+            if record["count_basis"] == unit and record["value"] > size:
+                return {**base, "reason": f"{side_name}: count exceeds same-unit analysis denominator"}
+        if unit_present[0] and left["analysis_denominator_unit"] != right["analysis_denominator_unit"]:
+            return {
+                **base, "status": "NOT_COMPARABLE",
+                "reason": "analysis denominator units differ",
+                "mismatched_fields": ["analysis_denominator_unit"],
+            }
+        if left["analysis_denominator_n"] != right["analysis_denominator_n"]:
+            return {
+                **base, "status": "NOT_COMPARABLE",
+                "reason": "reported analysis denominator sizes differ",
+                "mismatched_fields": ["analysis_denominator_n"],
+            }
+    if any(membership_present):
         if family_sets["left"] != family_sets["right"]:
             return {
                 **base, "status": "NOT_COMPARABLE",
