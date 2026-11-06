@@ -522,5 +522,42 @@ class CountIdentityTests(unittest.TestCase):
         self.assertEqual(compare_raw_counts(left, right)["status"], "NOT_ENOUGH_INFO")
 
 
+    def test_same_unit_numerator_cannot_exceed_typed_denominator(self):
+        # Synthetic invalid pairs: an exact numerator cannot contain more
+        # events/visits/families than the stated denominator *of that unit*.
+        # The previous guard capped unique participants only.
+        for basis in ("events", "visits", "trial_families"):
+            with self.subTest(count_basis=basis):
+                left = copy.deepcopy(self.source)
+                left.update(count_basis=basis, estimand="count_of_" + basis,
+                            value=11, analysis_denominator_n=10,
+                            analysis_denominator_unit=basis)
+                right = copy.deepcopy(left)
+                right["value"] = 10
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertEqual(result["disposition"], "HOLD")
+                self.assertFalse(result["arithmetic_reproduced"])
+                self.assertFalse(result["certified_error"])
+
+    def test_same_unit_denominator_legitimate_controls(self):
+        # A valid numerator no greater than its same-unit denominator must
+        # still support a screened comparison and equality negative control.
+        for basis in ("unique_participants", "events", "visits", "trial_families"):
+            with self.subTest(count_basis=basis):
+                left = copy.deepcopy(self.source)
+                left.update(count_basis=basis, estimand="count_of_" + basis,
+                            value=9, analysis_denominator_n=10,
+                            analysis_denominator_unit=basis)
+                right = copy.deepcopy(left)
+                right["value"] = 10
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "REVIEW")
+                self.assertEqual(result["difference"], -1)
+                self.assertFalse(result["certified_error"])
+                right["value"] = 9
+                self.assertEqual(compare_raw_counts(left, right)["status"], "CONSISTENT")
+
+
 if __name__ == "__main__":
     unittest.main()
