@@ -106,15 +106,22 @@ redact_secrets_in_log() {
     #   AIza... (Google), sk-/sk-ant- (OpenAI/Anthropic),
     #   ghp_/gho_/ghs_/ghu_ (GitHub), AKIA (AWS), 64-hex (HMAC/generic),
     #   eyJ... JWT, setx/export VAR_KEY/TOKEN/SECRET "x".
-    local f="$1"
-    [[ -f "$f" ]] || return 0
-    # macOS sed lacks -i in-place; use a tmp file for portability.
-    local tmp
-    tmp="$(mktemp "${f}.redact.XXXXXX")" || return 0
+    local f="$1" fd="${2:-}" tmp rc=0
+    # The install EXIT handler passes the exclusively-created transcript FD.
+    # Never follow the replaceable pathname when cleaning an installer log.
+    if [[ -n "$fd" ]]; then
+        [[ "$fd" =~ ^[0-9]+$ ]] || return 1
+        f="/dev/fd/$fd"
+        tmp="$(mktemp -t e156-redact.XXXXXX)" || return 1
+    else
+        # Keep the standalone helper's historical filename API for tests.
+        [[ -f "$f" ]] || return 0
+        tmp="$(mktemp "${f}.redact.XXXXXX")" || return 1
+    fi
     # Specific patterns first (preserve labels), then generic export-var
     # catch-all (skip lines that already got a labeled redaction so we don't
     # over-redact "[REDACTED-google-api-key]" -> "[REDACTED]").
-    sed -E \
+    if sed -E \
         -e 's/AIza[A-Za-z0-9_-]{35}/[REDACTED-google-api-key]/g' \
         -e 's/sk-ant-[A-Za-z0-9_-]{40,}/[REDACTED-anthropic-key]/g' \
         -e 's/sk-[A-Za-z0-9]{40,}/[REDACTED-openai-key]/g' \
@@ -123,7 +130,39 @@ redact_secrets_in_log() {
         -e 's/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/[REDACTED-jwt]/g' \
         -e 's/\b[0-9a-fA-F]{64}\b/[REDACTED-64hex]/g' \
         -e '/\[REDACTED/!s/(export[[:space:]]+[A-Za-z0-9_]*(KEY|TOKEN|SECRET|PASS|HMAC)[A-Za-z0-9_]*=)["'"'"']?[^"'"'"' ]+/\1[REDACTED]/g' \
-        "$f" > "$tmp" 2>/dev/null && mv "$tmp" "$f" || rm -f "$tmp"
+        "$f" > "$tmp" 2>/dev/null; then
+        if [[ -n "$fd" ]]; then
+            # Flush tee first, then rewrite the original inode via its
+            # inherited descriptor. A symlink swap cannot redirect this write.
+            # Read the filtered temporary file in bounded chunks.
+            if ! "$PYTHON" - "$fd" "$tmp" <<'PY_FD_REDACT'
+import os
+import sys
+fd = int(sys.argv[1])
+with open(sys.argv[2], "rb") as redacted:
+    os.ftruncate(fd, 0)
+    os.lseek(fd, 0, os.SEEK_SET)
+    while True:
+        data = redacted.read(65536)
+        if not data:
+            break
+        while data:
+            count = os.write(fd, data)
+            if count <= 0:
+                raise OSError("short write to transcript")
+            data = data[count:]
+PY_FD_REDACT
+            then
+                rc=1
+            fi
+        else
+            mv "$tmp" "$f" || rc=1
+        fi
+    else
+        rc=1
+    fi
+    rm -f -- "$tmp"
+    return "$rc"
 }
 
 # --------------------------- layout + self-SHA ----------------------------
@@ -572,6 +611,7 @@ if [[ "$IMPORT" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
             # Tee writes to the already-open descriptor, never to the
             # replaceable pathname. Process substitution preserves terminal IO.
             exec > >(tee "/dev/fd/$E156_LOG_FD") 2>&1
+            E156_LOG_TEE_PID=$!
             echo "(transcript: $E156_LOG_FILE)"
             # Redact secrets from the transcript on exit (success or failure).
             # Close stdout/stderr first so the tee subshell flushes and exits;
@@ -580,8 +620,10 @@ if [[ "$IMPORT" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
             _e156_finalize_log() {
                 [[ -n "${E156_LOG_FILE:-}" ]] || return 0
                 exec >&- 2>&- 2>/dev/null || :
-                sleep 0.2 2>/dev/null || :
-                redact_secrets_in_log "$E156_LOG_FILE" 2>/dev/null || :
+                # Sleep cannot guarantee an asynchronous tee has flushed.
+                # Wait for its exact PID before truncating the original inode.
+                wait "$E156_LOG_TEE_PID" 2>/dev/null || :
+                redact_secrets_in_log "$E156_LOG_FILE" "$E156_LOG_FD" 2>/dev/null || :
             }
             # Lock cleanup invokes _e156_finalize_log after releasing the lock.
         fi
