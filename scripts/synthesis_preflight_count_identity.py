@@ -65,6 +65,11 @@ def _missing_field(value: Any, key: str) -> bool:
     # Refuse rather than rewriting identity bytes.
     if any(unicodedata.category(char).startswith("C") for char in value):
         return True
+    # Canonically equivalent decomposed and precomposed labels must not
+    # become different source/result identities in downstream contracts.
+    # Require NFC without silently rewriting caller-supplied evidence.
+    if unicodedata.normalize("NFC", value) != value:
+        return True
     normalized = re.sub(r"[\s_-]+", "_", value.strip().casefold())
     if normalized not in UNKNOWN_LITERALS:
         return False
