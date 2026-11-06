@@ -253,6 +253,30 @@ class CountIdentityTests(unittest.TestCase):
                 self.assertFalse(result["arithmetic_reproduced"])
                 self.assertFalse(result["certified_error"])
 
+    def test_noncanonical_unicode_result_identifiers_hold(self):
+        # NFD and NFC spellings can alias after downstream canonicalization.
+        # Repeated decomposed metadata must not be accepted as a matched
+        # source identity merely because both inputs use the same spelling.
+        for field, decomposed in (
+            ("publication_id", "synthetic:e\\u0301tude"),
+            ("source_result_id", "re\\u0301sultat:1"),
+            ("source_version", "re\\u0301vision:1"),
+            ("analysis_cell_id", "bras:re\\u0301gional"),
+            ("population", "re\\u0301gion"),
+            ("endpoint", "re\\u0301admission"),
+            ("locator", "synthetic table: re\\u0301sultat"),
+        ):
+            with self.subTest(field=field):
+                left = copy.deepcopy(self.source)
+                left[field] = decomposed
+                right = copy.deepcopy(left)
+                right["value"] = 15
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertEqual(result["disposition"], "HOLD")
+                self.assertFalse(result["arithmetic_reproduced"])
+                self.assertFalse(result["certified_error"])
+
     def test_printable_unicode_identity_remains_comparable(self):
         # Do not reject genuine printable international identifiers.
         left = copy.deepcopy(self.source)
