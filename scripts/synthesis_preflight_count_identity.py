@@ -27,6 +27,13 @@ RESULT_FIELDS = (
     "count_basis", "denominator_basis", "analysis_cell_id",
 ) + ESTIMATOR_FIELDS
 COUNT_BASES = frozenset({"unique_participants", "events", "trial_families", "visits"})
+# Optional typed unit for an explicitly supplied denominator size.
+# A numeric exposure of 100 people is not interchangeable with 100 person-years.
+# No inferred conversion or source authentication occurs in this helper.
+DENOMINATOR_UNITS = frozenset({
+    "unique_participants", "events", "visits", "trial_families",
+    "person_days", "person_months", "person_years",
+})
 SHA256 = re.compile(r"[0-9a-fA-F]{64}\Z")
 # An unknown/irrelevant population, outcome or version is not a matched
 # identity, even when both records use the same placeholder. Explicit
@@ -130,6 +137,29 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
                 **base, "status": "NOT_COMPARABLE",
                 "reason": "reported analysis denominator sizes differ",
                 "mismatched_fields": ["analysis_denominator_n"],
+            }
+    # An explicitly labelled denominator is part of the comparison identity.
+    # When supplied, both sides must give a known unit and a validated size.
+    # Reject unknown or one-sided labels; do not guess a person-time conversion.
+    # Absence on both sides preserves the older opt-in screened contract.
+    unit_present = (
+        "analysis_denominator_unit" in left,
+        "analysis_denominator_unit" in right,
+    )
+    if any(unit_present):
+        if not all(unit_present):
+            return {**base, "reason": "analysis denominator unit supplied on only one side"}
+        if not all(denominator_present):
+            return {**base, "reason": "analysis denominator unit requires exact size on both sides"}
+        for side_name, record in (("left", left), ("right", right)):
+            unit = record["analysis_denominator_unit"]
+            if type(unit) is not str or unit not in DENOMINATOR_UNITS:
+                return {**base, "reason": f"{side_name}: unsupported analysis_denominator_unit"}
+        if left["analysis_denominator_unit"] != right["analysis_denominator_unit"]:
+            return {
+                **base, "status": "NOT_COMPARABLE",
+                "reason": "analysis denominator units differ",
+                "mismatched_fields": ["analysis_denominator_unit"],
             }
     # Optional caller-supplied family membership contract. A reported
     # trial-family total is not a count of distinct families if its membership
