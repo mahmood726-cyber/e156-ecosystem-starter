@@ -559,5 +559,41 @@ class CountIdentityTests(unittest.TestCase):
                 self.assertEqual(compare_raw_counts(left, right)["status"], "CONSISTENT")
 
 
+    def test_denominator_unit_metadata_validated_before_size_mismatch(self):
+        # A size mismatch must never mask malformed/one-sided unit metadata:
+        # uncertain provenance is a HOLD, not an authenticated difference.
+        for left_unit, right_unit, expected_reason in (
+            ("person_centuries", "person_years", "unsupported analysis_denominator_unit"),
+            ("unique_participants", None, "analysis denominator unit supplied on only one side"),
+            (["person_years"], "person_years", "unsupported analysis_denominator_unit"),
+        ):
+            with self.subTest(left_unit=left_unit, right_unit=right_unit):
+                left = copy.deepcopy(self.source)
+                right = copy.deepcopy(self.source)
+                left["analysis_denominator_n"] = 100
+                right["analysis_denominator_n"] = 120
+                left["analysis_denominator_unit"] = left_unit
+                if right_unit is not None:
+                    right["analysis_denominator_unit"] = right_unit
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertEqual(result["disposition"], "HOLD")
+                self.assertIn(expected_reason, result["reason"])
+                self.assertFalse(result["arithmetic_reproduced"])
+                self.assertFalse(result["certified_error"])
+
+    def test_valid_denominator_unit_size_difference_negative_control(self):
+        left = copy.deepcopy(self.source)
+        right = copy.deepcopy(self.source)
+        left.update(analysis_denominator_n=100,
+                    analysis_denominator_unit="unique_participants")
+        right.update(analysis_denominator_n=120,
+                     analysis_denominator_unit="unique_participants")
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "NOT_COMPARABLE")
+        self.assertEqual(result["mismatched_fields"], ["analysis_denominator_n"])
+        self.assertFalse(result["certified_error"])
+
+
 if __name__ == "__main__":
     unittest.main()
