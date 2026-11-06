@@ -496,8 +496,14 @@ class RootDedupContractTests(unittest.TestCase):
         for field in ("publication_id", "source_version", "root_scope_id",
                       "root_cause_id", "affected_output_id"):
             with self.subTest(field=field):
-                row = self.row_with(**{field: decomposed})
-                result = group_preflight_roots([self.row, row])
+                first = self.row_with(**{field: canonical})
+                second = self.row_with(**{field: decomposed})
+                if field in ("root_scope_id", "root_cause_id"):
+                    # Avoid the separate duplicate-output collision guard:
+                    # both output IDs are distinct, only the Unicode root
+                    # spelling is equivalent.
+                    second["affected_output_id"] = "figure2:event"
+                result = group_preflight_roots([first, second])
                 self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
                 self.assertIsNone(result["root_count"])
                 self.assertFalse(result["email_eligible"])
