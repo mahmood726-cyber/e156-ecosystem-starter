@@ -12,12 +12,12 @@
 |---|---|---|---|
 | 1 | Is this the correct current version of the paper, including corrections? | | |
 | 2 | Are the abstract's numbers and conclusions consistent with the full text? | | |
-| 3 | Do tables, figures, text and supplementary files agree on each reported result? | | |
+| 3 | Do tables, figures, text and supplementary files agree on results and recommendations, including eligibility, age boundaries and logical qualifiers such as “not”, “and” and “or”? | | |
 | 4 | Do reported counts and percentages agree with the stated denominators? | | |
 | 5 | Are confidence intervals ordered correctly and reported on the intended scale? | | |
 | 6 | Are units, labels, figure axes and treatment directions consistent? | | |
 | 7 | Do references actually support the specific claims attributed to them? | | |
-| 8 | Do the population, intervention, comparator and endpoint match the cited source? | | |
+| 8 | Do the population, intervention, comparator and endpoint, including its primary or secondary status, match the cited source? | | |
 | 9 | Are follow-up windows, analysis populations and endpoint definitions consistent across documents? | | |
 | 10 | Does the reported analysis match the protocol, registration and statistical analysis plan, or are changes explained? | | |
 | 11 | Are effect measure, estimand, adjustment and model identified before comparing estimates? | | |
