@@ -388,6 +388,7 @@ def _recipient_keys(value):
     # protected second recipient could otherwise be missed. Parse every
     # address, preserving quoted commas inside display names.
     keys = {_norm(value)}
+    parsed_fields = [value]
     # Names supplied separately from a mailbox (recipient_names and private
     # name/alias exclusions) may still use RFC 2047 encoded words. Decoding
     # only parsed display names misses those standalone identities.
@@ -396,26 +397,31 @@ def _recipient_keys(value):
             decoded_identity = str(make_header(decode_header(value)))
             _reject_header_controls(decoded_identity)
             keys.add(_norm(decoded_identity))
+            # An encoded word can hide an entire address list. Inspect each
+            # decoded mailbox and name, not only the full decoded string.
+            if decoded_identity != value:
+                parsed_fields.append(decoded_identity)
         except (UnicodeError, LookupError, ValueError) as exc:
             raise ValueError("invalid recipient identity encoding") from exc
-    for display, mailbox in getaddresses([value]):
-        if "@" in mailbox:
-            keys.add(_norm(mailbox))
-            # A dot/plus-tagged consumer Gmail alias reaches the same account
-            # as its untagged spelling. Check both in exclusion matching.
-            delivery_key = _gmail_delivery_key(mailbox)
-            if delivery_key:
-                keys.add(delivery_key)
-            if display:
-                # RFC 2047 encoded-word display names must resolve to the
-                # same identity as the human-readable no-contact alias.
-                # Invalid encodings must fail closed, not silently disappear.
-                try:
-                    decoded = str(make_header(decode_header(display)))
-                except (UnicodeError, LookupError, ValueError) as exc:
-                    raise ValueError("invalid recipient display-name encoding") from exc
-                _reject_header_controls(decoded)
-                keys.add(_norm(decoded))
+    for parsed_field in parsed_fields:
+        for display, mailbox in getaddresses([parsed_field]):
+            if "@" in mailbox:
+                keys.add(_norm(mailbox))
+                # A dot/plus-tagged consumer Gmail alias reaches the same account
+                # as its untagged spelling. Check both in exclusion matching.
+                delivery_key = _gmail_delivery_key(mailbox)
+                if delivery_key:
+                    keys.add(delivery_key)
+                if display:
+                    # RFC 2047 encoded-word display names must resolve to the
+                    # same identity as the human-readable no-contact alias.
+                    # Invalid encodings must fail closed, not silently disappear.
+                    try:
+                        decoded = str(make_header(decode_header(display)))
+                    except (UnicodeError, LookupError, ValueError) as exc:
+                        raise ValueError("invalid recipient display-name encoding") from exc
+                    _reject_header_controls(decoded)
+                    keys.add(_norm(decoded))
     return {key for key in keys if key}
 
 
