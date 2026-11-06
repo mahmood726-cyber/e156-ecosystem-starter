@@ -182,6 +182,62 @@ else
     bad "safe XDG transcript directory did not receive a log"
 fi
 
+# Simulate a same-second reinstall without relying on wall-clock timing.
+# A pre-existing log is user data: neither append to nor truncate it.
+# The previous implementation used tee -a on a timestamp-only filename.
+fixed_log_clock="$SANDBOX/fixed transcript clock-Ü"
+mkdir -p "$fixed_log_clock"
+cat > "$fixed_log_clock/date" <<'CLOCK'
+#!/usr/bin/env bash
+if [[ "${1:-}" == '+%Y%m%d-%H%M%S' ]]; then
+    printf '20261106-043000\n'
+else
+    exec /bin/date "$@"
+fi
+CLOCK
+chmod +x "$fixed_log_clock/date"
+
+start "same-second transcript filename collision preserves prior log"
+log_collision_home="$SANDBOX/log collision home-Ü"
+log_collision_state="$SANDBOX/log collision state-Ü"
+log_collision_dir="$log_collision_state/e156/logs"
+mkdir -p "$log_collision_home" "$log_collision_dir"
+printf 'prior transcript must remain unchanged\n' > "$log_collision_dir/install-20261106-043000.log"
+log_collision_rc=0
+HOME="$log_collision_home" XDG_STATE_HOME="$log_collision_state" PATH="$fixed_log_clock:$PATH" \
+    bash "$ROOT/install/install.sh" --non-interactive >/dev/null 2>&1 || log_collision_rc=$?
+new_collision_logs=( "$log_collision_dir"/install-20261106-043000-*.log )
+if [[ "$log_collision_rc" -eq 0 &&
+      "$(cat "$log_collision_dir/install-20261106-043000.log")" == "prior transcript must remain unchanged" &&
+      -f "${new_collision_logs[0]}" &&
+      ! -e "$log_collision_home/.e156-ecosystem-starter-install.lock" ]]; then
+    ok
+else
+    bad "same-second installer appended to an existing transcript or failed to create a new one"
+fi
+
+start "transcript symlink filename never redirects writes outside log directory"
+log_leaf_home="$SANDBOX/log leaf home-Ü"
+log_leaf_state="$SANDBOX/log leaf state-Ü"
+log_leaf_dir="$log_leaf_state/e156/logs"
+log_leaf_outside="$SANDBOX/transcript leaf outside-Ü"
+mkdir -p "$log_leaf_home" "$log_leaf_dir"
+printf 'external sentinel must remain unchanged\n' > "$log_leaf_outside"
+ln -s "$log_leaf_outside" "$log_leaf_dir/install-20261106-043000.log"
+log_leaf_rc=0
+HOME="$log_leaf_home" XDG_STATE_HOME="$log_leaf_state" PATH="$fixed_log_clock:$PATH" \
+    bash "$ROOT/install/install.sh" --non-interactive >/dev/null 2>&1 || log_leaf_rc=$?
+new_leaf_logs=( "$log_leaf_dir"/install-20261106-043000-*.log )
+if [[ "$log_leaf_rc" -eq 0 &&
+      "$(cat "$log_leaf_outside")" == "external sentinel must remain unchanged" &&
+      -L "$log_leaf_dir/install-20261106-043000.log" &&
+      -f "${new_leaf_logs[0]}" &&
+      ! -e "$log_leaf_home/.e156-ecosystem-starter-install.lock" ]]; then
+    ok
+else
+    bad "transcript followed pre-existing symlink filename or did not create safe new log"
+fi
+
 start "failed isolated install releases its lock without following symlink"
 failed_home="$SANDBOX/failed install home-Ü"
 outside_dir="$SANDBOX/outside for failed install"
