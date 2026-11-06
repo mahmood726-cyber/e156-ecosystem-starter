@@ -74,15 +74,12 @@ must attach known feedback; these offline functions cannot discover omitted
 messages or enforce an inbox-wide policy. The helper's FALSE_POSITIVE_RECORDED
 label records a reviewer's assessment, not independently established truth.
 
-## Learning and evaluation
+## Evaluation limits
 
-Translate reviewed failure modes into general checks and paired synthetic
-controls: one legitimate explanation and one actual discrepancy. Keep private
-names, quotes, addresses, identifiers and development correspondence out of
-public fixtures and documentation. Historical examples used to revise a prompt
-are development/regression material and must be excluded from held-out accuracy
-testing, including linked trial families. Record the prompt/commit version and
-date of each rule change privately. Use the same underlying model, source
+Keep private names, quotes, addresses, identifiers and correspondence out of
+public fixtures and documentation. Any examples used to revise a prompt must
+be excluded from held-out accuracy testing, including linked trial families.
+Use the same underlying model, source
 access and time budget when comparing prompts; preserve all flags, no-flags,
 abstentions and adjudication outcomes. A resolved enquiry is not automatically
 a false positive, and an unanswered query is not a true positive. These changes

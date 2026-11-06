@@ -15,12 +15,12 @@ The reviewer must investigate alternative explanations for an apparent discrepan
 
 **Review safeguards updated 6 November 2026:** The checklist and optional prompt now require exact-quotation checks, saved calculation evidence and point-by-point source rechecks of replies. See [reviewing explanations and preventing false positives](SYNTHESIS-RESPONSE-REVIEW.md). A disagreement alone does not refute a concern; an acknowledgement of one point does not validate an entire enquiry.
 
-## How was it developed?
+## Validation status
 
-Synthesis brings together established mathematical, statistical, source-verification and methodological review principles into a structured workflow. Its current version incorporates conservative comparability, evidence-recording and refutation safeguards. The accompanying implementation has undergone synthetic software tests, but independent prospective validation of real-world detection accuracy has **not** been completed.
+The accompanying implementation has undergone synthetic software tests. Independent prospective validation of real-world detection accuracy has **not** been completed. A completed checklist does not certify that a paper is correct.
 
 ## Responsible use
 
 Access and processing of each source must be authorised for the intended purpose. Respect copyright, publisher terms, text-mining restrictions, confidentiality, privacy, research-ethics requirements and no-contact requests. AI assistance does not override these obligations. Do not automatically contact authors or editors or make allegations based on unchecked flags.
 
-**This is the public-facing introduction.** Technical development records and historical documentation are not necessary to apply the checklist. Existing Git history may still contain earlier versions of this page; replacing this document does not erase that history or make it private.
+Use the checklist and prompt above to apply the procedure. Keep manuscript-specific evidence and correspondence in an authorised private record.
