@@ -193,6 +193,20 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
                 **base,
                 "reason": "unresolved cross-record trial-family identity alias",
             }
+
+    # A byte-different publication/result/version ID that is identical under
+    # Unicode compatibility normalization plus case folding is an unresolved
+    # identity alias, not a demonstrated different source. Check this before
+    # interpreting a valid denominator mismatch as NOT_COMPARABLE. Never
+    # rewrite the IDs or assume the two source versions are equivalent.
+    for key in ("publication_id", "source_result_id", "data_version", "source_version"):
+        if (left[key] != right[key]
+                and unicodedata.normalize("NFKC", left[key]).casefold()
+                    == unicodedata.normalize("NFKC", right[key]).casefold()):
+            return {
+                **base,
+                "reason": f"unresolved cross-record source identity alias: {key}",
+            }
     if any(denominator_present):
         for side_name, record in (("left", left), ("right", right)):
             size = record["analysis_denominator_n"]
