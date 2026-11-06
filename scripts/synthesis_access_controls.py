@@ -404,7 +404,16 @@ def _recipient_keys(value):
         except (UnicodeError, LookupError, ValueError) as exc:
             raise ValueError("invalid recipient identity encoding") from exc
     for parsed_field in parsed_fields:
-        for display, mailbox in getaddresses([parsed_field]):
+        parsed_addresses = getaddresses([parsed_field])
+        # The stdlib parser can discard malformed extra angle-bracket
+        # mailboxes (returning an empty tuple), even when the raw header
+        # still contains their @ identities. Never infer that a partial
+        # parse covers all potential direct or indirect recipients.
+        # Check RFC 2047-decoded fields separately, as a hidden list can
+        # have no raw @ characters.
+        if parsed_field.count("@") > sum(mailbox.count("@") for _, mailbox in parsed_addresses):
+            raise ValueError("unparseable recipient mailbox identity")
+        for display, mailbox in parsed_addresses:
             if "@" in mailbox:
                 keys.add(_norm(mailbox))
                 # A dot/plus-tagged consumer Gmail alias reaches the same account
