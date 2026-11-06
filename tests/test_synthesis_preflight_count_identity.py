@@ -394,5 +394,62 @@ class CountIdentityTests(unittest.TestCase):
         self.assertFalse(result["certified_error"])
 
 
+    def test_opt_in_trial_family_membership_rejects_duplicates(self):
+        # Synthetic aliases of the same family must never count twice.
+        for members in (
+            ["fam-A", "fam-A"], ["fam-A", "FAM-a"],
+            ["Fam-①", "Fam-1"], ["unknown", "fam-B"],
+        ):
+            with self.subTest(members=members):
+                left = copy.deepcopy(self.source)
+                left.update(count_basis="trial_families", value=2,
+                            trial_family_ids=members)
+                right = copy.deepcopy(left)
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertEqual(result["disposition"], "HOLD")
+                self.assertFalse(result["arithmetic_reproduced"])
+                self.assertFalse(result["certified_error"])
+
+    def test_opt_in_trial_family_membership_requires_consistent_sets(self):
+        left = copy.deepcopy(self.source)
+        left.update(count_basis="trial_families", value=2,
+                    trial_family_ids=["fam-A", "fam-B"])
+        right = copy.deepcopy(left)
+        right["trial_family_ids"] = ["fam-A", "fam-C"]
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "NOT_COMPARABLE")
+        self.assertIn("trial_family_ids", result["mismatched_fields"])
+        self.assertFalse(result["certified_error"])
+        del right["trial_family_ids"]
+        self.assertEqual(compare_raw_counts(left, right)["status"],
+                         "NOT_ENOUGH_INFO")
+        right["trial_family_ids"] = ["fam-A", "fam-B"]
+        right["value"] = 3  # stated family count contradicts membership
+        self.assertEqual(compare_raw_counts(left, right)["status"],
+                         "NOT_ENOUGH_INFO")
+        right["value"] = 2
+        right["trial_family_ids"] = "fam-A,fam-B"  # not an ID sequence
+        self.assertEqual(compare_raw_counts(left, right)["status"],
+                         "NOT_ENOUGH_INFO")
+
+    def test_opt_in_trial_family_valid_membership_negative_control(self):
+        left = copy.deepcopy(self.source)
+        left.update(count_basis="trial_families", value=2,
+                    trial_family_ids=["fam-A", "fam-B"])
+        right = copy.deepcopy(left)
+        right["trial_family_ids"] = ["fam-B", "fam-A"]
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "CONSISTENT")
+        self.assertEqual(result["difference"], 0)
+        self.assertFalse(result["source_authenticated"])
+        self.assertFalse(result["certified_error"])
+        # A membership manifest supplied for event counts is not interpretable.
+        right = copy.deepcopy(self.source)
+        right["trial_family_ids"] = ["fam-A", "fam-B"]
+        self.assertEqual(compare_raw_counts(self.source, right)["status"],
+                         "NOT_ENOUGH_INFO")
+
+
 if __name__ == "__main__":
     unittest.main()
