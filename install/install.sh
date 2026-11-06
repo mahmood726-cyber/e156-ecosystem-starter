@@ -362,6 +362,42 @@ make_tracked_install_dir() {
     done
 }
 
+# Serialize installers that target the same HOME, including sub-installer calls.
+# mkdir is an atomic cross-process claim on Linux/macOS. Do not auto-remove
+# an abandoned lock after a crash: a stale-looking lock may still be in use.
+# --dry-run and --import never acquire a lock or write to HOME.
+INSTALL_LOCK_DIR=""
+acquire_install_lock() {
+    local candidate="${HOME}/.e156-ecosystem-starter-install.lock"
+    refuse_symlink_install_path "$candidate" || return 1
+    if ! mkdir -- "$candidate" 2>/dev/null; then
+        printf 'ERROR: another installation may be running (lock exists): %s\\n' "$candidate" >&2
+        return 1
+    fi
+    INSTALL_LOCK_DIR="$candidate"
+}
+
+release_install_lock() {
+    [[ -n "${INSTALL_LOCK_DIR:-}" ]] || return 0
+    # rmdir never removes a pre-existing marker or other user-owned contents.
+    if ! rmdir -- "$INSTALL_LOCK_DIR" 2>/dev/null; then
+        printf 'WARNING: installation lock could not be released safely: %s\\n' "$INSTALL_LOCK_DIR" >&2
+        return 1
+    fi
+    INSTALL_LOCK_DIR=""
+}
+
+_e156_exit_cleanup() {
+    local status=$?
+    trap - EXIT
+    release_install_lock || :
+    # Preserve the transcript redaction handler previously registered on EXIT.
+    if declare -F _e156_finalize_log >/dev/null 2>&1; then
+        _e156_finalize_log || :
+    fi
+    exit "$status"
+}
+
 copy_rules_to_agent() {
     local src="$1" target="$2"; shift 2
     [[ -d "$src" ]] || { echo "ERROR: source rules dir missing: $src" >&2; return 1; }
@@ -514,6 +550,13 @@ if [[ "$IMPORT" -eq 1 ]]; then
     trap - ERR
     return 0 2>/dev/null || exit 0
 fi
+
+# Lock before the first agent configuration write. An occupied lock is a
+# fail-closed refusal, not an invitation to overwrite or break another run.
+if ! acquire_install_lock; then
+    exit 3
+fi
+trap _e156_exit_cleanup EXIT
 
 # --------------------------- real install flow ---------------------------
 
