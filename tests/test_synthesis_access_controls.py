@@ -172,6 +172,59 @@ class SourceRightsTests(unittest.TestCase):
         for op in ('NETWORK_FETCH','EXTRACT','MODEL_SUBMISSION','SOME_OTHER_ACTION'):
             self.assertEqual(assess_source(MANIFEST,SOURCE,op,on_date=TODAY)[0], 'SOURCE_RIGHTS_HOLD')
 
+    def test_reviewed_retrieval_url_must_be_absolute_and_unambiguous_for_all_operations(self):
+        # A matching string in the source and reviewed grant is not enough.
+        # Cache reads and replay have the same origin/route integrity boundary
+        # as network fetch. All names, inputs and returned bytes are invented.
+        malformed = (
+            "fictional.invalid/reviewed.xml",
+            "file:///synthetic/reviewed.xml",
+            "https://reviewer@fictional.invalid/reviewed.xml",
+            "https://fictional.invalid:bad/reviewed.xml",
+            "https://fictional.invalid/rev\\niewed.xml",
+            "https://fictional.invalid/rev\\tiewed.xml",
+            "https://fictional%2einvalid/reviewed.xml",
+            "https://fictional.invalid\\\\reviewed.xml",
+        )
+        for operation in ("CACHE_READ", "REPLAY", "NETWORK_FETCH"):
+            for url in malformed:
+                with self.subTest(operation=operation, url=repr(url)):
+                    source = {**SOURCE, "source_url": url}
+                    grant = {**PERMISSION, "source_url": url, "operations": [operation]}
+                    reviewed = {"schema": "source-permissions-v1", "permissions": [grant]}
+                    self.assertEqual(assess_source(
+                        reviewed, source, operation, on_date=TODAY)[0],
+                        "SOURCE_RIGHTS_HOLD")
+
+        # A valid, exactly reviewed URL retains the expected positive path.
+        url = "https://fictional.invalid/v2/reviewed.xml"
+        for operation in ("CACHE_READ", "REPLAY", "NETWORK_FETCH"):
+            grant = {**PERMISSION, "source_url": url, "operations": [operation]}
+            source = {**SOURCE, "source_url": url}
+            self.assertEqual(assess_source(
+                {"schema": "source-permissions-v1", "permissions": [grant]},
+                source, operation, on_date=TODAY)[0], "ALLOW")
+
+        with TemporaryDirectory() as root:
+            folder = Path(root)
+            url = "https://fictional.invalid/rev\\niewed.xml"
+            source = {**SOURCE, "source_url": url}
+            grant = {**PERMISSION, "source_url": url}
+            manifest = folder / "permissions.json"
+            manifest.write_text(json.dumps({
+                "schema": "source-permissions-v1", "permissions": [grant]}))
+            log = folder / "private-decisions.jsonl"
+            log.touch()
+            callback = Mock(return_value=b"synthetic fixture only")
+            with self.assertRaises(PermissionError):
+                execute_source_action(source, "CACHE_READ", callback,
+                                      manifest_path=manifest, decision_log=log,
+                                      on_date=TODAY)
+            callback.assert_not_called()
+            receipt = json.loads(log.read_text().splitlines()[-1])
+            self.assertEqual(receipt["decision"], "SOURCE_RIGHTS_HOLD")
+
+
     def test_network_fetch_requires_reviewed_absolute_url_before_action(self):
         # Invented source metadata only. A reviewed publication identity and
         # operation must not authorize an unspecified or non-network address.
