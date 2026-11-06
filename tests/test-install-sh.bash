@@ -114,10 +114,31 @@ concurrent_output="$(HOME="$concurrent_home" XDG_STATE_HOME="$SANDBOX/concurrent
 if [[ "$concurrent_rc" -ne 0 && "$concurrent_output" == *"another installation"* &&
       "$(cat "$concurrent_lock/existing-marker")" == "untouched" &&
       ! -e "$concurrent_home/.claude" && ! -e "$concurrent_home/.gemini" &&
-      ! -e "$concurrent_home/.codex" ]] && ! compgen -G "$concurrent_tmp/e156-rollback.*" >/dev/null; then
+      ! -e "$concurrent_home/.codex" && ! -e "$SANDBOX/concurrent state" ]] && ! compgen -G "$concurrent_tmp/e156-rollback.*" >/dev/null; then
     ok
 else
     bad "concurrent install bypassed occupied lock, modified config, or altered existing lock"
+fi
+
+# PowerShell creates a regular file at the shared lock path, whereas Bash
+# creates a directory. Both representations must block a competing Bash
+# installer before it starts a transcript or creates user agent state.
+start "refuses PowerShell-style file lock without writing a transcript"
+ps_lock_home="$SANDBOX/powershell file lock home-Ü"
+ps_lock_state="$SANDBOX/powershell file lock state-Ü"
+ps_lock_tmp="$SANDBOX/powershell file lock temp-Ü"
+ps_lock_file="$ps_lock_home/.e156-ecosystem-starter-install.lock"
+mkdir -p "$ps_lock_home" "$ps_lock_tmp"
+printf 'powershell-owner-token' > "$ps_lock_file"
+ps_lock_rc=0
+ps_lock_output="$(HOME="$ps_lock_home" XDG_STATE_HOME="$ps_lock_state" TMPDIR="$ps_lock_tmp" bash "$ROOT/install/install.sh" --non-interactive 2>&1)" || ps_lock_rc=$?
+if [[ "$ps_lock_rc" -ne 0 && "$ps_lock_output" == *"another installation"* &&
+      "$(cat "$ps_lock_file")" == "powershell-owner-token" &&
+      ! -e "$ps_lock_state" && ! -e "$ps_lock_home/.claude" ]] &&
+      ! compgen -G "$ps_lock_tmp/e156-rollback.*" >/dev/null; then
+    ok
+else
+    bad "Bash changed a PowerShell-style lock, configuration, logs or temporary manifest"
 fi
 
 start "successful isolated install releases its lock"
