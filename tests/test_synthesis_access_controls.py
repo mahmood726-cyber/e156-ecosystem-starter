@@ -81,6 +81,52 @@ class SourceRightsTests(unittest.TestCase):
             self.assertEqual(json.loads(log.read_text().splitlines()[0])["decision"],
                              "SOURCE_RIGHTS_HOLD")
 
+    def test_original_publication_url_requires_unambiguous_absolute_location(self):
+        # A string shared by the request and reviewed record is not enough:
+        # it must identify a parseable publication origin, even for CACHE_READ.
+        # All locations and content here are invented; no network I/O.
+        ambiguous = (
+            "fictional.invalid/study",
+            "file:///synthetic-source/study",
+            "https://reviewer@fictional.invalid/study",
+            "https://fictional.invalid:bad/study",
+            "https://fictional.invalid/study\nother",
+            "https://fictional.invalid /study",
+        )
+        for original_url in ambiguous:
+            with self.subTest(origin=repr(original_url)):
+                source = {**SOURCE, "original_url": original_url}
+                grant = {**PERMISSION, "original_url": original_url}
+                manifest = {"schema": "source-permissions-v1", "permissions": [grant]}
+                self.assertEqual(
+                    assess_source(manifest, source, "CACHE_READ", on_date=TODAY)[0],
+                    "SOURCE_RIGHTS_HOLD")
+        # A syntactically valid, exactly reviewed HTTP origin remains permitted.
+        ordinary_url = "http://fictional.invalid/study"
+        source = {**SOURCE, "original_url": ordinary_url}
+        grant = {**PERMISSION, "original_url": ordinary_url}
+        self.assertEqual(
+            assess_source({"schema": "source-permissions-v1", "permissions": [grant]},
+                          source, "CACHE_READ", on_date=TODAY)[0], "ALLOW")
+        with TemporaryDirectory() as root:
+            folder = Path(root)
+            bad = "fictional.invalid/study"
+            source = {**SOURCE, "original_url": bad}
+            grant = {**PERMISSION, "original_url": bad}
+            manifest_file = folder / "rights.json"
+            manifest_file.write_text(json.dumps({
+                "schema": "source-permissions-v1", "permissions": [grant]}))
+            log = folder / "decisions.jsonl"
+            log.touch()
+            callback = Mock(return_value=b"invented-only")
+            with self.assertRaises(PermissionError):
+                execute_source_action(source, "CACHE_READ", callback,
+                                      manifest_path=manifest_file,
+                                      decision_log=log, on_date=TODAY)
+            callback.assert_not_called()
+            self.assertEqual(json.loads(log.read_text().splitlines()[-1])["decision"],
+                             "SOURCE_RIGHTS_HOLD")
+
     def test_unreviewed_expired_future_unknown_permissions_hold(self):
         variants = [None, {}, {"schema":"source-permissions-v1", "permissions":[]},
                     {"schema":"source-permissions-v1", "permissions":[dict(PERMISSION,status="UNREVIEWED")]},
