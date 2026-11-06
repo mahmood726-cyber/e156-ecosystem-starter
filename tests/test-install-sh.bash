@@ -141,6 +141,27 @@ else
     bad "Bash changed a PowerShell-style lock, configuration, logs or temporary manifest"
 fi
 
+
+# An XDG transcript directory must not follow a symlink into an unrelated
+# location. Installation remains allowed without a transcript; no agent data
+# or logs should be written outside the isolated target home.
+start "symlinked transcript root is not followed"
+log_symlink_home="$SANDBOX/log symlink home-Ü"
+log_symlink_root="$SANDBOX/log symlink state-Ü"
+log_symlink_outside="$SANDBOX/log symlink outside-Ü"
+mkdir -p "$log_symlink_home" "$log_symlink_outside"
+ln -s "$log_symlink_outside" "$log_symlink_root"
+log_symlink_rc=0
+HOME="$log_symlink_home" XDG_STATE_HOME="$log_symlink_root" bash "$ROOT/install/install.sh" --non-interactive >/dev/null 2>&1 || log_symlink_rc=$?
+if [[ "$log_symlink_rc" -eq 0 && -L "$log_symlink_root" &&
+      ! -e "$log_symlink_outside/e156" &&
+      -f "$log_symlink_home/.claude/rules/rules.md" &&
+      ! -e "$log_symlink_home/.e156-ecosystem-starter-install.lock" ]]; then
+    ok
+else
+    bad "installer wrote transcript through a symlink or failed to install safely"
+fi
+
 start "successful isolated install releases its lock"
 single_home="$SANDBOX/single install home-Ü"
 mkdir -p "$single_home"
