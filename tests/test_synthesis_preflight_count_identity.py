@@ -728,5 +728,52 @@ class CountIdentityTests(unittest.TestCase):
         right["trial_family_ids"] = ["fam-B", "fam-A"]
         self.assertEqual(compare_raw_counts(left, right)["status"], "CONSISTENT")
 
+
+    def test_cross_record_source_identity_aliases_abstain(self):
+        # Synthetic metadata only: different spellings may refer to one
+        # publication/result/version; they do not prove different sources.
+        aliases = (
+            ("publication_id", "SYNTHETIC:STUDY-a"),
+            ("source_result_id", "RESULT:1"),
+            ("data_version", "SNAPSHOT-1"),
+            ("source_version", "CURRENT-V1"),
+            ("source_result_id", "result:①"),
+        )
+        for key, alias in aliases:
+            with self.subTest(key=key, alias=alias):
+                right = copy.deepcopy(self.source)
+                right[key] = alias
+                right["value"] = 15
+                result = compare_raw_counts(self.source, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertEqual(result["disposition"], "HOLD")
+                self.assertFalse(result["arithmetic_reproduced"])
+                self.assertFalse(result["certified_error"])
+                self.assertFalse(result["email_eligible"])
+
+    def test_source_alias_not_masked_by_different_denominator_sizes(self):
+        left = copy.deepcopy(self.source)
+        left["analysis_denominator_n"] = 100
+        right = copy.deepcopy(left)
+        right.update(
+            source_result_id="RESULT:1",
+            value=15, analysis_denominator_n=120,
+        )
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+        self.assertEqual(result["disposition"], "HOLD")
+        self.assertFalse(result["certified_error"])
+
+    def test_distinct_source_identity_and_exact_match_controls(self):
+        right = copy.deepcopy(self.source)
+        right.update(source_result_id="result:2", value=15)
+        result = compare_raw_counts(self.source, right)
+        self.assertEqual(result["status"], "NOT_COMPARABLE")
+        self.assertIn("source_result_id", result["mismatched_fields"])
+        right.update(source_result_id="result:1", locator="synthetic abstract")
+        self.assertEqual(compare_raw_counts(self.source, right)["status"], "REVIEW")
+        right["value"] = 12
+        self.assertEqual(compare_raw_counts(self.source, right)["status"], "CONSISTENT")
+
 if __name__ == "__main__":
     unittest.main()
