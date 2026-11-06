@@ -181,8 +181,8 @@ class SourceRightsTests(unittest.TestCase):
             "file:///synthetic/reviewed.xml",
             "https://reviewer@fictional.invalid/reviewed.xml",
             "https://fictional.invalid:bad/reviewed.xml",
-            "https://fictional.invalid/rev\\niewed.xml",
-            "https://fictional.invalid/rev\\tiewed.xml",
+            "https://fictional.invalid/rev\niewed.xml",
+            "https://fictional.invalid/rev\tiewed.xml",
             "https://fictional%2einvalid/reviewed.xml",
             "https://fictional.invalid\\\\reviewed.xml",
         )
@@ -207,7 +207,7 @@ class SourceRightsTests(unittest.TestCase):
 
         with TemporaryDirectory() as root:
             folder = Path(root)
-            url = "https://fictional.invalid/rev\\niewed.xml"
+            url = "https://fictional.invalid/rev\niewed.xml"
             source = {**SOURCE, "source_url": url}
             grant = {**PERMISSION, "source_url": url}
             manifest = folder / "permissions.json"
