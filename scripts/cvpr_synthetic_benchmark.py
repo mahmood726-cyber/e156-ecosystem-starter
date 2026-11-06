@@ -131,7 +131,21 @@ def evaluate(cases: list[dict[str, Any]], split: str = "test") -> dict[str, Any]
 def load_fixture(path: Path) -> list[dict[str, Any]]:
     def reject_nonfinite(s: str) -> None:
         raise ValueError(f"Nonfinite JSON number: {s}")
-    obj = json.loads(path.read_text(encoding="utf-8"), parse_constant=reject_nonfinite)
+    def reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        # JSON's usual last-key-wins semantics would conceal conflicting rights,
+        # labels, versions or synthetic-only declarations.
+        record: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in record:
+                raise ValueError(f"Duplicate JSON key in synthetic fixture: {key}")
+            record[key] = value
+        return record
+
+    obj = json.loads(
+        path.read_text(encoding="utf-8"),
+        parse_constant=reject_nonfinite,
+        object_pairs_hook=reject_duplicate_keys,
+    )
     if obj.get("fixture_type") != "invented_synthetic" or obj.get("rights") != "first_party_synthetic":
         raise ValueError("Real-publication content is prohibited from this benchmark")
     if obj.get("schema_version") != 1 or not isinstance(obj.get("cases"), list):
