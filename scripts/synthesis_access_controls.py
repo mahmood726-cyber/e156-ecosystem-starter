@@ -74,10 +74,13 @@ def _host(value):
     if not isinstance(value, str):
         return ""
     try:
-        # A terminal DNS dot denotes the same absolute host; do not let
-        # this spelling bypass a held publisher/domain identity.
-        return (urlsplit(value).hostname or "").casefold().rstrip(".")
-    except ValueError:
+        # DNS IDNA maps the Unicode label separators U+3002, U+FF0E,
+        # and U+FF61 to ASCII dots. Normalize before the held-domain
+        # comparison so a mirror/cache route cannot disguise its host.
+        # A terminal DNS dot is also equivalent to the same absolute host.
+        host = (urlsplit(value).hostname or "").rstrip(".")
+        return host.encode("idna").decode("ascii").casefold().rstrip(".")
+    except (ValueError, UnicodeError):
         return ""
 
 
