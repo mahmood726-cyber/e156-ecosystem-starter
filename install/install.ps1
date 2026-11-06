@@ -57,25 +57,6 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# --- install-time transcript log ------------------------------------------
-# Write the entire install console to %LOCALAPPDATA%\e156\logs\install-<ts>.log
-# so doctor-report.ps1 has something to read when a student hits a problem.
-# Failure here is non-fatal (Start-Transcript failures shouldn't kill an
-# otherwise-fine install).
-# SHA-only dry runs must never create a transcript or LOCALAPPDATA state.
-if (-not $Import -and -not $DryRun) {
-    try {
-        $logDir = Join-Path $env:LOCALAPPDATA 'e156\logs'
-        New-Item -ItemType Directory -Force -Path $logDir | Out-Null
-        $logFile = Join-Path $logDir ("install-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
-        Start-Transcript -Path $logFile -Force | Out-Null
-        # Register a teardown so Stop-Transcript runs even on uncaught errors.
-        $script:__transcriptStarted = $true
-    } catch {
-        $script:__transcriptStarted = $false
-    }
-}
-
 # --- self-SHA verification --------------------------------------------------
 if (-not $Import) {
     $hashFile = Join-Path $PSScriptRoot '..\docs\HASH.txt'
@@ -502,6 +483,52 @@ function Assert-RequiredCoreInstallerPresent {
     return $true
 }
 
+# Cooperative, per-profile lock. FileMode.CreateNew is an atomic claim across
+# concurrent PowerShell processes; existing locks are never broken automatically.
+# The same lock path is used by the Bash installer (which creates a directory).
+function Enter-InstallLock {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][string]$UserHome)
+    if (-not (Test-Path -LiteralPath $UserHome -PathType Container)) {
+        throw "REFUSED: install home does not exist: $UserHome"
+    }
+    $lockPath = Join-Path $UserHome '.e156-ecosystem-starter-install.lock'
+    $token = [Guid]::NewGuid().ToString('N')
+    $stream = $null
+    try {
+        $stream = [System.IO.File]::Open(
+            $lockPath, [System.IO.FileMode]::CreateNew,
+            [System.IO.FileAccess]::Write, [System.IO.FileShare]::None
+        )
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($token)
+        $stream.Write($bytes, 0, $bytes.Length)
+        $stream.Flush()
+    }
+    catch {
+        # A partially written lock is retained for manual inspection rather
+        # than guessing whether a competing owner has acquired it.
+        throw "REFUSED: installation lock exists or cannot be acquired: $lockPath"
+    }
+    finally {
+        if ($null -ne $stream) { $stream.Dispose() }
+    }
+    return [PSCustomObject]@{ Path = $lockPath; Token = $token }
+}
+
+function Exit-InstallLock {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][PSCustomObject]$Lease)
+    try {
+        if ((Test-Path -LiteralPath $Lease.Path -PathType Leaf) -and
+            ([System.IO.File]::ReadAllText($Lease.Path, [System.Text.Encoding]::UTF8) -ceq $Lease.Token)) {
+            [System.IO.File]::Delete($Lease.Path)
+        }
+    }
+    catch {
+        Write-Warning "Install lock cleanup failed; inspect $($Lease.Path) manually."
+    }
+}
+
 if ($Import) { return }   # dot-sourced by tests -- no execution
 
 # === Real install flow =====================================================
@@ -524,6 +551,23 @@ Write-Host ""
 $manifest = New-RollbackManifest
 
 try {
+    # Claim before opening a transcript or changing any agent files.
+    $script:__installLease = Enter-InstallLock -UserHome $userHome
+
+    # Transcript starts only for a lock owner; failed contenders leave no
+    # LOCALAPPDATA log state. Logging errors are non-fatal.
+    $script:__transcriptStarted = $false
+    $logFile = $null
+    try {
+        $logDir = Join-Path $env:LOCALAPPDATA 'e156\\logs'
+        New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+        $logFile = Join-Path $logDir ("install-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
+        Start-Transcript -Path $logFile -Force | Out-Null
+        $script:__transcriptStarted = $true
+    }
+    catch {
+        $script:__transcriptStarted = $false
+    }
 
 # --- Step 1: agent CLI detection -------------------------------------------
 
@@ -904,17 +948,6 @@ if (Test-Path $handoffScript) {
     }
 }
 
-# Stop the install transcript before exit (non-fatal if it never started).
-# Then scrub the log of API keys / tokens / HMAC values that may have been
-# pasted, echoed, or otherwise captured during the run -- so attaching the
-# log to an issue or sharing it doesn't leak credentials.
-if ($script:__transcriptStarted) {
-    try { Stop-Transcript | Out-Null } catch { }
-    if ($logFile -and (Test-Path $logFile)) {
-        try { Invoke-LogRedaction -Path $logFile } catch { }
-    }
-}
-
 # Exit non-zero if ANY chain failed, so the .bat wrapper / CI / parent
 # scripts can detect partial-failure rather than reporting a green
 # "INSTALL COMPLETE" off our exit code. Base install (rules + memory)
@@ -932,4 +965,15 @@ catch {
     Write-Host "  - rolled-back files: $($manifest.CreatedFiles.Count)"
     Write-Host "  - restored backups:  $($manifest.BackedUp.Count)"
     exit 1
+}
+finally {
+    if ($script:__transcriptStarted) {
+        try { Stop-Transcript | Out-Null } catch { }
+        if ($logFile -and (Test-Path -LiteralPath $logFile)) {
+            try { Invoke-LogRedaction -Path $logFile } catch { }
+        }
+    }
+    if ($script:__installLease) {
+        Exit-InstallLock -Lease $script:__installLease
+    }
 }
