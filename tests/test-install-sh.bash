@@ -310,6 +310,38 @@ else
     bad "redaction missed original descriptor inode or changed external sentinel"
 fi
 
+# A redaction-command failure must not leave the raw transcript available
+# for someone to attach to an issue. Run only inside a synthetic HOME, and
+# inject a fake token through tee with a failing sed shim in PATH.
+start "failed redaction clears the original transcript inode"
+log_fail_home="$SANDBOX/log failure home-Ü"
+log_fail_state="$SANDBOX/log failure state-Ü"
+log_fail_dir="$log_fail_state/e156/logs"
+log_fail_bin="$SANDBOX/log failure bin-Ü"
+mkdir -p "$log_fail_home" "$log_fail_dir" "$log_fail_bin"
+cat > "$log_fail_bin/tee" <<'TEE_REDACT_FAILURE'
+#!/usr/bin/env bash
+{ printf '%s\n' 'GH_TOKEN=ghp_1234567890abcdef1234567890abcdef1234'; cat; } | /usr/bin/tee "$@"
+TEE_REDACT_FAILURE
+cat > "$log_fail_bin/sed" <<'SED_REDACT_FAILURE'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "-E" ]]; then exit 74; fi
+exec /bin/sed "$@"
+SED_REDACT_FAILURE
+chmod +x "$log_fail_bin/tee" "$log_fail_bin/sed"
+log_fail_rc=0
+HOME="$log_fail_home" XDG_STATE_HOME="$log_fail_state" PATH="$log_fail_bin:$PATH" \
+    bash "$ROOT/install/install.sh" --non-interactive >/dev/null 2>&1 || log_fail_rc=$?
+failure_logs=( "$log_fail_dir"/install-*.log )
+if [[ "$log_fail_rc" -eq 0 && -f "${failure_logs[0]}" &&
+      ! -s "${failure_logs[0]}" &&
+      ! -e "$log_fail_home/.e156-ecosystem-starter-install.lock" &&
+      -f "$log_fail_home/.claude/rules/rules.md" ]]; then
+    ok
+else
+    bad "redactor failure left a raw transcript, changed install status, or retained its lock"
+fi
+
 start "failed isolated install releases its lock without following symlink"
 failed_home="$SANDBOX/failed install home-Ü"
 outside_dir="$SANDBOX/outside for failed install"
