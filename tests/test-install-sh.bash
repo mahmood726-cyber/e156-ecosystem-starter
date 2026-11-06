@@ -106,14 +106,15 @@ fi
 start "refuses a competing installation before changing agent files"
 concurrent_home="$SANDBOX/concurrent install home-Ü"
 concurrent_lock="$concurrent_home/.e156-ecosystem-starter-install.lock"
-mkdir -p "$concurrent_lock"
+concurrent_tmp="$SANDBOX/concurrent temp-Ü"
+mkdir -p "$concurrent_lock" "$concurrent_tmp"
 printf 'untouched\n' > "$concurrent_lock/existing-marker"
 concurrent_rc=0
-concurrent_output="$(HOME="$concurrent_home" XDG_STATE_HOME="$SANDBOX/concurrent state" bash "$ROOT/install/install.sh" --non-interactive 2>&1)" || concurrent_rc=$?
+concurrent_output="$(HOME="$concurrent_home" XDG_STATE_HOME="$SANDBOX/concurrent state" TMPDIR="$concurrent_tmp" bash "$ROOT/install/install.sh" --non-interactive 2>&1)" || concurrent_rc=$?
 if [[ "$concurrent_rc" -ne 0 && "$concurrent_output" == *"another installation"* &&
       "$(cat "$concurrent_lock/existing-marker")" == "untouched" &&
       ! -e "$concurrent_home/.claude" && ! -e "$concurrent_home/.gemini" &&
-      ! -e "$concurrent_home/.codex" ]]; then
+      ! -e "$concurrent_home/.codex" ]] && ! compgen -G "$concurrent_tmp/e156-rollback.*" >/dev/null; then
     ok
 else
     bad "concurrent install bypassed occupied lock, modified config, or altered existing lock"
