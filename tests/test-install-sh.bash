@@ -238,6 +238,42 @@ else
     bad "transcript followed pre-existing symlink filename or did not create safe new log"
 fi
 
+# Simulate an adversarial name replacement after a private transcript has been
+# allocated, but immediately before tee opens its destination. The shim runs
+# only inside this synthetic HOME; no real user configuration or files are used.
+start "transcript writer does not follow a substituted log-leaf symlink"
+log_swap_home="$SANDBOX/log swap home-Ü"
+log_swap_state="$SANDBOX/log swap state-Ü"
+log_swap_dir="$log_swap_state/e156/logs"
+log_swap_bin="$SANDBOX/log swap bin-Ü"
+log_swap_outside="$SANDBOX/log swap external sentinel-Ü"
+mkdir -p "$log_swap_home" "$log_swap_dir" "$log_swap_bin"
+printf 'external sentinel must remain unchanged\n' > "$log_swap_outside"
+cat > "$log_swap_bin/tee" <<'TEE_SWAP'
+#!/usr/bin/env bash
+# Only the new transcript allocated by the installer may be moved.
+for leaf in "$E156_SWAP_LOG_DIR"/install-*.log; do
+    [[ -f "$leaf" && ! -L "$leaf" ]] || continue
+    mv -- "$leaf" "$leaf.original"
+    ln -s -- "$E156_SWAP_TARGET" "$leaf"
+done
+exec /usr/bin/tee "$@"
+TEE_SWAP
+chmod +x "$log_swap_bin/tee"
+log_swap_rc=0
+HOME="$log_swap_home" XDG_STATE_HOME="$log_swap_state" PATH="$log_swap_bin:$PATH" \
+    E156_SWAP_LOG_DIR="$log_swap_dir" E156_SWAP_TARGET="$log_swap_outside" \
+    bash "$ROOT/install/install.sh" --non-interactive >/dev/null 2>&1 || log_swap_rc=$?
+log_swap_originals=( "$log_swap_dir"/install-*.log.original )
+if [[ "$log_swap_rc" -eq 0 &&
+      "$(cat "$log_swap_outside")" == "external sentinel must remain unchanged" &&
+      -f "${log_swap_originals[0]}" ]] &&
+   grep -q "e156-ecosystem-starter bootstrap" "${log_swap_originals[0]}"; then
+    ok
+else
+    bad "transcript reopened a replaced pathname or failed to write its original inode"
+fi
+
 start "failed isolated install releases its lock without following symlink"
 failed_home="$SANDBOX/failed install home-Ü"
 outside_dir="$SANDBOX/outside for failed install"
