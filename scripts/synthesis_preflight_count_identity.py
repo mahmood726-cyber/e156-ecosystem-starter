@@ -111,12 +111,11 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
         value = record.get("value")
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             return {**base, "reason": f"{side_name}: count must be a nonnegative exact integer"}
-    # A shared denominator *basis* (e.g. randomized) is not evidence that
-    # the two snapshots used the same number of eligible units. When either
-    # caller supplies an exact analysis denominator, require a valid number
-    # on both sides and compare it before interpreting any numerator delta.
-    # Older callers without this optional field retain the screened contract;
-    # absence alone never authenticates denominator comparability.
+    # A shared denominator basis does not prove a matching cohort size.
+    # Validate the complete optional denominator contract before comparing
+    # either its size or unit. Otherwise differing sizes could mask an
+    # unsupported/one-sided unit and incorrectly report NOT_COMPARABLE
+    # instead of the safer NOT_ENOUGH_INFO hold.
     denominator_present = (
         "analysis_denominator_n" in left,
         "analysis_denominator_n" in right,
@@ -128,25 +127,9 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
             size = record["analysis_denominator_n"]
             if type(size) is not int or size <= 0:
                 return {**base, "reason": f"{side_name}: invalid analysis_denominator_n"}
-            # When numerator and denominator represent the same unit,
-            # the reported numerator cannot exceed the stated total.
-            # Recurrent events per participant and counts per person-time
-            # are *not* same-unit and must not be capped as cohort sizes.
-            # Unlabelled legacy exact denominators retain the participant
-            # cap without guessing a unit for other count bases.
-            unit = record.get("analysis_denominator_unit", "unique_participants")
-            if record["count_basis"] == unit and record["value"] > size:
-                return {**base, "reason": f"{side_name}: count exceeds same-unit analysis denominator"}
-        if left["analysis_denominator_n"] != right["analysis_denominator_n"]:
-            return {
-                **base, "status": "NOT_COMPARABLE",
-                "reason": "reported analysis denominator sizes differ",
-                "mismatched_fields": ["analysis_denominator_n"],
-            }
-    # An explicitly labelled denominator is part of the comparison identity.
-    # When supplied, both sides must give a known unit and a validated size.
-    # Reject unknown or one-sided labels; do not guess a person-time conversion.
-    # Absence on both sides preserves the older opt-in screened contract.
+
+    # Units must be explicitly recognized on both sides whenever supplied;
+    # unknown units cannot be converted into a verified size mismatch.
     unit_present = (
         "analysis_denominator_unit" in left,
         "analysis_denominator_unit" in right,
@@ -160,11 +143,29 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
             unit = record["analysis_denominator_unit"]
             if type(unit) is not str or unit not in DENOMINATOR_UNITS:
                 return {**base, "reason": f"{side_name}: unsupported analysis_denominator_unit"}
-        if left["analysis_denominator_unit"] != right["analysis_denominator_unit"]:
+
+    if any(denominator_present):
+        for side_name, record in (("left", left), ("right", right)):
+            size = record["analysis_denominator_n"]
+            # When numerator and denominator represent the same unit,
+            # the reported numerator cannot exceed the stated total.
+            # Recurrent events per participant and counts per person-time
+            # are *not* same-unit and must not be capped as cohort sizes.
+            # Legacy unlabelled denominators retain the participant cap.
+            unit = record.get("analysis_denominator_unit", "unique_participants")
+            if record["count_basis"] == unit and record["value"] > size:
+                return {**base, "reason": f"{side_name}: count exceeds same-unit analysis denominator"}
+        if unit_present[0] and left["analysis_denominator_unit"] != right["analysis_denominator_unit"]:
             return {
                 **base, "status": "NOT_COMPARABLE",
                 "reason": "analysis denominator units differ",
                 "mismatched_fields": ["analysis_denominator_unit"],
+            }
+        if left["analysis_denominator_n"] != right["analysis_denominator_n"]:
+            return {
+                **base, "status": "NOT_COMPARABLE",
+                "reason": "reported analysis denominator sizes differ",
+                "mismatched_fields": ["analysis_denominator_n"],
             }
     # Optional caller-supplied family membership contract. A reported
     # trial-family total is not a count of distinct families if its membership
