@@ -595,6 +595,30 @@ Describe "Windows per-home installer lock (Role 05)" {
         Exit-InstallLock -Lease $other
         (Get-Content -LiteralPath $other.Path -Raw) | Should -Be 'different owner'
     }
+    It "refuses a locked non-interactive bootstrap before writing config or logs" {
+        $homeFixture = Join-Path $script:tmpRoot "blocked real flow Ü $([guid]::NewGuid().ToString('N'))"
+        $logsFixture = Join-Path $script:tmpRoot "blocked logs Ü $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $homeFixture | Out-Null
+        $priorHome = $env:USERPROFILE
+        $priorLogs = $env:LOCALAPPDATA
+        $owner = Enter-InstallLock -UserHome $homeFixture
+        try {
+            $env:USERPROFILE = $homeFixture
+            $env:LOCALAPPDATA = $logsFixture
+            $output = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script:InstallPs1 -NonInteractive 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
+            ($output -join ' ') | Should -Match 'REFUSED: installation lock'
+            Test-Path -LiteralPath (Join-Path $homeFixture '.claude') | Should -BeFalse
+            Test-Path -LiteralPath (Join-Path $homeFixture '.gemini') | Should -BeFalse
+            Test-Path -LiteralPath $logsFixture | Should -BeFalse
+            (Get-Content -LiteralPath $owner.Path -Raw) | Should -Be $owner.Token
+        }
+        finally {
+            $env:USERPROFILE = $priorHome
+            $env:LOCALAPPDATA = $priorLogs
+            Exit-InstallLock -Lease $owner
+        }
+    }
 }
 
 Describe "Self-SHA gate exits 0 under -DryRun" {
