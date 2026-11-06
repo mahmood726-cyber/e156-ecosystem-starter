@@ -36,6 +36,10 @@ def _unique_manifest_object(pairs):
     return result
 
 
+def _reject_nonfinite_manifest_constant(value):
+    """Permission manifests must be strict JSON (no NaN or Infinity tokens)."""
+    raise ValueError("non-standard numeric constant in reviewed permission manifest")
+
 
 def _day(value):
     if not isinstance(value, str):
@@ -273,7 +277,8 @@ def source_preflight(source, operation, *, manifest_path=None, decision_log=None
                     os.close(descriptor)
         if raw:
             manifest_digest = sha256(raw).hexdigest()
-            manifest = json.loads(raw, object_pairs_hook=_unique_manifest_object)
+            manifest = json.loads(raw, object_pairs_hook=_unique_manifest_object,
+                                  parse_constant=_reject_nonfinite_manifest_constant)
     except (OSError, ValueError, TypeError):
         pass
     outcome, reason = assess_source(manifest, source, operation, on_date=on_date)
