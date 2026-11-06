@@ -200,6 +200,23 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
             }
     if any(membership_present):
         if family_sets["left"] != family_sets["right"]:
+            # A changed spelling is not necessarily a distinct trial family.
+            # Cross-record NFKC/case aliases require a reviewed identity
+            # crosswalk; they cannot establish an authenticated difference.
+            left_aliases = {
+                unicodedata.normalize("NFKC", member).casefold(): member
+                for member in family_sets["left"]
+            }
+            right_aliases = {
+                unicodedata.normalize("NFKC", member).casefold(): member
+                for member in family_sets["right"]
+            }
+            if any(left_aliases[alias] != right_aliases[alias]
+                   for alias in left_aliases.keys() & right_aliases.keys()):
+                return {
+                    **base,
+                    "reason": "unresolved cross-record trial-family identity alias",
+                }
             return {
                 **base, "status": "NOT_COMPARABLE",
                 "reason": "trial-family membership differs",
