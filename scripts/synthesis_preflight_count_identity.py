@@ -131,6 +131,40 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
                 "reason": "reported analysis denominator sizes differ",
                 "mismatched_fields": ["analysis_denominator_n"],
             }
+    # Optional caller-supplied family membership contract. A reported
+    # trial-family total is not a count of distinct families if its membership
+    # includes duplicates or aliases of the same family. This is metadata
+    # validation only; family IDs are not authenticated against publications.
+    # Missing manifests on *both* sides preserve legacy screened behavior.
+    membership_present = (
+        "trial_family_ids" in left,
+        "trial_family_ids" in right,
+    )
+    if any(membership_present):
+        if not all(membership_present):
+            return {**base, "reason": "trial-family membership supplied on only one side"}
+        family_sets: dict[str, frozenset[str]] = {}
+        for side_name, record in (("left", left), ("right", right)):
+            if record["count_basis"] != "trial_families":
+                return {**base, "reason": f"{side_name}: trial-family membership requires trial_families count basis"}
+            members = record["trial_family_ids"]
+            if (not isinstance(members, (list, tuple))
+                    or len(members) != record["value"]
+                    or any(_missing_field(member, "publication_id") for member in members)):
+                return {**base, "reason": f"{side_name}: invalid or incomplete trial-family membership"}
+            aliases = [unicodedata.normalize("NFKC", member).casefold()
+                       for member in members]
+            if len(set(aliases)) != len(members):
+                return {**base, "reason": f"{side_name}: repeated or aliased trial-family membership"}
+            # Matching spelling is required across sources; case/Unicode
+            # aliases without reviewed equivalence cannot prove membership.
+            family_sets[side_name] = frozenset(members)
+        if family_sets["left"] != family_sets["right"]:
+            return {
+                **base, "status": "NOT_COMPARABLE",
+                "reason": "trial-family membership differs",
+                "mismatched_fields": ["trial_family_ids"],
+            }
     differing = tuple(key for key in RESULT_FIELDS if left[key] != right[key])
     if differing:
         return {
