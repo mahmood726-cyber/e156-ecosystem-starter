@@ -174,6 +174,14 @@ else
     bad "isolated installation failed, retained lock, or omitted rules"
 fi
 
+start "normal isolated install still creates a transcript"
+if [[ -d "$SANDBOX/single state/e156/logs" ]] &&
+   compgen -G "$SANDBOX/single state/e156/logs/install-*.log" >/dev/null; then
+    ok
+else
+    bad "safe XDG transcript directory did not receive a log"
+fi
+
 start "failed isolated install releases its lock without following symlink"
 failed_home="$SANDBOX/failed install home-Ü"
 outside_dir="$SANDBOX/outside for failed install"

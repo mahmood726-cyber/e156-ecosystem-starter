@@ -541,7 +541,11 @@ if [[ "$IMPORT" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
         Darwin) E156_LOG_DIR="${HOME}/Library/Logs/e156" ;;
         *)      E156_LOG_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/e156/logs" ;;
     esac
-    if mkdir -p "$E156_LOG_DIR" 2>/dev/null; then
+    # The optional transcript may not follow symlinks in XDG_STATE_HOME,
+    # HOME or any intermediate log-directory ancestor. If unsafe, continue
+    # installation without logging rather than write outside the state tree.
+    if refuse_nondirectory_install_path "$E156_LOG_DIR" 2>/dev/null &&
+       mkdir -p "$E156_LOG_DIR" 2>/dev/null; then
         E156_LOG_FILE="${E156_LOG_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
         # Tee stdout+stderr through the log without breaking interactive
         # prompts: process substitution leaves the controlling tty in place.
