@@ -1,6 +1,7 @@
 """Synthetic source-permission and no-contact enforcement tests; no transports."""
 from datetime import date, timedelta
 import json
+from base64 import b64encode
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import sys
@@ -1005,6 +1006,43 @@ class ContactTests(unittest.TestCase):
         self.assertEqual(outgoing_blockers(
             {"to": ["Safe <safe@example.invalid>"]}, exclusions),
             ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
+
+    def test_encoded_word_recipient_list_checks_every_decoded_mailbox(self):
+        # RFC 2047 encoded words can conceal a multi-recipient value from
+        # getaddresses() on the raw field. A transport may decode it later.
+        # No actual addresses or send operations are used here.
+        def encoded(value):
+            return "=?utf-8?b?" + b64encode(value.encode("utf-8")).decode("ascii") + "?="
+
+        fixtures = (
+            (encoded("Invented Safe <safe@example.invalid>, Excluded Test <blocked@example.invalid>"),
+             [{"emails": ["blocked@example.invalid"]}]),
+            (encoded("Invented Safe <safe@example.invalid>, Excluded Alias <unknown@example.invalid>"),
+             [{"names": ["Excluded Alias"]}]),
+        )
+        for field in ("to", "cc", "bcc", "indirect_recipients", "recipient_names"):
+            for kind in ("new", "retry", "followup", "queued_send"):
+                for raw, exclusions in fixtures:
+                    with self.subTest(field=field, kind=kind, hidden=repr(raw)):
+                        message = {"to": ["safe@example.invalid"], "kind": kind, field: [raw]}
+                        reasons = outgoing_blockers(message, exclusions)
+                        self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                        self.assertTrue(any(reason.startswith("CONTACT_BLOCKED_NO_CONTACT:")
+                                            for reason in reasons),
+                                        "a decoded hidden recipient must independently be blocked")
+                        transport = Mock()
+                        with self.assertRaises(PermissionError):
+                            require_outgoing_allowed(message, exclusions)
+                            transport()
+                        transport.assert_not_called()
+
+        # A genuinely unrelated encoded display name must not be falsely
+        # classified as an excluded recipient (pause still applies).
+        ordinary = encoded("Unrelated Researcher") + " <safe@example.invalid>"
+        self.assertEqual(
+            outgoing_blockers({"to": [ordinary]}, [{"emails": ["blocked@example.invalid"]}]),
+            ["PROGRAMME_OUTGOING_QUERY_PAUSE"],
+        )
 
     def test_gmail_delivery_aliases_block_no_contact(self):
         # Entirely invented recipients. Consumer Gmail delivery ignores dots
