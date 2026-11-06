@@ -395,6 +395,34 @@ assert_file_missing "$target/rules.md" && \
     [[ -f "$target/lessons.md" && "$(cat "$target/lessons.md")" == "pre-existing" ]] && \
     [[ ! -f "$target/lessons.md.user" ]] && ok
 
+# macOS ships BSD userland without GNU tac. Simulate an unavailable tac
+# in an isolated subshell: rollback must still remove new descendants and
+# preserve the user's existing rules. Never touch the real HOME.
+start "rollback works without GNU tac and preserves pre-existing user files"
+if (
+    rollback_sandbox="$SANDBOX/portable rollback home-Ü"
+    mkdir -p "$rollback_sandbox/keep"
+    printf 'user-authored lessons\n' > "$rollback_sandbox/keep/lessons.md"
+    MANIFEST_DIR="$(mktemp -d -t e156-portable-rollback.XXXXXX)"
+    MANIFEST_FILES="$MANIFEST_DIR/files"
+    MANIFEST_DIRS="$MANIFEST_DIR/dirs"
+    MANIFEST_BACKUPS="$MANIFEST_DIR/backups"
+    : > "$MANIFEST_FILES"; : > "$MANIFEST_DIRS"; : > "$MANIFEST_BACKUPS"
+    tac() { return 127; } # treated as missing even on GNU/Linux
+    copy_rules_to_agent "$ROOT/rules" "$rollback_sandbox/new/nested" >/dev/null 2>&1 &&
+    copy_rules_to_agent "$ROOT/rules" "$rollback_sandbox/keep" >/dev/null 2>&1 &&
+    rollback "portable fixture" >/dev/null 2>&1 &&
+    [[ ! -e "$rollback_sandbox/new" ]] &&
+    [[ -d "$rollback_sandbox/keep" ]] &&
+    [[ "$(cat "$rollback_sandbox/keep/lessons.md")" == "user-authored lessons" ]] &&
+    [[ ! -e "$rollback_sandbox/keep/rules.md" ]] &&
+    [[ ! -e "$rollback_sandbox/keep/lessons.md.user" ]]
+); then
+    ok
+else
+    bad "rollback relied on tac, retained new files, or damaged a user file"
+fi
+
 # Reinstallation must restore the *latest* user edit when a subsequent
 # install fails. A pre-existing first-install .user backup stays intact.
 # This also exercises quoting for spaces and non-ASCII paths.
