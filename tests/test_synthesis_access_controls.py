@@ -940,6 +940,41 @@ class ContactTests(unittest.TestCase):
                 outgoing_blockers({"to": [unrelated]}, exclusion),
                 ["PROGRAMME_OUTGOING_QUERY_PAUSE"])
 
+    def test_empty_no_contact_registry_records_fail_closed(self):
+        # The register may be unavailable or accidentally stripped to empty
+        # records. Treat missing suppressions as unknown, not an empty allowlist.
+        # All addresses are invented; no transport is called.
+        empty_records = (
+            [],
+            [{}],
+            [{"names": [], "aliases": [], "emails": [], "coauthors": [],
+              "dois": [], "threads": [], "titles": [], "trial_families": []}],
+            [{"note": "synthetic placeholder"}],
+        )
+        for register in empty_records:
+            for kind in ("new", "retry", "followup", "queued_send"):
+                with self.subTest(register=register, kind=kind):
+                    message = {"to": ["unlisted@example.invalid"], "kind": kind}
+                    reasons = outgoing_blockers(message, register)
+                    self.assertIn("PROGRAMME_OUTGOING_QUERY_PAUSE", reasons)
+                    self.assertTrue(any(
+                        reason.startswith("CONTACT_BLOCKED_NO_CONTACT:")
+                        for reason in reasons
+                    ), "empty exclusions must independently fail closed")
+                    transport = Mock()
+                    with self.assertRaises(PermissionError):
+                        require_outgoing_allowed(message, register)
+                        transport()
+                    transport.assert_not_called()
+
+        # Valid populated exclusions and an unrelated invented recipient
+        # must not manufacture a personal no-contact match.
+        self.assertEqual(
+            outgoing_blockers({"to": ["unlisted@example.invalid"]},
+                              [{"emails": ["excluded@example.invalid"]}]),
+            ["PROGRAMME_OUTGOING_QUERY_PAUSE"],
+        )
+
     def test_unavailable_exclusions_also_fail_closed(self):
         reasons=outgoing_blockers({"to":["other@example.invalid"]},None)
         self.assertTrue(any('exclusions unavailable' in x for x in reasons))
