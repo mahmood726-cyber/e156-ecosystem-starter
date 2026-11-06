@@ -94,8 +94,8 @@ done
 # --------------------------- transcript log -------------------------------
 # Mirror everything the installer prints to a per-run log file so a student
 # hitting a problem can attach it to an issue (or feed it to doctor-report).
-# Logs land at ~/.local/share/e156/logs/install-<ts>.log on Linux, and at
-# Library/Logs/e156/install-<ts>.log on macOS. Failure to start the log is
+# Logs land at ~/.local/state/e156/logs/install-<ts>-<random>.log on Linux, and at
+# Library/Logs/e156/install-<ts>-<random>.log on macOS. Log startup is
 # non-fatal.
 redact_secrets_in_log() {
     # Scrubs API keys, tokens, and high-entropy secrets from a transcript file
@@ -546,22 +546,41 @@ if [[ "$IMPORT" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
     # installation without logging rather than write outside the state tree.
     if refuse_nondirectory_install_path "$E156_LOG_DIR" 2>/dev/null &&
        mkdir -p "$E156_LOG_DIR" 2>/dev/null; then
-        E156_LOG_FILE="${E156_LOG_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
-        # Tee stdout+stderr through the log without breaking interactive
-        # prompts: process substitution leaves the controlling tty in place.
-        exec > >(tee -a "$E156_LOG_FILE") 2>&1
-        echo "(transcript: $E156_LOG_FILE)"
-        # Redact secrets from the transcript on exit (success or failure).
-        # Close stdout/stderr first so the tee subshell flushes and exits;
-        # then sed-substitute in place. Failure-safe: if redaction fails the
-        # raw log is still on disk for the student to clean up manually.
-        _e156_finalize_log() {
-            [[ -n "${E156_LOG_FILE:-}" ]] || return 0
-            exec >&- 2>&- 2>/dev/null || :
-            sleep 0.2 2>/dev/null || :
-            redact_secrets_in_log "$E156_LOG_FILE" 2>/dev/null || :
-        }
-        # Lock cleanup invokes _e156_finalize_log after releasing the lock.
+        # Atomically reserve a new private transcript, never reopen a
+        # timestamp-only filename that a previous run or symlink may own.
+        # Python is already a required bootstrap dependency. mkstemp uses
+        # O_EXCL and mode 0600 and keeps .log extension on Linux and macOS.
+        E156_LOG_FILE="$("$PYTHON" - "$E156_LOG_DIR" "$(date +%Y%m%d-%H%M%S)" <<'PYLOG'
+import os
+import sys
+import tempfile
+try:
+    fd, path = tempfile.mkstemp(
+        prefix="install-" + sys.argv[2] + "-", suffix=".log", dir=sys.argv[1]
+    )
+    os.close(fd)
+    print(path)
+except OSError:
+    sys.exit(1)
+PYLOG
+        )" || E156_LOG_FILE=""
+        if [[ -n "$E156_LOG_FILE" ]]; then
+            # Tee stdout+stderr through the log without breaking interactive
+            # prompts: process substitution leaves the controlling tty in place.
+            exec > >(tee -a "$E156_LOG_FILE") 2>&1
+            echo "(transcript: $E156_LOG_FILE)"
+            # Redact secrets from the transcript on exit (success or failure).
+            # Close stdout/stderr first so the tee subshell flushes and exits;
+            # then sed-substitute in place. Failure-safe: if redaction fails the
+            # raw log is still on disk for the student to clean up manually.
+            _e156_finalize_log() {
+                [[ -n "${E156_LOG_FILE:-}" ]] || return 0
+                exec >&- 2>&- 2>/dev/null || :
+                sleep 0.2 2>/dev/null || :
+                redact_secrets_in_log "$E156_LOG_FILE" 2>/dev/null || :
+            }
+            # Lock cleanup invokes _e156_finalize_log after releasing the lock.
+        fi
     fi
 fi
 
