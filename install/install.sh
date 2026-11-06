@@ -371,7 +371,7 @@ acquire_install_lock() {
     local candidate="${HOME}/.e156-ecosystem-starter-install.lock"
     refuse_symlink_install_path "$candidate" || return 1
     if ! mkdir -- "$candidate" 2>/dev/null; then
-        printf 'ERROR: another installation may be running (lock exists): %s\\n' "$candidate" >&2
+        printf 'ERROR: another installation may be running (lock exists): %s\n' "$candidate" >&2
         return 1
     fi
     INSTALL_LOCK_DIR="$candidate"
@@ -381,7 +381,7 @@ release_install_lock() {
     [[ -n "${INSTALL_LOCK_DIR:-}" ]] || return 0
     # rmdir never removes a pre-existing marker or other user-owned contents.
     if ! rmdir -- "$INSTALL_LOCK_DIR" 2>/dev/null; then
-        printf 'WARNING: installation lock could not be released safely: %s\\n' "$INSTALL_LOCK_DIR" >&2
+        printf 'WARNING: installation lock could not be released safely: %s\n' "$INSTALL_LOCK_DIR" >&2
         return 1
     fi
     INSTALL_LOCK_DIR=""
