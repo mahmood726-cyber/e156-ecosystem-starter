@@ -595,5 +595,53 @@ class CountIdentityTests(unittest.TestCase):
         self.assertFalse(result["certified_error"])
 
 
+
+    def test_bad_family_membership_cannot_be_masked_by_denominator_mismatch(self):
+        # Synthetic counts: incompatible denominator sizes must not disguise
+        # an invalid/one-sided trial-family membership manifest as a verified
+        # NOT_COMPARABLE difference. First establish intake validity.
+        left = copy.deepcopy(self.source)
+        left.update(count_basis="trial_families",
+                    estimand="included_trial_families", value=2,
+                    analysis_denominator_n=10,
+                    analysis_denominator_unit="trial_families",
+                    trial_family_ids=["fam-A", "fam-B"])
+        for variant in ("missing", "duplicate", "count_mismatch",
+                        "bad_container", "unknown"):
+            with self.subTest(variant=variant):
+                right = copy.deepcopy(left)
+                right["analysis_denominator_n"] = 20
+                if variant == "missing":
+                    right.pop("trial_family_ids")
+                elif variant == "duplicate":
+                    right["trial_family_ids"] = ["fam-A", "FAM-a"]
+                elif variant == "count_mismatch":
+                    right["trial_family_ids"] = ["fam-A"]
+                elif variant == "bad_container":
+                    right["trial_family_ids"] = "fam-A,fam-B"
+                else:
+                    right["trial_family_ids"] = ["unknown", "fam-B"]
+                result = compare_raw_counts(left, right)
+                self.assertEqual(result["status"], "NOT_ENOUGH_INFO")
+                self.assertEqual(result["disposition"], "HOLD")
+                self.assertFalse(result["arithmetic_reproduced"])
+                self.assertFalse(result["certified_error"])
+
+    def test_valid_family_membership_denominator_controls(self):
+        left = copy.deepcopy(self.source)
+        left.update(count_basis="trial_families",
+                    estimand="included_trial_families", value=2,
+                    analysis_denominator_n=10,
+                    analysis_denominator_unit="trial_families",
+                    trial_family_ids=["fam-A", "fam-B"])
+        right = copy.deepcopy(left)
+        right["analysis_denominator_n"] = 20
+        right["trial_family_ids"] = ["fam-B", "fam-A"]
+        result = compare_raw_counts(left, right)
+        self.assertEqual(result["status"], "NOT_COMPARABLE")
+        self.assertIn("analysis_denominator_n", result["mismatched_fields"])
+        right["analysis_denominator_n"] = 10
+        self.assertEqual(compare_raw_counts(left, right)["status"], "CONSISTENT")
+
 if __name__ == "__main__":
     unittest.main()
