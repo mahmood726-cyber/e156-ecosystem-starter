@@ -128,9 +128,13 @@ def compare_raw_counts(left: Any, right: Any) -> dict[str, Any]:
             size = record["analysis_denominator_n"]
             if type(size) is not int or size <= 0:
                 return {**base, "reason": f"{side_name}: invalid analysis_denominator_n"}
-            # One patient may have multiple recurrent events, but a unique
-            # participant count cannot exceed its stated eligible cohort.
-            if record["count_basis"] == "unique_participants" and record["value"] > size:
+            # A unique-participant count cannot exceed a participant
+            # cohort; an exposure measured in person-time is not a headcount.
+            # Unlabelled legacy exact denominators retain the old cohort cap.
+            if (record["count_basis"] == "unique_participants"
+                    and record["value"] > size
+                    and record.get("analysis_denominator_unit", "unique_participants")
+                        == "unique_participants"):
                 return {**base, "reason": f"{side_name}: unique count exceeds analysis denominator"}
         if left["analysis_denominator_n"] != right["analysis_denominator_n"]:
             return {
