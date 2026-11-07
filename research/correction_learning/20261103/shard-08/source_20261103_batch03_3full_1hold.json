@@ -1,0 +1,224 @@
+{
+  "schema": "synthesis-correction-learning-shard-evidence-v1",
+  "campaign": "Synthesis Medical Corrections 10K",
+  "date_utc": "2026-11-03",
+  "shard": 8,
+  "lens": "Source",
+  "framework": "Experimental Synthesis v1.3 (not real-world validated)",
+  "branch": "synthesis/correction-learning-10k-20261103",
+  "source_rules": {
+    "credit": "complete primary publisher correction HTML read, original article DOI/link verified, and this immutable source-located summary persisted",
+    "owner": "SHA256(lowercase normalized correction DOI) full unsigned digest modulo 10",
+    "data_policy": "Public-only short factual summaries; no full articles, private replies, or embargoed material"
+  },
+  "baseline": {
+    "existing_shard_files_checked": [
+      "research/correction_learning/20261103/shard-08/source_20261103_batch_verified_02.json"
+    ],
+    "prior_records": [
+      "10.1038/s41467-026-71806-0",
+      "10.1038/s41467-026-76095-1"
+    ],
+    "prior_full_verified_credit": 0,
+    "prior_credit_comment": "Previous file explicitly recorded zero fully verified new reviews for two HOLD notices"
+  },
+  "batch_counts": {
+    "full_primary_notice_text_read": 3,
+    "original_article_doi_link_verified": 3,
+    "source_located_summary_persisted": 3,
+    "owned_review_credit_increment": 3,
+    "partial_primary_source_owned": 1,
+    "metadata_only_owned": 0,
+    "duplicate_owned": 0,
+    "administrative_only": 0,
+    "hold_original_or_supplement_replay": 2,
+    "new_scientific_errors_adjudicated": 0,
+    "original_articles_current_text_located": 2,
+    "original_current_paywall_restricted": 1,
+    "synthetic_tests_executed": 11,
+    "synthetic_tests_passed": 11
+  },
+  "notices": [
+    {
+      "notice_doi": "10.1007/s00520-026-11403-5",
+      "normalized_key": "10.1007/s00520-026-11403-5",
+      "sha256": "00ea3235fef80f86a5a93061d4ea1b2703c0b3ee4150890dd5718ae8ce3b4a48",
+      "owner": 8,
+      "notice": "https://link.springer.com/article/10.1007/s00520-026-11403-5",
+      "notice_published": "2026-10-26",
+      "notice_locator": "opening correction paragraph, after original-article DOI; Methods page 3; specifically 'Intervention: contact needle technique (CNT)'",
+      "original_doi": "10.1007/s00520-026-10430-6",
+      "original": "https://link.springer.com/article/10.1007/s00520-026-10430-6",
+      "original_published": "2026-02-19",
+      "current_updated_notice": "2026-10-26",
+      "title": "Effect of contact needle technique on cancer-related fatigue in palliative care patients: a randomized controlled trial",
+      "journal": "Supportive Care in Cancer",
+      "design": "Multicentre single-blind randomized controlled trial",
+      "study_size": "119 randomized",
+      "sponsor_funding": "not independently checked",
+      "kind": "intervention description / trial replication",
+      "old_claim": "KI7 (Fuliu) described as core point, fourth in original Methods point list",
+      "corrected_claim": "Three core points CV12, CV4, ST25; KI2 (Rangu) separate fixed distal acupoint for fatigue",
+      "current_claim_locator": "Original article HTML > Methods > Intervention: contact needle technique (CNT) > paragraph after Fig.1, now lists KI2 (Rangu). Original change-history 2026-10-26 links correction.",
+      "notice_conclusion": "Publisher says delivered trial intervention followed prespecified protocol using KI2 rather than KI7; raw patient/protocol documentation not independently inspected",
+      "independent_check": "Exact correction-to-current-paper text matches on KI2; no estimate calculation needed",
+      "comparability": "NOT_APPLICABLE_TO_NUMERIC_ESTIMATOR",
+      "estimator_signature_12": "not applicable: this is a named procedural intervention, not a statistical contrast",
+      "strongest_benign": [
+        "Historically printed KI7 may be documentation-only with no difference in actual intervention (publisher says so); raw procedures not independently replayed",
+        "The three core points and the fourth fixed distal point can correctly be described separately; do not claim treatment arms or outcomes changed"
+      ],
+      "source_support": "SUPPORTED for published source-to-source historical wording mismatch",
+      "maturity": "SOURCE_BACKED; historical Methods claim appears verbatim in correction notice",
+      "disposition": "RECONCILED_TEXT_CURRENT; HOLD for independent conduct/protocol validation",
+      "severity": "S2 historical; cannot establish S4 safety impact",
+      "correction_status": "PUBLISHED; corrected current article independently located",
+      "review_credit": "FULL"
+    },
+    {
+      "notice_doi": "10.1007/s00436-026-08783-2",
+      "normalized_key": "10.1007/s00436-026-08783-2",
+      "sha256": "36ab583843ed6bf6171d4c7c06723f1015f5fe27e7f5c64e96952d7fa83c02b8",
+      "owner": 8,
+      "notice": "https://link.springer.com/article/10.1007/s00436-026-08783-2",
+      "notice_published": "2026-10-17",
+      "notice_locator": "correction substantive paragraphs following original DOI; original page 2 Primer design",
+      "original_doi": "10.1007/s00436-024-08327-6",
+      "original": "https://link.springer.com/article/10.1007/s00436-024-08327-6",
+      "original_published": "2024-09-02",
+      "current_updated_notice": "2026-10-19",
+      "title": "Real-time qPCR coupled with high-resolution melting curve analysis for detection of internal transcribed spacer 1 of Angiostrongylus costaricensis",
+      "journal": "Parasitology Research",
+      "design": "Laboratory diagnostic molecular assay validation",
+      "study_size": "not applicable (preclinical specimen assay)",
+      "sponsor_funding": "University of Costa Rica Vicerrectoría de Investigación, grant 2064 (original page)",
+      "kind": "primer sequence directional transcription / reproducibility",
+      "old_claim": "AcosR1 5'-GTCTATACGAGCGAACGCATAC-3'",
+      "corrected_claim": "AcosR1 5'-GTATGCGTTCGCTCGTATAGAC-3'",
+      "current_claim_locator": "Original article HTML > Change history > 19 October 2026 quotes entire old and new Primer design sentence; current full main-text Primer design behind subscription preview",
+      "notice_conclusion": "Publisher states no changes to results, discussion or conclusions",
+      "computation": "reverse_complement('GTCTATACGAGCGAACGCATAC')='GTATGCGTTCGCTCGTATAGAC'; both are 22 bases; independently reproduced in Python",
+      "comparability": "COMPATIBLE_AS_REVERSE_COMPLEMENTS, not proof of actually ordered or used oligonucleotide",
+      "estimator_signature_12": "not applicable to DNA sequence transcription",
+      "strongest_benign": [
+        "Old 5'-3' text is the reverse complement of the intended reverse primer, a strand-orientation reporting issue; assay could still have used correct physical oligonucleotide",
+        "In silico complement identity does not prove original actual primer order, probe specificity or protocol conduct without sequence order documents"
+      ],
+      "source_support": "SUPPORTED for correction and reverse-complement exactness",
+      "maturity": "REPRODUCED for string transformation, not assay",
+      "disposition": "HOLD independent assay protocol/primer-order replay; article correction link and notice verified",
+      "severity": "S3 potential methodological reproducibility, clinical implication not established",
+      "correction_status": "PUBLISHED; original publisher history updated",
+      "review_credit": "FULL"
+    },
+    {
+      "notice_doi": "10.1186/s12889-024-20669-5",
+      "normalized_key": "10.1186/s12889-024-20669-5",
+      "sha256": "c8bb5d25175ee671c8591ba35e6156eb5de1cfe4ecb5db9bb321c68180b9f0f4",
+      "owner": 8,
+      "notice": "https://link.springer.com/article/10.1186/s12889-024-20669-5",
+      "notice_published": "2024-11-19",
+      "notice_locator": "complete substantive correction following original DOI; 'Covariates' and Tables 3/4 footnote before/after table; old/new Supplementary Material links 1/2",
+      "original_doi": "10.1186/s12889-024-17888-1",
+      "original": "https://link.springer.com/article/10.1186/s12889-024-17888-1",
+      "original_published": "2024-02-09",
+      "current_updated_notice": "2024-11-19 change-history link",
+      "title": "Allostatic load and chronic pain: a prospective finding from the national survey of midlife development in the United States, 2004–2014",
+      "journal": "BMC Public Health",
+      "design": "Longitudinal cohort secondary analysis, MIDUS 2 to MIDUS 3",
+      "study_size": "N=781 analytic cohort per original Results",
+      "sponsor_funding": "Original declares no external work funding; MIDUS data collection separately funded",
+      "kind": "covariate text duplication + supplemental-code / categorical reference explanation",
+      "old_claim": "Repeated analgesics in covariate narrative and Tables 3/4 footnotes; wrong Supplementary file 3",
+      "corrected_claim": "Repeated medication phrase removed; updated supplementary file 3; notice says as.factor() caused 0 to become level 2 and 1(pain) reference",
+      "current_claim_locator": "Original article Methods > Covariates corrected medication list; original Change history 19 Nov 2024; publisher note confirms supplementary file 3 updated",
+      "source_ambiguity": "Standard base R factor documentation says default levels sorted; for unmodified numeric 0/1, factor levels normally '0','1' and with usual treatment coding '0' is baseline. Publisher's factor explanation might reflect a custom factor, preexisting factor levels, releveling or contrasts; actual old/new supplements and model matrices not replayed.",
+      "model_signature_12": {
+        "population": "MIDUS 2 biomarker subjects at MIDUS3 complete cases (N=781)",
+        "endpoint": "chronic pain, interference, number of pain sites (multiple outputs)",
+        "time_window": "2004-2014 waves",
+        "effect_measure": "logistic OR / multinomial RRR depending endpoint",
+        "estimand": "covariate-adjusted association; source-specific",
+        "model": "logistic or multinomial logistic",
+        "adjustment": "sociodemographic, behavior and comorbidities; exact supplements not replayed",
+        "multiplicity": "not verified",
+        "missingness": "complete cases, sensitivity MI mentioned; exact model-specific details not replayed",
+        "censoring": "not applicable",
+        "variance_method": "not verified",
+        "test_statistic_identity": "not verified"
+      },
+      "comparability": "NOT_COMPARABLE for direction of fitted contrasts or actual reported estimates until old/new supplementary regression code and reference coding verified",
+      "strongest_benign": [
+        "Supplementary code could have explicit levels or a preexisting factor object whose order differs from plain numeric as.factor",
+        "Corrected file could change only commentary or factor label, rather than the main analyses; publisher states no effect on conclusions",
+        "Ordinary source-text medication duplication is not evidence of an extra model covariate"
+      ],
+      "independent_check": "Read public R factor and relevel documentation; do not call publisher explanation a validated computation without actual R data/contrasts",
+      "source_support": "SUPPORTED for notice and main-text change; NOT_ENOUGH_INFO for R claim's explanation",
+      "maturity": "SOURCE_BACKED for notice; model replay HOLD",
+      "disposition": "DISCUSSION/HOLD for factor-level explanation, RECONCILED for narrative duplication at current article",
+      "severity": "S2 narrative correction; unresolved potential S3 analysis implementation issue",
+      "correction_status": "PUBLISHED; original changed",
+      "review_credit": "FULL"
+    }
+  ],
+  "partial_owned": [
+    {
+      "notice_doi": "10.1136/bmjopen-2025-102586corr1",
+      "owner": 8,
+      "notice": "https://bmjopen.bmj.com/content/16/3/e102586corr1",
+      "original_doi": "10.1136/bmjopen-2025-102586",
+      "title": "Family functionality and its association with non-communicable diseases among urban adults in Selangor, Malaysia: a cross-sectional study",
+      "summary": "Index shows second author name shortened from Meram Mohammed Ali Azzani to Meram Azzani",
+      "status": "PARTIAL/HOLD, direct publisher original and notice open returned HTTP 403; do not award full credit"
+    }
+  ],
+  "out_of_shard_handoff_suggestions_only": [
+    {
+      "doi": "10.1186/s13012-026-01509-z",
+      "owner": 7,
+      "type": "RCT provider misclassification"
+    },
+    {
+      "doi": "10.1371/journal.pmed.1004885",
+      "owner": 0,
+      "type": "cohort dataset omission and outcome estimand clarification"
+    },
+    {
+      "doi": "10.1136/jnnp-2025-338211corr1",
+      "owner": 1,
+      "type": "supplemental specificity vs false positive rate"
+    },
+    {
+      "doi": "10.1186/s13643-026-03241-7",
+      "owner": 3,
+      "type": "meta-analysis guidance editorial text intrusion"
+    }
+  ],
+  "regression_tests": {
+    "description": "retrospective example-specific mechanism checks, zero prospective accuracy claim",
+    "executable_path": "research/correction_learning/20261103/shard-08/test_shard08_source.py",
+    "count": 11,
+    "local_result": "11/11 unittest passed in local container; GitHub CI not executed",
+    "checks": [
+      "ownership",
+      "reverse-complement historical/corrected",
+      "benign reverse-complement equivalence",
+      "invalid sequence abstention",
+      "KI7/KI2 original/current matched text",
+      "wrong intervention and missing evidence abstentions",
+      "R factor example requires actual source contrast code"
+    ]
+  },
+  "cursor": {
+    "next": "Revisit 10.1038/s41467-026-71806-0 and 10.1038/s41467-026-76095-1 through full primary HTML or PDF; then review other previously screened shard-8 BMJ correction once publisher full text accessible. Separately inspect old/new Supplementary file 3 for 10.1186/s12889-024-20669-5 and documented R model contrasts.",
+    "last_verified_owned_key": "10.1186/s12889-024-20669-5"
+  },
+  "limitations": [
+    "Synthesis v1.3 is experimental and not clinically validated.",
+    "Primary correction HTML was fully read for three notices. Historical complete original versions and signed trial/protocol sources are not universally retrieved.",
+    "Historical corrected notice credit does not prove that the new replacement value is scientifically correct.",
+    "No emails, no other shard modifications, no shared manifest write, no merge.",
+    "Only 11 retrospective/synthetic mechanism tests were run; performance on unmodified publications was not assessed."
+  ]
+}

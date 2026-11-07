@@ -1,0 +1,133 @@
+{
+  "campaign": "Synthesis Medical Corrections 10K",
+  "date": "2026-11-03",
+  "shard": 1,
+  "lens": "Numerical",
+  "framework": "experimental v1.3",
+  "run": "20261103-shard01-unit-and-PET-01",
+  "ownership": "SHA256(normalized notice DOI) unsigned integer mod 10",
+  "source_status": "complete substantive primary publisher notice text inspected for both",
+  "totals": {
+    "full_notice_read": 2,
+    "partial": 0,
+    "metadata_only": 0,
+    "hold": 0,
+    "duplicate": 0,
+    "administrative": 0,
+    "independent_adjudication": 0,
+    "claimed_new_errors": 0,
+    "current_claim_verified": 1,
+    "current_visual_claim_hold": 1
+  },
+  "notices": [
+    {
+      "doi": "10.1038/s43018-026-01227-x",
+      "hash": "394996f8e0563029d7f2b51cbf57c1188875f9b11ae2394f60d03713e814909d",
+      "shard": 1,
+      "journal": "Nature Cancer",
+      "date": "2026-08-03",
+      "original_doi": "10.1038/s43018-026-01199-y",
+      "design": "multicentre single-arm open-label phase 1 clinical trial long-term follow-up",
+      "type": "unit formatting numerical",
+      "locator": "notice correction paragraph; original article Abstract",
+      "old": "8-year PFS 0.42 months (CI 0.24-0.59); OS 0.66 months (CI 0.46-0.79)",
+      "new": "8-year PFS 0.42 (CI 0.24-0.59); OS 0.66 (CI 0.46-0.79)",
+      "current": "Publisher original article Abstract and Results > Long-term clinical outcomes: dimensionless rates 0.42 and 0.66",
+      "url": "https://www.nature.com/articles/s43018-026-01227-x",
+      "original_url": "https://www.nature.com/articles/s43018-026-01199-y",
+      "severity": "S2",
+      "source_support": "SUPPORTED",
+      "maturity": "SOURCE_BACKED",
+      "disposition": "RECONCILED",
+      "strongest_benign": "Copyediting error transferring units from adjacent median survival duration; survival probabilities are dimensionless",
+      "numerical": "Rate 0.42=42%; rate 0.66=66%; confidence limits remain within 0..1 and unchanged; no statistical model replay",
+      "estimator_signature": {
+        "population": "32 treated NOA16 safety participants",
+        "endpoint": "8-year PFS and OS rates",
+        "time_window": "8 years",
+        "effect_measure": "survival probability",
+        "estimand": "8-year survival probability",
+        "model": null,
+        "adjustment": null,
+        "multiplicity": null,
+        "missingness": null,
+        "censoring": null,
+        "variance_method": null,
+        "test_statistic_identity": null
+      },
+      "signature_note": "Unit-only check; independent survival estimator validation NOT_COMPARABLE without model and risk sets."
+    },
+    {
+      "doi": "10.1038/s41467-026-69473-2",
+      "hash": "915cc676f8690ce3e06e4dd36c744ae3ece7e37fb92110cc27e7c8b87c934079",
+      "shard": 1,
+      "journal": "Nature Communications",
+      "date": "2026-02-10",
+      "original_doi": "10.1038/s41467-025-66767-9",
+      "design": "phase 2 single-arm PET imaging study",
+      "type": "figure timeline label placement",
+      "locator": "notice correction paragraph; original article Fig 1b Cohort 2 Post-CART",
+      "old": "89ZED88082A PET/CT icon on D7 dashed line",
+      "new": "Publisher says corrected icon location is D5 dashed line",
+      "current": "Publisher original article confirms correction is linked; exact updated figure not independently visually inspected",
+      "url": "https://www.nature.com/articles/s41467-026-69473-2",
+      "original_url": "https://www.nature.com/articles/s41467-025-66767-9",
+      "severity": "S2",
+      "source_support": "SUPPORTED notice, not visually independently validated",
+      "maturity": "SOURCE_BACKED",
+      "disposition": "HOLD current visual confirmation",
+      "strongest_benign": "Schematic drafting placement, while actual scanning and clinical outcome estimates may have been unchanged",
+      "numerical": "D7 minus D5 = 2-day difference in diagram label, not patient-level timing",
+      "estimator_signature": null,
+      "signature_note": "Figure-only schedule placement; no treatment effect estimator comparison"
+    }
+  ],
+  "fixtures_status": "Authored source-derived test specifications only, not executed or validated on software",
+  "fixtures": [
+    {
+      "role": "historical",
+      "mechanism": "dimensionless survival rate with 'months'",
+      "expected": "FLAG_CANDIDATE"
+    },
+    {
+      "role": "corrected",
+      "mechanism": "rate 0.42 dimensionless",
+      "expected": "NO_FLAG"
+    },
+    {
+      "role": "benign",
+      "mechanism": "median OS 106.1 months",
+      "expected": "NO_FLAG"
+    },
+    {
+      "role": "abstention",
+      "mechanism": "unspecified endpoint with unit months",
+      "expected": "NOT_COMPARABLE"
+    },
+    {
+      "role": "historical",
+      "mechanism": "PET cohort2 D7 despite protocol D5",
+      "expected": "FLAG_CANDIDATE"
+    },
+    {
+      "role": "corrected",
+      "mechanism": "PET cohort2 D5; image needs visual check",
+      "expected": "NO_FLAG_IF_VERIFIED"
+    },
+    {
+      "role": "benign",
+      "mechanism": "PET cohort1 D7 scheduled day7",
+      "expected": "NO_FLAG"
+    },
+    {
+      "role": "abstention",
+      "mechanism": "PET cohort unspecified",
+      "expected": "HOLD"
+    }
+  ],
+  "next_cursor": "next unreviewed publisher correction DOI owned by shard 1 after filtering duplicate keys; prioritize numeric CI/P and unit changes; verify PET Figure 1b visually",
+  "no_email": true,
+  "no_shared_checker_edit": true,
+  "no_merge": true,
+  "publication_performance_claim": false
+}

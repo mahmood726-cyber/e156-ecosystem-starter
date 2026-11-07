@@ -1,0 +1,143 @@
+{
+  "campaign": "Synthesis Medical Corrections 10K",
+  "run": "20261103-shard06-batch01",
+  "shard": 6,
+  "framework": "Synthesis v1.3 experimental",
+  "source_branch_head_at_review": "1bccd9c28f32b5863abe81ebb628f3edbef9d515",
+  "count_increment": {
+    "fully_read": 2,
+    "hold": 1,
+    "metadata_only": 0,
+    "administrative": 0,
+    "new_independently_adjudicated_errors": 0
+  },
+  "credit_rule": "complete primary publisher notice read, linked original verified, source-located summary persisted",
+  "cases": [
+    {
+      "key": "10.1038/s41598-018-36737-x",
+      "sha256": "0c834ccb8b31497b86cc19954f22aff80ba33ac2ac020a9436c1fe1133925ebe",
+      "owner": 6,
+      "status": "FULL_NOTICE_RECONCILED",
+      "original_doi": "10.1038/s41598-018-32210-x",
+      "notice_date": "2019-03-13",
+      "journal": "Scientific Reports",
+      "design": "prospective observational cardiovascular prognostic cohort",
+      "original_n": "1071 abstract; 1072 Results, not assessed as correction",
+      "notice_url": "https://www.nature.com/articles/s41598-018-36737-x",
+      "original_url": "https://www.nature.com/articles/s41598-018-32210-x",
+      "notice_locator": "Correction body, Abstract; Results Patients; Discussion; Tables 2-3; Figure 2 legend; hemoglobin row",
+      "current_locator": "Original live HTML Abstract, Results Patients, Figure 2 legend and Change history",
+      "reported_changes": [
+        {
+          "from": "H-FABP 4.143 pg/mL",
+          "to": "H-FABP 4.143 ng/mL",
+          "locator": "Abstract, Results, Discussion, Tables 2/3 and Fig.2 legend"
+        },
+        {
+          "from": "Hemoglobin mg/dL",
+          "to": "Hemoglobin g/dL",
+          "locator": "Table 2 heading"
+        }
+      ],
+      "source_precision": "4.143 unchanged; ng versus pg differ by 1000, mg versus g by 1000",
+      "benign": "Reported unit-label typo rather than wrong biomarker assay or erroneous HR; model not recomputed",
+      "source_support": "SUPPORTED",
+      "maturity": "SOURCE_BACKED",
+      "severity": "S3 provisional",
+      "version": "current publisher HTML directly verified; corrected 2019-03-13",
+      "root_cause": "unit-label-in-survival-stratification",
+      "signature": {
+        "population": "SCHD cohort",
+        "endpoint": "composite CV events",
+        "time_window": "24 months",
+        "effect_measure": "HR appears in original, but not changed by notice",
+        "estimand": "prognostic comparison",
+        "model": "adjusted Cox in original",
+        "adjustment": "listed covariates in original",
+        "multiplicity": "unknown",
+        "missingness": "unknown",
+        "censoring": "unknown",
+        "variance_method": "unknown",
+        "test_statistic_identity": "unknown"
+      },
+      "recalculation": "Do not compare raw risks to adjusted Cox HR; labels only",
+      "tests": {
+        "historical": "H-FABP 4.143 pg/mL should match historical notice",
+        "corrected": "H-FABP 4.143 ng/mL current publisher text",
+        "benign": "0.004143 microgram/mL equivalent to 4.143 ng/mL",
+        "abstain": "4.143 with unspecified units -> HOLD"
+      }
+    },
+    {
+      "key": "10.1038/s41598-023-49212-z",
+      "sha256": "188014ad79c80aeaf6cbb16994986202515bd65cd8c8be68710766e47d7cb700",
+      "owner": 6,
+      "status": "FULL_NOTICE_CURRENT_TEXT_VERIFIED_FIGURE_VISUAL_HOLD",
+      "original_doi": "10.1038/s41598-023-43619-4",
+      "notice_date": "2023-12-09",
+      "journal": "Scientific Reports",
+      "design": "biomarker observational and external database Kaplan-Meier analysis",
+      "notice_url": "https://www.nature.com/articles/s41598-023-49212-z.pdf",
+      "original_url": "https://www.nature.com/articles/s41598-023-43619-4",
+      "notice_locator": "Publisher correction PDF page 1 lines 9-21 and page 2 lines 35-39",
+      "current_locator": "Current original Abstract and Results Prognostic analysis and Figure 4 caption",
+      "reported_changes": [
+        {
+          "from": "progression-free survival (PPS)",
+          "to": "post-progression survival (PPS)",
+          "locator": "Abstract"
+        },
+        {
+          "from": "Figure 4 depicting TNM stage stratification",
+          "to": "RFS, OS and PPS by PFKFB4 expression",
+          "locator": "Figure 4"
+        }
+      ],
+      "source_precision": "survival endpoint identities, no numeric HR correction",
+      "benign": "abbreviation expansion/figure-assembly error, not necessarily wrong analysis; different survival outcomes noncomparable",
+      "source_support": "SUPPORTED",
+      "maturity": "SOURCE_BACKED",
+      "severity": "S3 provisional",
+      "version": "current original HTML correction link and text verified, figure visual comparison unavailable (PDF screenshot access redirect)",
+      "estimator_signature": {
+        "population": "COAD public survival data",
+        "endpoint": "RFS/OS/PPS are distinct",
+        "time_window": "unknown",
+        "effect_measure": "KM median months",
+        "estimand": "prognostic",
+        "model": "KM log-rank",
+        "adjustment": "unknown",
+        "multiplicity": "unknown",
+        "missingness": "unknown",
+        "censoring": "unknown",
+        "variance_method": "unknown",
+        "test_statistic_identity": "log-rank stated"
+      },
+      "recalculation": "PPS median 25 months high versus 53 low in original Results; do not infer improved PPS from ambiguous corrected Abstract",
+      "tests": {
+        "historical": "PPS expanded as progression-free: flag terminological inconsistency",
+        "corrected": "PPS expanded as post-progression with explicit figure mapping",
+        "benign": "PFS and PPS separately defined as distinct endpoints -> NO_FLAG",
+        "abstain": "Only PPS acronym with absent definition -> HOLD"
+      }
+    },
+    {
+      "key": "10.1038/s41591-025-03666-y",
+      "sha256": "8cf1df34098a41f73bd1da2b3bcdc51be118e8a049f26fb1b2c986807f6f96b0",
+      "owner": 6,
+      "status": "HOLD_PRIMARY_NOTICE_INACCESSIBLE",
+      "original_doi": "10.1038/s41591-024-03450-4",
+      "notice_url": "https://www.nature.com/articles/s41591-025-03666-y",
+      "design": "phase III gastric cancer randomized trial",
+      "candidate_changes_uncredited": "Figure 3 PFS/OS axis labeling and HR 0.55 versus 0.53 are leads requiring primary complete notice verification",
+      "reason": "Publisher notice HTML and PDF redirected to inaccessible identity provider; no full primary notice inspection",
+      "count_credit": false
+    }
+  ],
+  "next_cursor": {
+    "last": "10.1038/s41591-025-03666-y",
+    "next": "Find another owner-6 publisher notice; retrieve primary PDF/HTML for held case; verify historical and corrected figures with screenshots"
+  },
+  "test_status": "development fixture suggestions only; not executed",
+  "privacy": "public evidence only; no correspondence or private materials"
+}
