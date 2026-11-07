@@ -45,6 +45,7 @@ TABLE_MARKUP = frozenset({
     "break", "p", *TEXT_MARKERS,
 })
 MAX_LINKED_CORRECTIONS = 8
+MAX_QUOTES = 1000
 CORRECTION_ID_TYPES = {"pmc", "pmcid", "pmid", "pubmed", "doi"}
 
 
@@ -212,31 +213,87 @@ def article_entries(payload):
     raise ValueError("Expected a PMC JATS article or article set")
 
 
-def locate_quotes(body, tables, quotes):
+def locate_quotes(body, tables, quotes, abstracts=()):
     """Index only requested excerpts so receipts do not copy article prose."""
     if not quotes:
-        return {}
+        return {}, {}
     wrappers = list(body.iter("table-wrap"))
     table_paragraphs = {node for wrapper in wrappers for node in wrapper.iter("p")}
-    locations = [(f"body p {index}", text(node)) for index, node in enumerate(body.iter("p"), 1)
+    locations = [(f"body p {index}", node, text(node), True) for index, node in enumerate(body.iter("p"), 1)
                  if node not in table_paragraphs]
+    for index, abstract in enumerate(abstracts, 1):
+        paragraphs = list(abstract.iter("p"))
+        if paragraphs:
+            locations.extend((f"abstract {index} p {p_index}", node, text(node), True)
+                             for p_index, node in enumerate(paragraphs, 1))
+        else:
+            locations.append((f"abstract {index}", abstract, text(abstract), True))
+    locations.extend((f"body sec {index} title", node.find("title"), text(node.find("title")), True)
+                     for index, node in enumerate(body.iter("sec"), 1))
+    locations.extend((f"body fig {index} caption", node, text(node), True)
+                     for index, figure in enumerate(body.iter("fig"), 1)
+                     if (node := figure.find("caption")) is not None and not list(node.iter("p")))
     unresolved_text = set()
     for wrapper, table in zip(wrappers, tables):
         locator = table["locator"]
-        locations.extend((f"{locator} {key}", table[key]) for key in ("label", "caption", "footnotes"))
+        locations.extend((f"{locator} {key}", wrapper.find(tag), table[key], True)
+                         for key, tag in (("label", "label"), ("caption", "caption"), ("footnotes", "table-wrap-foot")))
         if table["status"] != "STRUCTURED":
             for node in wrapper:
                 if node.tag not in {"label", "caption", "table-wrap-foot"}:
                     unresolved_text.update((text(node), " ".join("".join(node.itertext()).split())))
-        for row_index, row in enumerate(table.get("rows", []), 1):
-            locations.extend((f"{locator} row {row_index} cell {cell_index}", cell["text"])
-                             for cell_index, cell in enumerate(row["cells"], 1))
+        if table["status"] == "STRUCTURED":
+            source_table = wrapper.find("./table")
+            if source_table is None:
+                source_table = wrapper.find("./alternatives/table")
+            for row_index, (_, row) in enumerate(table_rows(source_table), 1):
+                locations.extend((f"{locator} row {row_index} cell {cell_index}", cell, text(cell),
+                                  cell.get("rowspan", "1") == cell.get("colspan", "1") == "1")
+                                 for cell_index, cell in enumerate((n for n in row if n.tag in {"td", "th"}), 1))
     # Unresolved table text can rule out uniqueness without becoming evidence.
-    return {quote: [] if any(quote in value for value in unresolved_text)
-            else [location for location, value in locations if quote in value] for quote in quotes}
+    result, bindings = {}, {}
+    allowed = {"p", "abstract", "title", "label", "caption", "table-wrap-foot", "fn", "td", "th",
+               "bold", "italic", "xref", "ext-link", "break"}
+    parents = {child: parent for root in (body, *abstracts) for parent in root.iter() for child in parent}
+    unsafe_ancestors = {"alt-text", "graphic", "media", "strike", "overline", "sup", "sub", "styled-content", "tex-math"}
+    styling = {"style", "style-type", "content-type"}
+
+    def quote_safe(node, value, quote, unmerged):
+        if not unmerged or value.count(quote) != 1:
+            return False
+        ancestor = parents.get(node)
+        while ancestor is not None:
+            if ancestor.tag in unsafe_ancestors or styling.intersection(ancestor.attrib):
+                return False
+            ancestor = parents.get(ancestor)
+        start, end = value.index(quote), value.index(quote) + len(quote)
+        for child in node.iter():
+            if child.tag in allowed and not styling.intersection(child.attrib):
+                continue
+            fragment = text(child)
+            if not fragment:
+                continue
+            spans = list(re.finditer(re.escape(fragment), value))
+            if not spans or any(match.start() < end and match.end() > start for match in spans):
+                return False
+        return True
+
+    for quote in quotes:
+        matches = [] if any(quote in value for value in unresolved_text) else [
+            (location, node, value, unmerged) for location, node, value, unmerged in locations if quote in value]
+        result[quote] = [location for location, _, _, _ in matches]
+        bindings[quote] = [
+            {"locator": location, "quote_offset": value.index(quote),
+             "count_safe": quote_safe(node, value, quote, unmerged)}
+            for location, node, value, unmerged in matches]
+    return result, bindings
 
 
 def capture(payload, pmcid, expected_doi=None, *, quotes=(), for_archive=False):
+    if (not isinstance(quotes, (tuple, list, set)) or len(quotes) > MAX_QUOTES
+            or any(not isinstance(q, str) or not q.strip() or len(q) > 500 for q in quotes)):
+        raise ValueError(f"Up to {MAX_QUOTES} source quotes of 1 to 500 characters are supported")
+    quotes = tuple(sorted({" ".join(q.split()) for q in quotes}))
     if not PMCID.fullmatch(pmcid):
         raise ValueError("A canonical PMCID is required")
     articles = article_entries(payload)
@@ -288,6 +345,7 @@ def capture(payload, pmcid, expected_doi=None, *, quotes=(), for_archive=False):
             **({"reason": "External attachment or incomplete inline table evidence"} if manual else {}),
         })
     pmids = [text(node) for node in meta.findall("article-id") if node.get("pub-id-type") == "pmid"]
+    quote_locations, quote_bindings = locate_quotes(body, tables, quotes, meta.findall("abstract"))
     return {
         "status": "CAPTURED",
         "source": {
@@ -302,7 +360,7 @@ def capture(payload, pmcid, expected_doi=None, *, quotes=(), for_archive=False):
             for position, node in enumerate(body.iter("sec"), start=1)
         ],
         "tables": tables,
-        **({"quote_locations": locate_quotes(body, tables, quotes)} if quotes else {}),
+        **({"quote_locations": quote_locations, "quote_bindings": quote_bindings} if quotes else {}),
         "correction_links": [
             {"locator": f"article-meta related-article {position}", "relation": node.get("related-article-type"),
              "id_type": node.get("ext-link-type"), "target": node.get(XLINK_HREF)}
