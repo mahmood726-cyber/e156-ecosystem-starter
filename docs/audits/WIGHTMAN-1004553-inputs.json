@@ -1,0 +1,76 @@
+{
+  "schema": "synthesis-public-case-inputs-v1",
+  "case_id": "SYN-IPDNMA-WIGHTMAN-1004553-20261103",
+  "doi": "10.1371/journal.pmed.1004553",
+  "accessed_date": "2026-11-03",
+  "sources": {
+    "html": "https://journals.plos.org/plosmedicine/article?id=10.1371/journal.pmed.1004553",
+    "html_sha256": "95737cc306768d7be3d2f32bd740b1f8d343f91683b2f0793a15425051839bf8",
+    "code_docx": "https://doi.org/10.1371/journal.pmed.1004553.s002",
+    "code_docx_sha256": "ae52a6be21ba22e196aa7f08356b3e70046270362b54a086faac5c485c90558f",
+    "data_zip": "https://doi.org/10.1371/journal.pmed.1004553.s011",
+    "data_zip_sha256": "a15b7ae889338a33b456e95aeccfdbd003ef18fc55d38494b1c6a310d67ed741",
+    "figure5": "https://journals.plos.org/plosmedicine/article/figure/image?download&size=large&id=10.1371/journal.pmed.1004553.g005",
+    "figure5_sha256": "493daf909b5afffecf69378f17b904b9d7fa4d9cd90d4fc0875a523caedb4bd8"
+  },
+  "observations": {
+    "MACE": {
+      "point_HR": 3.01,
+      "abstract_CI95": [
+        2.48,
+        3.67
+      ],
+      "results_CI95": [
+        2.68,
+        3.37
+      ],
+      "figure5_CI95": [
+        2.69,
+        3.37
+      ]
+    },
+    "treatment_related_AE": {
+      "point_IRR": 1.36,
+      "text_CI95": [
+        1.23,
+        1.49
+      ],
+      "figure5_CI95": [
+        1.32,
+        1.49
+      ]
+    }
+  },
+  "network_count_refutation": {
+    "csv": "Supplementary_data_final/fi_mace_model_coefs.csv",
+    "model": "f3",
+    "stage1_studies": 12,
+    "explicit_excluded_study": "H9X-MC-GBDE",
+    "excluded_arms": [
+      "Dulaglutide",
+      "Liraglutide"
+    ],
+    "exclusion_reason": "Both active drugs map to GLP1; code explicitly removes same-class comparison.",
+    "published_R_filter": "filter(!study ==\"H9X-MC-GBDE\")",
+    "network_studies_after_exclusion": 11,
+    "disposition": "RECONCILED_NO_ERROR"
+  },
+  "interpretation": {
+    "root_id": "WIGHTMAN-1004553-UNCERTAINTY-REPORTING-001",
+    "status": "SOURCE_VERIFIED_DISPLAY_DIFFERENCES_ANALYSIS_IDENTITY_HELD",
+    "root_count": 1,
+    "target_eligibility": "HOLD",
+    "intended_CIs_known": false,
+    "model_error_established": false,
+    "published_correction_verified": false
+  },
+  "limits": [
+    "Current figure read as pixels, not OCR-only.",
+    "Baseline frailty-MACE associations are distinct from treatment-by-frailty NMA coefficients.",
+    "The available f2/f3 coefficients contain treatment interactions and are not substituted for an unadjusted marginal baseline association.",
+    "No secure participant data accessed, no Cox or Bayesian model refit, no intended CI certified.",
+    "The count reconciliation is static source-code/data inspection, not a native R or MCMC replay.",
+    "Other Figure5 rows retain matching estimates as unflagged controls; small displayed rounding differences alone are not counted.",
+    "Bounded correction search found no relevant notice; absence not proved."
+  ]
+}

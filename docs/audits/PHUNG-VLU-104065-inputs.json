@@ -1,0 +1,138 @@
+{
+  "schema": "synthesis-public-case-inputs-v1",
+  "case_id": "SYN-IPDNMA-PHUNG-VLU-104065-20261103",
+  "doi": "10.1016/j.eclinm.2026.104065",
+  "accessed_date": "2026-11-03",
+  "scope": "NMA_COMBINING_IPD_AND_AGGREGATE_DATA",
+  "sources": {
+    "primary_deposit_xml": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC13382440/fullTextXML",
+    "xml_sha256": "e6d3ee62d48b240918a116cf9aae479c8c5844c073d96584d707d3e39cb53b4f",
+    "deposited_version": "PMC13382440.1",
+    "supplement_package": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC13382440/supplementaryFiles",
+    "package_sha256": "ff5ac35d7cbea26c5876ba5f7fd7b6f20a1cb5ddb5d66d2c3a1359c3b1861ff5",
+    "actual_figure4_member": "gr4.jpg",
+    "figure4_sha256": "540cc12883b71b1403d208ffdd342cc3e73a47117514b02b2c737ec12d16b355",
+    "appendix_docx_member": "mmc1.docx",
+    "appendix_sha256": "30b58fc21752696b96dc5467e04d81b96c4abbf7445901f0889ffadc8875002d",
+    "current_pubmed": "https://pubmed.ncbi.nlm.nih.gov/42518940/",
+    "author_code_repository": "https://github.com/HanPhung/VenUS6",
+    "author_readme_blob_sha": "892e74793d03f449523e328594b7091539ff87c6"
+  },
+  "root": {
+    "id": "PHUNG-104065-LOWROB-2LB-HR-001",
+    "status": "SOURCE_VERIFIED_ABSTRACT_FIGURE_POINT_ESTIMATE_CONTRADICTION",
+    "severity": "S3_MATERIAL_NUMERIC_REPORTING",
+    "grouped_root_count": 1,
+    "endpoint": "Time to ulcer healing",
+    "contrast": "Two-layer bandage versus four-layer bandage/two-layer hosiery",
+    "population": "Network3 low-risk-of-bias studies",
+    "abstract_HR": 10.995,
+    "figure4_HR": 0.995,
+    "abstract_interval": [
+      0.792,
+      1.233
+    ],
+    "figure4_interval": [
+      0.792,
+      1.233
+    ],
+    "same_source_interval_matches": true,
+    "fitted_model_error_established": false,
+    "public_author_confirmation_status": "Not asserted; private correspondence excluded.",
+    "target_count_certification": "Not provided by this public-source record"
+  },
+  "unflagged_controls": [
+    {
+      "network": 1,
+      "treatment": "SSB",
+      "abstract_and_figure_HR": 0.972,
+      "CrI": [
+        0.851,
+        1.107
+      ]
+    },
+    {
+      "network": 1,
+      "treatment": "2LB",
+      "abstract_and_figure_HR": 1.044,
+      "CrI": [
+        0.859,
+        1.255
+      ]
+    },
+    {
+      "network": 1,
+      "treatment": "CW",
+      "abstract_and_figure_HR": 0.927,
+      "CrI": [
+        0.745,
+        1.136
+      ]
+    },
+    {
+      "network": 2,
+      "treatment": "SSB",
+      "abstract_and_figure_HR": 0.954,
+      "CrI": [
+        0.823,
+        1.099
+      ]
+    },
+    {
+      "network": 2,
+      "treatment": "2LB",
+      "abstract_and_figure_HR": 1.004,
+      "CrI": [
+        0.817,
+        1.213
+      ]
+    },
+    {
+      "network": 2,
+      "treatment": "CW",
+      "abstract_and_figure_HR": 0.901,
+      "CrI": [
+        0.719,
+        1.11
+      ]
+    },
+    {
+      "network": 3,
+      "treatment": "SSB",
+      "abstract_and_figure_HR": 1.009,
+      "CrI": [
+        0.856,
+        1.187
+      ]
+    },
+    {
+      "network": 3,
+      "treatment": "CW",
+      "abstract_and_figure_HR": 0.872,
+      "CrI": [
+        0.695,
+        1.085
+      ]
+    }
+  ],
+  "scope_verification": {
+    "included_trials": 21,
+    "reported_participants": 2934,
+    "IPD_trials": [
+      "VenUSI",
+      "VenUS6"
+    ],
+    "IPD_and_aggregate_in_one_network": true,
+    "native_IPD_public": false,
+    "author_repository_README_says_NMA_not_runnable_without_restricted_IPD": true,
+    "do_not_substitute_basecase_coda_for_low_RoB_network": true
+  },
+  "limits": [
+    "Actual deposited Figure4 read visually, not inferred from OCR or a reverse-calculated estimate.",
+    "Deposited version and PubMed checked; direct publisher Version-of-Record retrieval failed, so full publisher revision equivalence is not established.",
+    "No Bayesian posterior rerun or reconstruction of restricted IPD.",
+    "Posterior point/interval discrepancies alone do not imply model failure; this finding is a cross-display transcription conflict.",
+    "No published correction verified in a bounded DOI/correction search.",
+    "Private correspondence, recipients and message IDs excluded."
+  ]
+}

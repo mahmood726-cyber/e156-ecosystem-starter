@@ -1,0 +1,64 @@
+{
+  "schema": "synthesis-public-case-inputs-v1",
+  "case_id": "SYN-NMA-MASH-1829315-20261103",
+  "doi": "10.3389/fendo.2026.1829315",
+  "accessed_date": "2026-11-03",
+  "source_pdf": "https://www.frontiersin.org/journals/endocrinology/articles/10.3389/fendo.2026.1829315/pdf",
+  "source_pdf_sha256": "0d5554cc474b0bc51ff2624ecb21a54e437d5e92f6e1188783a73355ca592141",
+  "source_locations": {
+    "ci": "Results section 3.5, printed page 14; Figure 4 on same page",
+    "flow": "Figure 1; Abstract and Results section 3.1"
+  },
+  "ci": {
+    "reported_rr": 5.21,
+    "reported_lower": 1.18,
+    "reported_upper": 62.52,
+    "printed_decimals": 2,
+    "figure_lower_visual_range": [
+      2,
+      2.5
+    ],
+    "figure_upper_visual_range": [
+      10,
+      15
+    ],
+    "figure_values_are_exact": false
+  },
+  "flow": {
+    "database_counts": [
+      1573,
+      25707,
+      8234,
+      15031,
+      45198
+    ],
+    "reported_identified": 95742,
+    "duplicates": 48618,
+    "screened": 47125,
+    "screen_exclusions": [
+      12466,
+      35,
+      1140,
+      18547,
+      14229
+    ],
+    "next_stage": 708,
+    "fulltext_exclusions": [
+      352,
+      132
+    ],
+    "reported_fulltext": 204,
+    "diagram_included_studies": 37,
+    "text_included_studies": 34
+  },
+  "interpretation": {
+    "ci": "Source-verified contradiction between Results and corresponding figure; intended corrected CI not established.",
+    "flow": "One grouped selection-accounting issue; do not count each arithmetic mismatch separately. Substantive eligibility held pending clarification."
+  },
+  "limits": [
+    "Source-transcribed observed values, not simulated data.",
+    "Image ranges are deliberately coarse visual bounds, not recovered model output.",
+    "Log-symmetry witness applies only if a symmetric log-scale interval was intended.",
+    "No refitted NMA, independent expert adjudication or validated Synthesis accuracy claim."
+  ]
+}
