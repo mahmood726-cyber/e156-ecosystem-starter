@@ -57,24 +57,6 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# --- install-time transcript log ------------------------------------------
-# Write the entire install console to %LOCALAPPDATA%\e156\logs\install-<ts>.log
-# so doctor-report.ps1 has something to read when a student hits a problem.
-# Failure here is non-fatal (Start-Transcript failures shouldn't kill an
-# otherwise-fine install).
-if (-not $Import) {
-    try {
-        $logDir = Join-Path $env:LOCALAPPDATA 'e156\logs'
-        New-Item -ItemType Directory -Force -Path $logDir | Out-Null
-        $logFile = Join-Path $logDir ("install-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
-        Start-Transcript -Path $logFile -Force | Out-Null
-        # Register a teardown so Stop-Transcript runs even on uncaught errors.
-        $script:__transcriptStarted = $true
-    } catch {
-        $script:__transcriptStarted = $false
-    }
-}
-
 # --- self-SHA verification --------------------------------------------------
 if (-not $Import) {
     $hashFile = Join-Path $PSScriptRoot '..\docs\HASH.txt'
@@ -213,6 +195,60 @@ function Render-Template {
     return $Text
 }
 
+function Assert-SafeWindowsInstallPath {
+    # Reject junctions and other reparse points at any existing component,
+    # including ancestors above the agent directory. LiteralPath avoids glob
+    # interpretation of user directories containing [ or ].
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Path,
+        [switch]$Directory
+    )
+    $full = [System.IO.Path]::GetFullPath($Path)
+    $current = $full
+    while ($current) {
+        $item = Get-Item -LiteralPath $current -Force -ErrorAction SilentlyContinue
+        if ($null -ne $item) {
+            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "REFUSED: reparse-point or junction in installation path: $current"
+            }
+            if ($current -eq $full) {
+                if ($Directory -and -not $item.PSIsContainer) {
+                    throw "REFUSED: expected an installation directory: $current"
+                }
+                if (-not $Directory -and $item.PSIsContainer) {
+                    throw "REFUSED: expected an installation file: $current"
+                }
+            } elseif (-not $item.PSIsContainer) {
+                throw "REFUSED: non-directory installation ancestor: $current"
+            }
+        }
+        $parent = [System.IO.Path]::GetDirectoryName($current)
+        if ([string]::IsNullOrEmpty($parent) -or $parent -eq $current) { break }
+        $current = $parent
+    }
+}
+
+function Save-InstallUserBackup {
+    # Preserve each user edit without replacing an earlier backup. File.Copy
+    # refuses a newly occupied destination as well (no silent overwrite).
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Path)
+    $base = "$Path.user"
+    $candidate = $base
+    if (Test-Path -LiteralPath $candidate) {
+        $timestampBase = "$base-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        $candidate = $timestampBase
+        $suffix = 0
+        while (Test-Path -LiteralPath $candidate) {
+            $suffix++
+            $candidate = "$timestampBase-$suffix"
+        }
+    }
+    [System.IO.File]::Copy($Path, $candidate, $false)
+    return $candidate
+}
+
 function Copy-RulesToAgent {
     [CmdletBinding()]
     param(
@@ -225,6 +261,15 @@ function Copy-RulesToAgent {
     if (-not (Test-Path $SourceRulesDir)) {
         throw "Source rules dir not found: $SourceRulesDir"
     }
+    # Preflight every concrete destination before creating the rules directory.
+    Assert-SafeWindowsInstallPath -Path $TargetRulesDir -Directory
+    foreach ($sourceRule in @(Get-ChildItem -LiteralPath $SourceRulesDir -Filter '*.md' -File -ErrorAction Stop)) {
+        Assert-SafeWindowsInstallPath -Path (Join-Path $TargetRulesDir $sourceRule.Name)
+    }
+    $sourceIndex = Join-Path $SourceRulesDir '_index.yaml'
+    if (Test-Path -LiteralPath $sourceIndex -PathType Leaf) {
+        Assert-SafeWindowsInstallPath -Path (Join-Path $TargetRulesDir '_index.yaml')
+    }
     $newDir = -not (Test-Path $TargetRulesDir)
     New-Item -ItemType Directory -Force -Path $TargetRulesDir | Out-Null
     if ($newDir -and $Manifest) { $Manifest.CreatedDirs.Add($TargetRulesDir) }
@@ -235,19 +280,8 @@ function Copy-RulesToAgent {
     Get-ChildItem -Path $SourceRulesDir -Filter "*.md" | ForEach-Object {
         $dest = Join-Path $TargetRulesDir $_.Name
         $preExisted = Test-Path $dest
-        $backupPath = "$dest.user"
-        $newBackup = $false
         if ($preExisted -and -not $Force) {
-            # First re-install: back up to <name>.md.user
-            # Subsequent re-installs: back up to <name>.md.user-<timestamp> so
-            # we never silently overwrite a re-edited file (the original .user
-            # backup is preserved as the "first-known-edit" copy).
-            $actualBackup = $backupPath
-            if (Test-Path $backupPath) {
-                $actualBackup = "$dest.user-" + (Get-Date -Format 'yyyyMMdd-HHmmss')
-            }
-            Copy-Item $dest $actualBackup
-            $newBackup = $true
+            $actualBackup = Save-InstallUserBackup -Path $dest
             $backed += $_.Name
             if ($Manifest) { $Manifest.BackedUp.Add($actualBackup) }
         }
@@ -269,8 +303,16 @@ function Copy-RulesToAgent {
     $idxSrc = Join-Path $SourceRulesDir '_index.yaml'
     if (Test-Path $idxSrc) {
         $idxDest = Join-Path $TargetRulesDir '_index.yaml'
-        $idxPreExisted = Test-Path $idxDest
-        Copy-Item $idxSrc $idxDest -Force
+        $idxPreExisted = Test-Path -LiteralPath $idxDest
+        # The routing index is user-editable configuration, not disposable
+        # installer metadata. Apply the same non-overwriting backup contract
+        # as rules/*.md, including rollback and repeat installations.
+        if ($idxPreExisted -and -not $Force) {
+            $actualBackup = Save-InstallUserBackup -Path $idxDest
+            $backed += '_index.yaml'
+            if ($Manifest) { $Manifest.BackedUp.Add($actualBackup) }
+        }
+        Copy-Item -LiteralPath $idxSrc -Destination $idxDest -Force -ErrorAction Stop
         if (-not $idxPreExisted -and $Manifest) { $Manifest.CreatedFiles.Add($idxDest) }
         $copied += '_index.yaml'
     }
@@ -286,6 +328,12 @@ function Copy-ContextFiles {
         [hashtable]$Vars = $null,
         [PSCustomObject]$Manifest = $null
     )
+    Assert-SafeWindowsInstallPath -Path $TargetDir -Directory
+    foreach ($name in @('AGENTS.md', 'CLAUDE.md', 'GEMINI.md', 'CODEX.md')) {
+        if (Test-Path -LiteralPath (Join-Path $SourceRoot $name) -PathType Leaf) {
+            Assert-SafeWindowsInstallPath -Path (Join-Path $TargetDir $name)
+        }
+    }
     $newDir = -not (Test-Path $TargetDir)
     New-Item -ItemType Directory -Force -Path $TargetDir | Out-Null
     if ($newDir -and $Manifest) { $Manifest.CreatedDirs.Add($TargetDir) }
@@ -298,11 +346,10 @@ function Copy-ContextFiles {
         $dst = Join-Path $TargetDir $name
         $preExisted = Test-Path $dst
         if ($preExisted -and -not $Force) {
-            $backupPath = "$dst.user"
-            if (-not (Test-Path $backupPath)) {
-                Copy-Item $dst $backupPath
-                if ($Manifest) { $Manifest.BackedUp.Add($backupPath) }
-            }
+            # A .user snapshot from an earlier reinstall must not suppress
+            # preservation of the latest user edit.
+            $actualBackup = Save-InstallUserBackup -Path $dst
+            if ($Manifest) { $Manifest.BackedUp.Add($actualBackup) }
         }
         if ($Vars) {
             $text = [System.IO.File]::ReadAllText($src, [System.Text.Encoding]::UTF8)
@@ -321,17 +368,44 @@ function Copy-MemoryScaffold {
     [CmdletBinding()]
     param(
         [string]$SourceMemoryDir,
-        [string]$TargetMemoryDir
+        [string]$TargetMemoryDir,
+        [PSCustomObject]$Manifest = $null
     )
     # Memory is PRESERVED by default (student's ongoing work). We only drop
-    # templates + initial MEMORY.md if the target is empty.
-    New-Item -ItemType Directory -Force -Path $TargetMemoryDir | Out-Null
-    $existingFiles = @(Get-ChildItem -Path $TargetMemoryDir -Filter "*.md" -ErrorAction SilentlyContinue)
+    # templates + initial MEMORY.md if the target has no top-level Markdown.
+    Assert-SafeWindowsInstallPath -Path $TargetMemoryDir -Directory
+    $existingFiles = @(Get-ChildItem -LiteralPath $TargetMemoryDir -Filter "*.md" -ErrorAction SilentlyContinue)
     if ($existingFiles.Count -eq 0) {
-        Copy-Item (Join-Path $SourceMemoryDir 'MEMORY.md') (Join-Path $TargetMemoryDir 'MEMORY.md')
         $tmplDir = Join-Path $TargetMemoryDir 'templates'
-        New-Item -ItemType Directory -Force -Path $tmplDir | Out-Null
-        Copy-Item (Join-Path $SourceMemoryDir 'templates\*.md') $tmplDir -Force
+        $memoryFile = Join-Path $TargetMemoryDir 'MEMORY.md'
+        Assert-SafeWindowsInstallPath -Path $memoryFile
+        Assert-SafeWindowsInstallPath -Path $tmplDir -Directory
+        $sourceTemplates = @(Get-ChildItem -LiteralPath (Join-Path $SourceMemoryDir 'templates') -Filter '*.md' -File -ErrorAction Stop)
+        foreach ($template in $sourceTemplates) {
+            Assert-SafeWindowsInstallPath -Path (Join-Path $tmplDir $template.Name)
+        }
+        # Record net-new paths before writes, so even a partially failed copy
+        # can be rolled back. Existing directories and user templates are never
+        # recorded as disposable installation artifacts.
+        if (-not (Test-Path -LiteralPath $TargetMemoryDir -PathType Container) -and $Manifest) {
+            $Manifest.CreatedDirs.Add($TargetMemoryDir)
+        }
+        New-Item -ItemType Directory -Force -Path $TargetMemoryDir -ErrorAction Stop | Out-Null
+        if ($Manifest) { $Manifest.CreatedFiles.Add($memoryFile) }
+        Copy-Item -LiteralPath (Join-Path $SourceMemoryDir 'MEMORY.md') -Destination $memoryFile -ErrorAction Stop
+        if (-not (Test-Path -LiteralPath $tmplDir -PathType Container) -and $Manifest) {
+            $Manifest.CreatedDirs.Add($tmplDir)
+        }
+        New-Item -ItemType Directory -Force -Path $tmplDir -ErrorAction Stop | Out-Null
+        # An empty memory root can contain user-edited nested templates.
+        # Populate only missing files; never replace existing user templates.
+        foreach ($template in $sourceTemplates) {
+            $dest = Join-Path $tmplDir $template.Name
+            if (-not (Test-Path -LiteralPath $dest)) {
+                if ($Manifest) { $Manifest.CreatedFiles.Add($dest) }
+                Copy-Item -LiteralPath $template.FullName -Destination $dest -ErrorAction Stop
+            }
+        }
         return $true
     }
     return $false
@@ -368,24 +442,28 @@ function Invoke-InstallRollback {
     # Delete net-new files first (in reverse order so nested paths go before parents)
     $createdReversed = @($Manifest.CreatedFiles) ; [Array]::Reverse($createdReversed)
     foreach ($f in $createdReversed) {
-        if (Test-Path $f) {
-            Remove-Item $f -Force -ErrorAction SilentlyContinue
+        if (Test-Path -LiteralPath $f) {
+            Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue
         }
     }
-    # Restore .user backups back to their original names. Each entry is the
-    # backup path ("<orig>.user"); we move it back to <orig>.
-    foreach ($backup in $Manifest.BackedUp) {
-        if (Test-Path $backup) {
-            $orig = $backup.Substring(0, $backup.Length - 5)  # strip ".user"
-            Move-Item $backup $orig -Force -ErrorAction SilentlyContinue
+    # Restore first-install and timestamped backups. Reverse order
+    # protects the newest snapshot if a destination is visited twice.
+    $backupsReversed = @($Manifest.BackedUp) ; [Array]::Reverse($backupsReversed)
+    foreach ($backup in $backupsReversed) {
+        if (Test-Path -LiteralPath $backup) {
+            if ($backup -notmatch '\.user(?:-\d{8}-\d{6}(?:-\d+)?)?$') {
+                throw "REFUSED: unrecognised rollback backup path: $backup"
+            }
+            $orig = $backup -replace '\.user(?:-\d{8}-\d{6}(?:-\d+)?)?$', ''
+            Move-Item -LiteralPath $backup -Destination $orig -Force -ErrorAction Stop
         }
     }
     # Then remove net-new directories (in reverse so deepest first)
     $dirsReversed = @($Manifest.CreatedDirs) ; [Array]::Reverse($dirsReversed)
     foreach ($d in $dirsReversed) {
-        if ((Test-Path $d) -and
-            ((Get-ChildItem $d -Force -ErrorAction SilentlyContinue).Count -eq 0)) {
-            Remove-Item $d -Force -ErrorAction SilentlyContinue
+        if ((Test-Path -LiteralPath $d) -and
+            ((Get-ChildItem -LiteralPath $d -Force -ErrorAction SilentlyContinue).Count -eq 0)) {
+            Remove-Item -LiteralPath $d -Force -ErrorAction SilentlyContinue
         }
     }
     Write-Host "Rollback complete. Any pre-existing user files were restored." -ForegroundColor Green
@@ -403,6 +481,52 @@ function Assert-RequiredCoreInstallerPresent {
         throw "REFUSED: requested $Component installer is missing: $ScriptPath"
     }
     return $true
+}
+
+# Cooperative, per-profile lock. FileMode.CreateNew is an atomic claim across
+# concurrent PowerShell processes; existing locks are never broken automatically.
+# The same lock path is used by the Bash installer (which creates a directory).
+function Enter-InstallLock {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][string]$UserHome)
+    if (-not (Test-Path -LiteralPath $UserHome -PathType Container)) {
+        throw "REFUSED: install home does not exist: $UserHome"
+    }
+    $lockPath = Join-Path $UserHome '.e156-ecosystem-starter-install.lock'
+    $token = [Guid]::NewGuid().ToString('N')
+    $stream = $null
+    try {
+        $stream = [System.IO.File]::Open(
+            $lockPath, [System.IO.FileMode]::CreateNew,
+            [System.IO.FileAccess]::Write, [System.IO.FileShare]::None
+        )
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($token)
+        $stream.Write($bytes, 0, $bytes.Length)
+        $stream.Flush()
+    }
+    catch {
+        # A partially written lock is retained for manual inspection rather
+        # than guessing whether a competing owner has acquired it.
+        throw "REFUSED: installation lock exists or cannot be acquired: $lockPath"
+    }
+    finally {
+        if ($null -ne $stream) { $stream.Dispose() }
+    }
+    return [PSCustomObject]@{ Path = $lockPath; Token = $token }
+}
+
+function Exit-InstallLock {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][PSCustomObject]$Lease)
+    try {
+        if ((Test-Path -LiteralPath $Lease.Path -PathType Leaf) -and
+            ([System.IO.File]::ReadAllText($Lease.Path, [System.Text.Encoding]::UTF8) -ceq $Lease.Token)) {
+            [System.IO.File]::Delete($Lease.Path)
+        }
+    }
+    catch {
+        Write-Warning "Install lock cleanup failed; inspect $($Lease.Path) manually."
+    }
 }
 
 if ($Import) { return }   # dot-sourced by tests -- no execution
@@ -425,8 +549,27 @@ Write-Host ""
 # Manifest drives rollback. Steps 2-4 push onto it via helper functions.
 # If any step throws, Invoke-InstallRollback undoes everything it did.
 $manifest = New-RollbackManifest
+# Reset session state BEFORE the lock attempt, including on failed re-entry.
+$script:__installLease = $null
+$script:__transcriptStarted = $false
+$logFile = $null
 
 try {
+    # Claim before opening a transcript or changing any agent files.
+    $script:__installLease = Enter-InstallLock -UserHome $userHome
+
+    # Transcript starts only for a lock owner; failed contenders leave no
+    # LOCALAPPDATA log state. Logging errors are non-fatal.
+    try {
+        $logDir = Join-Path $env:LOCALAPPDATA 'e156\\logs'
+        New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+        $logFile = Join-Path $logDir ("install-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
+        Start-Transcript -Path $logFile -Force | Out-Null
+        $script:__transcriptStarted = $true
+    }
+    catch {
+        $script:__transcriptStarted = $false
+    }
 
 # --- Step 1: agent CLI detection -------------------------------------------
 
@@ -493,7 +636,7 @@ $claudeMemoryDir = Join-Path $userHome '.claude\memory'
 $geminiMemoryDir = Join-Path $userHome '.gemini\memory'
 
 foreach ($target in @($claudeMemoryDir, $geminiMemoryDir)) {
-    $bootstrapped = Copy-MemoryScaffold -SourceMemoryDir $sourceMemory -TargetMemoryDir $target
+    $bootstrapped = Copy-MemoryScaffold -SourceMemoryDir $sourceMemory -TargetMemoryDir $target -Manifest $manifest
     if ($bootstrapped) {
         Write-Ok "$target  (bootstrapped -- starter MEMORY.md + 4 templates)"
     } else {
@@ -807,17 +950,6 @@ if (Test-Path $handoffScript) {
     }
 }
 
-# Stop the install transcript before exit (non-fatal if it never started).
-# Then scrub the log of API keys / tokens / HMAC values that may have been
-# pasted, echoed, or otherwise captured during the run -- so attaching the
-# log to an issue or sharing it doesn't leak credentials.
-if ($script:__transcriptStarted) {
-    try { Stop-Transcript | Out-Null } catch { }
-    if ($logFile -and (Test-Path $logFile)) {
-        try { Invoke-LogRedaction -Path $logFile } catch { }
-    }
-}
-
 # Exit non-zero if ANY chain failed, so the .bat wrapper / CI / parent
 # scripts can detect partial-failure rather than reporting a green
 # "INSTALL COMPLETE" off our exit code. Base install (rules + memory)
@@ -835,4 +967,15 @@ catch {
     Write-Host "  - rolled-back files: $($manifest.CreatedFiles.Count)"
     Write-Host "  - restored backups:  $($manifest.BackedUp.Count)"
     exit 1
+}
+finally {
+    if ($script:__transcriptStarted) {
+        try { Stop-Transcript | Out-Null } catch { }
+        if ($logFile -and (Test-Path -LiteralPath $logFile)) {
+            try { Invoke-LogRedaction -Path $logFile } catch { }
+        }
+    }
+    if ($script:__installLease) {
+        Exit-InstallLock -Lease $script:__installLease
+    }
 }
