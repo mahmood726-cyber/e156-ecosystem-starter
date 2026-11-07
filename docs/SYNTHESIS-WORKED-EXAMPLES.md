@@ -35,7 +35,7 @@
 
 **Decision.** **Pass / NO_FLAG for the scoped count-bound check.** The different denominators are explained by ITT versus completer analysis. The difference of 38 is not an independently audited exclusion list. Do not compare the two effect estimates as if they used identical populations or infer that either entire analysis is verified. This is a secondary per-protocol analysis, distinct from the paper's missing-not-at-random sensitivity analyses.
 
-**Software limit.** The counts sit inside compound effect-summary cells. A manual source comparison is possible while the current plain-integer-cell preflight can still return HOLD. Do not relabel that as an automated clearance.
+**Software limit.** The counts sit inside compound effect-summary cells. The [quoted-token interface](SYNTHESIS-PREFLIGHT-PMC-COUNTS.md) can bind a reviewer-selected integer when its location and markup are unambiguous; unsupported or incomplete mappings still HOLD. Extracting these two numbers does not provide the exclusion ledger required for an automated accounting pass. This walkthrough remains a manual bound comparison, not a measured automated clearance.
 
 ## 3. A notice establishes a replacement but not independent reproduction
 

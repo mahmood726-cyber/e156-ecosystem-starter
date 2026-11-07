@@ -17,11 +17,23 @@ MISSING_LABELS = {"unknown", "n/a", "na", "not reported", "unclear", "not availa
 
 def count_quotes(checks, *, corrections=False):
     quotes = set()
+    def add(value):
+        if isinstance(value, str) and 1 <= len(value) <= 500 and value.strip():
+            quotes.add(" ".join(value.split()))
     for _, check in checks:
         spec = check.get("correction") if corrections and isinstance(check, dict) else check
-        quote = spec.get("context_quote") if isinstance(spec, dict) else None
-        if isinstance(quote, str) and 1 <= len(quote) <= 500 and quote.strip():
-            quotes.add(" ".join(quote.split()))
+        if not isinstance(spec, dict):
+            continue
+        add(spec.get("context_quote"))
+        refs = [spec.get(k) for k in ("primary", "restricted", "reported", "original", "previous", "replacement")]
+        for key in ("exclusion_counts", "current_occurrences", "arms"):
+            entries = spec.get(key, [])
+            if isinstance(entries, list):
+                refs.extend(entry.get("count") if key == "arms" and isinstance(entry, dict) else entry
+                            for entry in entries[:500])
+        for ref in refs:
+            if isinstance(ref, dict):
+                add(ref.get("quote"))
     return sorted(quotes)
 
 
@@ -55,6 +67,43 @@ def _count_cell(evidence, ref):
             "participants": int(cell["text"].replace(",", ""))}
 
 
+def _count_ref(evidence, ref):
+    if not isinstance(ref, dict) or "quote" not in ref:
+        return _count_cell(evidence, ref)
+    if not {"quote", "count_text"} <= set(ref) <= {"quote", "count_text", "locator"}:
+        raise ValueError("A quoted count uses quote, count_text and an optional exact locator, without cell coordinates")
+    if not isinstance(ref["quote"], str) or not 1 <= len(ref["quote"]) <= 500 or not ref["quote"].strip():
+        raise ValueError("A count quote must contain 1 to 500 characters")
+    quote, number = " ".join(ref["quote"].split()), ref["count_text"]
+    matches = evidence.get("quote_bindings", {}).get(quote, [])
+    if "locator" in ref:
+        if not isinstance(ref["locator"], str) or not 1 <= len(ref["locator"]) <= 200:
+            raise ValueError("The count locator must be an exact indexed source location")
+        matches = [item for item in matches if item["locator"] == ref["locator"]]
+    if len(matches) != 1 or matches[0]["count_safe"] is not True:
+        raise ValueError("The quoted count has ambiguous, merged or unsupported source markup")
+    source_binding = matches[0]
+    binding = {"quote": quote, "locator": source_binding["locator"]}
+    if not isinstance(number, str) or not COUNT.fullmatch(number):
+        raise ValueError("count_text must be one exact nonnegative integer token")
+    matches = list(re.finditer(r"(?<![\w.,+\-\u2212\u00b1])" + re.escape(number)
+                              + r"(?![\w%+\-\u2212\u2013\u2014\u00b1]|[.,][0-9])", quote))
+    if len(matches) != 1 or re.match(r"[\s*_]*(?:%|percent\b|percentage\b|per\s+cent\b)",
+                                    quote[matches[0].end():], re.I):
+        raise ValueError("The integer must occur once as a complete count token, not a percentage or range")
+    offset = source_binding["quote_offset"]
+    if type(offset) is not int or offset < 0:
+        raise ValueError("A quoted count requires an unambiguous source text offset")
+    return {**binding, "text": number, "participants": int(number.replace(",", "")),
+            "token_start": matches[0].start(), "token_end": matches[0].end(),
+            "source_token_start": offset + matches[0].start(), "source_token_end": offset + matches[0].end()}
+
+
+def _reference_key(cell):
+    """Canonical token identity also detects aliases using different excerpts."""
+    return (cell["locator"], cell.get("source_token_start", 0), cell.get("source_token_end", len(cell["text"])))
+
+
 def _label(spec, key):
     value = spec.get(key)
     label = " ".join(value.split()) if isinstance(value, str) else ""
@@ -65,34 +114,59 @@ def _label(spec, key):
 
 
 def _restricted(evidence, spec, context):
-    cells = {key: _count_cell(evidence, spec.get(key)) for key in ("primary", "restricted")}
-    if cells["primary"]["locator"] == cells["restricted"]["locator"]:
-        raise ValueError("The primary and restricted analyses must refer to different cells")
-    return {"cells": cells, **restricted_analysis_accounting({
+    cells = {key: _count_ref(evidence, spec.get(key)) for key in ("primary", "restricted")}
+    if _reference_key(cells["primary"]) == _reference_key(cells["restricted"]):
+        raise ValueError("The primary and restricted analyses must refer to different source count tokens")
+    bound = restricted_analysis_accounting({
         "relationship": "RESTRICTION", "source_version": evidence["source"]["version"],
         "same_source_version_verified": True, "same_participant_count_basis_verified": True,
         "restriction_locator": context["locator"],
         "primary_locator": cells["primary"]["locator"], "restricted_locator": cells["restricted"]["locator"],
         "primary_participants": cells["primary"]["participants"],
         "restricted_participants": cells["restricted"]["participants"],
-    })}
+    })
+    result = {"cells": cells, **bound, "comparison_status": bound["status"], "accounting_status": "HOLD"}
+    if bound["status"] != "NO_FLAG":
+        return result
+    result.update(status="HOLD", reason="A count within its parent bound does not verify exclusion accounting")
+    exclusions = spec.get("exclusion_counts")
+    if (not isinstance(exclusions, list) or not 1 <= len(exclusions) <= 500
+            or spec.get("exclusions_disjoint_verified") is not True
+            or spec.get("exclusions_exhaustive_verified") is not True):
+        return result
+    bindings = [_count_ref(evidence, ref) for ref in exclusions]
+    used = {_reference_key(cell) for cell in cells.values()}
+    for cell in bindings:
+        if _reference_key(cell) in used:
+            raise ValueError("Exclusions must use distinct source count tokens, separate from parent and restricted counts")
+        used.add(_reference_key(cell))
+    expected = cells["primary"]["participants"] - sum(cell["participants"] for cell in bindings)
+    if expected < 0:
+        raise ValueError("Exclusion counts exceed the verified parent; review the ledger")
+    difference = cells["restricted"]["participants"] - expected
+    result.update(status="REVIEW_CANDIDATE" if difference else "NO_FLAG", accounting_status="CHECKED",
+                  reason="Reported restricted count differs from parent minus exclusions" if difference
+                  else "Reported restricted count matches the reviewer-mapped disjoint, exhaustive exclusion ledger",
+                  accounting={"exclusions": bindings, "expected_restricted": expected, "difference": difference,
+                              "formula": "parent - sum(exclusions); difference = reported - expected"})
+    return result
 
 
 def _unique_arms(evidence, spec):
-    reported = _count_cell(evidence, spec.get("reported"))
+    reported = _count_ref(evidence, spec.get("reported"))
     arms = spec.get("arms")
     if not isinstance(arms, list) or not 2 <= len(arms) <= 500:
         raise ValueError("Supply a complete mapping of 2 to 500 source-backed trial arm entries")
     unique = {}
-    locations = {reported["locator"]: None}
+    locations = {_reference_key(reported): None}
     bindings = []
     for arm in arms:
         if not isinstance(arm, dict):
             raise ValueError("An arm entry must identify its trial, cohort, arm and source cell")
         identity = {key: _label(arm, key) for key in ("trial", "cohort", "arm")}
         key = tuple(value.casefold() for value in identity.values())
-        cell = _count_cell(evidence, arm.get("count"))
-        location = cell["locator"]
+        cell = _count_ref(evidence, arm.get("count"))
+        location = _reference_key(cell)
         if locations.get(location, key) != key:
             raise ValueError("One count cell cannot represent different arms or the reported total")
         locations[location] = key
@@ -126,16 +200,40 @@ def _correction(evidence, spec):
         entry = next(iter(matches.values()))
         result = {"status": "SOURCE_BOUND", "source": entry["source"], "context": _context(entry, spec)}
         if "replacement" in spec:
-            result["replacement"] = _count_cell(entry, spec["replacement"])
+            result["replacement"] = _count_ref(entry, spec["replacement"])
         if "previous" in spec:
-            result["previous_as_reproduced_in_notice"] = _count_cell(entry, spec["previous"])
+            result["previous_as_reproduced_in_notice"] = _count_ref(entry, spec["previous"])
         return result
     except ValueError as exc:
         return {"status": "HOLD", "reason": str(exc)}
 
 
+def _revision_sweep(evidence, spec, replacement):
+    refs, unchecked = spec.get("current_occurrences"), spec.get("unchecked_locations")
+    if (not isinstance(refs, list) or not 1 <= len(refs) <= 500 or not isinstance(unchecked, list)
+            or any(not isinstance(item, str) or not item.strip() or len(item) > 500 for item in unchecked)
+            or len(unchecked) > 500):
+        return {"status": "HOLD", "reason": "Map current occurrences and list unchecked locations explicitly",
+                "coverage": "REVIEWER_SELECTED_ONLY"}
+    occurrences = []
+    used = set()
+    for ref in refs:
+        try:
+            cell = _count_ref(evidence, ref)
+            if _reference_key(cell) in used:
+                raise ValueError("A correction sweep must map distinct source count tokens")
+            used.add(_reference_key(cell))
+            occurrences.append({**cell, "status": "MATCH" if cell["participants"] == replacement["participants"] else "DIFFERS"})
+        except ValueError as exc:
+            occurrences.append({"status": "HOLD", "reason": str(exc)})
+    status = ("REVIEW_CANDIDATE" if any(c["status"] == "DIFFERS" for c in occurrences)
+              else "HOLD" if unchecked or any(c["status"] == "HOLD" for c in occurrences) else "MATCH")
+    return {"status": status, "occurrences": occurrences, "unchecked_locations": unchecked,
+            "coverage": "REVIEWER_SELECTED_ONLY", "replacement": replacement}
+
+
 def participant_count_finding(claim_id, spec, evidence):
-    finding = {"claim_id": claim_id}
+    finding = {"claim_id": claim_id, "count_validity": "NOT_INDEPENDENTLY_VERIFIED"}
     try:
         if not evidence or evidence["status"] != "CAPTURED":
             raise ValueError("A valid open-access PMC snapshot is required")
@@ -157,11 +255,11 @@ def participant_count_finding(claim_id, spec, evidence):
             from_notice = "previous_as_reproduced_in_notice" in correction
             if from_article == from_notice or "replacement" not in correction:
                 raise ValueError("Supply one original count cell and one replacement count cell")
-            prior = (_count_cell(evidence, spec["original"]) if from_article
+            prior = (_count_ref(evidence, spec["original"]) if from_article
                      else correction["previous_as_reproduced_in_notice"])
             replacement = correction["replacement"]
-            if from_notice and prior["locator"] == replacement["locator"]:
-                raise ValueError("The original and replacement must use distinct source cells")
+            if from_notice and _reference_key(prior) == _reference_key(replacement):
+                raise ValueError("The original and replacement must use distinct source count tokens")
             if from_article:
                 finding["original"] = prior
             if prior["participants"] == replacement["participants"]:
@@ -169,6 +267,7 @@ def participant_count_finding(claim_id, spec, evidence):
             else:
                 finding.update(status="PUBLISHED_CORRECTION",
                                reason="The two reviewer-mapped counts differ across the original and replacement cells")
+            finding["revision_sweep"] = _revision_sweep(evidence, spec, replacement)
             return finding
         finding["context"] = _context(evidence, spec)
         if kind == "RESTRICTED":
@@ -177,7 +276,7 @@ def participant_count_finding(claim_id, spec, evidence):
             finding.update(_unique_arms(evidence, spec))
         else:
             raise ValueError("Unknown participant count check kind")
-        if finding["status"] == "NO_FLAG" and correction:
+        if finding.get("comparison_status", finding["status"]) == "NO_FLAG" and correction:
             reason = ("Requested correction evidence is unresolved" if correction["status"] == "HOLD"
                       else "A source-bound correction requires review of the original-only comparison")
             finding.update(status="HOLD", comparison_status="NO_FLAG", reason=reason)
