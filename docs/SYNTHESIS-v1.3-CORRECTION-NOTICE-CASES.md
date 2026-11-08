@@ -5,7 +5,7 @@ Date: 3 November 2026. **Development corpus only; not independently measured det
 ## Verified public cases
 
 | Case | Original article DOI | Correction DOI | Notice-established old → new | Target regression | Important benign/negative control |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | BROOKLYN obicetrapib RCT | 10.1038/s41591-025-04179-4 | 10.1038/s41591-026-04405-7 | Upper 95% CI limit `-2.0%` → `2.0%` at day 180; `-7.5%` → `7.5%` at day 365 | Signed CI endpoints, estimate containment with compatible scale, CI/null interpretation; exact paragraph | Negative changes and CIs spanning zero can be valid; do not flag simply because a bound is negative |
 | Benralizumab HES phase III | 10.1038/s41591-026-04315-8 | 10.1038/s41591-026-04425-3 | Table 1 PROMIS Fatigue total median `51.1` → `55.1`; Supplementary Table 2 eosinophil group medians changed; `2 (1.5%)` → `2 (3.0%)` for n=67 | Verbatim extraction; table/supplement versioning; `100*2/67 = 2.9850746...%`, rounds to `3.0%` at 1 decimal | Do not compare median with mean; group-specific n must match the exact labelled subgroup |
 | SYNCHRONIZE-MASLD survodutide phase III | 10.1038/s41591-026-04479-3 | 10.1038/s41591-026-04650-w | Treatment-discontinuation placebo denominator `72` → `70`; Extended Data Fig. 5 caption `week 48` → `week 52` | Denominator attached to analysis population; caption/axis/analysis-time identity; `100*28/70=40.0%` vs `100*28/72=38.888...%` | Alternate denominators may represent randomized vs treated vs observed populations; do not call wrong without verifying estimand |
