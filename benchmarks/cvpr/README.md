@@ -29,7 +29,4 @@ These are purpose-built examples, not estimates for real CVPR manuscripts.
 Even 5/5 successes give a wide 95% Wilson confidence interval (~0.57–1.00).
 
 The user-required 20-paper deep-audit sample (Track A) is separate. This
-synthetic benchmark does **not** allocate or audit any paper. No article content
-may be processed without a reviewed original-source permission record and
-private gate decision for each exact operation and version. The programme-wide
-JAMA hold and no-contact exclusions remain binding.
+synthetic benchmark does **not** allocate or audit any paper.
