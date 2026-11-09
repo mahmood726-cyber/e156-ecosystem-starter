@@ -50,18 +50,21 @@ def test_printed_example_assignment_does_not_become_a_pin():
 def test_tag_pinned_installer_skips_remote_updates_even_with_historical_sha(tmp_path, monkeypatch):
     scripts = tmp_path / "scripts"
     scripts.mkdir()
-    path = scripts / "install-sentinel.sh"
-    src = f'SENTINEL_DEFAULT_REF="v1.0.0" # formerly {OLD}\n'
-    path.write_text(src, encoding="utf-8")
+    layer = next(layer for layer in rp.LAYERS if layer["name"] == "extractor")
+    assert layer["name"] not in rp.FROZEN_RELEASES
+    sources = (
+        f'EXTRACTOR_DEFAULT_REF="v1.0.0" # formerly {OLD}\n',
+        f'$script:ExtractorDefaultRef = "v1.0.0" # formerly {OLD}\n',
+    )
+    for rel, src in zip(layer["files"], sources, strict=True):
+        (tmp_path / rel).write_text(src, encoding="utf-8")
 
     def forbidden_remote(*args, **kwargs):
         raise AssertionError("tag-pinned installer must not query or overwrite remote HEAD")
 
     monkeypatch.setattr(rp, "remote_head", forbidden_remote)
-    result = rp.process_layer(
-        {"name": "sentinel", "repo": "Sentinel", "files": ["scripts/install-sentinel.sh"]},
-        apply=True,
-        root=tmp_path,
-    )
-    assert result["status"] == "skip"
-    assert path.read_text(encoding="utf-8") == src
+    for apply in (True, False):
+        result = rp.process_layer(layer, apply=apply, root=tmp_path)
+        assert result["status"] == "skip"
+        for rel, src in zip(layer["files"], sources, strict=True):
+            assert (tmp_path / rel).read_text(encoding="utf-8") == src

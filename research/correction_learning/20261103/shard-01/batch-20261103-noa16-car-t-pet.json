@@ -1,0 +1,126 @@
+{
+  "campaign": "Synthesis Medical Corrections 10K",
+  "run_date": "2026-11-03",
+  "shard": 1,
+  "lens": "numerical",
+  "protocol": "docs/SYNTHESIS-CORRECTION-LEARNING-10K.md",
+  "framework": "Synthesis v1.3 experimental (not clinically validated)",
+  "identity": "SHA256(normalized lowercase DOI) modulo 10, entire digest interpreted unsigned",
+  "increment": {
+    "full_notice_read": 2,
+    "partial": 0,
+    "metadata_only": 0,
+    "hold_notice": 0,
+    "duplicate": 0,
+    "administrative": 0,
+    "current_claim_confirmed": 1,
+    "current_visual_claim_hold": 1,
+    "independently_adjudicated": 0,
+    "new_unreported_errors": 0
+  },
+  "records": [
+    {
+      "key": "10.1038/s43018-026-01227-x",
+      "sha256": "394996f8e0563029d7f2b51cbf57c1188875f9b11ae2394f60d03713e814909d",
+      "owner": 1,
+      "publisher": "Nature Cancer",
+      "published": "2026-08-03",
+      "type": "numerical unit; abstract",
+      "original_doi": "10.1038/s43018-026-01199-y",
+      "study_design": "single-arm open-label multicentre phase I NOA16 vaccine long-term follow-up",
+      "original_location": "Original abstract: eight-year PFS and OS probability sentence",
+      "old": "PFS 0.42 months (CI 0.24–0.59), OS 0.66 months (CI 0.46–0.79)",
+      "new": "PFS 0.42 (CI 0.24–0.59), OS 0.66 (CI 0.46–0.79)",
+      "notice": "https://www.nature.com/articles/s43018-026-01227-x",
+      "original": "https://www.nature.com/articles/s43018-026-01199-y",
+      "current_location": "Current abstract, sentences on 8-year PFS and OS; change-history 3 August 2026",
+      "source_support": "SUPPORTED",
+      "maturity": "SOURCE_BACKED",
+      "disposition": "RECONCILED",
+      "severity": "S2",
+      "calculation": "8-year survival probabilities are unitless: 0.42=42%, 0.66=66%; all estimate and CI numeric values unchanged; no independent Kaplan-Meier recalculation.",
+      "benign": "Copy-editing transfer of 'months' from adjacent median overall survival duration, not proven estimate error.",
+      "comparison": "Unit check; complete 12-field signature not needed to determine dimensionless survival probability; model/variance/individual records not independently reproduced.",
+      "notice_read": true,
+      "original_link_verified": true,
+      "current_claim_verified": true
+    },
+    {
+      "key": "10.1038/s41467-026-69473-2",
+      "sha256": "915cc676f8690ce3e06e4dd36c744ae3ece7e37fb92110cc27e7c8b87c934079",
+      "owner": 1,
+      "publisher": "Nature Communications",
+      "published": "2026-02-10",
+      "type": "figure timing schematic",
+      "original_doi": "10.1038/s41467-025-66767-9",
+      "study_design": "single-arm phase II CAR-T CD8 PET imaging",
+      "original_location": "Fig. 1b post-CART cohort 2 labelled PET/CT icon",
+      "old": "Icon on dashed D7 line",
+      "new": "Icon moved to dashed D5 line",
+      "notice": "https://www.nature.com/articles/s41467-026-69473-2",
+      "original": "https://www.nature.com/articles/s41467-025-66767-9",
+      "current_location": "Current article Fig. 1b; Results cohort-timing narrative already states day +5",
+      "source_support": "SUPPORTED (notice wording)",
+      "maturity": "SOURCE_BACKED",
+      "disposition": "HOLD: independently inspect current full-resolution Figure 1b and archived original image",
+      "severity": "S2",
+      "calculation": "D7-D5=2 days; not an estimate of patient imaging time",
+      "benign": "Figure-layout mistake; original study narrative states cohort 2 actual PET imaging on day +5; no endpoint discrepancy demonstrated",
+      "comparison": "NOT_APPLICABLE: visual placement not estimator; exact historic and current artwork not independently paired",
+      "notice_read": true,
+      "original_link_verified": true,
+      "current_claim_verified": false
+    }
+  ],
+  "paired_fixtures": {
+    "status": "specified, not executed or integrated",
+    "cases": [
+      [
+        "unit_historical",
+        "8-year survival probability; 0.42 months",
+        "FLAG_CANDIDATE"
+      ],
+      [
+        "unit_corrected",
+        "8-year survival probability; 0.42 dimensionless",
+        "NO_FLAG"
+      ],
+      [
+        "unit_benign",
+        "median overall survival 106.1 months",
+        "NO_FLAG"
+      ],
+      [
+        "unit_abstention",
+        "0.42 months with endpoint unknown",
+        "NOT_COMPARABLE_HOLD"
+      ],
+      [
+        "timeline_historical",
+        "cohort 2 Figure 1b D7, protocol D5",
+        "FLAG_CANDIDATE"
+      ],
+      [
+        "timeline_corrected",
+        "cohort 2 Figure 1b D5, protocol D5",
+        "NO_FLAG once visual verified"
+      ],
+      [
+        "timeline_benign",
+        "cohort 1 Figure 1b D7, protocol D7",
+        "NO_FLAG"
+      ],
+      [
+        "timeline_abstention",
+        "cohort unspecified, icon D7",
+        "NOT_COMPARABLE_HOLD"
+      ]
+    ]
+  },
+  "next_cursor": {
+    "stream": "open-access Nature Portfolio medical correction notices",
+    "continue": "new correction DOIs not these two; hash owner before counting; prioritize CI/P precision/units; inspect archived PET Figure 1b when available"
+  },
+  "privacy": "No correspondence, secrets, embargoes or full copyrighted articles; no outreach",
+  "cumulative": "This batch only; full shard and programme-wide prior counts not independently enumerated"
+}

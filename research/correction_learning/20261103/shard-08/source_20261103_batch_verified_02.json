@@ -1,0 +1,60 @@
+{
+  "campaign": "Synthesis Medical Corrections 10K",
+  "date": "2026-11-03",
+  "shard": 8,
+  "scope": "public publisher primary notices; no outreach",
+  "verification": "Publisher search-indexed complete substantive notice; direct open of publisher HTML/PDF blocked by identity redirect, so count provisional until primary full-read and persistence verified",
+  "source_records": [
+    {
+      "correction_doi": "10.1038/s41467-026-71806-0",
+      "original_doi": "10.1038/s41467-025-57108-x",
+      "original_title": "Fc-engineered large molecules targeting blood-brain barrier transferrin receptor and CD98hc have distinct central nervous system and peripheral biodistribution",
+      "notice_date": "2026-04-15",
+      "study_design": "preclinical biodistribution imaging",
+      "notice_locator": "main corrective paragraph",
+      "specifics": "Fig 6(d,e) replaced due erroneous image scaling; bars corrected 5 mm panels b-e, 1000 micrometres panels i,m; 2.6 mm coronal/cortical slices; supplementary figure 10 bars 1/2 mm, supp figure 11 bars 10 mm, videos 5/6 bars 5000 micrometres; publisher states HTML/PDF/SI updated",
+      "severity": "S2 provisional; S3 unproven",
+      "disposition": "HOLD current image visual verification, historical images unavailable",
+      "strongest_benign": "different imaging panels use legitimate different physical bars; 1000 micrometres equals 1 mm; revised images do not establish changed experimental measures",
+      "source_url": "https://www.nature.com/articles/s41467-026-71806-0"
+    },
+    {
+      "correction_doi": "10.1038/s41467-026-76095-1",
+      "original_doi": "10.1038/s41467-026-71487-9",
+      "original_title": "High-resolution mapping reveals features of bacterial NAD-capped RNAs and stress-responsive transcription initiation",
+      "notice_date": "2026-08-10",
+      "study_design": "experimental microbiology",
+      "notice_locator": "main correction paragraph",
+      "specifics": "Abstract missing word undergo added; Fig 2a x-axis originally ADPRC+ now ADPRC minus; Fig 5i missing 100 percent y-axis label inserted. Publisher says HTML and PDF updated.",
+      "severity": "S2, impact on data interpretation untested",
+      "disposition": "HOLD old/current figures not visually checked",
+      "strongest_benign": "axis label is panel-specific; no inference about raw data correction from typography alone",
+      "source_url": "https://www.nature.com/articles/s41467-026-76095-1"
+    }
+  ],
+  "tests_suggested": [
+    {
+      "name": "historical_correction",
+      "expected": "correction claim matched to exact historical article version, otherwise HOLD"
+    },
+    {
+      "name": "corrected_case",
+      "expected": "match publisher corrected source locator without inferring scientific correctness"
+    },
+    {
+      "name": "benign_control",
+      "input": "1000 micrometres vs 1 mm same specimen",
+      "expected": "CONSISTENT"
+    },
+    {
+      "name": "abstention",
+      "input": "missing old figure and exact bars",
+      "expected": "NOT_COMPARABLE"
+    }
+  ],
+  "tests_executed": 0,
+  "reviewed_credit_this_write": 0,
+  "next_cursor": "Confirm accessible original and corrected figure source, full primary notice view, and unique ownership before credit; recheck existing shard files",
+  "credit_reason": "Direct primary HTML open failed (identity redirect); source index holds complete substantive notice but current visuals not independently checked.",
+  "ownership_rule": "sha256(lowercase correction DOI) modulo 10 = 8 for both notice IDs"
+}

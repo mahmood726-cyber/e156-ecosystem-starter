@@ -105,6 +105,11 @@
 - Cap local retries per failure and cap outer full-suite reruns. When the cap is reached, stop and log the blocker to `STUCK_FAILURES.md` or `sentinel-findings.md`.
 - Do not hide repeated failures behind endless reruns or optimistic "probably fixed" claims.
 
+### Escalate, don't route around (added 2026-10-22)
+- **If a test, check, or its config looks wrong, stop and report it.** Say which test, why you think it is wrong, and what the code does. Do not edit, skip, or weaken it yourself; a human decides. (Giving agents this "report it" route, plus the rule, cut test-gaming from 23.6% to 5.3% of runs: [arXiv:2608.29460](https://arxiv.org/abs/2608.29460).)
+- **Never save a way to get past a check.** Do not write it into memory, plans, handoff notes, lane briefs, or code comments, even as a "tip". Shortcuts spread between agents through exactly these channels: [arXiv:2610.12822](https://arxiv.org/abs/2610.12822).
+- **The agent that produced a result does not mark its own work.** Before a claim lands, a separate reviewer (another session, another vendor, or a human) re-runs the check, ideally on inputs the author did not choose. A review panel that saw only the code and the reported scores still missed 6.5% of confirmed hacks: [arXiv:2609.28614](https://arxiv.org/abs/2609.28614).
+
 ### High-friction regression targets
 - Add or preserve regression coverage for division-by-zero, encoding, subprocess hangs, incorrect trial IDs, incorrect dates, and statistics edge cases when those bugs appear.
 - Do not change expected trial IDs, PMIDs, DOIs, or dates just to make tests pass. Cross-check them against the source fixture or record first.

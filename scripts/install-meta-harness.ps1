@@ -26,9 +26,20 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $script:MetaHarnessDefaultRef = 'v1.0.0'
+# Reviewed checksum of the *separate* v1.0.0 SHA256SUMS release asset.
+# Release assets are mutable; change only with independent release review.
+$script:MetaHarnessV1ManifestSha = '3bf1d1f9eaa6f423f3130ca5f6413b05dcf2994833a9fce038e1ee8e9ad00ddb'
 function Get-MetaHarnessDefaultRef {
     if ($env:META_HARNESS_REF) { return $env:META_HARNESS_REF }
     return $script:MetaHarnessDefaultRef
+}
+function Assert-MetaHarnessRef {
+    [CmdletBinding()]
+    param([string]$Tag)
+    # The tag enters both a URL/asset filename and default destination.
+    if ($Tag -cnotmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
+        throw "REFUSED: invalid Meta-Harness release ref (expected one tag token)"
+    }
 }
 function Get-MetaHarnessAssetName { param([string]$Tag) return "meta-harness-$Tag.zip" }
 function Get-MetaHarnessBaseUrl {
@@ -44,16 +55,48 @@ function Test-MetaHarnessPresent {
     return [bool]($Dir -and (Test-Path -LiteralPath (Join-Path $Dir 'scripts\replay_offline.py') -PathType Leaf))
 }
 
+# Reject a changed release manifest before fetching the 609 MB ZIP.
+# SHA256SUMS and the ZIP are hosted together; validating only one against the
+# other would not detect a coordinated replacement of both release assets.
+function Assert-MetaHarnessReleaseManifest {
+    [CmdletBinding()]
+    param([string]$SumsPath, [string]$Tag, [string]$BaseUrl)
+    if ($Tag -ceq $script:MetaHarnessDefaultRef) {
+        $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $SumsPath).Hash.ToLowerInvariant()
+        if ($actual -cne $script:MetaHarnessV1ManifestSha) {
+            throw "REFUSED: meta-harness v1.0.0 SHA256SUMS differs from reviewed pinned digest"
+        }
+        Write-Host "  pinned meta-harness v1.0.0 SHA256SUMS OK" -ForegroundColor DarkGray
+    } elseif ($BaseUrl -like 'file://*') {
+        Write-Warning "LOCAL TEST FIXTURE: unpinned release $Tag (not an authenticated distribution)"
+    } else {
+        throw "REFUSED: unreviewed meta-harness release ref '$Tag'; no pinned SHA256SUMS trust anchor"
+    }
+}
+
 # The digest SHA256SUMS records for $Name, or $null.
 function Get-MetaHarnessExpectedSha {
     param([string]$SumsPath, [string]$Name)
+    # Enforce one unambiguous checksum record for this asset.
+    # Other assets may have their own GNU text or binary-marker records.
+    $found = $false
+    $digest = $null
     foreach ($line in (Get-Content -LiteralPath $SumsPath)) {
-        $parts = ($line.TrimEnd("`r")) -split '\s+', 2
-        if ($parts.Count -eq 2 -and $parts[0] -match '^[0-9a-f]{64}$' -and ($parts[1] -eq $Name -or $parts[1] -eq "*$Name")) {
-            return $parts[0]
+        $parts = @($line.Trim() -split '\s+')
+        if ($parts.Count -lt 2 -or
+            ($parts[1] -cne $Name -and $parts[1] -cne "*$Name")) {
+            continue
         }
+        if ($found) {
+            throw "REFUSED: SHA256SUMS has multiple entries for $Name"
+        }
+        if ($parts.Count -ne 2 -or $parts[0] -cnotmatch '^[0-9a-f]{64}$') {
+            throw "REFUSED: SHA256SUMS has malformed entry for $Name"
+        }
+        $found = $true
+        $digest = $parts[0]
     }
-    return $null
+    return $digest
 }
 
 function Test-MetaHarnessAsset {
@@ -90,11 +133,16 @@ function Assert-MetaHarnessArchiveSafe {
                     throw "REFUSED: unsafe archive entry path"
                 }
                 # Device names remain reserved in every Windows directory.
-                if ($part -match '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])([.].*)?$') {
+                # .NET regex escapes keep the PowerShell 5.1 source ASCII-safe.
+                # Windows reserves superscript 1/2/3 in COM and LPT device names.
+                if ($part -match '^(CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|COM[1-9\u00B9\u00B2\u00B3]|LPT[1-9\u00B9\u00B2\u00B3])([.].*)?\z') {
                     throw "REFUSED: Windows reserved device name in archive"
                 }
             }
-            $key = $name.TrimEnd('/').ToUpperInvariant()
+            # A release that contains NFC/NFD-equivalent names is ambiguous
+            # on normalising filesystems. Mirror the Bash preflight so a ZIP
+            # cannot pass one installer but collide on another platform.
+            $key = $name.TrimEnd('/').ToUpperInvariant().Normalize([Text.NormalizationForm]::FormC)
             if ($seen.ContainsKey($key)) {
                 throw "REFUSED: duplicate or case-colliding archive entry"
             }
@@ -144,6 +192,7 @@ if ($Import) { return }
 
 # === Real flow =============================================================
 if (-not $Ref) { $Ref = Get-MetaHarnessDefaultRef }
+Assert-MetaHarnessRef -Tag $Ref
 $asset = Get-MetaHarnessAssetName -Tag $Ref
 $base = Get-MetaHarnessBaseUrl -Tag $Ref
 if (-not $Target) { $Target = Get-MetaHarnessDefaultTarget -Tag $Ref }
@@ -157,6 +206,7 @@ New-Item -ItemType Directory $work | Out-Null
 try {
     $ProgressPreference = 'SilentlyContinue'
     Invoke-WebRequest -UseBasicParsing -Uri "$base/SHA256SUMS" -OutFile (Join-Path $work 'SHA256SUMS')
+    Assert-MetaHarnessReleaseManifest -SumsPath (Join-Path $work 'SHA256SUMS') -Tag $Ref -BaseUrl $base
     Invoke-WebRequest -UseBasicParsing -Uri "$base/$asset" -OutFile (Join-Path $work $asset)
     Write-Host "==> verifying against the release's SHA256SUMS"
     Test-MetaHarnessAsset -ZipPath (Join-Path $work $asset) -SumsPath (Join-Path $work 'SHA256SUMS')

@@ -391,6 +391,20 @@ function Invoke-InstallRollback {
     Write-Host "Rollback complete. Any pre-existing user files were restored." -ForegroundColor Green
 }
 
+# Refuse missing requested core install scripts before the component can be
+# reported as silently "skipped". A missing file is not an optional opt-out.
+function Assert-RequiredCoreInstallerPresent {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Component,
+        [Parameter(Mandatory = $true)][string]$ScriptPath
+    )
+    if (-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)) {
+        throw "REFUSED: requested $Component installer is missing: $ScriptPath"
+    }
+    return $true
+}
+
 if ($Import) { return }   # dot-sourced by tests -- no execution
 
 # === Real install flow =====================================================
@@ -550,7 +564,7 @@ if ($InstallSentinel) {
 }
 if ($doSentinel) {
     $sentinelScript = Join-Path $scriptsDir 'install-sentinel.ps1'
-    if (Test-Path $sentinelScript) {
+    if (Assert-RequiredCoreInstallerPresent -Component 'Sentinel' -ScriptPath $sentinelScript) {
         Write-Step "Chaining: install-sentinel.ps1 -Repo $sentinelRepo"
         # Ensure the repo directory exists (create if missing) and is initialized as a git repo.
         if (-not (Test-Path $sentinelRepo)) {
@@ -606,7 +620,7 @@ if ($InstallOvermind) {
 }
 if ($doOvermind) {
     $overmindScript = Join-Path $scriptsDir 'install-overmind.ps1'
-    if (Test-Path $overmindScript) {
+    if (Assert-RequiredCoreInstallerPresent -Component 'Overmind/TruthCert' -ScriptPath $overmindScript) {
         Write-Step "Chaining: install-overmind.ps1"
         try {
             & powershell -NoProfile -ExecutionPolicy Bypass -File $overmindScript

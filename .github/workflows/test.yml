@@ -12,6 +12,8 @@
 #                      anchor or dead external link fails CI before it
 #                      reaches the Pages surface
 #
+# CI checkout v4 and setup-python v5 are pinned to exact reviewed upstream commits.
+# These SHA pins are not release signatures or end-to-end attestation.
 # Bash tests do NOT pip-install Sentinel/Overmind in CI -- those live in
 # separate repos with their own pipelines. We only verify wrapper logic.
 
@@ -32,7 +34,7 @@ jobs:
     name: Pester (Windows)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Show PowerShell + Pester versions
         shell: pwsh
         run: |
@@ -54,25 +56,64 @@ jobs:
             'scripts\pester.install-long-term-plan.tests.ps1',
             'scripts\pester.install-meta-harness.tests.ps1'
           )
-          $config = New-PesterConfiguration
-          $config.Run.Path = $files
-          $config.Run.Exit = $true
-          $config.Output.Verbosity = 'Detailed'
-          $config.TestResult.Enabled = $true
-          $config.TestResult.OutputPath = 'pester-results.xml'
-          $config.TestResult.OutputFormat = 'NUnitXml'
-          Invoke-Pester -Configuration $config
+          # A green aggregate can conceal a missing suite or an all-skipped file.
+          # Require every declared suite to exist, discover tests, and finish
+          # without skipped, not-run, failed, or errored cases.
+          $ErrorActionPreference = 'Stop'
+          $missing = @($files | Where-Object { -not (Test-Path -LiteralPath $_ -PathType Leaf) })
+          if ($missing.Count -gt 0) {
+            throw "Required Pester suite(s) missing: $($missing -join ', ')"
+          }
+          if (@($files | Select-Object -Unique).Count -ne $files.Count) {
+            throw 'Duplicate required Pester suite path.'
+          }
+          for ($i = 0; $i -lt $files.Count; $i++) {
+            $suite = $files[$i]
+            $config = New-PesterConfiguration
+            $config.Run.Path = @($suite)
+            $config.Run.Exit = $false
+            $config.Run.PassThru = $true
+            $config.Output.Verbosity = 'Detailed'
+            $config.TestResult.Enabled = $true
+            $xmlPath = ('pester-results-{0:D2}.xml' -f $i)
+          $config.TestResult.OutputPath = $xmlPath
+            $config.TestResult.OutputFormat = 'NUnitXml'
+            $result = Invoke-Pester -Configuration $config
+            if ($null -eq $result) {
+              throw "Pester returned no results for required suite: $suite"
+            }
+            foreach ($key in @('TotalCount', 'PassedCount', 'FailedCount', 'SkippedCount', 'NotRunCount')) {
+              if ($null -eq $result.$key) {
+                throw "Pester did not report $key for required suite: $suite"
+              }
+            }
+            if ($result.TotalCount -lt 1 -or $result.FailedCount -ne 0 -or
+                $result.SkippedCount -ne 0 -or $result.NotRunCount -ne 0 -or
+                $result.PassedCount -ne $result.TotalCount) {
+              throw "Incomplete Pester suite $suite (total=$($result.TotalCount); passed=$($result.PassedCount); failed=$($result.FailedCount); skipped=$($result.SkippedCount); not-run=$($result.NotRunCount))"
+            }
+            # Pester's in-memory counts are not proof that every individual
+            # NUnit XML artifact was actually written for later inspection.
+            if (-not (Test-Path -LiteralPath $xmlPath -PathType Leaf)) {
+              throw "Required Pester XML missing for suite: $suite ($xmlPath)"
+            }
+            if ((Get-Item -LiteralPath $xmlPath).Length -le 0) {
+              throw "Required Pester XML empty for suite: $suite ($xmlPath)"
+            }
+            Write-Host "Required Pester suite PASSED: $suite ($($result.PassedCount) tests)"
+          }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: pester-results
-          path: pester-results.xml
+          path: pester-results-*.xml
+          if-no-files-found: error
 
   bash-tests:
     name: Bash tests (Ubuntu)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Show bash version
         run: bash --version
       - name: Run bash test suite
@@ -84,8 +125,8 @@ jobs:
     name: Python tests (Ubuntu)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.11'
       - name: Install pytest
@@ -97,8 +138,8 @@ jobs:
     name: Meta-Harness archive installer (Windows Git Bash)
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.11'
       - name: Install locked test dependencies
@@ -110,7 +151,7 @@ jobs:
     name: HASH files in sync with install scripts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Verify docs/HASH.txt + docs/HASH-linux.txt
         run: bash scripts/regen-hashes.sh --check
 
@@ -118,7 +159,7 @@ jobs:
     name: i18n landing pages match English structure
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Verify <details> count parity across en/fr/pt/ar/ur
         run: bash scripts/check-i18n-parity.sh
 
@@ -128,7 +169,7 @@ jobs:
     # Fetch the exact reviewed Sentinel revision; never skip this drift gate.
     # Update the SHA deliberately alongside the generated teaching page.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Verify auto-generated Sentinel list matches source
         env:
           SENTINEL_REPO: ${{ github.workspace }}/Sentinel
@@ -144,7 +185,7 @@ jobs:
     name: Pages link-check (lychee)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Lychee link checker
         # Pinned to v2 major; bump deliberately when changing anchor / fragment
         # behaviour. (P2-4 from 2026-04-27 review.)
@@ -167,7 +208,7 @@ jobs:
     name: Static analysis (ShellCheck + PSScriptAnalyzer)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: ShellCheck
         run: |

@@ -1,0 +1,44 @@
+name: Synthesis v1.3 candidate (synthetic only)
+on:
+  pull_request:
+    paths:
+      - 'scripts/synthesis_v13_checks.py'
+      - 'tests/test_synthesis_v13_checks.py'
+      - 'tests/test_synthesis_v13_feedback.py'
+      - 'docs/SYNTHESIS-v1.3-CANDIDATE.md'
+      - 'docs/SYNTHESIS-HUMAN-CHECKLIST.md'
+      - 'docs/SYNTHESIS-COPY-PASTE-AI-PROMPT.md'
+      - 'docs/SYNTHESIS-RESPONSE-REVIEW.md'
+      - 'scripts/synthesis_v13_evidence.py'
+      - 'scripts/synthesis_v13_nma_preflight.py'
+      - 'tests/test_synthesis_v13_evidence.py'
+      - 'tests/test_synthesis_v13_nma_preflight.py'
+      - 'docs/SYNTHESIS-v1.3-BLINDED-VALIDATION-PLAN.md'
+      - 'docs/SYNTHESIS-v1.3-AUDIT-PACKET.md'
+      - '.github/workflows/synthesis-v13-candidate.yml'
+  push:
+    paths:
+      - 'scripts/synthesis_v13_checks.py'
+      - 'tests/test_synthesis_v13_checks.py'
+      - 'tests/test_synthesis_v13_feedback.py'
+      - 'docs/SYNTHESIS-v1.3-CANDIDATE.md'
+      - 'docs/SYNTHESIS-HUMAN-CHECKLIST.md'
+      - 'docs/SYNTHESIS-COPY-PASTE-AI-PROMPT.md'
+      - 'docs/SYNTHESIS-RESPONSE-REVIEW.md'
+      - 'scripts/synthesis_v13_evidence.py'
+      - 'scripts/synthesis_v13_nma_preflight.py'
+      - 'tests/test_synthesis_v13_evidence.py'
+      - 'tests/test_synthesis_v13_nma_preflight.py'
+      - 'docs/SYNTHESIS-v1.3-BLINDED-VALIDATION-PLAN.md'
+      - 'docs/SYNTHESIS-v1.3-AUDIT-PACKET.md'
+      - '.github/workflows/synthesis-v13-candidate.yml'
+permissions:
+  contents: read
+jobs:
+  offline-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Run synthetic-only v1.3 regressions
+        run: python3 -B -m unittest discover -s tests -p 'test_synthesis_v13*.py' -v

@@ -33,7 +33,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "test.yml"
 LOCK = REPO_ROOT / "requirements-ci.lock"
 
-_PIP_INSTALL = re.compile(r"\bpip3?(\.exe)?\s+install\b")
+# Detect pip global flags/options and versioned pip3.13 entry points before install.
+# pip --no-input install requests is executable but must not evade the lock gate.
+_PIP_INSTALL = re.compile(r"\bpip(?:3(?:\.\d+)?)?(?:\.exe)?(?:\s+[^\s;&|]+)*\s+install\b", re.I)
 _PINNED = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*==[A-Za-z0-9.+!_-]+$")
 _HASH = re.compile(r"^--hash=sha256:[0-9a-f]{64}$")
 # pip options that consume the following token as their value.
@@ -82,20 +84,51 @@ def lock_problems(lock_path: Path) -> list[str]:
 
 
 def _logical_lines(text: str) -> list[tuple[int, str]]:
-    """Drop YAML comment lines and join shell `\\` continuations."""
+    """Preserve source lines, join shell backslashes and folded YAML run blocks.
+
+    In GitHub Actions, `run: >-` folds successive YAML lines to spaces.
+    Treating those source lines separately can miss an executable command
+    written as `python -m pip` followed by `install pytest`.
+    """
+    lines = text.splitlines()
     out: list[tuple[int, str]] = []
     buf, start = "", 0
-    for n, raw in enumerate(text.splitlines(), 1):
+    i = 0
+    while i < len(lines):
+        raw = lines[i]
+        n = i + 1
+        folded = re.match(
+            r"^(\s*)(?:-\s*)?run:\s*>(?:[1-9][+-]?|[+-][1-9]?|)\s*(?:#.*)?$",
+            raw,
+        )
+        if folded and not buf:
+            parent_indent = len(folded.group(1))
+            command_lines: list[str] = []
+            i += 1
+            while i < len(lines):
+                child = lines[i]
+                child_indent = len(child) - len(child.lstrip(" "))
+                if child.strip() and child_indent <= parent_indent:
+                    break
+                if child.strip() and not child.lstrip().startswith("#"):
+                    command_lines.append(child.strip())
+                i += 1
+            out.append((n, "run: " + " ".join(command_lines)))
+            continue
+
         if not buf and raw.lstrip().startswith("#"):
+            i += 1
             continue
         if not buf:
             start = n
         stripped = raw.rstrip()
         if stripped.endswith("\\"):
             buf += stripped[:-1] + " "
+            i += 1
             continue
         out.append((start, buf + stripped))
         buf = ""
+        i += 1
     if buf:
         out.append((start, buf))
     return out
@@ -106,7 +139,8 @@ def _install_problems(segment: str, where: str, repo_root: Path) -> list[str]:
         tokens = shlex.split(segment, comments=True)
     except ValueError as exc:
         return [f"{where}: cannot tokenise pip install line ({exc})"]
-    idx = next((i for i, t in enumerate(tokens) if t == "install" and i and "pip" in tokens[i - 1]), None)
+    pip_idx = next((i for i, t in enumerate(tokens) if re.fullmatch(r"pip(?:3(?:\.\d+)?)?(?:\.exe)?", t, re.I)), None)
+    idx = next((i for i in range(pip_idx + 1, len(tokens)) if tokens[i] == "install"), None) if pip_idx is not None else None
     if idx is None:
         return [f"{where}: pip install in a form this guard cannot parse"]
     args = tokens[idx + 1:]
@@ -253,3 +287,120 @@ def test_empty_lock_is_refused(tmp_path):
     lock = tmp_path / "empty.lock"
     lock.write_text("# only comments\n", encoding="utf-8")
     assert lock_problems(lock)
+
+@pytest.mark.parametrize("fold_indicator", [">", ">-", ">+"])
+def test_folded_yaml_run_cannot_hide_unpinned_install(tmp_path, fold_indicator):
+    """Real Actions YAML folds these source lines into one shell command."""
+    anchor = "      - name: Show bash version\n"
+    planted = (
+        "      - name: Planted folded unpinned dependency\n"
+        f"        run: {fold_indicator}\n"
+        "          python -m pip\n"
+        "          install --upgrade pytest\n"
+    )
+    wf = _planted_workflow(tmp_path, anchor, planted + anchor)
+    reasons = workflow_problems(wf, tmp_path)
+    assert any("without --require-hashes" in r for r in reasons), reasons
+
+
+
+@pytest.mark.parametrize("fold_indicator", [">2", ">2-", ">-2", ">2+", ">+2"])
+def test_explicit_indent_folded_yaml_cannot_hide_unpinned_install(tmp_path, fold_indicator):
+    """Valid YAML explicit-indentation indicators must be inspected too."""
+    anchor = "      - name: Show bash version\n"
+    planted = (
+        "      - name: Planted explicitly indented folded dependency\n"
+        f"        run: {fold_indicator}\n"
+        "          python -m pip\n"
+        "          install --upgrade pytest\n"
+    )
+    wf = _planted_workflow(tmp_path, anchor, planted + anchor)
+    reasons = workflow_problems(wf, tmp_path)
+    assert any("without --require-hashes" in r for r in reasons), reasons
+
+
+def test_explicit_indent_folded_yaml_hash_locked_install_passes(tmp_path):
+    """A valid, hash-pinned command with an indent indicator remains accepted."""
+    anchor = "      - name: Show bash version\n"
+    clean = (
+        "      - name: Hash-locked explicit folded dependency\n"
+        "        run: >2-\n"
+        "          python -m pip\n"
+        "          install --require-hashes -r requirements-ci.lock\n"
+    )
+    wf = _planted_workflow(tmp_path, anchor, clean + anchor)
+    assert workflow_problems(wf, tmp_path) == []
+
+
+def test_folded_yaml_run_with_hash_locked_install_passes(tmp_path):
+    """Do not convict a genuinely locked pip install solely for folding."""
+    anchor = "      - name: Show bash version\n"
+    clean = (
+        "      - name: Clean folded locked dependency\n"
+        "        run: >-\n"
+        "          python -m pip\n"
+        "          install --require-hashes -r requirements-ci.lock\n"
+    )
+    wf = _planted_workflow(tmp_path, anchor, clean + anchor)
+    assert workflow_problems(wf, tmp_path) == []
+
+
+def test_folded_yaml_run_with_chained_unlocked_install_is_refused(tmp_path):
+    """An unpinned second install in the same folded block must be detected."""
+    anchor = "      - name: Show bash version\n"
+    planted = (
+        "      - name: Chained folded dependency\n"
+        "        run: >-\n"
+        "          python -m pip install --require-hashes -r requirements-ci.lock\n"
+        "          && python -m pip\n"
+        "          install requests\n"
+    )
+    wf = _planted_workflow(tmp_path, anchor, planted + anchor)
+    reasons = workflow_problems(wf, tmp_path)
+    assert any("requests" in r for r in reasons), reasons
+
+
+@pytest.mark.parametrize("planted", [
+    "python -m pip --disable-pip-version-check install pytest",
+    "python -m pip --log /tmp/pip.log install requests",
+    "pip --no-input install requests",
+    "pip3 -q install urllib3",
+])
+def test_pip_global_options_cannot_hide_unlocked_install(tmp_path, planted):
+    """Valid pip global options before install must not evade the CI lock gate."""
+    wf = _planted_workflow(tmp_path, GOOD_INSTALL, planted)
+    reasons = workflow_problems(wf, tmp_path)
+    assert any("without --require-hashes" in r for r in reasons), reasons
+
+
+def test_hash_locked_install_with_pip_global_option_is_accepted(tmp_path):
+    """A genuine hashed install with a pip global flag remains acceptable."""
+    wf = _planted_workflow(
+        tmp_path,
+        GOOD_INSTALL,
+        "python -m pip --no-input install --require-hashes -r requirements-ci.lock",
+    )
+    assert workflow_problems(wf, tmp_path) == []
+
+
+@pytest.mark.parametrize("planted", [
+    "pip3.9 install requests",
+    "pip3.13 install pytest",
+    "pip3.13.exe --no-input install urllib3",
+])
+def test_versioned_pip_executables_cannot_hide_unlocked_install(tmp_path, planted):
+    """Version-specific pip entry points execute installs and must be hash-locked."""
+    wf = _planted_workflow(tmp_path, GOOD_INSTALL, planted)
+    reasons = workflow_problems(wf, tmp_path)
+    assert any("without --require-hashes" in r for r in reasons), reasons
+
+
+@pytest.mark.parametrize("binary", ["pip3.9", "pip3.13", "pip3.13.exe"])
+def test_versioned_pip_executables_accept_hash_locked_install(tmp_path, binary):
+    """Do not reject a legitimate locked invocation because of its executable name."""
+    wf = _planted_workflow(
+        tmp_path,
+        GOOD_INSTALL,
+        f"{binary} install --require-hashes -r requirements-ci.lock",
+    )
+    assert workflow_problems(wf, tmp_path) == []

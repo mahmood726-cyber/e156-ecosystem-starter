@@ -1,0 +1,401 @@
+{
+  "schema": "synthesis-correction-learning-shard-v1.1",
+  "campaign": "Synthesis Medical Corrections 10K",
+  "date": "2026-11-03",
+  "workstream": "Survival",
+  "owner_shard": 6,
+  "run_id": "20261103-shard06-batch02",
+  "previous_batch": "research/correction_learning/20261103/shard-06/20261103-shard06-batch01.json",
+  "branch": "synthesis/correction-learning-10k-20261103",
+  "branch_head_verified_preparation": "6b980d93bc49eda6a2a1c055d2b390e5ea934999",
+  "framework": "Synthesis v1.3 candidate, experimental, NOT clinically validated",
+  "count_rules": "One verified normalized correction DOI once, SHA256(DOI) unsigned integer modulo 10; only full original notice text + verified linked original + source-located persisted summary earns review credit. Prior HOLD superseded but previously not credited.",
+  "exact_run_increment": {
+    "new_notice_keys": 3,
+    "previous_hold_promoted_to_full_notice": 1,
+    "full_notice_review_credits": 4,
+    "partial_or_hold_remaining_in_this_batch": 0,
+    "metadata_only": 0,
+    "administrative": 0,
+    "duplicates": 0,
+    "source_backed_historical_corrections": 4,
+    "new_independently_adjudicated_current_errors": 0,
+    "number_of_current_vor_full_figure_and_data_independently_replayed": 0,
+    "emails": 0
+  },
+  "shard_cumulative_reconciled_from_existing_batch01_and_batch02": {
+    "verified_unique_notice_keys": 6,
+    "full_notice_review_credits": 6,
+    "active_holds_among_these_unique_keys": 0,
+    "historical_superseded_holds": 1,
+    "other_shards_included": false,
+    "programme_10000_reconciled": false
+  },
+  "records": [
+    {
+      "correction_doi": "10.1038/s41598-024-51693-5",
+      "sha256": "fdf38a16c90ab39074af3f8f163db94c8f45c0da925ce9fa0548e085c376fd7a",
+      "owner": 6,
+      "title": "Author Correction: Comparison of the effectiveness of integrative immunomodulatory treatments and conventional therapies on the survival of selected gastrointestinal cancer patients",
+      "correction_url": "https://www.nature.com/articles/s41598-024-51693-5",
+      "correction_date": "2024-01-11",
+      "journal": "Scientific Reports",
+      "original_doi": "10.1038/s41598-023-47802-5",
+      "original_url": "https://www.nature.com/articles/s41598-023-47802-5",
+      "original_publication_date": "2023-11-21",
+      "original_pmid": "37990076",
+      "study_design": "nonrandomized matched observational oncology cohorts, including pancreatic cancer",
+      "sample_size": "Original reports pancreatic IMT n=14, colorectal IMT n=21, other IMT groups; matched CT comparator sizes not independently extracted",
+      "funding": "NOT_VERIFIED",
+      "primary_notice_full_text_read": true,
+      "primary_notice_access": "Publisher Nature HTML fully retrieved via web source turn578471view0",
+      "primary_notice_locator": "Notice body lines 52-65 and full Figure 3 caption lines 58-64",
+      "original_link_verified": "Publisher correction link; original Nature indexed text turn276767search3 and PubMed PMID37990076 turn276767search7",
+      "current_version": "Original publisher record reports change history dated 2024-01-11 and current Fig3 description; exact figure pixels not independently compared",
+      "current_original_locators": [
+        "Results pancreatic cohort analysis",
+        "Figure 3 and legend",
+        "Change history 2024-01-11"
+      ],
+      "claimed_change": {
+        "historical": "Figure 3 pancreatic three-subcohort display incorrectly rendered",
+        "corrected": "Figure 3 properly displaying the three pancreatic subcohorts",
+        "old_figure_archived_visual_verified": false,
+        "corrected_figure_visual_verified": false,
+        "notice_did_not_specify_exact_pixel_error": true
+      },
+      "impact_mechanism": "Distinguish unadjusted displayed Kaplan-Meier curves from P values estimated from baseline-hazard-adjusted Cox models (partly addressing imbalanced inoperability). No valid direct numerical consistency check without matched model estimates.",
+      "separate_original_claim_examples": {
+        "comparison": "IMT versus conventional therapy in pancreatic subgroup",
+        "source": "Original Results pancreatic section (publisher indexed live text)",
+        "estimate": "Adjusted Cox HR 0.1974, 95% CI 0.0736-0.5295, P=0.0013",
+        "interpretation_limit": "Not directly recomputable from unadjusted KM curve; figure correction concerns display, not explicitly recomputation of model"
+      },
+      "estimator_signature": {
+        "population": "pancreatic cancer subgroup of matched observational treatment cohorts",
+        "endpoint": "overall survival",
+        "time_window": "from treatment start; exact censoring window unverified",
+        "effect_measure": "hazard ratio and separate KM survival curves",
+        "estimand": "observational treatment-associated relative hazard, not randomized causal effect",
+        "model": "baseline-hazard adjusted Cox proportional hazards for reported P values; naive KM for curves",
+        "adjustment": "inoperable tumour imbalance; other model covariates require full extraction",
+        "multiplicity": "unknown",
+        "missingness": "unknown",
+        "censoring": "unknown",
+        "variance_method": "unknown",
+        "test_statistic_identity": "adjusted Cox for P; KM for plotted survival"
+      },
+      "source_precision": "Four decimals for HR/P and four for HR CI printed in original (not independently replicated)",
+      "source_support": "SUPPORTED",
+      "maturity": "SOURCE_BACKED",
+      "severity": "S3 provisional (figure depiction), NOT an independently assessed HR error",
+      "disposition": "PUBLISHED_CORRECTION_CURRENT_FIGURE_VISUAL_HOLD",
+      "correction_status": "CORRECTION_PUBLISHED; original article indicates updated",
+      "benign_refutation": "Raw KM and adjusted Cox analysis legitimately disagree because of covariate and baseline-hazard adjustments; lack of old vs new image prevents exact pixel-level claim.",
+      "paired_tests": {
+        "historical": {
+          "fixture": "Figure 3 historically mis-rendered pancreatic three-cohort depiction per notice",
+          "expect": "HISTORIC_DISPLAY_ERROR_KNOWN_FROM_NOTICE"
+        },
+        "corrected": {
+          "fixture": "Current Figure 3 cohort labels and legend correspond to corrected three-subcohort display",
+          "expect": "RECONCILED_ONLY_AFTER_IMAGE_VERIFICATION"
+        },
+        "benign": {
+          "fixture": "KM curve unadjusted, P from attested adjusted Cox; models differ",
+          "expect": "NOT_COMPARABLE_NO_ALLEGATION"
+        },
+        "abstain": {
+          "fixture": "Curve and P with missing adjustment provenance",
+          "expect": "HOLD"
+        }
+      },
+      "root_cause": "survival-figure-rendering-and-estimator-identity",
+      "test_execution": "NOT_RUN"
+    },
+    {
+      "correction_doi": "10.1038/s41591-025-03666-y",
+      "sha256": "8cf1df34098a41f73bd1da2b3bcdc51be118e8a049f26fb1b2c986807f6f96b0",
+      "owner": 6,
+      "title": "Author Correction: First-line cadonilimab plus chemotherapy in HER2-negative advanced gastric or gastroesophageal junction adenocarcinoma: a randomized, double-blind, phase 3 trial",
+      "correction_url": "https://www.nature.com/articles/s41591-025-03666-y.pdf",
+      "correction_date": "2025-03-26",
+      "journal": "Nature Medicine",
+      "original_doi": "10.1038/s41591-024-03450-4",
+      "original_url": "https://www.nature.com/articles/s41591-024-03450-4",
+      "original_publication_date": "2025-01-22",
+      "trial_registration": "NCT05008783",
+      "study_design": "double-blind phase III randomized trial",
+      "randomized_n": "610; cadonilimab 305, placebo 305 per original PubMed abstract PMID 39843940",
+      "sponsor_funding": "Akeso company personnel involved; trial funding source not independently checked here",
+      "previously_in_batch01": "PARTIAL_HOLD_NOT_CREDITED",
+      "supersedes_previous_hold": true,
+      "primary_notice_full_text_read": true,
+      "primary_notice_access": "Full one-page publisher-hosted original PDF extracted text web source turn873754view0, lines 0-39; screenshot attempted but identity-provider redirect",
+      "primary_notice_locator": "Publisher one-page notice lines 32-35 (all substantive correction text)",
+      "original_link_verified": "Publisher notice DOI citation lines 4-7; original PubMed turn276767search8 and publisher version history turn312470search4",
+      "current_version": "Original publisher indexed record reports change history dated 2025-03-26; current PDF figure pixels not visually verified",
+      "current_original_locators": [
+        "Figure 1d PD-L1 CPS thresholds",
+        "Figure 3a-c survival Y axis",
+        "Figure 3a PFS HR",
+        "Original Abstract for PFS HR 0.53"
+      ],
+      "claimed_changes": [
+        {
+          "location": "Figure 1d PD-L1 CPS baseline 22C3",
+          "from": "missing threshold labels",
+          "to": ">=5 and <5 labels added"
+        },
+        {
+          "location": "Figures 3a-c Y axis",
+          "from": "OS (%)",
+          "to": "PFS (%)"
+        },
+        {
+          "location": "Figure 3a HR",
+          "from": "0.55",
+          "to": "0.53"
+        }
+      ],
+      "computation": "HR display difference 0.55 - 0.53 = 0.02; equivalent displayed relative-hazard-reduction wording 45% to 47%, 2 percentage points; not a model replay. Corrected PFS HR 0.53 matches original abstract PFS HR 0.53 (95% CI 0.44-0.65), whereas original trial primary OS HR is 0.66 (0.54-0.81), different endpoint.",
+      "estimator_signature": {
+        "population": "ITT randomized 610, specifics of Figure3a population not separately verified",
+        "endpoint": "PFS in Figure3 panels, not OS",
+        "time_window": "analysis DCO 2023-08-18; censoring analysis time window unknown",
+        "effect_measure": "Cox-type HR reported; exact model unverified",
+        "estimand": "PFS treatment effect",
+        "model": "unknown",
+        "adjustment": "unknown",
+        "multiplicity": "unknown",
+        "missingness": "unknown",
+        "censoring": "unknown",
+        "variance_method": "unknown",
+        "test_statistic_identity": "unknown"
+      },
+      "source_precision": "HR source reports 0.55 vs 0.53 to 2 decimals, no re-estimation",
+      "source_support": "SUPPORTED",
+      "maturity": "SOURCE_BACKED",
+      "severity": "S4 provisional endpoint mislabeling; reported correction not new error",
+      "disposition": "FULL_NOTICE_CURRENT_FIGURE_VISUAL_AND_SAP_HOLD",
+      "correction_status": "CORRECTION_PUBLISHED and original has change history",
+      "benign_refutation": "Apparent OS-vs-PFS conflict explained by mislabeled plot axis, not proven wrong endpoint model. No uncorrected claim established; full Cox signature and archival figure absent.",
+      "notes": "This record upgrades batch01 uncredited HOLD. Never add twice under canonical DOI.",
+      "paired_tests": {
+        "historical": {
+          "fixture": "Figure3a with PFS curve mislabeled OS, HR 0.55",
+          "expect": "HISTORICAL_FIGURE_ENDPOINT_LABEL_ERROR"
+        },
+        "corrected": {
+          "fixture": "Figure3a PFS axis, HR 0.53; compare to original Abstract PFS HR 0.53",
+          "expect": "CONSISTENT_WITH_NOTICE"
+        },
+        "benign": {
+          "fixture": "Figure axis OS 0.66 and separate PFS 0.53 on correctly labelled independent figures",
+          "expect": "NO_FLAG_DIFFERENT_ENDPOINTS"
+        },
+        "abstain": {
+          "fixture": "HR 0.55 vs 0.53 with unknown endpoints/cutoff/covariates",
+          "expect": "NOT_COMPARABLE"
+        }
+      },
+      "root_cause": "PFS_OS_endpoint_direction_and_HR_figure_transcription",
+      "test_execution": "NOT_RUN"
+    },
+    {
+      "correction_doi": "10.1038/s41467-025-58068-y",
+      "sha256": "64c6ecb5e07e79169b78b21be9fd2a1d32108c667dc768df8bfc3be827eed1d6",
+      "owner": 6,
+      "title": "Author Correction: Systematic dissection of tumor-normal single-cell ecosystems across a thousand tumors of 30 cancer types",
+      "correction_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11928607/",
+      "original_publisher_notice_url": "https://www.nature.com/articles/s41467-025-58068-y",
+      "correction_date": "2025-03-21",
+      "journal": "Nature Communications",
+      "original_doi": "10.1038/s41467-024-48310-4",
+      "original_url": "https://www.nature.com/articles/s41467-024-48310-4",
+      "original_publication_date": "2024-05-14",
+      "design": "pan-cancer scRNA meta-atlas with immunotherapy observational survival-response analysis",
+      "sample_size": "Original 999 donors in single-cell atlas; 1261 immunotherapy-treated bulk samples across cohorts; original lung cancer cohort n=497; do not conflate strata",
+      "funding": "NOT_VERIFIED",
+      "primary_notice_full_text_read": true,
+      "primary_notice_access": "Full publisher-provided correction reprinted on PMC, web source turn811354view0 lines 33-245; original publisher indexed full notice turn830546search2",
+      "primary_notice_locator": "Publisher notice main correction body, PMC lines 195-198",
+      "original_link_verified": "Original DOI explicitly linked in notice; original publisher indexed full text with Change history turn811354search0 and PubMed turn811354search1",
+      "current_version": "Original publisher shows updated original with correction history 2025-03-21; supplementary files linked in correction but data cells not independently downloaded or verified",
+      "current_original_locators": [
+        "Original Results immunotherapy response sections",
+        "Original Figure 5 and Figure 6",
+        "Supplementary Fig 20",
+        "Supplementary Data 8",
+        "Source Data 19b"
+      ],
+      "claimed_change": {
+        "historical": "Some OS times missing; some recorded PFS times later than OS. Three initially stable-disease patients SMC__Pat50, SMC__Pat118, SMC__Pat239 classified as nonresponders.",
+        "corrected": "OS times revised and all 3 named patients reclassified as responders under durable clinical benefit criterion (complete/partial response or stable disease with PFS >6 months or OS >1 year); Figures 5-6, Supp Fig20, Supp Data8 and Source Data19b revised."
+      },
+      "computation": "Exactly 3 patients reclassified according to notice; no source-attested patient-level old/new survival values given in notice; cannot independently reproduce classification or effect estimates.",
+      "estimator_signature": {
+        "population": "Immunotherapy-treated study subset; precise denominator for 3 reclassified observations not established",
+        "endpoint": "PFS and OS dates/durations and durable clinical benefit responder definition",
+        "time_window": "PFS >6 months or OS >1 year for stable-disease response classification",
+        "effect_measure": "individual survival durations and derived binary clinical benefit, not a reported Cox HR comparison",
+        "estimand": "durable clinical benefit classification",
+        "model": "deterministic threshold with clinical response categories; source survival analysis details unknown",
+        "adjustment": "not applicable to deterministic classification; source underlying estimates unspecified",
+        "multiplicity": "not applicable to classification threshold",
+        "missingness": "OS values originally missing according to notice",
+        "censoring": "unknown for patient-level durations",
+        "variance_method": "not applicable to deterministic threshold",
+        "test_statistic_identity": "not applicable to deterministic threshold"
+      },
+      "source_precision": "PFS >6 months, OS >1 year exact inequalities from notice; no individual month values published in notice",
+      "source_support": "SUPPORTED",
+      "maturity": "SOURCE_BACKED",
+      "severity": "S4 provisional downstream response reclassification; publisher states selected cell-state terms did not significantly change",
+      "disposition": "PUBLISHED_CORRECTION_RECLASSIFIED_PATIENTS_INDEPENDENT_DATA_REPLAY_HOLD",
+      "correction_status": "CORRECTION_PUBLISHED original change history",
+      "benign_refutation": "Apparent PFS>OS can require review of censoring vs event time, separate cutoffs or source-data linkage, and should not be asserted wrong from aggregate summaries; here publisher itself reports correction to source times. 'No significant change in cell state terms' does not mean no changed patient labels.",
+      "paired_tests": {
+        "historical": {
+          "fixture": "Patient with stable disease and missing OS time; originally marked nonresponder despite source later OS >1y",
+          "expect": "REVIEW_SOURCE_TIME_AND_RESPONSE_LABEL"
+        },
+        "corrected": {
+          "fixture": "Stable disease plus source-confirmed OS >1 year => responder when exact DCB rule applies",
+          "expect": "CONSISTENT_WITH_CORRECTED_CLASSIFICATION"
+        },
+        "benign": {
+          "fixture": "Censored PFS duration 12 months and OS duration 9 months from nonidentical cutoff windows, without OS death event",
+          "expect": "NOT_COMPARABLE_UNTIL_EVENT_STATUS_AND_DCO_MATCH"
+        },
+        "abstain": {
+          "fixture": "Patient PFS 13 months, OS 10 months but censoring/event flags or cutoff unknown",
+          "expect": "HOLD_NO_AUTOMATIC_ERROR"
+        }
+      },
+      "root_cause": "source-survival-times-to-downstream-responder-label-propagation",
+      "test_execution": "NOT_RUN"
+    },
+    {
+      "correction_doi": "10.1038/s41467-024-49938-y",
+      "sha256": "6aadbc6b484791b530de6a2ed1b545ad4295b1816d3186a6c82d6fd37c9f1a04",
+      "owner": 6,
+      "title": "Author Correction: The SOD1-mediated ALS phenotype shows a decoupling between age of symptom onset and disease duration",
+      "correction_url": "https://www.nature.com/articles/s41467-024-49938-y.pdf",
+      "correction_pmc": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11219884/",
+      "correction_date": "2024-07-02",
+      "journal": "Nature Communications",
+      "original_doi": "10.1038/s41467-022-34620-y",
+      "original_url": "https://www.nature.com/articles/s41467-022-34620-y",
+      "original_publication_date": "2022-11-12",
+      "study_design": "multicentre genotype-associated ALS observational survival cohort",
+      "population_size": "Original reports 833 complete disease-duration time-to-event records and 1122 age-of-onset records; Fig4 All SOD1 row has n=883 per corrected figure, not to be conflated with analytic sample subsets",
+      "funding": "NOT_VERIFIED",
+      "primary_notice_full_text_read": true,
+      "primary_notice_access": "Publisher complete two-page correction PDF text turn830546view1 lines 0-119, corroborated publisher-supplied PMC turn687823search2; screenshot attempted but nature login redirect",
+      "primary_notice_locator": "Publisher PDF p1 lines11-25 corrected Figure4 rows, p2 lines34-113 historical figure rows; Nature HTML publisher notice indexed full text turn830546search0",
+      "original_link_verified": "Notice original DOI lines4-6; original Nature HTML turn811354view2 lines 12-88 and original figure4/adjustment turn341378view2 lines139-164",
+      "current_version": "Original article has published-correction link 2024-07-02; corrected table in PDF notice verified text, original HTML figure visual not extracted",
+      "current_original_locators": [
+        "Results > Time-to-event analyses",
+        "Figure 4 disease-duration forest plot",
+        "Figure 4 legend",
+        "Change history 2024-07-02"
+      ],
+      "claimed_change": {
+        "historical": "Each Figure4 'Disease duration (months)' cell contained repeated literal heading, not numbers",
+        "corrected": "Numeric months included for each SOD1 variant and overall group; for example A5V = 13 months, H47R = 114 months, All SOD1 = 27 months. Cox HR cells not indicated by notice as changed."
+      },
+      "computation": "No recomputation justified. Fig4 HRs are Cox estimates adjusted for symptom-onset site, sex and age at onset per original figure legend; disease-duration months are different scale. Do not infer HR from medians.",
+      "estimator_signature": {
+        "population": "SOD1 ALS variant groups versus population-based ALS comparator",
+        "endpoint": "survival (disease duration after symptom onset)",
+        "time_window": "from onset, censoring administrative window unspecified",
+        "effect_measure": "adjusted Cox HR and separately displayed disease duration months",
+        "estimand": "genotype-specific prognostic association",
+        "model": "Cox proportional hazards in original",
+        "adjustment": "site of symptom onset, sex, age of symptom onset",
+        "multiplicity": "original article uses Bonferroni thresholds across variant comparisons",
+        "missingness": "original reports incomplete duration fields for some records",
+        "censoring": "right censored source data discussed; exact policy unknown",
+        "variance_method": "reported two-sided 95% confidence intervals; calculation method unknown",
+        "test_statistic_identity": "Cox regression p values, exact test unverified"
+      },
+      "source_precision": "month durations reported as whole integers; hazard ratios figure to 1 decimal or with source specific digits, untouched",
+      "source_support": "SUPPORTED",
+      "maturity": "SOURCE_BACKED",
+      "severity": "S3 figure missing duration values, published correction; no revised HR alleged",
+      "disposition": "PUBLISHED_CORRECTION_FIGURE_NUMERIC_RESTORATION",
+      "correction_status": "CORRECTION_PUBLISHED and original change history",
+      "benign_refutation": "A plotting/export placeholder error is consistent with all duration cells being repeated literal labels; available source does not show any change to Cox HR, P values or survival model. Difference between n=833 and n=883 must not be called error without matching cohort and missingness.",
+      "paired_tests": {
+        "historical": {
+          "fixture": "Figure4 duration months column populated with repeated heading rather than numbers",
+          "expect": "REVIEW_NON_NUMERIC_IN_NUMERIC_DURATION_FIELD"
+        },
+        "corrected": {
+          "fixture": "Figure4 duration cells A5V=13, H47R=114, All SOD1=27 (months)",
+          "expect": "CONSISTENT_WITH_PUBLISHER_CORRECTION"
+        },
+        "benign": {
+          "fixture": "Date-valued duration categories or valid missing/NA cells rather than mislabeled headers",
+          "expect": "NO_FLAG_IF_TYPE_AND_LABEL_DECLARED"
+        },
+        "abstain": {
+          "fixture": "Duration cells extracted from OCR figure with uncertain text/columns",
+          "expect": "HOLD_SOURCE_IMAGE_UNVERIFIED"
+        }
+      },
+      "root_cause": "forest-plot-duration-cell-placeholder-instead-of-data",
+      "test_execution": "NOT_RUN"
+    }
+  ],
+  "out_of_shard_discovery_leads_no_credit": [
+    {
+      "doi": "10.1001/jamaoncol.2026.0061",
+      "shard": 1,
+      "reason": "JAMA Oncology corrected survival Cox HR and event count"
+    },
+    {
+      "doi": "10.1038/s41598-024-55673-7",
+      "shard": 3,
+      "reason": "Scientific Reports corrected wrong KM curves and risk tables in supplement"
+    },
+    {
+      "doi": "10.1038/s41591-024-03322-x",
+      "shard": 5,
+      "reason": "Nature Medicine KM versus cumulative incidence correction"
+    },
+    {
+      "doi": "10.1001/jamaoncol.2026.2846",
+      "shard": 5,
+      "reason": "JAMA Oncology adjusted OS hazard ratio correction"
+    },
+    {
+      "doi": "10.1038/s41467-024-54119-y",
+      "shard": 9,
+      "reason": "Nature Communications corrected adjusted mortality HR table"
+    }
+  ],
+  "software_gap_inspection": {
+    "file": "scripts/synthesis_v13_checks.py",
+    "ref": "synthesis/correction-learning-10k-20261103",
+    "verified": "Script begins with explicit ESTIMATOR_FIELDS and compatible() fail-closed signature comparison, not full semantic paper or source-data extraction.",
+    "recommendation": "Correction Watch shard-09 can evaluate adding bounded structured tests for PFS-vs-OS clock rules, plot-label semantic identity, Cox/KM adjusted-versus-naive abstention, patient-level response reclassification, and numeric duration placeholder detection; no shared code edits by shard06.",
+    "benchmark_status": "Only retrospective proposed fixtures; no source-native dataset replay, unit tests, CI or blinded held-out evaluation performed."
+  },
+  "next_cursor": {
+    "source_search": "Nature Communications/Scientific Reports publisher corrections with survival and time-to-event figures",
+    "last_owned_notice": "10.1038/s41467-024-49938-y",
+    "resume": "Search more DOI-owned-by-6 notices; verify screenshot/publisher HTML on recovered pages; follow original source and figure versions; do not duplicate existing two shard06 batches."
+  },
+  "access_blocks": [
+    "Original Nature pages for pancreatic correction and source current Fig3 intermittently redirected to identity provider, although indexed publisher text and PubMed/PMC confirm exact DOI and published update",
+    "Nature PDF screenshot calls for cadonilimab and ALS redirected to identity provider; complete substantive PDF text was nevertheless retrieved and read",
+    "Original historical image pixels, pre-correction figures and several full analysis SAPs unavailable, hence source-backed correction only, not independently reconstructed statistical inference"
+  ],
+  "privacy": "Only public scholarly evidence; no private emails, personal contacts, secrets, embargoes or copyrighted article reproductions.",
+  "no_outreach_active": true,
+  "no_schedule_changes": true,
+  "no_shared_manifest_change": true
+}

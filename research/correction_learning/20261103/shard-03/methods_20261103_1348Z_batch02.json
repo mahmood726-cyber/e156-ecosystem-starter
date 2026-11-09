@@ -1,0 +1,364 @@
+{
+  "schema": "synthesis-correction-learning/shard03-v1.1",
+  "campaign": "synthesis-medical-corrections-10k",
+  "date": "2026-11-03",
+  "run_local_time": "2026-11-03 13:48 Europe/London",
+  "shard": 3,
+  "protocol": "docs/SYNTHESIS-CORRECTION-LEARNING-10K.md on branch synthesis/correction-learning-10k-20261103",
+  "framework": "Synthesis v1.3 experimental; not validated on real-world articles",
+  "source_method": "each full primary publisher notice completely read; correction DOI and linked original DOI verified; specific current-version unresolved components held; no full copyrighted articles stored",
+  "counts": {
+    "discovered_owned_unique": 4,
+    "full_notice_primary_read": 4,
+    "partial": 0,
+    "metadata_only": 0,
+    "duplicate_in_batch": 0,
+    "administrative_full": 1,
+    "scientific_reporting_full": 3,
+    "full_current_article_vor_reconciled": 0,
+    "hold_current_exact_claim_or_historical_detail": 4,
+    "independently_adjudicated_analytic_errors": 0,
+    "new_unreported_scientific_errors": 0,
+    "tests_specified": 4,
+    "tests_executed": 0
+  },
+  "prior_verified_ledger_ids": [
+    "methods_20261103_verified_01.json:10.1038/s41598-025-89201-y"
+  ],
+  "dedup_note": "All four new canonical correction DOIs differ from prior verified shard03 ledger; no claim about other inaccessible programme manifests.",
+  "records": [
+    {
+      "canonical_key": "10.1371/journal.pone.0343465",
+      "sha256": "b26f9f0aa16c2539221331bcb317e615047271894c617ae250aedbb988a4c523",
+      "owner": 3,
+      "credit": "FULL",
+      "notice_date": "2026-02-24",
+      "notice_url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0343465",
+      "notice_locator": "Notice of Republication; bullets 1-3; corrected Fig 1 and Tables 1-2; Supporting information S1",
+      "original_doi": "10.1371/journal.pone.0333732",
+      "original_title": "Extubation outcomes in critically ill post-craniotomy patients: A retrospective cohort study",
+      "original_url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0333732",
+      "original_date": "2025-10-03",
+      "journal": "PLOS ONE",
+      "design": "retrospective critical-care cohort",
+      "study_size": "1,683 enrolled",
+      "funding": "Beijing Municipal Hospital Scientific Research Training Program PX2025015 (original article funding statement)",
+      "types": [
+        "patient-flow count",
+        "table subgroup count/derived percentages",
+        "row alignment",
+        "data availability statement",
+        "republication"
+      ],
+      "old_current_claims": [
+        {
+          "claim": "Third extubation-attempt cases",
+          "historic": "177",
+          "corrected": "14",
+          "locator": "notice Fig 1 bullet 1 / corrected Fig 1"
+        },
+        {
+          "claim": "Direct tracheostomy cases, fifth columns",
+          "historic": "230",
+          "corrected": "203",
+          "locator": "notice Tables 1-2 bullet 2"
+        },
+        {
+          "claim": "Craniotomy indications table",
+          "historic": "rows 3-6 misaligned",
+          "corrected": "re-aligned",
+          "locator": "notice Table 2 bullet 3"
+        },
+        {
+          "claim": "Data availability",
+          "historic": "under discussion",
+          "corrected": "all relevant data in paper and S1 file",
+          "locator": "notice Data Availability paragraph; current original front matter still states under discussion"
+        }
+      ],
+      "arithmetic": "Direct tracheostomy count difference 230-203=27; third-attempt cases difference 177-14=163. No percentage recomputation without source-attested specific denominator; published P-value equivalence not independently replayed.",
+      "estimator_signature": {
+        "population": "1,683 enrolled; Table 1-2 subgroup denominators not source-authenticated",
+        "endpoint": "extubation attempts / tracheostomy status",
+        "time_window": "inpatient hospitalization, attempt sequence",
+        "effect_measure": "counts and within-table percentages; no modeled estimate compared",
+        "estimand": "descriptive retrospective cohort",
+        "model": "the original uses multivariable logistic regression for predictors but notice concerns descriptive cells",
+        "adjustment": "not applicable to corrected counts",
+        "multiplicity": "not applicable to counts",
+        "missingness": "not source authenticated",
+        "censoring": "not applicable to these count corrections",
+        "variance_method": "not applicable to these count corrections",
+        "test_statistic_identity": "original notice says P unchanged; actual tests not verified"
+      },
+      "benign_refutation": [
+        "Different analysis-set denominators might explain apparently divergent counts in unrelated table cells; here publisher explicitly attests duplicate/transcription faults",
+        "P-values can remain unchanged if the underlying analysis was correct and only printed values were erroneous; this does not independently authenticate tests",
+        "Current original HTML data-availability field may be a stale versioning/production field; not automatically a fresh research error"
+      ],
+      "source_support": "SUPPORTED for complete primary notice and original DOI; current original HTML text data availability verified but updated tables are image-based, not independently compared",
+      "maturity": "SOURCE_BACKED",
+      "severity": "S3 reported numerical figure/table defect, no demonstrated change in main conclusions",
+      "disposition": "HOLD_CURRENT_EXACT_TABLE_AND_DATA_AVAILABILITY",
+      "current_vor": "Linked original publisher page shows 203 in Results 3.2 but front-matter Data Availability still says under discussion; corrected notice states replacement text, so do not assert in-place reconciliation",
+      "published_correction": true,
+      "correspondence": "NOT_SENT",
+      "duplicate_key": "10.1371/journal.pone.0343465",
+      "publisher_editorial_status": "Editorial board consultation: no effect on main conclusions, according to notice"
+    },
+    {
+      "canonical_key": "10.1371/journal.pone.0355824",
+      "sha256": "9cf35a1d213205332050f27221bca6691a44f6a57bf213ef07ee0c8c4ebb3db9",
+      "owner": 3,
+      "credit": "FULL",
+      "notice_date": "2026-08-13",
+      "notice_url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0355824",
+      "notice_locator": "Notice of Republication, first paragraph; Supporting information S1 and S2; References",
+      "original_doi": "10.1371/journal.pone.0352001",
+      "original_title": "Retraction: Robust policy evaluation from large-scale observational studies",
+      "original_url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0352001",
+      "underlying_retracted_article_doi": "10.1371/journal.pone.0223360",
+      "revised_article_doi": "10.1371/journal.pone.0348228",
+      "original_date": "2026-06-30",
+      "journal": "PLOS ONE",
+      "design": "editorial retraction notice concerning a matched observational study",
+      "study_size": "not relevant to this reference correction",
+      "funding": "not applicable",
+      "types": [
+        "administrative",
+        "retraction-notice reference republication"
+      ],
+      "old_current_claims": [
+        {
+          "claim": "Retraction notice References list",
+          "historic": "publisher reports an incorrect reference; exact field unverified",
+          "corrected": "retraction notice republished 2026-07-28 with corrected reference list; exact field unverified",
+          "locator": "Correction Notice of Republication; source PDFs S1 / S2 direct DOI links failed"
+        }
+      ],
+      "arithmetic": "not applicable",
+      "estimator_signature": null,
+      "benign_refutation": [
+        "This is a correction of an editorial retraction notice's reference list, not the 2019 paper's analytical correction itself",
+        "Separate 2026 retraction and revised research paper report a consequential p-value coding error; this record does not claim ownership or review credit for those separate DOIs"
+      ],
+      "source_support": "SUPPORTED primary correction and original/retraction current pages; specific old/new reference-list item NOT_ENOUGH_INFO",
+      "maturity": "SOURCE_BACKED",
+      "severity": "S1 administrative",
+      "disposition": "HOLD_HISTORICAL_REFERENCE_FIELD",
+      "current_vor": "Original retraction DOI and its link to this correction checked; S1/S2 attachment URLs led to inaccessible DOI redirect and were not directly compared",
+      "published_correction": true,
+      "correspondence": "NOT_SENT",
+      "duplicate_key": "10.1371/journal.pone.0355824",
+      "publisher_editorial_status": "republication of retraction notice, not reversal of retraction"
+    },
+    {
+      "canonical_key": "10.1371/journal.pone.0331945",
+      "sha256": "aedc3d823afeda468b19c3a0b3833c4a129724c65e1ba04d45fd89160b1d26f5",
+      "owner": 3,
+      "credit": "FULL",
+      "notice_date": "2025-09-11",
+      "notice_url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0331945",
+      "notice_locator": "Main body paragraphs on six patients mis-coded; bullets on median survival, MO-Y, HLA-DR low, monocytes, HIV suppression, neutrophil cut-point; corrected Tables 4-6",
+      "original_doi": "10.1371/journal.pone.0280044",
+      "original_title": "The prognostic impact of monocyte fluorescence, immunosuppressive monocytes and peripheral blood immune cell numbers in HIV-associated Diffuse Large B-cell Lymphoma",
+      "original_url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0280044",
+      "original_date": "2023-01-11",
+      "journal": "PLOS ONE",
+      "design": "prospective observational biomarker/prognostic survival cohort",
+      "study_size": "76 patients; original abstract",
+      "funding": "NHLS Research Trust Grant 94791 and NIH Fogarty training grant 1D43-TW010345 (original article)",
+      "types": [
+        "outcome event-status misclassification",
+        "survival censoring/missingness",
+        "Cox model predictor cut-point",
+        "statistical-significance changes"
+      ],
+      "old_current_claims": [
+        {
+          "claim": "Six lost to follow-up participant outcome statuses",
+          "historic": "coded as deaths",
+          "corrected": "outcomes unknown",
+          "locator": "notice first main paragraph; corrected Tables 4-6"
+        },
+        {
+          "claim": "median survival",
+          "historic": "3.5 months",
+          "corrected": "4 months",
+          "locator": "notice first bullet / original abstract Results still has 3.5 months"
+        },
+        {
+          "claim": "MO-Y association global cohort P",
+          "historic": "0.03",
+          "corrected": "0.08; people living with HIV 0.09",
+          "locator": "notice second bullet"
+        },
+        {
+          "claim": "HLA-DR-low monocyte count HIV subgroup P",
+          "historic": "0.14",
+          "corrected": "0.07",
+          "locator": "notice third bullet"
+        },
+        {
+          "claim": "monocyte count global cohort P",
+          "historic": "0.07",
+          "corrected": "0.04; HIV cohort 0.29 -> 0.11",
+          "locator": "notice fourth bullet"
+        },
+        {
+          "claim": "HIV virological suppression P",
+          "historic": "0.06",
+          "corrected": "0.04",
+          "locator": "notice fifth bullet"
+        },
+        {
+          "claim": "neutrophil count independent Cox cutpoint",
+          "historic": "8 x 10^9/L",
+          "corrected": "6 x 10^9/L",
+          "locator": "notice sixth bullet"
+        }
+      ],
+      "arithmetic": "P-value shifts as stated by publisher; survival model not replayed because six event status records/last-contact times and individual-level analysis variables not extracted. No P recalculated from rounded Cox outputs.",
+      "estimator_signature": {
+        "population": "76 lymphoma patients; global and HIV cohorts; analysis-specific N not verified",
+        "endpoint": "overall survival",
+        "time_window": "post-diagnosis follow-up (reported median follow-up 19 months)",
+        "effect_measure": "KM median survival, survival P-values, and separate Cox-model threshold; each is a different estimator",
+        "estimand": "prognostic observational association",
+        "model": "survival analyses and Cox proportional hazards for specified independent predictors; univariate test type not attested",
+        "adjustment": "for quoted Cox cutpoint adjusted for IPI and CD4; others variable-specific",
+        "multiplicity": "not established",
+        "missingness": "six lost-to-followup status erroneously coded death; correct treatment requires last-known-alive data",
+        "censoring": "six originally events though actual outcomes unknown; censoring at last-known-alive time requires participant-level attestation",
+        "variance_method": "unknown",
+        "test_statistic_identity": "logrank/Wald/LR/score identity not verified from notice"
+      },
+      "benign_refutation": [
+        "Survival-P differences are expected after recoding events correctly, not evidence of an independent second discrepancy",
+        "Do not treat unknown vital status as right-censored at an arbitrary date; need last known alive/follow-up time",
+        "Original article abstract appears to retain historic 3.5 months despite linked correction, so version-aware extraction should select correction notice; not an unreported current author claim without evaluating publication version policy"
+      ],
+      "source_support": "SUPPORTED complete publisher correction and linked original publisher abstract; corrected numerical outputs are publisher-attested, not independently recomputed",
+      "maturity": "SOURCE_BACKED",
+      "severity": "S4 potential biomarker interpretation impact, per notice MO-Y interpretation cautioned",
+      "disposition": "HOLD_INDEPENDENT_REPLAY_AND_VERSION_RECONCILIATION",
+      "current_vor": "Original page linked correction, original Abstract Results still displays 3.5 months and historic MO-Y wording; current corrections are in separate notice, so no verified in-place update",
+      "published_correction": true,
+      "correspondence": "NOT_SENT",
+      "duplicate_key": "10.1371/journal.pone.0331945",
+      "publisher_editorial_status": "Editorial Board reviewer judged amended results support most conclusions; notice cautions MO-Y overinterpretation"
+    },
+    {
+      "canonical_key": "10.1371/journal.pone.0334027",
+      "sha256": "5062e09c8fc502c03dad666b6c269f0b4d2d9b2eaf6523cd120e677300432fa9",
+      "owner": 3,
+      "credit": "FULL",
+      "notice_date": "2025-10-07",
+      "notice_url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0334027",
+      "notice_locator": "Main correction paragraph and corrected Figs 1-2; original article figure references",
+      "original_doi": "10.1371/journal.pone.0299841",
+      "original_title": "Risk perceptions and behaviors concerning rural tourism and economic-political drivers of COVID-19 policy in 2020",
+      "original_url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0299841",
+      "original_date": "2024-04-09",
+      "journal": "PLOS ONE",
+      "design": "COVID-19 ecological county/time-series and public-health policy observational analysis with visitor survey",
+      "study_size": "407 survey visitors reported; ecological state/counties other Ns",
+      "funding": "University of Maine Research Reinvestment Fund Rural Health and Wellbeing Grand Challenge Grant Program, original article statement",
+      "types": [
+        "figure swap",
+        "production/display",
+        "not a statistical-model correction"
+      ],
+      "old_current_claims": [
+        {
+          "claim": "Fig 1 and Fig 2 embedded images",
+          "historic": "images appear under each other's figure number; captions in right order",
+          "corrected": "Fig 1 county COVID cases and Rt chart; Fig 2 lockdown duration vs tourism GDP/electoral margin scatter; corrected figure versions in notice",
+          "locator": "notice body first paragraph and Fig 1/Fig 2 captions"
+        }
+      ],
+      "arithmetic": "not applicable; image-caption visual fidelity not independently compared",
+      "estimator_signature": null,
+      "benign_refutation": [
+        "This is an image-attachment swap, not necessarily underlying statistical calculation fault",
+        "Actual original figures must be visually compared before certifying publisher's current image propagation or checker performance"
+      ],
+      "source_support": "SUPPORTED complete primary notice and linked original article; image pixels not replayed",
+      "maturity": "SOURCE_BACKED",
+      "severity": "S2-S3 visual reporting interpretation, clinical meaning not established",
+      "disposition": "HOLD_CURRENT_IMAGE_VISUAL",
+      "current_vor": "Original publisher DOI and correction link verified; exact current figure-image pairing not independently visual checked",
+      "published_correction": true,
+      "correspondence": "NOT_SENT",
+      "duplicate_key": "10.1371/journal.pone.0334027",
+      "publisher_editorial_status": "publisher apologizes; corrected figures in notice"
+    }
+  ],
+  "paired_case_specifications": [
+    {
+      "case_id": "S03-MISCODE-SURVIVAL",
+      "source": "10.1371/journal.pone.0331945",
+      "historical": "Six lost-to-followup records labelled observed death",
+      "corrected": "six outcomes unknown",
+      "expected": "historical annotation challenge if record-level source status and follow-up times supplied",
+      "benign_control": "Documented death with date and verified vital status must remain an event",
+      "abstention": "Only notice narrative or missing last-known-alive times -> HOLD, no synthetic Kaplan-Meier re-estimation",
+      "synthesis_v13": "current checker cannot authenticate raw row-level outcome coding; evaluate as candidate new mechanism, not measured performance"
+    },
+    {
+      "case_id": "S03-DESCRIPTIVE-COUNTS",
+      "source": "10.1371/journal.pone.0343465",
+      "historical": "Printed group count 230, corrected same table/column 203",
+      "corrected": "203",
+      "expected": "REVIEW only if same exact population, table, denominator, metric, version and same analysis set",
+      "benign_control": "230 in an all-inpatients group and 203 in a surgery subgroup may both be valid; different signatures -> NOT_COMPARABLE",
+      "abstention": "Missing original table/denominator -> HOLD",
+      "synthesis_v13": "signed cross-document checks can compare sourced matched counts but do not authenticate original table values"
+    },
+    {
+      "case_id": "S03-FIGURE-PAIRING",
+      "source": "10.1371/journal.pone.0334027",
+      "historical": "Fig 1 and Fig 2 images interchanged; captions not interchanged",
+      "corrected": "each image under correct caption",
+      "expected": "source-verified image/caption mismatch if actual versions inspected",
+      "benign_control": "new figure order with both image and caption moved together is valid and must not flag",
+      "abstention": "No image pixels/version available -> HOLD",
+      "synthesis_v13": "text-only figure label checks insufficient without image evidence"
+    },
+    {
+      "case_id": "S03-CORRECTION-OF-NOTICE",
+      "source": "10.1371/journal.pone.0355824",
+      "historical": "retraction notice contained reference-list error; exact item unavailable",
+      "corrected": "retrospective correction publishes revised reference list",
+      "expected": "ADMINISTRATIVE, zero claim of revalidation of retracted 2019 research",
+      "benign_control": "a distinct underlying 2019 coding-induced retraction is separate DOI and must not be recounted",
+      "abstention": "no full S1/S2 comparison -> HOLD exact historic field",
+      "synthesis_v13": "document identity and correction-chain dedup are essential; do not infer new analytical defect"
+    }
+  ],
+  "next_cursor": {
+    "seen_current_batch": [
+      "10.1371/journal.pone.0343465",
+      "10.1371/journal.pone.0355824",
+      "10.1371/journal.pone.0331945",
+      "10.1371/journal.pone.0334027"
+    ],
+    "previous_owned_seen": [
+      "10.1038/s41598-025-89201-y",
+      "10.1038/s41591-026-04245-5"
+    ],
+    "next_query": "Find new complete OA primary correction notices for all medical study types; SHA256 normalized DOI modulo10 must equal3; prioritize authentic model/test variance/multiplicity corrections and avoid counting historic notice DOI again",
+    "next_verification": "Check original and corrected figure/table images and revised/data availability statement; ascertain six LTF last-contact handling in source if dataset lawfully accessible; compare S1/S2 of corrected retraction notice"
+  },
+  "access_gaps": [
+    "PLOS correction-to-retraction attachment links S1 and S2 resolve to inaccessible dx.plos.org via web browser; exact original erroneous citation unverified",
+    "Original PLOS paper data availability still says under discussion despite correction notice updated statement; current version/propagation HOLD",
+    "Original 2023 lymphoma article still displays 3.5 months after correction notice reports 4; do not mislabel as undisclosed new error",
+    "No independent row-level survival replay; event-status effect not quantified independently",
+    "Figures and embedded tables not visually rechecked pixel by pixel"
+  ],
+  "outreach": "NONE; campaign explicit suspension",
+  "shared_checker_changed": false,
+  "integrated_pr_or_merge": "NONE by shard03; reserved for Correction Watch shard09",
+  "private_correspondence_included": false
+}
