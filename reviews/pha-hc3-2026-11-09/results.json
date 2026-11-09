@@ -39,6 +39,71 @@
     "reported_Z": 257.65,
     "implied_SE_if_Wald_Z": 0.004083058412575199
   },
+  "same_table_scale_check": {
+    "rows": [
+      {
+        "rubric": "Motivational Interview Skill                            40.9\u00b15.1%     59.1\u00b15.1%",
+        "beta": 0.449,
+        "Z": 1.52,
+        "implied_SE_if_Wald": 0.29539473684210527
+      },
+      {
+        "rubric": "Health Recommendation Quality                           46.2\u00b15.2%     53.8\u00b15.2%",
+        "beta": 0.17,
+        "Z": 0.66,
+        "implied_SE_if_Wald": 0.25757575757575757
+      },
+      {
+        "rubric": "Agent Credibility                                       33.3\u00b14.9%     66.7\u00b14.9%",
+        "beta": 0.746,
+        "Z": 1.86,
+        "implied_SE_if_Wald": 0.4010752688172043
+      },
+      {
+        "rubric": "Goal & Purpose Identification (HC1)                     33.3\u00b15.0%     66.7\u00b15.0%",
+        "beta": 1.19,
+        "Z": 2.17,
+        "implied_SE_if_Wald": 0.5483870967741935
+      },
+      {
+        "rubric": "Active Listening (HC2)                                  31.2\u00b14.8%     68.8\u00b14.8%",
+        "beta": 0.808,
+        "Z": 2.82,
+        "implied_SE_if_Wald": 0.2865248226950355
+      },
+      {
+        "rubric": "Context Clarification (Priorities, Constraints) (HC3)   28.0\u00b14.8%     72.0\u00b14.8%",
+        "beta": 1.052,
+        "Z": 257.65,
+        "implied_SE_if_Wald": 0.004083058412575199
+      },
+      {
+        "rubric": "User Empowerment (HC4)                                  30.1\u00b14.6%     69.9\u00b14.6%",
+        "beta": 0.988,
+        "Z": 2.0,
+        "implied_SE_if_Wald": 0.494
+      },
+      {
+        "rubric": "Personalized & concrete Recommendations (HC5)           35.5\u00b14.9%     64.5\u00b14.9%",
+        "beta": 0.649,
+        "Z": 2.09,
+        "implied_SE_if_Wald": 0.3105263157894737
+      },
+      {
+        "rubric": "User Feedback incorporation (HC6)                       29.0\u00b14.8%     71.0\u00b14.8%",
+        "beta": 1.005,
+        "Z": 3.19,
+        "implied_SE_if_Wald": 0.31504702194357365
+      }
+    ],
+    "other_eight_min_implied_SE": 0.25757575757575757,
+    "other_eight_median_implied_SE": 0.3127866688665237,
+    "other_eight_max_implied_SE": 0.5483870967741935,
+    "min_other_to_HC3_SE_ratio": 63.08402465721856,
+    "conditional_logit_unit_coded_min_SE_from_93_Bernoulli": 0.20739033894608505,
+    "conditional_logit_n_for_that_SE_at_max_information": 239932.34866775575,
+    "limits": "These bounds require independent unweighted unit-coded Bernoulli logit contributions and a Wald statistic. Different coding, weights, link or contrast preclude direct application."
+  },
   "diagnostic_only_not_published_GLMM": {
     "model": "independent unweighted Bernoulli intercept-only logit; ignores script/rater dependence",
     "log_odds": 0.946596081369484,
@@ -52,6 +117,7 @@
     "allocations": 2147483648,
     "two_sided_extreme_allocations": 941992,
     "two_sided_p": 0.0004386492073535919,
+    "nine_test_Bonferroni_p_bound": 0.003947842866182327,
     "limitation": "Exact for stated exchangeability null, not a replay of the mixed model or a substitute for rater and script random effects."
   },
   "matching_controls": {
