@@ -300,6 +300,55 @@ else
 fi
 rm -rf "$repo"
 
+# Fail-closed Sentinel mode: no network or fake certification involved.
+start "Linux Sentinel sub-installer defaults to blocking mode"
+default_mode="$(bash -c 'source "$1" --import; printf "%s" "$MODE"' _ "$ROOT/scripts/install-sentinel.sh")"
+assert_eq "$default_mode" "block" && ok
+
+# The --full parent must request blocking Sentinel explicitly, rather than
+# depending on a sub-installer default that could change. Static fixture only.
+start "Linux --full chain explicitly requests blocking Sentinel"
+if grep -Fq -- 'if bash "$SCRIPTS_DIR/install-sentinel.sh" --repo "$sentinel_repo" --mode block; then' "$ROOT/install/install.sh"; then
+    ok
+else
+    bad "install.sh does not explicitly chain Sentinel with --mode block"
+fi
+
+# Failure-injection fixture: if any required --full sub-installer is absent,
+# refuse before writing user agent files. All components are empty test stubs,
+# so this test makes no network requests and never asserts a real install.
+start "Linux --full refuses each missing mandatory sub-installer"
+full_fixture="$SANDBOX/full-required-subinstallers"
+mkdir -p "$full_fixture"/{install,scripts,docs,home}
+cp "$ROOT/install/install.sh" "$full_fixture/install/install.sh"
+if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$full_fixture/install/install.sh" | awk '{print $1}' > "$full_fixture/docs/HASH-linux.txt"
+else
+    shasum -a 256 "$full_fixture/install/install.sh" | awk '{print $1}' > "$full_fixture/docs/HASH-linux.txt"
+fi
+required_full_scripts=(install-sentinel.sh install-overmind.sh install-projectindex.sh install-extractor.sh)
+for required in "${required_full_scripts[@]}"; do
+    : > "$full_fixture/scripts/$required"
+done
+refusals_ok=1
+for required in "${required_full_scripts[@]}"; do
+    rm -f "$full_fixture/scripts/$required"
+    # Capture the exit code without tripping errexit inherited from the
+    # sourced installer; a bare $( ... ) would end the script before it.
+    refusal_code=0
+    refusal_output="$(HOME="$full_fixture/home" bash "$full_fixture/install/install.sh" --full --github-user fixture-ci 2>&1)" || refusal_code=$?
+    if [[ "$refusal_code" -ne 2 || "$refusal_output" != *"ERROR: requested chain installer is missing: "*"/scripts/$required"* || -d "$full_fixture/home/.claude" ]]; then
+        refusals_ok=0
+        break
+    fi
+    : > "$full_fixture/scripts/$required"
+done
+if [[ "$refusals_ok" -eq 1 ]]; then
+    ok
+else
+    bad "missing $required: status=$refusal_code; expected preflight refusal before agent changes"
+fi
+
 # E156 offline capsule profile persistence must treat a target path as data.
 # The isolated path is synthetic; this is installer-integrity failure injection,
 # not a live five-component canary or evidence-synthesis dataset.

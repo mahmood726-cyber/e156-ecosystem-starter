@@ -154,6 +154,23 @@
       }
     },
     {
+      "id": ".github/workflows/full-system-integration.yml#jobs.full-linux-install",
+      "kind": "ci-job",
+      "name": "Linux full-chain installation and live canaries",
+      "stops": "A broken fresh Linux `install/install.sh --full` chain: any failing Sentinel install/scan, Overmind numerical canary, key check, ProjectIndex reconciliation, extractor import or agent rules file check makes the job red.",
+      "would_not_stop": [
+        "Windows PowerShell and macOS differences: the job runs only Ubuntu 24.04, Python 3.13.",
+        "Optional Meta-Harness, RapidMeta, AACT, Pairwise70, browser, cloud authentication or clinical study execution: they are not part of the default --full install chain.",
+        "Errors the selected smoke inputs do not exercise, including scientific validity, hidden numerical errors and fabricated source data.",
+        "Reproducibility of every transitive dependency: Sentinel and Overmind use frozen commit pins, but pip resolution is not a complete hash-locked environment."
+      ],
+      "source": ".github/workflows/full-system-integration.yml and scripts/verify-full-install.py; reviewed against the first real CI failures on Python 3.12 and the old extractor import path (23 Oct 2026).",
+      "seal": {
+        ".github/workflows/full-system-integration.yml#jobs.full-linux-install": "aad60724c6bc7e9f5d3d9ed1c2f79958ddabaa8e392775e958fe925b53f62036",
+        "scripts/verify-full-install.py": "ad1b1d80d45e9aceea3d585813a28466860831c58c0de2e77ce6ff9f79757758"
+      }
+    },
+    {
       "id": ".github/workflows/test.yml#jobs.sentinel-rule-list-drift",
       "kind": "ci-job",
       "name": "Sentinel source rule-list drift (pinned CI)",
@@ -430,6 +447,22 @@
       "source": "Synthesis v1.3 candidate workflow offline-regression; tests/test_synthesis_v13_checks.py, tests/test_synthesis_v13_evidence.py, tests/test_synthesis_v13_nma_preflight.py.",
       "seal": {
         ".github/workflows/synthesis-v13-candidate.yml#jobs.offline-regression": "5cee62fde2a40614ae2a846e99228d10554cc46ddac94ff06064a2bf5ed52776"
+      }
+    },
+    {
+      "id": "scripts/verify-full-install.py",
+      "kind": "script",
+      "name": "verify-full-install",
+      "stops": "A missing or malformed file in the three agent configurations, absent or non-blocking Sentinel hook, invalid or insecure TruthCert key, missing ProjectIndex/extractor, nonzero live canary or malformed/non-CERTIFIED Overmind fixture verdict (exit 1).",
+      "would_not_stop": [
+        "A numerical or clinical interpretation error when Overmind's selected canary passes; this script is not independent scientific adjudication.",
+        "A wrong study record or missed trial: it does not run a concept search or evaluate extraction recall against an external reference.",
+        "Components outside the Linux default --full chain, including optional Meta-Harness and browser dashboards.",
+        "Windows/macOS install behavior, upstream tag immutability or transitive Python dependency drift."
+      ],
+      "source": "scripts/verify-full-install.py docstring and named checks; tests/test_full_install_verifier.py negative controls.",
+      "seal": {
+        "scripts/verify-full-install.py": "ad1b1d80d45e9aceea3d585813a28466860831c58c0de2e77ce6ff9f79757758"
       }
     }
   ]

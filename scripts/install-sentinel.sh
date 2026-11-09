@@ -13,6 +13,8 @@
 set -euo pipefail
 
 REPO=""
+# Fail closed on a fresh installation: warn mode permits BLOCK findings to push.
+# A caller must opt in explicitly to a non-blocking mode.
 MODE="block"
 SKIP_PIP=0
 IMPORT=0
@@ -51,7 +53,12 @@ fi
 assert_real_python() {
     if [[ -z "$PYTHON" ]]; then
         echo "ERROR: neither 'python' nor 'python3' found on PATH." >&2
-        echo "  Install: sudo apt install python3 python3-pip" >&2
+        echo "  Install Python 3.13+ and its pip module for the Sentinel layer." >&2
+        return 1
+    fi
+    if ! "$PYTHON" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 13) else 1)' >/dev/null 2>&1; then
+        echo "ERROR: Sentinel v1.0.0 needs Python >=3.13; $PYTHON is older or unusable." >&2
+        echo "  Activate a Python 3.13+ virtual environment and retry." >&2
         return 1
     fi
 }
