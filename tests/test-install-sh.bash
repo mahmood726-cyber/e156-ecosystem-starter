@@ -333,9 +333,11 @@ done
 refusals_ok=1
 for required in "${required_full_scripts[@]}"; do
     rm -f "$full_fixture/scripts/$required"
-    refusal_output="$(HOME="$full_fixture/home" bash "$full_fixture/install/install.sh" --full --github-user fixture-ci 2>&1)"
-    refusal_code=$?
-    if [[ "$refusal_code" -ne 2 || "$refusal_output" != *"ERROR: --full requires scripts/$required"* || -d "$full_fixture/home/.claude" ]]; then
+    # Capture the exit code without tripping errexit inherited from the
+    # sourced installer; a bare $( ... ) would end the script before it.
+    refusal_code=0
+    refusal_output="$(HOME="$full_fixture/home" bash "$full_fixture/install/install.sh" --full --github-user fixture-ci 2>&1)" || refusal_code=$?
+    if [[ "$refusal_code" -ne 2 || "$refusal_output" != *"ERROR: requested chain installer is missing: "*"/scripts/$required"* || -d "$full_fixture/home/.claude" ]]; then
         refusals_ok=0
         break
     fi
