@@ -1,0 +1,317 @@
+{
+  "date": "2026-11-03",
+  "status": "BLOCKED_BEFORE_MODEL_INFERENCE",
+  "upstream_ref": "463162906459be508ed4a2294fcaede9fa072036",
+  "dataset_version": "v1.1",
+  "base_repository_commit": "845ebd52c26f75ffef5d7926c5dbe6cb28953be1",
+  "continued_merged_prs": [
+    73,
+    74
+  ],
+  "source_assets_expected": 552,
+  "source_assets_retrieved": 539,
+  "papers_retrieved": 264,
+  "full_code_archives_retrieved": 275,
+  "source_only_repository_snapshots": 1,
+  "source_only_files_verified": 22,
+  "retrieval_failures": [
+    {
+      "asset_id": "4ea93326d644cd9fc7dd12ce51c5a009e9f01032b0f98bbc10a7f66536f7ecb9",
+      "attempted_at_utc": "2026-11-03T20:41:02.902797+00:00",
+      "code_commit": "3ade488b3828705706fc5f58c0667421d8b04a01",
+      "download_url": "https://codeload.github.com/armiro/COVID-CXNet/tar.gz/3ade488b3828705706fc5f58c0667421d8b04a01",
+      "error": "BenchmarkError: curl exit 63: curl: (63) Exceeded the maximum allowed file size (268435456) with 268435456 bytes",
+      "kind": "code",
+      "reference_record_count": 2,
+      "relative_path": "assets/4ea93326d644cd9fc7dd12ce51c5a009e9f01032b0f98bbc10a7f66536f7ecb9.tar.gz",
+      "splits": [
+        "synthetic"
+      ],
+      "status": "FAILED",
+      "url": "https://codeload.github.com/armiro/COVID-CXNet/tar.gz/3ade488b3828705706fc5f58c0667421d8b04a01"
+    },
+    {
+      "asset_id": "74ccdb81bd0dceec2ffd577ed61e130ad1483d7a3db593c2f457dfd7b541f58c",
+      "attempted_at_utc": "2026-11-03T20:43:53.282763+00:00",
+      "download_url": "https://dl.acm.org/doi/pdf/10.1145/3404835.3462891",
+      "error": "BenchmarkError: curl exit 22: curl: (22) The requested URL returned error: 403",
+      "kind": "paper",
+      "reference_record_count": 1,
+      "relative_path": "assets/74ccdb81bd0dceec2ffd577ed61e130ad1483d7a3db593c2f457dfd7b541f58c.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://dl.acm.org/doi/pdf/10.1145/3404835.3462891"
+    },
+    {
+      "asset_id": "dc379673cd3bd3cb4de43103c5587d60ddd1efc61e42d369de5fe6005d157445",
+      "attempted_at_utc": "2026-11-03T20:43:53.156054+00:00",
+      "download_url": "https://dl.acm.org/doi/pdf/10.1145/3331184.3331265",
+      "error": "BenchmarkError: curl exit 22: curl: (22) The requested URL returned error: 403",
+      "kind": "paper",
+      "reference_record_count": 1,
+      "relative_path": "assets/dc379673cd3bd3cb4de43103c5587d60ddd1efc61e42d369de5fe6005d157445.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://dl.acm.org/doi/pdf/10.1145/3331184.3331265"
+    },
+    {
+      "asset_id": "934914ab40b79dedb2af469c2ac65b6c5d0197fa2b9085f5ef258609b41ba2c8",
+      "attempted_at_utc": "2026-11-03T20:43:53.297674+00:00",
+      "download_url": "https://dl.acm.org/doi/pdf/10.1145/3539618.3591626",
+      "error": "BenchmarkError: curl exit 22: curl: (22) The requested URL returned error: 403",
+      "kind": "paper",
+      "reference_record_count": 2,
+      "relative_path": "assets/934914ab40b79dedb2af469c2ac65b6c5d0197fa2b9085f5ef258609b41ba2c8.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://dl.acm.org/doi/pdf/10.1145/3539618.3591626"
+    },
+    {
+      "asset_id": "820d1fd35473c945a6aa456be35eee51822918a7ab85438a904d647fedf04e19",
+      "attempted_at_utc": "2026-11-03T20:43:58.951778+00:00",
+      "download_url": "https://openreview.net/pdf?id=HyxY6JHKwr",
+      "error": "BenchmarkError: curl exit 22: curl: (22) The requested URL returned error: 403",
+      "kind": "paper",
+      "reference_record_count": 1,
+      "relative_path": "assets/820d1fd35473c945a6aa456be35eee51822918a7ab85438a904d647fedf04e19.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://openreview.net/pdf?id=HyxY6JHKwr"
+    },
+    {
+      "asset_id": "37dc7968b71c15a23b2afa81307d5ffbd615b79eb235e6b3907fde1b05c3142e",
+      "attempted_at_utc": "2026-11-03T20:44:00.575402+00:00",
+      "download_url": "https://openreview.net/pdf?id=r1xMH1BtvB",
+      "error": "BenchmarkError: curl exit 22: curl: (22) The requested URL returned error: 403",
+      "kind": "paper",
+      "reference_record_count": 1,
+      "relative_path": "assets/37dc7968b71c15a23b2afa81307d5ffbd615b79eb235e6b3907fde1b05c3142e.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://openreview.net/pdf?id=r1xMH1BtvB"
+    },
+    {
+      "asset_id": "50c1721eee202ec8f72fb1e306f06e5123096f328cf59d80ecd609be3991a5bf",
+      "attempted_at_utc": "2026-11-03T20:43:58.670905+00:00",
+      "download_url": "https://openreview.net/pdf?id=BXewfAYMmJw",
+      "error": "BenchmarkError: curl exit 22: curl: (22) The requested URL returned error: 403",
+      "kind": "paper",
+      "reference_record_count": 1,
+      "relative_path": "assets/50c1721eee202ec8f72fb1e306f06e5123096f328cf59d80ecd609be3991a5bf.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://openreview.net/pdf?id=BXewfAYMmJw"
+    },
+    {
+      "asset_id": "0f9380a93e2ae60ed585468500080ba6cda91faa6e0938b29ee0647452922917",
+      "attempted_at_utc": "2026-11-03T20:44:01.302844+00:00",
+      "download_url": "https://openreview.net/pdf?id=wbPObLm6ueA",
+      "error": "BenchmarkError: curl exit 22: curl: (22) The requested URL returned error: 403",
+      "kind": "paper",
+      "reference_record_count": 1,
+      "relative_path": "assets/0f9380a93e2ae60ed585468500080ba6cda91faa6e0938b29ee0647452922917.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://openreview.net/pdf?id=wbPObLm6ueA"
+    },
+    {
+      "asset_id": "97e3ac84ba5268f06f961987e4baa8c32aa83d4808502d10681cbbe3466898b2",
+      "attempted_at_utc": "2026-11-03T20:44:00.656707+00:00",
+      "download_url": "https://openreview.net/pdf?id=rqq6Dh8t4d",
+      "error": "BenchmarkError: curl exit 22: curl: (22) The requested URL returned error: 403",
+      "kind": "paper",
+      "reference_record_count": 3,
+      "relative_path": "assets/97e3ac84ba5268f06f961987e4baa8c32aa83d4808502d10681cbbe3466898b2.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://openreview.net/pdf?id=rqq6Dh8t4d"
+    },
+    {
+      "asset_id": "a0f8d85bdea11d4533f04975ec82705234e906e8342b82605f5bf0796f596f6e",
+      "attempted_at_utc": "2026-11-03T20:43:59.049689+00:00",
+      "download_url": "https://openreview.net/pdf?id=RgUPdudkWlN",
+      "error": "BenchmarkError: curl exit 22: curl: (22) The requested URL returned error: 403",
+      "kind": "paper",
+      "reference_record_count": 1,
+      "relative_path": "assets/a0f8d85bdea11d4533f04975ec82705234e906e8342b82605f5bf0796f596f6e.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://openreview.net/pdf?id=RgUPdudkWlN"
+    },
+    {
+      "asset_id": "c0ffe982344f657b6a5ae6cc2f27c715095ca2f0ab5367cac4fb253fd0ccd016",
+      "attempted_at_utc": "2026-11-03T20:44:00.372373+00:00",
+      "download_url": "https://openreview.net/pdf?id=nA5AZ8CEyow",
+      "error": "BenchmarkError: curl exit 22: curl: (22) The requested URL returned error: 403",
+      "kind": "paper",
+      "reference_record_count": 1,
+      "relative_path": "assets/c0ffe982344f657b6a5ae6cc2f27c715095ca2f0ab5367cac4fb253fd0ccd016.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://openreview.net/pdf?id=nA5AZ8CEyow"
+    },
+    {
+      "asset_id": "d3b525b3220e5ee65e2bb2ec784f5247f5e6ffe6c530e6921016695bce07abd0",
+      "attempted_at_utc": "2026-11-03T20:43:58.666718+00:00",
+      "download_url": "https://openreview.net/forum?id=FGqiDsBUKL0",
+      "error": "BenchmarkError: download is not a PDF",
+      "kind": "paper",
+      "reference_record_count": 1,
+      "relative_path": "assets/d3b525b3220e5ee65e2bb2ec784f5247f5e6ffe6c530e6921016695bce07abd0.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://openreview.net/forum?id=FGqiDsBUKL0"
+    },
+    {
+      "asset_id": "02287ccfb77d4d9a6b4e0f322cfa2e7eb6ed55af3ae30bfac5d9cbe0bc730c6d",
+      "attempted_at_utc": "2026-11-03T20:43:58.653385+00:00",
+      "download_url": "https://openreview.net/forum?id=B7ZbqNLDn-_",
+      "error": "BenchmarkError: download is not a PDF",
+      "kind": "paper",
+      "reference_record_count": 1,
+      "relative_path": "assets/02287ccfb77d4d9a6b4e0f322cfa2e7eb6ed55af3ae30bfac5d9cbe0bc730c6d.pdf",
+      "splits": [
+        "real"
+      ],
+      "status": "FAILED",
+      "url": "https://openreview.net/forum?id=B7ZbqNLDn-_"
+    }
+  ],
+  "by_split": {
+    "real": {
+      "filename": "scicoqa-real-v1.1.jsonl",
+      "sha256": "78e1138f0b034ae8b52d5a60806c763f9ad2b1e1cdee55546d6db0721f195dc7",
+      "reference_records": 92,
+      "paper_versions": 73,
+      "code_versions": 74,
+      "paper_assets_retrieved": 61,
+      "full_code_archives_retrieved": 74,
+      "source_only_repository_snapshots": 0
+    },
+    "synthetic": {
+      "filename": "scicoqa-synthetic-v1.1.jsonl",
+      "sha256": "7fccd1267c09ea8dc944cee996341e57931dcddcf086c600c1f8bc8c0f94fbdb",
+      "reference_records": 543,
+      "paper_versions": 204,
+      "code_versions": 204,
+      "paper_assets_retrieved": 204,
+      "full_code_archives_retrieved": 203,
+      "source_only_repository_snapshots": 1
+    }
+  },
+  "actual_paired_model_calls": 0,
+  "actual_automated_judge_calls": 0,
+  "actual_independent_human_reviews": 0,
+  "model_id": null,
+  "model_revision": null,
+  "inference_settings": null,
+  "frozen_inference_contexts_created": false,
+  "automated_scoring": {
+    "status": "NOT_RUN",
+    "by_split": {
+      "real": {
+        "baseline": {
+          "recall": null,
+          "precision": null,
+          "false_positive_count": null,
+          "abstention_count": null,
+          "reviewer_minutes": null
+        },
+        "synthesis": {
+          "recall": null,
+          "precision": null,
+          "false_positive_count": null,
+          "abstention_count": null,
+          "reviewer_minutes": null
+        }
+      },
+      "synthetic": {
+        "baseline": {
+          "recall": null,
+          "precision": null,
+          "false_positive_count": null,
+          "abstention_count": null,
+          "reviewer_minutes": null
+        },
+        "synthesis": {
+          "recall": null,
+          "precision": null,
+          "false_positive_count": null,
+          "abstention_count": null,
+          "reviewer_minutes": null
+        }
+      }
+    }
+  },
+  "independent_human_adjudication": {
+    "status": "NOT_PERFORMED",
+    "by_split": {
+      "real": {
+        "baseline": {
+          "recall": null,
+          "precision": null,
+          "false_positive_count": null,
+          "abstention_count": null,
+          "reviewer_minutes": null
+        },
+        "synthesis": {
+          "recall": null,
+          "precision": null,
+          "false_positive_count": null,
+          "abstention_count": null,
+          "reviewer_minutes": null
+        }
+      },
+      "synthetic": {
+        "baseline": {
+          "recall": null,
+          "precision": null,
+          "false_positive_count": null,
+          "abstention_count": null,
+          "reviewer_minutes": null
+        },
+        "synthesis": {
+          "recall": null,
+          "precision": null,
+          "false_positive_count": null,
+          "abstention_count": null,
+          "reviewer_minutes": null
+        }
+      }
+    }
+  },
+  "implementation_validation": {
+    "python_tests_passed": 1003,
+    "subtests_passed": 66,
+    "bash_install_tests_passed": 34,
+    "bash_handoff_tests_passed": 18
+  },
+  "blockers": [
+    "No configured model provider credentials, inference endpoint or local model runtime",
+    "No independent scientific reviewers or adjudication records",
+    "Label-free source extraction QA, synthetic mutation application and common context-budget freeze remain required"
+  ],
+  "interpretation": "Null metrics mean unmeasured; they are not zero. Downloaded upstream model outputs are third-party historical artifacts, not new paired runs."
+}

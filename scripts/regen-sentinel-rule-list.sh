@@ -68,21 +68,20 @@ gen_section() {
     for f in "$sentinel"/sentinel/rules/plugins/*.py; do
         [[ -f "$f" ]] || continue
         local name; name="$(basename "$f" .py)"
-        case "$name" in __init__|test_*) continue ;; esac
+        case "$name" in __init__) continue ;; esac
         printf -- '- `%s`\n' "$name"
     done
     printf '\n'
 
-    # Closing note. The authoritative count comes from the rule registry
-    # (`sentinel list-rules`): a single source file can register more than one
-    # rule, so summing file names under-counts. Fall back to the file sum if
-    # the Sentinel package can't be imported in this environment.
-    local yaml_count plugin_count registry_count total
+    # Deterministic source census. In particular, a legitimate plugin may
+    # begin with test_ (e.g. test_module_collision): do not silently omit it.
+    # Do not claim runtime registration without executing the Sentinel registry.
+    # The previous optional import made the number depend on host packages.
+    local yaml_count plugin_count total
     yaml_count="$(find "$sentinel/sentinel/rules/yaml" -maxdepth 1 -name '*.yaml' 2>/dev/null | wc -l | tr -d ' ')"
-    plugin_count="$(find "$sentinel/sentinel/rules/plugins" -maxdepth 1 -name '*.py' -not -name '__init__.py' -not -name 'test_*' 2>/dev/null | wc -l | tr -d ' ')"
-    registry_count="$( (cd "$sentinel" && python -m sentinel list-rules 2>/dev/null) | grep -cE '\[(BLOCK|WARN|INFO)\]' )"
-    if [[ "${registry_count:-0}" -gt 0 ]]; then total="$registry_count"; else total="$((yaml_count + plugin_count))"; fi
-    printf '_Total: %s rules as registered by `sentinel list-rules` (source files: %s YAML pattern matchers + %s plugin checks). Each rule has a one-line *why* comment in its source file linking it to the past incident it prevents. Students who think a rule is wrong should fork Sentinel and edit — incident-backed rules are not gospel for every project._\n' "$total" "$yaml_count" "$plugin_count"
+    plugin_count="$(find "$sentinel/sentinel/rules/plugins" -maxdepth 1 -name '*.py' -not -name '__init__.py' 2>/dev/null | wc -l | tr -d ' ')"
+    total="$((yaml_count + plugin_count))"
+    printf '_Total: %s rule source files (%s YAML pattern matchers + %s Python plugins). This is a source-file census, not proof that the rules successfully register or execute; run `python -m sentinel list-rules` and a known-failing Sentinel scan to verify the runtime. Every rule should document the incident it prevents._\n' "$total" "$yaml_count" "$plugin_count"
 }
 
 if [[ "$MODE" == "stdout" ]]; then

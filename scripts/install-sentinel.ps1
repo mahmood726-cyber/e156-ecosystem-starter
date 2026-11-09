@@ -8,14 +8,14 @@
 #
 # Usage:
 #   .\scripts\install-sentinel.ps1 -Repo C:\Projects\my-paper
-#   .\scripts\install-sentinel.ps1 -Repo . -Mode block   # abort push on BLOCK (default: warn)
+#   .\scripts\install-sentinel.ps1 -Repo . -Mode warn    # explicit nonblocking opt-in (default: block)
 #   .\scripts\install-sentinel.ps1 -Repo . -SkipPipInstall
 #   .\scripts\install-sentinel.ps1 -Import               # dot-source for tests
 
 [CmdletBinding()]
 param(
     [string]$Repo,
-    [ValidateSet('warn', 'block')][string]$Mode = 'warn',
+    [ValidateSet('warn', 'block')][string]$Mode = 'block',
     [switch]$SkipPipInstall,
     [switch]$Import
 )
@@ -23,8 +23,10 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Test-SentinelInstalled {
-    $null = Get-Command sentinel -ErrorAction SilentlyContinue
-    return $?
+    # $? after assigning a command result can reflect the assignment rather
+    # than the presence of the executable. Check the lookup object itself.
+    $command = Get-Command sentinel -ErrorAction SilentlyContinue
+    return ($null -ne $command)
 }
 
 function Assert-RealPython {
@@ -62,16 +64,18 @@ Optional: also disable the Store alias in
     }
 }
 
-# Known-good Sentinel commit (the 53-rule build: 21 BLOCK / 28 WARN / 4 INFO).
-# v0.1.0 is stale (only ~12 rules); pinned to the v1.0.0 release tag (the
-# known-good 53-rule build). Same tag-pinned approach used for Overmind.
-$script:SentinelDefaultRef = 'v1.0.0'
+# Frozen Sentinel v1.0.0 release source (not a signature or dependency lock).
+# GitHub unsigned tag object 89b8474f355511b0efb9c88b7a17ecf44198bbc4
+# pointed to this immutable commit on 2026-10-25.
+$script:SentinelDefaultRef = '5808f2bdc024506fa3d49a367c88b42b15fdf164'
 
 function Get-SentinelDefaultSource {
-    # Pinned to a known-good commit by default so a fresh install is reproducible.
-    # Override with $env:SENTINEL_REF=main (or any branch/tag/SHA) to opt into
-    # bleeding-edge or to roll back if a future release breaks something.
+    # Explicit rollback overrides must be immutable commits, not tags or branches.
+    # A commit SHA establishes identity, not an authenticated publisher.
     $ref = if ($env:SENTINEL_REF) { $env:SENTINEL_REF } else { $script:SentinelDefaultRef }
+    if ($ref -cnotmatch '^[0-9a-f]{40}$') {
+        throw 'SENTINEL_REF must be a full lowercase 40-character commit SHA.'
+    }
     return "git+https://github.com/mahmood726-cyber/Sentinel.git@$ref"
 }
 
@@ -113,8 +117,30 @@ function Backup-ExistingPrePushHook {
     $existing = Get-Content -Raw -Path $hookPath -ErrorAction SilentlyContinue
     if ($existing -and $existing -match 'sentinel\s+(scan|run-pre-push)') { return $null }
     $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
-    $backup = "$hookPath.user-$ts"
-    Copy-Item -Path $hookPath -Destination $backup -Force
+    # Timestamp resolution is one second; a rapid reinstall must never
+    # overwrite a previous user hook backup. CreateNew closes the race between
+    # checking for an existing path and writing the new backup.
+    $base = "$hookPath.user-$ts"
+    $backup = $base
+    $suffix = 1
+    while (Test-Path -LiteralPath $backup) {
+        $backup = "$base.$suffix"
+        $suffix++
+    }
+    $inputStream = [System.IO.File]::OpenRead($hookPath)
+    try {
+        $outputStream = [System.IO.File]::Open(
+            $backup, [System.IO.FileMode]::CreateNew,
+            [System.IO.FileAccess]::Write, [System.IO.FileShare]::None
+        )
+        try {
+            $inputStream.CopyTo($outputStream)
+        } finally {
+            $outputStream.Dispose()
+        }
+    } finally {
+        $inputStream.Dispose()
+    }
     return $backup
 }
 
@@ -122,7 +148,7 @@ function Install-SentinelHookInRepo {
     [CmdletBinding()]
     param(
         [string]$RepoPath,
-        [string]$HookMode = 'warn'
+        [ValidateSet('warn', 'block')][string]$HookMode = 'block'
     )
     $abs = (Resolve-Path $RepoPath -ErrorAction Stop).Path
     if (-not (Test-Path (Join-Path $abs '.git'))) {
@@ -138,6 +164,22 @@ function Install-SentinelHookInRepo {
     $out | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
     if ($LASTEXITCODE -ne 0) {
         throw "sentinel install-hook failed (exit $LASTEXITCODE)"
+    }
+    # Exit 0 alone is not proof that a pre-push hook was installed. Verify the
+    # actual upstream Sentinel hook banner, scanner and requested install mode.
+    # This verifies a local installation postcondition, NOT a cryptographic
+    # signature or that a Sentinel scan has run.
+    $hookPath = Join-Path $abs '.git\hooks\pre-push'
+    if (-not (Test-Path -LiteralPath $hookPath -PathType Leaf)) {
+        throw "sentinel install-hook returned success but no pre-push hook exists at $hookPath"
+    }
+    $hook = Get-Content -LiteralPath $hookPath -Raw -ErrorAction Stop
+    $marker = '# === SENTINEL PRE-PUSH HOOK (do not edit above this line) ==='
+    $modeLine = 'MODE="${SENTINEL_MODE:-' + $HookMode + '}"'
+    if (-not $hook.Contains($marker) -or
+        -not $hook.Contains('python -m sentinel scan') -or
+        -not $hook.Contains($modeLine)) {
+        throw "sentinel install-hook returned success but pre-push hook identity/mode verification failed at $hookPath"
     }
     return $abs
 }
@@ -166,6 +208,8 @@ Write-Host "Sentinel pre-push hook installer" -ForegroundColor Cyan
 Write-Host ""
 
 # Step 1: is sentinel on PATH?
+# Reject a mutable override even when a Sentinel executable is already on PATH.
+try { $null = Get-SentinelDefaultSource } catch { Write-Host $_.Exception.Message -ForegroundColor Red; exit 1 }
 Write-Step "Checking for sentinel CLI"
 if (Test-SentinelInstalled) {
     $ver = (& sentinel --help 2>&1 | Select-String 'usage: sentinel').ToString().Trim()

@@ -1,0 +1,228 @@
+{
+  "repository": "armiro/COVID-CXNet",
+  "commit": "3ade488b3828705706fc5f58c0667421d8b04a01",
+  "scope": "source/text files only; binary weights and data excluded",
+  "selected_file_count": 22,
+  "files": [
+    {
+      "path": "BEASF.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "795bc4ddc7ac0278618fdb4f39277b43deff2941",
+      "size": 3181,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/BEASF.py",
+      "status": "RETRIEVED",
+      "sha256": "f13d43c6a2eb9deec28c83ecbdd9281c0f42f01f652f780c95efeddf13931415"
+    },
+    {
+      "path": "CheXNet.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e5ce80704de5f4f84c5ce38469868277a4dc8805",
+      "size": 1422,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/CheXNet.py",
+      "status": "RETRIEVED",
+      "sha256": "41e919e3c2d130e239d2e115e072ae16302072573307db2ba7e16c687131bbbb"
+    },
+    {
+      "path": "CheXpert_data_loader.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "31ec20605455d2b4beac1eb6f0762ad55082efb3",
+      "size": 1510,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/CheXpert_data_loader.py",
+      "status": "RETRIEVED",
+      "sha256": "25e48edc633dafa7c4dcf90fae3ed447f8751e156e035574da1eab165b15f9e7"
+    },
+    {
+      "path": "Hannover_data_loader.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e16308b30aea51fd82b575c458ed17d4cf023413",
+      "size": 2057,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/Hannover_data_loader.py",
+      "status": "RETRIEVED",
+      "sha256": "3efcf0c39d8629ba8ed553b85b9492fd5f7750a0bb37f5f70ce2cdaf211448f3"
+    },
+    {
+      "path": "LICENSE",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b91dd42f43826fd6263f65c805442b4e4aa8a6d6",
+      "size": 1073,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/LICENSE",
+      "status": "RETRIEVED",
+      "sha256": "f57277b8a1b377674e0c476e4ff080601c4cb06676201bd46c05d0a67dcf3973"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e451cc0c8f6a1f83951d403cfb3e5a0468191185",
+      "size": 3612,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/README.md",
+      "status": "RETRIEVED",
+      "sha256": "930776048f65c3122d8aca1c2629605cf9820f84b9f39de369a0599760ed42bf"
+    },
+    {
+      "path": "checkpoints/base_model/base_model.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7dc852c249d066e729d2e05c9feb544505fa3176",
+      "size": 5699,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/checkpoints/base_model/base_model.json",
+      "status": "RETRIEVED",
+      "sha256": "cd3828a5eafb5857ea763dcd65283b4dae2da7791ca7f857ff3096311416ba11"
+    },
+    {
+      "path": "checkpoints/base_model/base_model_3d.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e3f0aa078c9181f19719d3bd6a76d9d0d04f4f49",
+      "size": 5699,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/checkpoints/base_model/base_model_3d.json",
+      "status": "RETRIEVED",
+      "sha256": "c3595cf16d2aff251e4e70931280bb0d11691812c4725682051382ab8ed42861"
+    },
+    {
+      "path": "checkpoints/base_model/v_free/base_model.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "31641b55332c72c3dcc5b10d4f8969003b9ad9b8",
+      "size": 5699,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/checkpoints/base_model/v_free/base_model.json",
+      "status": "RETRIEVED",
+      "sha256": "6d21829263051393342567049cba2b7ad0b77a23a5383c2e66d062a46fa875db"
+    },
+    {
+      "path": "checkpoints/densenet121/densenet121.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e2747387063fa448e18fdd57278723e008b4f81f",
+      "size": 208458,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/checkpoints/densenet121/densenet121.json",
+      "status": "RETRIEVED",
+      "sha256": "49098683e211cd8f46d2f3d35dc64c302a7960a1eeae90c18f665d89a7152046"
+    },
+    {
+      "path": "dataset_analysis.ipynb",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2f65cf2e65f21d43660669d9bb84ec62649304f9",
+      "size": 256423,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/dataset_analysis.ipynb",
+      "status": "RETRIEVED",
+      "sha256": "c3386002a872e6efea578c61f4b6891a53d429cb0e5973d238185736725e2d08"
+    },
+    {
+      "path": "dataset_exporter.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f2ac9e5f41166d685b345a8d9d71c42ecd7dcb83",
+      "size": 3579,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/dataset_exporter.py",
+      "status": "RETRIEVED",
+      "sha256": "ea2893cfe466abc372ce6ebf04abf9bca26857dfc35354a42213078afbb58919"
+    },
+    {
+      "path": "hands_on_covid_cxnet.ipynb",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c7984ffe99aed1cd2f0a7dab7631185be1b4efb3",
+      "size": 617602,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/hands_on_covid_cxnet.ipynb",
+      "status": "RETRIEVED",
+      "sha256": "08178f4c12ba7762806de0ad989e2a604528b666ef2af25fb07c3f4c2f573f5d"
+    },
+    {
+      "path": "hierarchical_covid_cxnet.ipynb",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d81c2ef4061ce4b890def4241bc0e15220a862e6",
+      "size": 35321,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/hierarchical_covid_cxnet.ipynb",
+      "status": "RETRIEVED",
+      "sha256": "5165cb63937b51886f4fd8c83509e90d6605818c762d912d852ff6e8750e6a56"
+    },
+    {
+      "path": "main.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5524abd654277b57b367150b63ee400f84818c88",
+      "size": 10452,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/main.py",
+      "status": "RETRIEVED",
+      "sha256": "808f305d2b8d7c5cb2ab0ceaa52f885b6f9b105a8092221959c6deb3b2972a9b"
+    },
+    {
+      "path": "model_in_use.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "241e2fdfcb29b2b216ae95a027aa7b22eff82d36",
+      "size": 3238,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/model_in_use.py",
+      "status": "RETRIEVED",
+      "sha256": "849d99730e4a0db6e33a6e5385bf3675d6f1e624e44a61cc700b404c867c2ebd"
+    },
+    {
+      "path": "multiclass_covid_cxnet.ipynb",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5686c0e6a06fe06b5442bbb6cda5c245caf98aaa",
+      "size": 1123376,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/multiclass_covid_cxnet.ipynb",
+      "status": "RETRIEVED",
+      "sha256": "87c0e5e8221a9373b0d0061562ab191a6817d69dd77b960de33e890a8602ca2d"
+    },
+    {
+      "path": "requirements.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "01bd0c630011ce070eb31b005677f3f35a8f6045",
+      "size": 108,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/requirements.txt",
+      "status": "RETRIEVED",
+      "sha256": "eb68f2219f9c44c750c7cef980655641bd71afa7aafb0c976a52a0d00b0621b3"
+    },
+    {
+      "path": "test.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d8ae4dd5ccb436c543e7d0dc5c42b5211cf2bc58",
+      "size": 1247,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/test.py",
+      "status": "RETRIEVED",
+      "sha256": "bc544817938a640ed0be6952b718b46468f6cb66abfe1132fe5cd0abef3c0a80"
+    },
+    {
+      "path": "transfer_learning.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bdee13adb032f1f6c523b61859eb9c1313f5daf7",
+      "size": 6248,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/transfer_learning.py",
+      "status": "RETRIEVED",
+      "sha256": "c408f1bc240c04aadb4941f54ffe33846518e35c45a9cacb046113bbab1d6e76"
+    },
+    {
+      "path": "unet_lung_segmentation.ipynb",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "15f814586876607a3ecb5af1e4fac1a3fec0e5bd",
+      "size": 253332,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/unet_lung_segmentation.ipynb",
+      "status": "RETRIEVED",
+      "sha256": "4f4ab3a4c27fd17ac765d70e08ce1bf6265d58e2f4e4172edd365425ef6a8a42"
+    },
+    {
+      "path": "visualization_tools.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "75d39fe1feeb5cd57bda2f923cfb76dda9bbb0fd",
+      "size": 5754,
+      "url": "https://raw.githubusercontent.com/armiro/COVID-CXNet/3ade488b3828705706fc5f58c0667421d8b04a01/visualization_tools.py",
+      "status": "RETRIEVED",
+      "sha256": "fd60649bc2fa1cc5fa8cfc3a10023d931502e1d5b5c4f87c78f3858858df773b"
+    }
+  ]
+}

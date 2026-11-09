@@ -1,5 +1,15 @@
 # e156-ecosystem-starter
 
+## Synthesis — start here (human checklist)
+
+**For authors, clinicians, reviewers and journal editors:** [**Open the Synthesis Human Checklist — no programming required**](docs/SYNTHESIS-HUMAN-CHECKLIST.md).
+
+Start with **six core checks**, then use the 27 detailed questions relevant to your manuscript. Record **Pass / Review needed / Insufficient evidence / N/A with a reason**. The checklist includes a final revision sweep, a [participant-count worksheet](docs/SYNTHESIS-PARTICIPANT-WORKSHEET.md), [three worked public examples](docs/SYNTHESIS-WORKED-EXAMPLES.md) and an [optional AI prompt](docs/SYNTHESIS-COPY-PASTE-AI-PROMPT.md). A flagged inconsistency requires investigation. The current public version remains experimental.
+
+**Need the details?** See the [methods and evidence guide](docs/SYNTHESIS-METHODS.md), [Synthesis overview](docs/SYNTHESIS-v1.3-CANDIDATE.md), [audit packet](docs/SYNTHESIS-v1.3-AUDIT-PACKET.md) and [blinded validation plan](docs/SYNTHESIS-v1.3-BLINDED-VALIDATION-PLAN.md). Independent prospective real-paper accuracy has not been established. The repository uses the [MIT licence](LICENSE); linked source papers retain their own licences. Keep manuscript evidence and correspondence private.
+
+---
+
 Bootstrap Mahmood's quality-dev ecosystem on a student's laptop.
 
 This is not a single tool. It is the **install layer** that turns a fresh
@@ -99,7 +109,7 @@ Flags:
 
 ```powershell
 # From the ecosystem-starter dir, pointing at the repo you want protected:
-.\scripts\install-sentinel.ps1 -Repo C:\Projects\my-paper
+.\scripts\install-sentinel.ps1 -Repo ..\my-paper
 ```
 
 This `pip install`s the [Sentinel](https://github.com/mahmood726-cyber/Sentinel)
@@ -139,11 +149,11 @@ This `pip install`s [overmind](https://github.com/mahmood726-cyber/overmind)
 generates a 64-hex-char `TRUTHCERT_HMAC_KEY` if you don't already have one,
 saves it as a User env var, and runs `overmind meta-verify` as a canary.
 Override the pin via `$env:OVERMIND_REF = 'main'` (or any branch/tag/SHA).
-From then on you can verify any repo with:
+From then on, run these commands from the repository you want to verify:
 
 ```powershell
-overmind scan --repo C:\Projects\my-paper
-overmind run-once --repo C:\Projects\my-paper
+overmind scan --repo .
+overmind run-once --repo .
 ```
 
 Back up the HMAC key somewhere safe — losing it invalidates all prior
