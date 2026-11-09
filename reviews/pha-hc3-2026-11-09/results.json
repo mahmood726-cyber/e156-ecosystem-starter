@@ -47,6 +47,13 @@
     "two_sided_exact_binomial_p": 2.5258189217190576e-05,
     "interpretation": "Diagnostic scale comparison only; cannot replace the published GLMM or establish its multiplicity-adjusted inference."
   },
+  "script_block_label_swap_sensitivity": {
+    "null": "Within each script, exchange agent/base labels for all three ratings together; scripts independent and exchangeable under the sharp null",
+    "allocations": 2147483648,
+    "two_sided_extreme_allocations": 941992,
+    "two_sided_p": 0.0004386492073535919,
+    "limitation": "Exact for stated exchangeability null, not a replay of the mixed model or a substitute for rater and script random effects."
+  },
   "matching_controls": {
     "MCQ": {
       "n": 2145,
