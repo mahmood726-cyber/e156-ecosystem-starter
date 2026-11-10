@@ -1,0 +1,324 @@
+{
+  "schema_version": "1.1",
+  "run": {
+    "run_id": "SYNTHETIC-DEMO-NOT-A-PAPER",
+    "model_id": "none",
+    "model_provider": "manual",
+    "tool_versions": {},
+    "prompt_sha256": "2ca1436c1afff4d848f62f3ccc6a2afa5255febf647172ec5e59ac189bd32ed2"
+  },
+  "document": {
+    "pmcid": "PMC123",
+    "identifier": "10.1234/synthetic",
+    "version": "PMC123.2"
+  },
+  "sources": [],
+  "claims": [
+    {
+      "id": "C1",
+      "text": "Synthetic scoped claim",
+      "locator": "Results",
+      "source_ids": [],
+      "source_support": "SUPPORTED",
+      "evidence_maturity": "SCREENED",
+      "priority": "P4",
+      "proposed_disposition": "NO_FLAG",
+      "evidence_checks": [
+        {
+          "id": "MATCH",
+          "kind": "MATCHED_COUNTS",
+          "snapshot_sha256": "5bcd8d884879a7f9d258f71ae1475407e8e6c414acc4075e7a0681c7a5bde8db",
+          "left": {
+            "count": {
+              "quote": "Treated population: 32 participants.",
+              "count_text": "32"
+            },
+            "identity": {
+              "source_result_id": "synthetic-E-V-A",
+              "data_version": "synthetic-v1",
+              "count_basis": "unique_participants",
+              "denominator_basis": "treated",
+              "analysis_cell_id": "arm-A",
+              "population": "treated",
+              "endpoint": "E",
+              "time_window": "V",
+              "effect_measure": "raw count",
+              "estimand": "observed count",
+              "model": "not_applicable",
+              "adjustment": "not_applicable",
+              "multiplicity": "not_applicable",
+              "missingness": "not_applicable",
+              "censoring": "not_applicable",
+              "variance_method": "not_applicable",
+              "test_statistic_identity": "not_applicable"
+            },
+            "definition": {
+              "quote": "One synthetic trial, arm A, endpoint E at visit V; raw observed participants."
+            },
+            "scope_verified": true
+          },
+          "right": {
+            "count": {
+              "quote": "Same treated count: 32 participants.",
+              "count_text": "32"
+            },
+            "identity": {
+              "source_result_id": "synthetic-E-V-A",
+              "data_version": "synthetic-v1",
+              "count_basis": "unique_participants",
+              "denominator_basis": "treated",
+              "analysis_cell_id": "arm-A",
+              "population": "treated",
+              "endpoint": "E",
+              "time_window": "V",
+              "effect_measure": "raw count",
+              "estimand": "observed count",
+              "model": "not_applicable",
+              "adjustment": "not_applicable",
+              "multiplicity": "not_applicable",
+              "missingness": "not_applicable",
+              "censoring": "not_applicable",
+              "variance_method": "not_applicable",
+              "test_statistic_identity": "not_applicable"
+            },
+            "definition": {
+              "quote": "One synthetic trial, arm A, endpoint E at visit V; raw observed participants."
+            },
+            "scope_verified": true
+          }
+        },
+        {
+          "id": "SUBSET",
+          "kind": "STRICT_SUBSET",
+          "relationship": "STRICT_SUBSET",
+          "snapshot_sha256": "5bcd8d884879a7f9d258f71ae1475407e8e6c414acc4075e7a0681c7a5bde8db",
+          "primary": {
+            "count": {
+              "quote": "Randomised population: 36 participants.",
+              "count_text": "36"
+            },
+            "identity": {
+              "source_result_id": "synthetic-E-V-A",
+              "data_version": "synthetic-v1",
+              "count_basis": "unique_participants",
+              "denominator_basis": "randomised",
+              "analysis_cell_id": "arm-A",
+              "population": "randomised",
+              "endpoint": "E",
+              "time_window": "V",
+              "effect_measure": "raw count",
+              "estimand": "observed count",
+              "model": "not_applicable",
+              "adjustment": "not_applicable",
+              "multiplicity": "not_applicable",
+              "missingness": "not_applicable",
+              "censoring": "not_applicable",
+              "variance_method": "not_applicable",
+              "test_statistic_identity": "not_applicable"
+            },
+            "definition": {
+              "quote": "One synthetic trial, arm A, endpoint E at visit V; raw observed participants."
+            },
+            "scope_verified": true
+          },
+          "restricted": {
+            "count": {
+              "quote": "The restricted count is 32.",
+              "count_text": "32"
+            },
+            "identity": {
+              "source_result_id": "synthetic-E-V-A",
+              "data_version": "synthetic-v1",
+              "count_basis": "unique_participants",
+              "denominator_basis": "treated",
+              "analysis_cell_id": "arm-A",
+              "population": "treated",
+              "endpoint": "E",
+              "time_window": "V",
+              "effect_measure": "raw count",
+              "estimand": "observed count",
+              "model": "not_applicable",
+              "adjustment": "not_applicable",
+              "multiplicity": "not_applicable",
+              "missingness": "not_applicable",
+              "censoring": "not_applicable",
+              "variance_method": "not_applicable",
+              "test_statistic_identity": "not_applicable"
+            },
+            "definition": {
+              "quote": "One synthetic trial, arm A, endpoint E at visit V; raw observed participants."
+            },
+            "scope_verified": true
+          },
+          "exclusions": [
+            {
+              "count": {
+                "quote": "exclusion count 4.",
+                "count_text": "4"
+              },
+              "identity": {
+                "source_result_id": "synthetic-E-V-A",
+                "data_version": "synthetic-v1",
+                "count_basis": "unique_participants",
+                "denominator_basis": "excluded",
+                "analysis_cell_id": "arm-A",
+                "population": "excluded",
+                "endpoint": "E",
+                "time_window": "V",
+                "effect_measure": "raw count",
+                "estimand": "observed count",
+                "model": "not_applicable",
+                "adjustment": "not_applicable",
+                "multiplicity": "not_applicable",
+                "missingness": "not_applicable",
+                "censoring": "not_applicable",
+                "variance_method": "not_applicable",
+                "test_statistic_identity": "not_applicable"
+              },
+              "definition": {
+                "quote": "One synthetic trial, arm A, endpoint E at visit V; raw observed participants."
+              },
+              "scope_verified": true
+            }
+          ],
+          "exclusions_disjoint_verified": true,
+          "exclusions_exhaustive_verified": true
+        },
+        {
+          "id": "PCT",
+          "kind": "COUNT_PERCENT",
+          "snapshot_sha256": "5bcd8d884879a7f9d258f71ae1475407e8e6c414acc4075e7a0681c7a5bde8db",
+          "numerator": {
+            "count": {
+              "quote": "Response count 8 of 32 treated participants (25.0%).",
+              "count_text": "8"
+            },
+            "identity": {
+              "source_result_id": "synthetic-E-V-A",
+              "data_version": "synthetic-v1",
+              "count_basis": "unique_participants",
+              "denominator_basis": "treated",
+              "analysis_cell_id": "arm-A",
+              "population": "treated",
+              "endpoint": "E",
+              "time_window": "V",
+              "effect_measure": "raw count",
+              "estimand": "observed count",
+              "model": "not_applicable",
+              "adjustment": "not_applicable",
+              "multiplicity": "not_applicable",
+              "missingness": "not_applicable",
+              "censoring": "not_applicable",
+              "variance_method": "not_applicable",
+              "test_statistic_identity": "not_applicable"
+            },
+            "definition": {
+              "quote": "One synthetic trial, arm A, endpoint E at visit V; raw observed participants."
+            },
+            "scope_verified": true
+          },
+          "denominator": {
+            "count": {
+              "quote": "Treated population: 32 participants.",
+              "count_text": "32"
+            },
+            "identity": {
+              "source_result_id": "synthetic-E-V-A",
+              "data_version": "synthetic-v1",
+              "count_basis": "unique_participants",
+              "denominator_basis": "treated",
+              "analysis_cell_id": "arm-A",
+              "population": "treated",
+              "endpoint": "E",
+              "time_window": "V",
+              "effect_measure": "raw count",
+              "estimand": "observed count",
+              "model": "not_applicable",
+              "adjustment": "not_applicable",
+              "multiplicity": "not_applicable",
+              "missingness": "not_applicable",
+              "censoring": "not_applicable",
+              "variance_method": "not_applicable",
+              "test_statistic_identity": "not_applicable"
+            },
+            "definition": {
+              "quote": "One synthetic trial, arm A, endpoint E at visit V; raw observed participants."
+            },
+            "scope_verified": true
+          },
+          "percentage": {
+            "quote": "Response count 8 of 32 treated participants (25.0%).",
+            "number_text": "25.0",
+            "role": "percentage",
+            "unit": "percent",
+            "scale": "raw"
+          }
+        },
+        {
+          "id": "CI",
+          "kind": "INTERVAL",
+          "snapshot_sha256": "5bcd8d884879a7f9d258f71ae1475407e8e6c414acc4075e7a0681c7a5bde8db",
+          "estimate": {
+            "quote": "Mean difference -1.4 units; two-sided reported interval -2.6 to -0.2 units.",
+            "number_text": "-1.4",
+            "role": "estimate",
+            "unit": "units",
+            "scale": "raw"
+          },
+          "lower": {
+            "quote": "Mean difference -1.4 units; two-sided reported interval -2.6 to -0.2 units.",
+            "number_text": "-2.6",
+            "role": "lower",
+            "unit": "units",
+            "scale": "raw"
+          },
+          "upper": {
+            "quote": "Mean difference -1.4 units; two-sided reported interval -2.6 to -0.2 units.",
+            "number_text": "-0.2",
+            "role": "upper",
+            "unit": "units",
+            "scale": "raw"
+          },
+          "effect_measure": "mean difference",
+          "method": "reported_two_sided",
+          "method_context": {
+            "quote": "Interval method: reported two-sided."
+          },
+          "scope_verified": true
+        },
+        {
+          "id": "SWEEP",
+          "kind": "REVISION_SWEEP",
+          "snapshot_sha256": "5bcd8d884879a7f9d258f71ae1475407e8e6c414acc4075e7a0681c7a5bde8db",
+          "expected": {
+            "quote": "Mean difference -1.4 units; two-sided reported interval -2.6 to -0.2 units.",
+            "number_text": "-1.4",
+            "role": "estimate",
+            "unit": "units",
+            "scale": "raw"
+          },
+          "occurrences": [
+            {
+              "id": "abstract",
+              "root_id": "copy",
+              "ref": {
+                "quote": "Stale mean difference -0.8 units.",
+                "number_text": "-0.8",
+                "role": "estimate",
+                "unit": "units",
+                "scale": "raw"
+              }
+            }
+          ],
+          "dependencies": [
+            {
+              "id": "external-figure",
+              "locator": "External synthetic figure",
+              "status": "UNINSPECTED"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

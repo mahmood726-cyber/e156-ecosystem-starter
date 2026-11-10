@@ -10,6 +10,8 @@ A result needs an exact source passage or data location. Inspect the rendered so
 
 ## Comparability before calculation
 
+The optional [normal-intake evidence contract](SYNTHESIS-INTAKE-EVIDENCE.md) binds count definitions, signed values and units to captured sources; it also retains mapped revision dependencies and redacted private-case states. The [author start page](SYNTHESIS-START.md) explains where the manual, prompt and Python routes run. These checks do not establish scientific accuracy.
+
 Establish the relevant population, intervention, comparator, endpoint, time window, effect measure, estimand, model, adjustment, multiplicity, missingness, censoring, variance method and test identity. These correspond to the implementation's `ESTIMATOR_FIELDS` in [synthesis_v13_checks.py](../scripts/synthesis_v13_checks.py). Missing material fields or different estimators can require `NOT_COMPARABLE`.
 
 For participant accounting use the [worksheet](SYNTHESIS-PARTICIPANT-WORKSHEET.md). Separate people, events, observations and person-time. Verify the relationship between populations before subtraction or addition. For regressions establish coding, reference category, units and contrast before exponentiating a coefficient. For P values establish null, sidedness, scale, test and source precision. Preserve the published estimator when attempting reproduction.

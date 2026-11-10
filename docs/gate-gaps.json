@@ -6,7 +6,7 @@
       "id": ".github/workflows/synthesis-preflight.yml#jobs.offline-regression",
       "kind": "ci-job",
       "name": "Synthesis preflight synthetic regression (development only)",
-      "stops": "The Ubuntu regression job fails when a synthetic preflight or PMC capture assertion fails, including version, licence, table markup, network opt-in, source-cell binding, shared-control accounting, or verified correction snapshot controls, or when the offline example loses expected prompt binding or review statuses.",
+      "stops": "The Ubuntu regression job fails when a synthetic preflight or PMC capture assertion fails, including version, licence, table markup, network opt-in, source-cell binding, shared-control accounting, or verified correction snapshot controls, or when the offline example loses expected prompt binding or review statuses. It also runs normal-intake identity, percentage, signed-interval, revision-dependency and private-case redaction/CLI contracts using synthetic fixtures.",
       "would_not_stop": [
         "Live PMC outages and unexpected changes in real XML: the job exercises synthetic archive replay and an offline packet.",
         "Wrong interpretation of a real source, table or correction: the synthetic cases cover specific structural checks.",
@@ -14,16 +14,16 @@
         "Failures in the repository's other Python, Windows, Bash, link, hash or Sentinel jobs: this narrow workflow is not the full repository CI.",
         "An altered prompt and packet that are both consistently rehashed: the receipt checks internal binding, not independent scientific provenance."
       ],
-      "source": ".github/workflows/synthesis-preflight.yml offline-regression job, both Synthesis preflight and capture tests, and examples/synthetic_packet.json.",
+      "source": ".github/workflows/synthesis-preflight.yml offline-regression job, both Synthesis preflight and capture tests, and examples/synthetic_packet.json. Tests test_synthesis_intake_evidence.py and test_synthesis_case_state.py include the documented synthetic demo and private-reference redaction.",
       "seal": {
-        ".github/workflows/synthesis-preflight.yml#jobs.offline-regression": "ad3e6c9c93970bbc993fa58050ae578c38884af3e63c3a21cace9777df4cb06d"
+        ".github/workflows/synthesis-preflight.yml#jobs.offline-regression": "a22c05f55e88564324861cc48651a0ca4dfd1b8695e78606b5adb97275956db9"
       }
     },
     {
       "id": "scripts/synthesis_preflight.py",
       "kind": "script",
       "name": "Synthesis local packet validator (experimental)",
-      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for PMC packets. Live capture requires an operator flag and the HTTPS EFetch origin. Archives refuse extra articles and conflicting rights declarations. Source-bound counts require a matching snapshot hash and supported integer cells or unambiguous quoted tokens, with exact locator disambiguation when needed, under reviewer-verified analysis scope. A passed restricted-count bound cannot clear missing disjoint, exhaustive exclusion accounting. A requested correction prevents an original-only comparison from clearing a claim; a separate mapped sweep retains stale occurrences and unchecked locations.",
+      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for PMC packets. Live capture requires an operator flag and the HTTPS EFetch origin. Archives refuse extra articles and conflicting rights declarations. Source-bound counts require a matching snapshot hash and supported integer cells or unambiguous quoted tokens, with exact locator disambiguation when needed, under reviewer-verified analysis scope. A passed restricted-count bound cannot clear missing disjoint, exhaustive exclusion accounting. A requested correction prevents an original-only comparison from clearing a claim; a separate mapped sweep retains stale occurrences and unchecked locations. Normal intake binds per-count definition quotes and result identities before same-result or strict-subset comparisons; new signed scalar and interval references retain unit context and reject partial tokens. Bounded revision maps retain stale and uninspected dependencies. Legacy count checks cannot clear a decisive claim on attested labels alone. An optional private sidecar holds known unresolved reply points and emits redacted status labels separately from contact pauses.",
       "would_not_stop": [
         "Fabricated but internally consistent claim attestations or locally supplied XML: capture binds a snapshot and declared identity. Claim support and archive provenance require separate review.",
         "Incorrect source tallies despite matching printed arithmetic: count validity is explicitly not independently verified. The code does not authenticate participant records, exclusion completeness, disjointness, trial-family identities or reviewer scope attestations.",
@@ -31,14 +31,20 @@
         "An unavailable or superseded external attachment or correction: inline supplement tables and verified linked PMC corrections can be traced, but unresolved links require follow-up and correction evidence does not automatically close a claim.",
         "Statistically valid alternative methods, adjusted or survival estimators, and complex meta-analysis pipelines outside its five narrow calculation kinds.",
         "Missed paper errors in unflagged claims or incorrect human interpretation of reported source text: these require separate review and held-out assessment.",
-        "Incorrect human adjudication, false claims of author confirmation or bias in how papers were selected; none are adjudicated by this script."
+        "Incorrect human adjudication, false claims of author confirmation or bias in how papers were selected; none are adjudicated by this script.",
+        "Incorrect semantic mapping of a captured definition, a unit or an estimator: these remain reviewer attestations. Interval checks establish printed ordering/containment only, not coverage or CI/P-value equivalence.",
+        "Omitted private replies or contact pauses, manually altered histories, false source-recheck declarations or a falsely reported published correction: the offline sidecar does not read mail or authenticate correspondence and never authorises contact."
       ],
-      "source": "scripts/synthesis_preflight.py, scripts/synthesis_capture_evidence.py, scripts/synthesis_participant_evidence.py and the restricted-count arithmetic in scripts/synthesis_v13_nma_preflight.py, with prompt v1.1 and synthetic regressions.",
+      "source": "scripts/synthesis_preflight.py, scripts/synthesis_capture_evidence.py, scripts/synthesis_participant_evidence.py and the restricted-count arithmetic in scripts/synthesis_v13_nma_preflight.py, with prompt v1.1 and synthetic regressions. New source checks and redacted case state are implemented in scripts/synthesis_intake_evidence.py and scripts/synthesis_case_state.py, reusing the count-identity and root-grouping helpers.",
       "seal": {
-        "scripts/synthesis_preflight.py": "a4508a7668765e3ba29a58fb106967e12e97da9667dacbde07958a9e43c9c301",
-        "scripts/synthesis_capture_evidence.py": "0e789ca464477c38c0ee232a804cef374eeb54b2c99de71ddcad59118cd60df5",
-        "scripts/synthesis_participant_evidence.py": "f79b1d847b7d001a19031d903e8416b9d2d8d71501efb7e98c519d53fcf8a659",
-        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605"
+        "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+        "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+        "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_intake_evidence.py": "0c3db696d9cf7af641a926481f5e51c5e003bd3ee7fc4709ccf0e54221e200c2",
+        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de",
+        "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
+        "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973"
       }
     },
     {
