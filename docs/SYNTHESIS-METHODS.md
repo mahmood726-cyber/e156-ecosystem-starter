@@ -52,7 +52,7 @@ If human-authorised correspondence is needed, consolidate related points for the
 ## Implementation boundaries
 
 - [Preflight v1.1](SYNTHESIS-PREFLIGHT-v1.1.md) and [its packet contract](../scripts/synthesis_preflight.py) validate supplied records and evidence gates. A completed manual worksheet does not authenticate those records.
-- [PMC capture and participant counts](SYNTHESIS-PREFLIGHT-PMC-COUNTS.md) archive source XML and evaluate reviewer-selected mappings. Decisive count comparisons currently require supported plain integer cells. Prose, merged headers and compound cells can hold for review. The new worksheet does not add automated extraction.
+- [PMC capture and participant counts](SYNTHESIS-PREFLIGHT-PMC-COUNTS.md) archive source XML and evaluate reviewer-selected integer cells or uniquely quoted integer tokens in supported prose/compound cells. This is bounded mapping, not automatic semantic extraction. Restricted counts within a parent bound stay HOLD without a source-bound, reviewer-attested disjoint and exhaustive exclusion ledger. Correction sweeps compare mapped occurrences and preserve unchecked locations. Matching arithmetic does not independently verify the source tally.
 - [v1.3 checks](../scripts/synthesis_v13_checks.py) implement bounded numerical, identity, source and feedback gates. [NMA preflight](../scripts/synthesis_v13_nma_preflight.py) checks declared overlap/dependence, restricted-count bounds and replay readiness. It does not fit the model or verify all underlying participants.
 - The [audit packet](SYNTHESIS-v1.3-AUDIT-PACKET.md) and [reporting contract](SYNTHESIS-REPORTING-v0.1.md) describe evidence accounting. File/schema consistency is not scientific authentication or independent adjudication.
 

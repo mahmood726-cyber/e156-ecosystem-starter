@@ -498,5 +498,163 @@ class PmcIntakeTests(unittest.TestCase):
         self.assertEqual(result["pmc_evidence"]["status"], "HOLD")
 
 
+class CountLedgerTests(unittest.TestCase):
+    """Synthetic intake contracts, not measured scientific detection accuracy."""
+
+    run_preflight = PmcIntakeTests.run_preflight
+
+    def restricted_packet(self, reported=19):
+        payload = ARTICLE.replace(b"<permissions>", (
+            f"<abstract><p>Final analysis included {reported} participants.</p></abstract><permissions>"
+        ).encode()).replace(b"<p>Counts by arm.</p>",
+                           b"<p>Counts by arm.</p><p>There were 5 excluded participants.</p>")
+        return payload, {
+            "kind": "RESTRICTED", "snapshot_sha256": sha256(payload).hexdigest(),
+            "scope_verified": True, "context_quote": "Counts by arm.",
+            "outcome": "Synthetic endpoint", "timepoint": "Synthetic follow-up", "basis": "People",
+            "primary": {"table": 1, "row": 2, "cell": 2},
+            "restricted": {"quote": f"Final analysis included {reported} participants.", "count_text": str(reported)},
+            "exclusion_counts": [{"quote": "There were 5 excluded participants.", "count_text": "5"}],
+            "exclusions_disjoint_verified": True, "exclusions_exhaustive_verified": True,
+        }
+
+    def finding(self, payload, check, linked=None):
+        _, result, report = self.run_preflight(payload=payload, participant_count=check, linked_xml=linked)
+        return result["participant_count_findings"][0], result, report
+
+    def test_bound_only_cannot_clear_a_smaller_count(self):
+        payload, check = self.restricted_packet()
+        check.pop("exclusion_counts")
+        payload = payload.replace(b"<td>24</td>", b"<td>24</td><td>19</td>")
+        check.update(snapshot_sha256=sha256(payload).hexdigest(), restricted={"table": 1, "row": 2, "cell": 3})
+        finding, result, _ = self.finding(payload, check)
+        self.assertEqual((finding["status"], finding["comparison_status"]), ("HOLD", "NO_FLAG"))
+        self.assertEqual(finding["accounting_status"], "HOLD")
+        self.assertEqual(result["ledger"][0]["effective"], "HOLD")
+
+    def test_source_bound_exclusions_distinguish_matching_and_wrong_smaller_counts(self):
+        for reported, expected_status in [(19, "NO_FLAG"), (20, "REVIEW_CANDIDATE")]:
+            with self.subTest(reported=reported):
+                payload, check = self.restricted_packet(reported)
+                finding, _, report = self.finding(payload, check)
+                self.assertEqual(finding["status"], expected_status)
+                self.assertEqual(finding["accounting"]["expected_restricted"], 19)
+                self.assertEqual(finding["accounting"]["difference"], reported - 19)
+                self.assertEqual(finding["cells"]["restricted"]["locator"], "abstract 1 p 1")
+                self.assertEqual(finding["count_validity"], "NOT_INDEPENDENTLY_VERIFIED")
+                self.assertIn("not independently verified", report)
+
+    def test_unverified_or_reused_exclusions_hold(self):
+        payload, check = self.restricted_packet()
+        for override in ({"exclusions_disjoint_verified": False},
+                         {"exclusions_exhaustive_verified": False},
+                         {"exclusion_counts": check["exclusion_counts"] * 2},
+                         {"exclusion_counts": [check["primary"]]}):
+            with self.subTest(override=override):
+                finding, _, _ = self.finding(payload, {**check, **override})
+                self.assertEqual(finding["status"], "HOLD")
+
+    def test_quoted_count_cannot_use_ambiguous_or_partial_tokens(self):
+        payload, check = self.restricted_packet()
+        for quote, count in [("Final analysis included 19 participants.", "1"),
+                             ("There were 5 excluded participants.", "19")]:
+            with self.subTest(quote=quote, count=count):
+                finding, _, _ = self.finding(payload, {**check, "restricted": {"quote": quote, "count_text": count}})
+                self.assertEqual(finding["status"], "HOLD")
+        duplicate = payload.replace(b"<p>Counts by arm.</p>",
+                                    b"<p>Counts by arm.</p><p>Final analysis included 19 participants.</p>")
+        finding, _, _ = self.finding(duplicate, {**check, "snapshot_sha256": sha256(duplicate).hexdigest()})
+        self.assertEqual(finding["status"], "HOLD")
+
+    def test_count_quotes_in_compound_cells_hold_for_percentages_and_unsafe_markup(self):
+        for cell, quote, number, status in [
+            (b"24 (50.0%)", "24 (50.0%)", "24", "NO_FLAG"),
+            (b"24 (50.0%)", "24 (50.0%)", "50", "HOLD"),
+            (b"<strike>24</strike>19", "2419", "2419", "HOLD"),
+        ]:
+            with self.subTest(cell=cell):
+                payload, check = self.restricted_packet()
+                payload = payload.replace(b"<td>24</td>", b"<td>" + cell + b"</td>")
+                check.update(snapshot_sha256=sha256(payload).hexdigest(), primary={"quote": quote, "count_text": number})
+                finding, _, _ = self.finding(payload, check)
+                self.assertEqual(finding["status"], status)
+
+    def test_matching_corrected_table_does_not_clear_stale_prose(self):
+        payload = ARTICLE.replace(b"<p>Counts by arm.</p>",
+                                  b"<p>Counts by arm.</p><p>Current count is 23 participants.</p>")
+        cell = {"table": 1, "row": 2, "cell": 2}
+        check = {
+            "kind": "PUBLISHED_CORRECTION", "snapshot_sha256": sha256(payload).hexdigest(),
+            "scope_verified": True, "outcome": "Synthetic endpoint", "timepoint": "Synthetic visit", "basis": "People",
+            "original": cell,
+            "correction": {"same_claim_verified": True, "pmcid": "PMC124",
+                           "snapshot_sha256": sha256(CORRECTION).hexdigest(),
+                           "context_quote": "The correct arm count is 24.", "replacement": cell},
+            "current_occurrences": [cell, {"quote": "Current count is 23 participants.", "count_text": "23"}],
+            "unchecked_locations": ["External figure pixels"],
+        }
+        finding, _, report = self.finding(payload, check, CORRECTION)
+        self.assertEqual(finding["status"], "MATCH")
+        self.assertEqual(finding["revision_sweep"]["status"], "REVIEW_CANDIDATE")
+        self.assertEqual([r["status"] for r in finding["revision_sweep"]["occurrences"]], ["MATCH", "DIFFERS"])
+        self.assertIn("External figure pixels", report)
+
+    def test_unsafe_prose_markup_cannot_become_a_bound_count(self):
+        payload, check = self.restricted_packet()
+        unsafe = payload.replace(b"19 participants", b"<strike>2</strike>19 participants")
+        check.update(snapshot_sha256=sha256(unsafe).hexdigest(),
+                     restricted={"quote": "Final analysis included 219 participants.", "count_text": "219"})
+        finding, _, _ = self.finding(unsafe, check)
+        self.assertEqual(finding["status"], "HOLD")
+
+    def test_one_paragraph_supports_distinct_counts_but_not_aliases_of_one_exclusion(self):
+        paragraph = "Initially 24 people; 5 excluded; 19 remained."
+        payload = ARTICLE.replace(b"<p>Counts by arm.</p>", ("<p>" + paragraph + "</p>").encode())
+        _, check = self.restricted_packet()
+        ref = lambda value: {"quote": paragraph, "count_text": value}
+        check.update(snapshot_sha256=sha256(payload).hexdigest(), context_quote=paragraph,
+                     primary=ref("24"), restricted=ref("19"), exclusion_counts=[ref("5")])
+        finding, _, _ = self.finding(payload, check)
+        self.assertEqual(finding["status"], "NO_FLAG")
+        check["exclusion_counts"].append({"quote": "5 excluded", "count_text": "5"})
+        finding, _, _ = self.finding(payload, check)
+        self.assertEqual(finding["status"], "HOLD")
+
+    def test_notice_can_reproduce_old_and_new_counts_in_one_paragraph(self):
+        quote = "Previous count 23; corrected count 24."
+        notice = CORRECTION.replace(b"The correct arm count is 24.", quote.encode())
+        cell = lambda number: {"quote": quote, "count_text": number}
+        check = {"kind": "PUBLISHED_CORRECTION", "scope_verified": True,
+                 "snapshot_sha256": sha256(ARTICLE).hexdigest(),
+                 "outcome": "Synthetic endpoint", "timepoint": "Synthetic visit", "basis": "People",
+                 "correction": {"same_claim_verified": True, "pmcid": "PMC124",
+                                "snapshot_sha256": sha256(notice).hexdigest(), "context_quote": quote,
+                                "previous": cell("23"), "replacement": cell("24")}}
+        finding, _, _ = self.finding(ARTICLE, check, notice)
+        self.assertEqual(finding["status"], "PUBLISHED_CORRECTION")
+        self.assertEqual(finding["revision_sweep"]["status"], "HOLD")
+
+    def test_exact_locator_can_disambiguate_repeated_compound_cells(self):
+        payload, check = self.restricted_packet()
+        payload = payload.replace(b"<td>Arm A</td><td>24</td>", b"<td>24 (50.0%)</td><td>24 (50.0%)</td>")
+        check.update(snapshot_sha256=sha256(payload).hexdigest())
+        ref = {"quote": "24 (50.0%)", "count_text": "24"}
+        for locator, expected in [(None, "HOLD"), ("body table-wrap 1 row 2 cell 2", "NO_FLAG"),
+                                  ("body p 99", "HOLD")]:
+            with self.subTest(locator=locator):
+                primary = {**ref, **({"locator": locator} if locator else {})}
+                finding, _, _ = self.finding(payload, {**check, "primary": primary})
+                self.assertEqual(finding["status"], expected)
+
+    def test_unrelated_citation_does_not_block_counts_but_is_not_itself_a_count(self):
+        payload = ARTICLE.replace(b"<p>Counts by arm.</p>",
+                                  b"<p>Final count is 19. Reference <xref><sup>20</sup></xref>.</p>")
+        result = capture.capture(payload, "PMC123", quotes=("Final count is 19.", "20"))
+        self.assertTrue(result["quote_bindings"]["Final count is 19."][0]["count_safe"])
+        self.assertFalse(result["quote_bindings"]["20"][0]["count_safe"])
+        with self.assertRaises(ValueError):
+            capture.capture(payload, "PMC123", quotes=["count"] * (capture.MAX_QUOTES + 1))
+
+
 if __name__ == "__main__":
     unittest.main()

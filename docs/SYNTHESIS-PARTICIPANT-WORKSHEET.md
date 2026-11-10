@@ -51,6 +51,8 @@ Use subtraction only when all exclusions are exhaustive, mutually exclusive and 
 
 Save the inputs, formula and actual working. Checking **restricted <= parent** is only a necessary bound for a strict subset. A smaller number can still be wrong. An unexplained excess is a review candidate, not evidence of which source value is incorrect. Verify both sides before proposing a replacement.
 
+Record arithmetic agreement and source-tally verification separately. Internally consistent response categories can still contain wrong source counts. Obtain the authorised aggregate extraction or eligibility ledger when count provenance is in scope; do not request or publish patient identifiers. Preserve a source-tally hold even when the displayed sum matches.
+
 ## 4. For reviews and shared controls
 
 Use a separate row for each source-backed contribution. Keep study reports linked to their underlying trial/cohort family. Verify unique participants, outcome-specific contributions, disjoint arms and any repeated control identity before calculating a total.
@@ -71,7 +73,7 @@ A matching trial name or count is insufficient proof that two contributions are 
 - Current article/supplement locations checked, plus any unavailable files
 - What was independently recalculated and what remains notice-reported
 
-Keep historical corrected errors separate from current unresolved concerns. A notice can establish a published replacement without independently proving the underlying participant tally or analysis. The optional [PMC count software](SYNTHESIS-PREFLIGHT-PMC-COUNTS.md) currently requires reviewer-selected plain integer cells for decisive comparisons. Prose, merged headers and compound cells can require manual review. This worksheet does not extend those extraction capabilities.
+Keep historical corrected errors separate from current unresolved concerns. A notice can establish a published replacement without independently proving the underlying participant tally or analysis. Check each affected abstract, prose, table and caption occurrence: a corrected table can leave stale prose. The optional [PMC count software](SYNTHESIS-PREFLIGHT-PMC-COUNTS.md) accepts reviewer-selected plain integer cells or uniquely quoted integer tokens in supported text. Word numbers, merged or ambiguous markup, missing provenance and unchecked dependencies can still require manual review. The worksheet does not select or authenticate those mappings.
 
 ## 6. Close the scoped check
 

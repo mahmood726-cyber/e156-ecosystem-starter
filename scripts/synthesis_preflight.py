@@ -368,6 +368,16 @@ def _markdown(result: dict) -> str:
                     "| Claim | Finding | Explanation |", "|---|---|---|"])
         for finding in result["participant_count_findings"]:
             out.append("| " + " | ".join(esc(finding[key]) for key in ("claim_id", "status", "reason")) + " |")
+        out.append("\nCount authenticity is not independently verified; matching printed arithmetic is a scoped check only.")
+        for finding in result["participant_count_findings"]:
+            sweep = finding.get("revision_sweep")
+            if sweep:
+                out.extend(["", f"Correction sweep for {esc(finding['claim_id'])}: {esc(sweep['status'])}; mapped occurrences only."])
+                for occurrence in sweep.get("occurrences", []):
+                    out.append("- " + esc(occurrence.get("locator", "Unresolved occurrence")) + ": "
+                               + esc(occurrence.get("text", occurrence.get("reason"))) + " — " + esc(occurrence["status"]))
+                for location in sweep.get("unchecked_locations", []):
+                    out.append("- Unchecked: " + esc(location))
     out.extend(["", "## Complete, unfiltered claim ledger", "", "| Claim | Priority | Requested | Effective | Support | Maturity |", "|---|---|---|---|---|---|"])
     for v in result["ledger"]:
         out.append("| "+" | ".join(esc(v.get(k)) for k in ("id","priority","requested","effective","support","maturity"))+" |")
