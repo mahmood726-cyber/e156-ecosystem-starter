@@ -24,3 +24,6 @@ install/install.ps1 text eol=lf
 *.jpg   binary
 *.zip   binary
 *.lock  -text
+
+# Archived replay inputs/results bind exact bytes, including their line endings.
+examples/synthesis-replay-stepwise/** -text

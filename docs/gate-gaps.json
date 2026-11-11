@@ -593,6 +593,42 @@
         "scripts/check-research-upgrade.py": "c74739b5434320dda553fae3c001700ef7eb98cdcf51152cbd1d0fcffd2a9655",
         "scripts/research_environment.py": "171e1bf4afb9c85050cbe9bee41203feeb20ab45311d12425fdeff3339dafdde"
       }
+    },
+    {
+      "id": ".github/workflows/synthesis-replay.yml#jobs.replay",
+      "kind": "ci-job",
+      "name": "Archived OA replay on Windows and Linux",
+      "stops": "A failing source-capture or replay control, or failure to recompute the committed OA development bundle against its reviewed manifest digest, on Python 3.13 Windows/Linux.",
+      "would_not_stop": [
+        "Incorrect reviewer mapping, scientific conclusions or undeclared relevant sources; one selected development example is not a held-out accuracy evaluation.",
+        "A malicious change approved to both verifier and external digest, interpreter/OS compromise, or untested runtime versions.",
+        "Incomplete trial-family identity, general pooled-effect analysis, signature trust or RO-Crate interoperability; none is implemented by this contract."
+      ],
+      "source": "scripts/synthesis_replay.py; tests/test_synthesis_replay.py; docs/SYNTHESIS-REPLAY.md.",
+      "seal": {
+        ".github/workflows/synthesis-replay.yml#jobs.replay": "18f3adc3f1e5776f371c62b4a4f4fd6af988c170a72a78277ce405bb3e872440"
+      }
+    },
+    {
+      "id": "scripts/synthesis_replay.py",
+      "kind": "script",
+      "name": "Source-bound Synthesis replay contract",
+      "stops": "Changed packet/prompt/snapshot/result bytes, missing or extra artifacts, malformed records, linked paths, stale verifier code, unbound participant inputs, unresolved correction links, or an analytical payload that cannot be reconstructed. Requires an externally retained manifest SHA-256.",
+      "would_not_stop": [
+        "Forged source XML matching its own declared identifiers/licence or newer corrections absent from the snapshot; archived bytes are not network-authenticated.",
+        "Incorrect human scope, trial/cohort/arm mappings, exclusion completeness or independent-review declarations. Replay success does not change scientific validity or existing HOLD outcomes.",
+        "Hostile local interpreter/filesystem and concurrent external changes, crash durability, or a maliciously replaced external trust anchor.",
+        "General numerical checks without participant bindings, arbitrary datasets, external supplements, trial registries, clinical performance or RO-Crate conformance."
+      ],
+      "source": "scripts/synthesis_replay.py and its local import closure; docs/SYNTHESIS-REPLAY.md.",
+      "seal": {
+        "scripts/synthesis_replay.py": "bc3c7629034c8aa084d7ccf2f5fd1a237fa65eba689001b4b7f011ecf1afd08d",
+        "scripts/synthesis_preflight.py": "a4508a7668765e3ba29a58fb106967e12e97da9667dacbde07958a9e43c9c301",
+        "scripts/synthesis_capture_evidence.py": "0e789ca464477c38c0ee232a804cef374eeb54b2c99de71ddcad59118cd60df5",
+        "scripts/synthesis_participant_evidence.py": "f79b1d847b7d001a19031d903e8416b9d2d8d71501efb7e98c519d53fcf8a659",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa"
+      }
     }
   ]
 }

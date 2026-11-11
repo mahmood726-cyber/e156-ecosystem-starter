@@ -128,6 +128,15 @@ changed source/config, broken locator, unknown licence and unresolved trial
 identity fail with a specific reason. Separate deterministic payload hashes from
 timestamps, durations and other run metadata.
 
+M3 first increment: `synthesis_replay.py` now seals and replays the existing
+Synthesis participant-check packet against archived OA PMC sources. Exact input,
+prompt/configuration, locator, code and output bindings are checked; an external
+manifest digest is required. A licensed StepWise development example and synthetic
+adverse controls exercise this contract on Windows/Linux CI. See
+[Synthesis replay](SYNTHESIS-REPLAY.md). This completes a bounded participant-check
+replay path; trial-family identity, general statistical replay, signatures and
+validated RO-Crate export remain M3 work.
+
 ### M4 — a complete review with accountable decisions
 
 Add resumable protocol/search/screen/extract/appraise/synthesise/report stages

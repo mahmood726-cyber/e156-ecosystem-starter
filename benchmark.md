@@ -74,6 +74,13 @@ hashes refer to actual local bytes, including newline encoding.
 
 ## Scientific benchmark protocol for later milestones
 
+The [source replay development check](docs/SYNTHESIS-REPLAY.md) reconstructs one
+reviewer-selected baseline exclusion count from a real CC BY PMC snapshot. Its
+[recorded receipt](benchmarks/replay/stepwise.json) binds source identity, manifest,
+verifier profile and output. The 47 synthetic controls test refusal and replay
+behavior; neither they nor the selected example measure held-out accuracy or
+comparative scientific performance.
+
 Freeze the task definition, reference adjudication, split rule, corpus hashes,
 method configuration and budgets before optimisation. Split by review and
 trial family to avoid related-paper leakage. Keep development controls separate

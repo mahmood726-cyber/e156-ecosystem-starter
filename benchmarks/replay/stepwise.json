@@ -1,0 +1,61 @@
+{
+  "assessment_date": "2026-11-11",
+  "fixture_kind": "real_oa_development_example",
+  "held_out": false,
+  "scientific_accuracy_measured": false,
+  "scope": "One reviewer-selected baseline exclusion-accounting check",
+  "source": {
+    "pmcid": "PMC4746436",
+    "doi": "10.2196/resprot.4288",
+    "version": "PMC4746436.1",
+    "license": "https://creativecommons.org/licenses/by/2.0/",
+    "snapshot_sha256": "082fdfae1bf21fd176ef2224959b05516305271bdf636388725febf670481ffb",
+    "pmid": "26810251",
+    "retrieval_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC4746436&retmode=xml",
+    "retrieved_at": "2026-11-11T14:10:21.998245+00:00"
+  },
+  "bundle": "examples/synthesis-replay-stepwise",
+  "manifest_sha256": "8ef7bf6f59995d7198185b835b485d3f18eeca064abbf0252eae850b3cdf58b6",
+  "payload_sha256": "3f62a53fe2ff7f47a684b75c1c4f1117c8dbaf75b527ad16c5a9d51e5da6553a",
+  "verifiers": {
+    "synthesis_capture_evidence.py": "0e789ca464477c38c0ee232a804cef374eeb54b2c99de71ddcad59118cd60df5",
+    "synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+    "synthesis_participant_evidence.py": "f79b1d847b7d001a19031d903e8416b9d2d8d71501efb7e98c519d53fcf8a659",
+    "synthesis_preflight.py": "a4508a7668765e3ba29a58fb106967e12e97da9667dacbde07958a9e43c9c301",
+    "synthesis_replay.py": "bc3c7629034c8aa084d7ccf2f5fd1a237fa65eba689001b4b7f011ecf1afd08d",
+    "synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605"
+  },
+  "observed": {
+    "primary": 103,
+    "excluded": [
+      6
+    ],
+    "reported_restricted": 97,
+    "accounting": {
+      "difference": 0,
+      "exclusions": [
+        {
+          "locator": "body p 32",
+          "participants": 6,
+          "quote": "At baseline testing, 6 participants had to be excluded",
+          "source_token_end": 585,
+          "source_token_start": 584,
+          "text": "6",
+          "token_end": 22,
+          "token_start": 21
+        }
+      ],
+      "expected_restricted": 97,
+      "formula": "parent - sum(exclusions); difference = reported - expected"
+    },
+    "status": "NO_FLAG",
+    "independent_validity": "NOT_INDEPENDENTLY_VERIFIED"
+  },
+  "replay": {
+    "status": "REPLAY_MATCHED",
+    "manifest_sha256": "8ef7bf6f59995d7198185b835b485d3f18eeca064abbf0252eae850b3cdf58b6",
+    "payload_sha256": "3f62a53fe2ff7f47a684b75c1c4f1117c8dbaf75b527ad16c5a9d51e5da6553a",
+    "scope": "source_bound_participant_preflight",
+    "scientific_validity": "NOT_ESTABLISHED"
+  }
+}

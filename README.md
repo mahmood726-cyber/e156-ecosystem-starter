@@ -391,6 +391,10 @@ The [research harness roadmap](docs/RESEARCH-HARNESS-ROADMAP.md) covers memory,
 component installation, source-to-claim provenance, review workflows and held-out
 evaluation. [Benchmark evidence](benchmark.md) separates executed development
 controls from external documented capabilities and unmeasured scientific accuracy.
+The [source replay contract](docs/SYNTHESIS-REPLAY.md) adds offline reconstruction
+of source-bound Synthesis participant checks, with exact archived inputs and an
+external manifest digest. A licensed real-paper development example is included;
+replay agreement does not establish scientific validity.
 `find-related-repos.py` reads the ProjectIndex manifest or `INDEX.md` (see
 ["Adding a portfolio index"](#adding-a-portfolio-index-v030) above) and exits
 `2` with guidance if no index exists yet. See
