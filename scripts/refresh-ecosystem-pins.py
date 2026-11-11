@@ -126,22 +126,22 @@ def process_layer(layer: dict, apply: bool, root: Path) -> dict:
     sh_path = root / sh_rel
     if not sh_path.exists():
         return {"name": layer["name"], "status": "missing", "detail": sh_rel}
-    if layer["name"] == "rapidmeta":
+    if layer["name"] in ("rapidmeta", "aact-kit"):
         # This component consumes the shared lock at runtime. Never turn an
         # intentional immutable source selection into a default-branch update.
         try:
             result = subprocess.run(
                 [sys.executable, str(root / "scripts/component_lock.py"),
-                 "--component", "rapidmeta", "--field", "commit"],
+                 "--component", layer["name"], "--field", "commit"],
                 capture_output=True, text=True, timeout=15, check=True,
             )
             commit = result.stdout.strip()
             if not _SHA_RE.fullmatch(commit):
                 raise ValueError("invalid locked commit")
         except (OSError, ValueError, subprocess.SubprocessError):
-            return {"name": "rapidmeta", "status": "error",
+            return {"name": layer["name"], "status": "error",
                     "detail": "shared component lock missing or invalid"}
-        return {"name": "rapidmeta", "status": "skip",
+        return {"name": layer["name"], "status": "skip",
                 "detail": f"shared component lock {commit[:12]} (manual source review required)"}
     frozen = FROZEN_RELEASES.get(layer["name"])
     if frozen is not None:

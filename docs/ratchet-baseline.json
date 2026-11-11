@@ -18,6 +18,7 @@
   "pester:scripts/pester.update.tests.ps1": 7,
   "pytest:scripts/test_recall.py": 16,
   "pytest:scripts/test_refresh_pins.py": 8,
+  "pytest:tests/test_aact_component.py": 12,
   "pytest:tests/test_blank_and_rerun.py": 10,
   "pytest:tests/test_bootstrap_effective_ref.py": 3,
   "pytest:tests/test_checkout_action_pin.py": 4,
@@ -457,6 +458,20 @@
    "test_preserves_crlf_line_endings",
    "test_process_layer_current_is_noop",
    "test_process_layer_detects_drift"
+  ],
+  "pytest-names:tests/test_aact_component.py": [
+   "test_bash_source_persistence_uses_documented_binding",
+   "test_canary_report_refuses_partial_or_misleading_results",
+   "test_dependency_failure_is_fatal",
+   "test_dependency_install_requires_active_venv_before_mutation",
+   "test_dirty_and_wrong_head_refuse_without_overwriting_source",
+   "test_invalid_source_cannot_get_receipt",
+   "test_malformed_runtime_report_is_refused",
+   "test_mutable_ref_refuses_without_creating_target",
+   "test_runtime_failure_cannot_be_downgraded_to_source_success",
+   "test_runtime_receipt_requires_two_matching_reports",
+   "test_source_only_receipt_never_claims_runtime_success",
+   "test_wrappers_preserve_user_configuration_and_propagate_failure"
   ],
   "pytest-names:tests/test_blank_and_rerun.py": [
    "test_a_hollow_test_makes_the_claim_fail",

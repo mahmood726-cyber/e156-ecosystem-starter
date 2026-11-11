@@ -23,7 +23,7 @@ assert_false() { [[ "$1" -ne 0 ]] || { bad "expected failure, got success"; retu
 # Pinned release tags the installers must clone (bump here AND in the script together).
 RAPIDMETA_REF="3de5e44cc7624138309868db1dbfa49320682e66"
 AACT_REF="v1.0.0"
-AACT_KIT_REF="v1.0.0"
+AACT_KIT_REF="b1995128747848d1567386266eca95e9230e19b9"
 PAIRWISE70_REF="v1.0.0"
 
 # --- rapidmeta -------------------------------------------------------------

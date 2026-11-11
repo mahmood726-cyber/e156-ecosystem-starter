@@ -1,0 +1,12 @@
+# Hashes of downloaded PyPI wheels for the AACT synthetic runtime canary.
+# Scope: CPython 3.13, x86_64 Windows and Linux; not a universal dependency lock.
+# Regenerate by pip download with --only-binary=:all: for win_amd64 and
+# manylinux_2_28_x86_64/manylinux_2_27_x86_64/manylinux2014_x86_64, then hash wheels.
+# Source checkout is locked separately. Optional --with-deps build dependencies are not covered.
+
+numpy==2.4.6 --hash=sha256:a7830bab239b79cda9c08c2da014761cafb48da6150e1da17ac06283f43b6089 --hash=sha256:c4fc99836233ea196540b17ab0983aff60ed07941751930f5f4d05bc3b3b7359
+pandas==2.3.3 --hash=sha256:318d77e0e42a628c04dc56bcef4b40de67918f7041c2b061af1da41dcff670ac --hash=sha256:f8bfc0e12dc78f777f323f55c58649591b2cd0c43534e8355c51d3fede5f4dee
+python-dateutil==2.9.0.post0 --hash=sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427
+pytz==2026.2 --hash=sha256:04156e608bee23d3792fd45c94ae47fae1036688e75032eea2e3bf0323d1f126
+six==1.17.0 --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274
+tzdata==2026.2 --hash=sha256:bbe9af844f658da81a5f95019480da3a89415801f6cc966806612cc7169bffe7

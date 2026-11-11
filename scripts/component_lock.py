@@ -1,6 +1,6 @@
-"""Strict, offline source lock for the first three research components.
+"""Strict, offline source lock for four research components.
 
-RapidMeta consumes this lock at runtime. Sentinel/Overmind retain their existing
+RapidMeta and AACT-kit consume this lock. Sentinel/Overmind retain their existing
 installer defaults; --check validates both mirrors. Other layers are not locked
 here yet. A commit identifies source; it is not a signature or dependency lock.
 """
@@ -13,7 +13,7 @@ import re
 
 DEFAULT_LOCK = Path(__file__).with_name("component-lock.json")
 SCHEMA = "e156-component-lock-v1"
-COMPONENTS = {"sentinel", "overmind", "rapidmeta"}
+COMPONENTS = {"sentinel", "overmind", "rapidmeta", "aact-kit"}
 SHA = re.compile(r"[0-9a-f]{40}")
 
 
@@ -49,7 +49,7 @@ def load_lock(path: Path = DEFAULT_LOCK) -> dict:
                 or any(p not in ("linux", "windows", "macos") for p in entry["platforms"])
                 or len(set(entry["platforms"])) != len(entry["platforms"])):
             raise ValueError(f"invalid platforms: {name}")
-        expected = "rapidmeta-generator-v1" if name == "rapidmeta" else "legacy-installer-pin-mirrors"
+        expected = {"rapidmeta": "rapidmeta-generator-v1", "aact-kit": "aact-source-and-backends-v1"}.get(name, "legacy-installer-pin-mirrors")
         if entry["verification"] != expected or not isinstance(entry["source_note"], str) or not entry["source_note"].strip():
             raise ValueError(f"invalid verification metadata: {name}")
     return components

@@ -232,7 +232,7 @@ def test_linked_target_refuses_before_git(tmp_path, origin, monkeypatch):
     source, component=origin
     # Portable control also covers Windows junction classification without
     # requiring Developer Mode/admin privileges to create a symlink.
-    monkeypatch.setattr(installer,'linked',lambda p: p==source)
+    monkeypatch.setattr(installer.source,'linked',lambda p: p==source)
     with pytest.raises(installer.InstallRefused,match='linked install target'):
         installer.install(source,component)
 
@@ -260,13 +260,13 @@ def bash_executable():
     return executable
 
 
-def user_path_binding():
+def user_path_binding(name='RAPIDMETA_KIT_PATH'):
     if os.name != 'nt':
         return None
     import winreg
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Environment') as key:
         try:
-            return winreg.QueryValueEx(key, 'RAPIDMETA_KIT_PATH')
+            return winreg.QueryValueEx(key, name)
         except FileNotFoundError:
             return None
 

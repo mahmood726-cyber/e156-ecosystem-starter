@@ -338,7 +338,8 @@ def real_copy(tmp_path, rgg):
     shutil.copytree(REPO_ROOT / "scripts", tmp_path / "scripts",
                     ignore=shutil.ignore_patterns("__pycache__"))
     (tmp_path / "docs").mkdir()
-    for rel in (rgg.REGISTRY_PATH, rgg.DOC_PATH):
+    # The AACT CI gate also seals its root-level runtime dependency lock.
+    for rel in (rgg.REGISTRY_PATH, rgg.DOC_PATH, "requirements-aact-canary.lock"):
         shutil.copy2(REPO_ROOT / rel, tmp_path / rel)
     assert rgg.check(tmp_path) == (rgg.CURRENT, [])
     return tmp_path

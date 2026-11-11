@@ -1,0 +1,104 @@
+{
+  "assessment_date": "2026-11-11",
+  "dependency_mode": "isolated virtual environment; hash-locked runtime wheels; editable build dependencies resolved separately",
+  "held_out": false,
+  "platform": "win32",
+  "receipt": {
+    "adapter": "aact-source-and-backends-v1",
+    "canary_sha256": "307f5cd2540a7eeed9c126607cb4c3d915f509134a0bee7e7aaae72eb5a1284b",
+    "component": "aact-kit",
+    "component_spec_sha256": "915f9d6fbbb0a37bc69f50029212d436ba86e6205a2d15ee80ca7d6cfcc407be",
+    "expected_commit": "b1995128747848d1567386266eca95e9230e19b9",
+    "observed_commit": "b1995128747848d1567386266eca95e9230e19b9",
+    "runtime_verified": true,
+    "schema": "e156-component-install-v1",
+    "smoke": {
+      "backends": [
+        {
+          "backend": "csv",
+          "checks": [
+            "load",
+            "projection",
+            "drug_filter_then_limit",
+            "empty_filter",
+            "missing_column_refused"
+          ],
+          "payload_sha256": "f29a639409b2668efd090a6b3e8df4b31b9baef1414e9498e64a12ce07b55f94"
+        },
+        {
+          "backend": "tsv",
+          "checks": [
+            "load",
+            "projection",
+            "drug_filter_then_limit",
+            "empty_filter",
+            "missing_column_refused"
+          ],
+          "payload_sha256": "f29a639409b2668efd090a6b3e8df4b31b9baef1414e9498e64a12ce07b55f94"
+        },
+        {
+          "backend": "zip",
+          "checks": [
+            "load",
+            "projection",
+            "drug_filter_then_limit",
+            "empty_filter",
+            "missing_column_refused"
+          ],
+          "payload_sha256": "f29a639409b2668efd090a6b3e8df4b31b9baef1414e9498e64a12ce07b55f94"
+        },
+        {
+          "backend": "sqlite",
+          "checks": [
+            "load",
+            "projection",
+            "drug_filter_then_limit",
+            "empty_filter",
+            "missing_column_refused"
+          ],
+          "payload_sha256": "f29a639409b2668efd090a6b3e8df4b31b9baef1414e9498e64a12ce07b55f94"
+        }
+      ],
+      "fixture_kind": "synthetic_install_check",
+      "postgres_verified": false,
+      "runtime_verified": true,
+      "schema": "e156-aact-canary-v1",
+      "scientific_accuracy_measured": false,
+      "versions": {
+        "numpy": "2.4.6",
+        "pandas": "2.3.3",
+        "python": "3.13.13"
+      }
+    },
+    "source_files": [
+      [
+        "pyproject.toml",
+        "786b2580a1880918ee5cc8616758a18b10bf0b7a6880e9c5bb52254192796048"
+      ],
+      [
+        "src/aact_kit/__init__.py",
+        "4ef88617bf2416ad60e513ff1a15cb60a60a866a12a1e9b1df1d179969c62b88"
+      ],
+      [
+        "src/aact_kit/aggregate.py",
+        "db476e8a621af7d717c591acd58e5de27de7b16e91847734f081ac9d3329a8e2"
+      ],
+      [
+        "src/aact_kit/location.py",
+        "04ce0818b737d7ed8158a825d01af03266d5760d2d22c4badb54ef861665d214"
+      ],
+      [
+        "src/aact_kit/schema.py",
+        "79ee8799bb1832d3f2b4df2b9108e1a2c95cae98455adff4d0b012f0ce5cffaf"
+      ],
+      [
+        "src/aact_kit/tables.py",
+        "43e442f36deed42789c0096cb743676362c9c36ca17478930aa62113eba36551"
+      ]
+    ],
+    "source_verifier_sha256": "d48e2e59bb42bc63a157a87b94cacf65de40559e47f1f43377a5e072bf986210",
+    "status": "verified",
+    "uses_locked_default": true,
+    "verifier_sha256": "501d3b5bd2dafcdcd7e42e0d1a2093468ebd353b5bb224d9a584b38b99dd8015"
+  }
+}

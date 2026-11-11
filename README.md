@@ -40,7 +40,7 @@ verifier, and ProjectIndex registry.
 | `student` CLI | separate repo | Narrow submission pipeline: see [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter). |
 | **Dashboard kit** | **source-locked** | Both RapidMeta installers read the shared component lock and verify the exact clean checkout plus deterministic generator output before persisting `RAPIDMETA_KIT_PATH`. The generator is stdlib-only; the HTML still references external resources. See the [installation contract](docs/COMPONENT-INSTALL-CONTRACT.md). |
 | **AACT cockpit** | **v0.6.0** | `scripts/install-aact.ps1` clones [aact-cockpit](https://github.com/mahmood726-cyber/aact-cockpit) at a pinned commit and persists `AACT_COCKPIT_PATH`. A local DuckDB-backed cockpit for large-scale ClinicalTrials.gov/AACT analysis that emits self-auditing e156 capsules. Clone is free; **running** needs `duckdb`+`numpy` (opt-in `-WithDataDeps`/`--with-data-deps`) **and a local AACT snapshot**. Zero-setup path: read the committed `analyses/` + `templates/` examples. |
-| **AACT kit** *(library)* | **v0.1.0** | `scripts/install-aact-kit.ps1` clones [aact-kit](https://github.com/mahmood726-cyber/aact-kit) at a pinned commit and persists `AACT_KIT_PATH`. The shared **library** other CT.gov projects import: one API to resolve / load / validate / aggregate AACT across five local backends (Postgres, SQLite, ZIP, pipe-delimited TSV dir, CSV dir). Only hard dep is `pandas` (`psycopg2` optional); install is opt-in `-WithDeps`/`--with-deps`. Zero-setup path: read `src/aact_kit/` + `README.md`. **Distinct from the AACT cockpit** above (which is a DuckDB analysis app). |
+| **AACT kit** *(library)* | **source-locked** | Both installers verify the shared lock and package source before setting `AACT_KIT_PATH`. Source-only and runtime receipts are distinct. Opt-in runtime checks exercise synthetic CSV/TSV/ZIP/SQLite fixtures; PostgreSQL is unverified by this adapter. See the [AACT installation contract](docs/AACT-INSTALL-CONTRACT.md). |
 | **Pairwise70 workbench** | **v0.6.0** | `scripts/install-pairwise70.ps1` clones [pairwise70-workbench](https://github.com/mahmood726-cyber/pairwise70-workbench) at a pinned commit and persists `PAIRWISE70_PATH`. An offline gallery hub that shows + reproduces every Pairwise70-family analysis; **static HTML, stats run offline in the browser, no Python deps, no tokens** — just open `index.html`. |
 | **Meta self-audit + error library** | **v0.2.0** | `python scripts/meta-self-audit.py MY_REVIEW.html` runs 18 deterministic detectors over a single-file meta-analysis dashboard — **stdlib-only, offline, zero deps, no LLM**. Mined from a 626-dashboard corpus audit plus a published-literature error registry; every class is documented with a real worked example in [`docs/META-ERROR-LIBRARY.md`](docs/META-ERROR-LIBRARY.md), and [`docs/SOURCING-METHOD.md`](docs/SOURCING-METHOD.md) sets out where to source a replacement number from open data (supplements → PMC → FDA/EMA → ClinicalTrials.gov), with provenance lines and corrections recorded *beside* the original rather than over it. Fail-closed: verdicts are `CLEAN` / `DEFECTS-FOUND` / `INCONCLUSIVE` — there is deliberately **no verdict called "passed"**, and an unestablishable check exits non-zero. Optional `--metamorphic` reuses Overmind's `MetamorphicWitness` for pooling invariants. Blind spots documented alongside the detectors. |
 | **Count-recovery harness** | **v1.0.0** | `python templates/count-recovery/count_recovery_harness.py --selftest` runs 14 pre-condition checks for per-arm 2×2 event-count extraction against **11 negative controls** — **stdlib-only, offline, zero deps, no LLM**. Every check exists because the mistake it catches was actually made on real data. Fail-closed: exit 1 on any BLOCK, and a BLOCKed extraction does not go downstream. Ships a runnable `example_extraction.json` + its committed report. The method it enforces is in [`COUNT_RECOVERY_PROCEDURE.md`](templates/count-recovery/COUNT_RECOVERY_PROCEDURE.md); the findings worth reading on their own — the registry adverse-events trap, and why a count that reproduces the published hazard ratio proves nothing — are in [`docs/REGISTRY-EXTRACTION-TRAPS.md`](docs/REGISTRY-EXTRACTION-TRAPS.md). |
@@ -178,6 +178,23 @@ version tags are refused. An existing checkout must already match that commit,
 origin and clean-tree contract. Use a fresh target for a different commit.
 `--skip-clone` / `-SkipClone` still verifies source and runs the generator.
 A failed check cannot produce a success receipt or persist a discovery path.
+
+### Installing the AACT data-access library
+
+```powershell
+.\scripts\install-aact-kit.ps1 -Target (Join-Path $env:USERPROFILE 'code/aact-kit-locked') -SessionOnly
+```
+
+```bash
+bash scripts/install-aact-kit.sh --target "$HOME/code/aact-kit-locked" --session-only
+```
+
+These commands verify source only. Add `--verify-runtime` / `-VerifyRuntime` to
+check the selected Python environment and exercise four local backends without
+using a real snapshot. `--with-deps` / `-WithDeps` installs the editable package
+and requires those runtime checks; it now requires an active Python virtual
+environment. Dependency failures refuse the install. Remove session-only mode to
+persist the verified source path. See the [scope and remaining gaps](docs/AACT-INSTALL-CONTRACT.md).
 
 ### Adding a portfolio index (v0.3.0)
 
@@ -449,7 +466,7 @@ short-SHA, and is **idempotent**
 (no-op when current), **non-destructive** (review-then-commit; ff-only push), and
 **pins-only** — it never touches memory, secrets, or rules. Tag-pinned layers
 (e.g. `long-term-plan`) are left alone. Sentinel and Overmind remain frozen;
-RapidMeta consumes `scripts/component-lock.json` and requires a reviewed manual
+RapidMeta and AACT-kit consume `scripts/component-lock.json` and requires a reviewed manual
 lock change. Errors return nonzero and prevent automatic commit/push; an error
 can leave earlier development-pin edits for inspection. After it runs, if you also hand-edited
 `install/install.{ps1,sh}`, run `bash scripts/regen-hashes.sh`.

@@ -279,9 +279,10 @@
       "output_sha256": "a3e92d1e0d938ee32da54f92b825cfc15d72de3da9e523b55958bdf340cb24b3",
       "scientific_accuracy_measured": false
     },
+    "source_verifier_sha256": "d48e2e59bb42bc63a157a87b94cacf65de40559e47f1f43377a5e072bf986210",
     "status": "verified",
     "uses_locked_default": true,
-    "verifier_sha256": "d79aca8ac1aae26ec23495dc69a72d6083904103be5a8750affb4394ecea24f2"
+    "verifier_sha256": "b9be98e480773701089d96635f1ca7a0722ea6b7dbd01b767656e20f0dec4cb0"
   },
   "schema": "e156-component-benchmark-v1"
 }

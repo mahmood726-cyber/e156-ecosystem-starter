@@ -17,6 +17,14 @@
       "verification": "legacy-installer-pin-mirrors",
       "source_note": "Existing frozen starter release; runtime requirement read from this commit's pyproject.toml."
     },
+    "aact-kit": {
+      "repository": "https://github.com/mahmood726-cyber/aact-kit.git",
+      "commit": "b1995128747848d1567386266eca95e9230e19b9",
+      "python_min": "3.11",
+      "platforms": ["linux", "windows", "macos"],
+      "verification": "aact-source-and-backends-v1",
+      "source_note": "GitHub v1.0.0 tag 129842e50df032e0a5a5027b58c7674f1f32fc56 resolved 2026-11-11; unsigned. Upstream requires Python 3.10 and pandas>=2.0; the starter adapter requires 3.11."
+    },
     "rapidmeta": {
       "repository": "https://github.com/mahmood726-cyber/rapidmeta-kit.git",
       "commit": "3de5e44cc7624138309868db1dbfa49320682e66",

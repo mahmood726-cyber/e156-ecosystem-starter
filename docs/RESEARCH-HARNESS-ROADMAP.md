@@ -95,6 +95,13 @@ with disposable Windows/Linux CI. New commits require fresh target directories;
 atomic upgrades, AACT-kit integration, remaining legacy test isolation and a
 full ecosystem certification are still outstanding.
 
+Second increment: [AACT installation contract](AACT-INSTALL-CONTRACT.md). AACT-kit
+now consumes the shared lock, distinguishes source-only from runtime verification,
+and has a synthetic CSV/TSV/ZIP/SQLite canary with Windows/Linux CI. The common
+source boundary is reused by both components. Atomic upgrades, the combined
+ecosystem installer chain, PostgreSQL coverage and legacy test isolation remain
+outstanding; these increments do not issue an Overmind release verdict.
+
 ### M3 — a shared source-to-claim record and replay bundle
 
 Extend the existing Synthesis packet rather than introduce competing schemas.

@@ -9,6 +9,8 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 MODULE = Path(__file__).resolve().parents[1] / "scripts" / "refresh-ecosystem-pins.py"
 spec = importlib.util.spec_from_file_location("refresh_ecosystem_pins", MODULE)
 rp = importlib.util.module_from_spec(spec)
@@ -70,8 +72,9 @@ def test_tag_pinned_installer_skips_remote_updates_even_with_historical_sha(tmp_
             assert (tmp_path / rel).read_text(encoding="utf-8") == src
 
 
-def test_shared_rapidmeta_lock_is_not_automatically_advanced(monkeypatch):
-    layer = next(x for x in rp.LAYERS if x['name'] == 'rapidmeta')
+@pytest.mark.parametrize('name', ['rapidmeta', 'aact-kit'])
+def test_shared_rapidmeta_lock_is_not_automatically_advanced(monkeypatch, name):
+    layer = next(x for x in rp.LAYERS if x['name'] == name)
     def forbidden(*args, **kwargs):
         raise AssertionError('locked component must not query HEAD')
     monkeypatch.setattr(rp, 'remote_head', forbidden)
@@ -80,11 +83,12 @@ def test_shared_rapidmeta_lock_is_not_automatically_advanced(monkeypatch):
     assert 'shared component lock' in result['detail']
 
 
-def test_missing_lock_fails_check_and_apply_without_false_current(tmp_path, monkeypatch, capsys):
+@pytest.mark.parametrize('name', ['rapidmeta', 'aact-kit'])
+def test_missing_lock_fails_check_and_apply_without_false_current(tmp_path, monkeypatch, capsys, name):
     (tmp_path/'scripts').mkdir()
-    (tmp_path/'scripts/install-rapidmeta.sh').write_text('# fixture\n')
+    (tmp_path/f'scripts/install-{name}.sh').write_text('# fixture\n')
     monkeypatch.setattr(rp, 'repo_root', lambda: tmp_path)
     for mode in ('--check', '--apply'):
-        assert rp.main([mode, '--layer', 'rapidmeta']) == 1
+        assert rp.main([mode, '--layer', name]) == 1
         output = capsys.readouterr().out
         assert 'All pins already current' not in output

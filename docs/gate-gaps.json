@@ -292,7 +292,7 @@
       "id": "scripts/refresh-ecosystem-pins.py",
       "kind": "script",
       "name": "refresh-ecosystem-pins --check",
-      "stops": "For frozen Sentinel and Overmind v1.0.0 source commits, --check rejects missing, tagged, divergent or malformed Bash and PowerShell defaults without querying HEAD. Nonfrozen development SHA pins still check remote drift and failed ls-remote. Nonfrozen pins must come from genuine 40-hex DEFAULT_REF shell assignments; incidental comment or example SHAs cannot become pins, and tag-pinned nonfrozen installers are skipped rather than rewritten. RapidMeta is read from the validated shared component lock and cannot be advanced to remote HEAD. Missing/invalid layers fail dry-run, check and apply instead of reporting all pins current; errors prevent automatic commit/push.",
+      "stops": "For frozen Sentinel and Overmind v1.0.0 source commits, --check rejects missing, tagged, divergent or malformed Bash and PowerShell defaults without querying HEAD. Nonfrozen development SHA pins still check remote drift and failed ls-remote. Nonfrozen pins must come from genuine 40-hex DEFAULT_REF shell assignments; incidental comment or example SHAs cannot become pins, and tag-pinned nonfrozen installers are skipped rather than rewritten. RapidMeta and AACT-kit is read from the validated shared component lock and cannot be advanced to remote HEAD. Missing/invalid layers fail dry-run, check and apply instead of reporting all pins current; errors prevent automatic commit/push.",
       "would_not_stop": [
         "A coordinated change to the expected frozen SHA and both installers: local consistency is not independent source review or signature authentication.",
         "Explicit SENTINEL_REF or OVERMIND_REF overrides: they opt out of the frozen default and cannot establish a certified install.",
@@ -306,7 +306,7 @@
       ],
       "source": "scripts/refresh-ecosystem-pins.py frozen-release branch and tests/test_{sentinel,overmind}_frozen_release.py. Pin parser and design guarantees; tests/test_refresh_pin_safety.py refusal tests. Shared-lock branch and missing-lock CLI controls in tests/test_refresh_pin_safety.py.",
       "seal": {
-        "scripts/refresh-ecosystem-pins.py": "7e71e127a2cfb22704b4c18d1d921d131b7df37e2ce0870143864ce8b3e5ad35"
+        "scripts/refresh-ecosystem-pins.py": "df16f2b5e89849379637c2940a82165fdabe579a02a7dfc514e3ff0679fbdb86"
       }
     },
     {
@@ -476,12 +476,12 @@
       "would_not_stop": [
         "Upstream authenticity, transitive dependency drift, malicious but schema-valid lock edits or unreviewed override commits.",
         "Live Sentinel/Overmind behavior, scientific accuracy or components outside the three-entry lock.",
-        "RapidMeta behavior by itself: this command checks the manifest and frozen mirrors; separate installer tests exercise RapidMeta."
+        "RapidMeta/AACT-kit behavior by itself: this command checks the manifest and frozen mirrors; separate installer tests exercise RapidMeta/AACT-kit."
       ],
       "source": "scripts/component_lock.py and tests/test_component_install.py; runtime requirements inspected in source manifests.",
       "seal": {
-        "scripts/component_lock.py": "158f0fb4154fad53468877ad29c93e93b18d943652a918c8b87d56bc0251851e",
-        "scripts/component-lock.json": "9c8e9dd563c1014754a41e0b18a90e7ff22837a0d2c61e5d4a94ed68c2eabed5"
+        "scripts/component_lock.py": "2218ee9edeb0c27a3016e1bcc8ca8419043b693ec5d022bf6d054f8a3e4ac338",
+        "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db"
       }
     },
     {
@@ -495,13 +495,14 @@
         "Atomic updates across multiple components: a new RapidMeta commit requires a fresh target; failed new installs may leave an unverified checkout.",
         "Complete offline browser operation: the locked template references external resources; generator success does not certify those resources."
       ],
-      "source": "scripts/install-rapidmeta.sh, scripts/install-rapidmeta.ps1, scripts/rapidmeta_install.py, shared component lock and isolated Git/wrapper controls.",
+      "source": "scripts/install-rapidmeta.sh, scripts/install-rapidmeta.ps1, scripts/rapidmeta_install.py, shared component lock and isolated Git/wrapper controls. Shared checkout implementation: scripts/component_source.py.",
       "seal": {
         "scripts/install-rapidmeta.sh": "5adf30b66abc60a3457130af08520706026f9c7e6287744f9e18aedb404d348f",
         "scripts/install-rapidmeta.ps1": "34c8cf5128b19626fbc2ebedd868fd0f54a664f018a9861066fd4677a96a4fb2",
-        "scripts/rapidmeta_install.py": "d79aca8ac1aae26ec23495dc69a72d6083904103be5a8750affb4394ecea24f2",
-        "scripts/component_lock.py": "158f0fb4154fad53468877ad29c93e93b18d943652a918c8b87d56bc0251851e",
-        "scripts/component-lock.json": "9c8e9dd563c1014754a41e0b18a90e7ff22837a0d2c61e5d4a94ed68c2eabed5"
+        "scripts/rapidmeta_install.py": "b9be98e480773701089d96635f1ca7a0722ea6b7dbd01b767656e20f0dec4cb0",
+        "scripts/component_lock.py": "2218ee9edeb0c27a3016e1bcc8ca8419043b693ec5d022bf6d054f8a3e4ac338",
+        "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db",
+        "scripts/component_source.py": "d48e2e59bb42bc63a157a87b94cacf65de40559e47f1f43377a5e072bf986210"
       }
     },
     {
@@ -517,6 +518,44 @@
       "source": ".github/workflows/research-component-integration.yml and tests/test_component_install.py.",
       "seal": {
         ".github/workflows/research-component-integration.yml#jobs.rapidmeta-source": "de872252036c365f1592c050b7f5bc6391244822bf34f90e042c27af82dcb410"
+      }
+    },
+    {
+      "id": "scripts/install-aact-kit.sh",
+      "kind": "script",
+      "name": "AACT locked source and optional local-backend gate",
+      "stops": "Both wrappers require exact source identity, clean checkout, supported metadata and parseable package files before path persistence. Requested dependency/runtime failures are fatal. Runtime reports require all declared CSV/TSV/ZIP/SQLite checks and matching repeat payloads. Pip installation requires an active virtual environment.",
+      "would_not_stop": [
+        "Source-only mode deliberately does not establish executable readiness or snapshot availability.",
+        "Clinical correctness, untested schemas, PostgreSQL, large datasets, dates and all aggregation operations are not established by synthetic backend controls.",
+        "Optional editable dependency/build resolution is not locked or atomic; a failed pip operation may modify the explicitly selected virtual environment.",
+        "Malicious trusted commits/tools, races, forged receipts and full ecosystem atomic upgrades remain outside this contract."
+      ],
+      "source": "scripts/aact_install.py, scripts/aact_canary.py, component_source.py and tests/test_aact_component.py.",
+      "seal": {
+        "scripts/install-aact-kit.sh": "3b3cafd09e96a9b5ed9a9fe02085243bdb073402f7442efcdde05271358cf26f",
+        "scripts/install-aact-kit.ps1": "d067ed006feda890c7f9018bc23f6945b93cb16f78216774354aa7a5db93c7e1",
+        "scripts/aact_install.py": "501d3b5bd2dafcdcd7e42e0d1a2093468ebd353b5bb224d9a584b38b99dd8015",
+        "scripts/aact_canary.py": "307f5cd2540a7eeed9c126607cb4c3d915f509134a0bee7e7aaae72eb5a1284b",
+        "scripts/component_source.py": "d48e2e59bb42bc63a157a87b94cacf65de40559e47f1f43377a5e072bf986210",
+        "scripts/component_lock.py": "2218ee9edeb0c27a3016e1bcc8ca8419043b693ec5d022bf6d054f8a3e4ac338",
+        "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db"
+      }
+    },
+    {
+      "id": ".github/workflows/research-component-integration.yml#jobs.aact-source",
+      "kind": "ci-job",
+      "name": "Locked AACT local backends on Windows and Linux",
+      "stops": "Installs hash-pinned Python 3.13 canary runtime wheels, runs isolated refusal controls and exercises the actual locked AACT package through Bash on both runners and PowerShell on Windows. The live canary tests CSV/TSV/ZIP/SQLite fixture behavior.",
+      "would_not_stop": [
+        "PostgreSQL, macOS, other runtimes/architectures, real datasets or scientific accuracy.",
+        "Optional editable pip installation/build isolation and User-registry persistence are not executed by this job.",
+        "A combined Sentinel/Overmind/AACT/RapidMeta installation or project-specific release verdict is not provided."
+      ],
+      "source": ".github/workflows/research-component-integration.yml, requirements-aact-canary.lock and AACT adapter tests.",
+      "seal": {
+        ".github/workflows/research-component-integration.yml#jobs.aact-source": "421dece5f6cb3d0b50e4fc619011ca164d07dea622d0528689265daf18e0c58a",
+        "requirements-aact-canary.lock": "0e7cb0352194d8ef29b08b47530ab3582ab101dcf07c85270fe27dc853d2b1a0"
       }
     }
   ]

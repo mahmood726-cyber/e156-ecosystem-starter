@@ -44,6 +44,7 @@ read with their scope; they cannot be combined into a single quality percentage.
 | Starter Python tests on Windows | Initial capped run: 10 passed, 5 failed without Bash on PATH; Git Bash retry: 10 passed, 8 failed | The retry exposed bootstrap test isolation failure. See [verification notes](docs/HARNESS-FOUNDATION-VERIFICATION.md); neither run is a full-suite PASS |
 | RapidMeta install provenance | Source inspection: default `v1.1.0`, checkout failure swallowed in Bash | Confirmed code path requiring M2 repair; no claim that a real install was validated |
 | RapidMeta after first M2 increment | [Windows source canary](benchmarks/components/rapidmeta-windows.json): exact requested commit, identical repeated generated output, 65 resolved local assets | Real locked source with synthetic inputs; two external resource references remain; no browser or scientific accuracy measurement |
+| AACT-kit after second M2 increment | [Windows source/runtime canary](benchmarks/components/aact-windows.json): exact requested commit; matching repeated payloads across CSV, TSV, ZIP and SQLite; five checks per backend | Synthetic development controls only. Source-only mode makes no runtime claim. PostgreSQL, real snapshots and clinical/statistical accuracy are unmeasured |
 
 The memory, Overmind and test-suite rows are local observations; installation
 provenance is a source review.
