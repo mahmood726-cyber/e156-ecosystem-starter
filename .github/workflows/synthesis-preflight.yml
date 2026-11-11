@@ -4,11 +4,20 @@ on:
     paths:
       - 'docs/SYNTHESIS-PREFLIGHT-*.md'
       - 'scripts/synthesis_preflight.py'
+      - 'scripts/synthesis_intake_evidence.py'
+      - 'scripts/synthesis_case_state.py'
+      - 'scripts/synthesis_preflight_count_identity.py'
+      - 'scripts/synthesis_preflight_root_dedup.py'
       - 'scripts/synthesis_capture_evidence.py'
       - 'scripts/synthesis_participant_evidence.py'
       - 'scripts/synthesis_v13_nma_preflight.py'
       - 'examples/synthetic_packet.json'
       - 'tests/test_synthesis_preflight.py'
+      - 'tests/test_synthesis_intake_evidence.py'
+      - 'tests/test_synthesis_case_state.py'
+      - 'examples/synthesis_intake_demo/**'
+      - 'docs/SYNTHESIS-START.md'
+      - 'docs/SYNTHESIS-INTAKE-EVIDENCE.md'
       - 'tests/test_synthesis_capture_evidence.py'
       - 'tests/fixtures/coverage_map.json'
       - '.github/workflows/synthesis-preflight.yml'
@@ -16,11 +25,20 @@ on:
     paths:
       - 'docs/SYNTHESIS-PREFLIGHT-*.md'
       - 'scripts/synthesis_preflight.py'
+      - 'scripts/synthesis_intake_evidence.py'
+      - 'scripts/synthesis_case_state.py'
+      - 'scripts/synthesis_preflight_count_identity.py'
+      - 'scripts/synthesis_preflight_root_dedup.py'
       - 'scripts/synthesis_capture_evidence.py'
       - 'scripts/synthesis_participant_evidence.py'
       - 'scripts/synthesis_v13_nma_preflight.py'
       - 'examples/synthetic_packet.json'
       - 'tests/test_synthesis_preflight.py'
+      - 'tests/test_synthesis_intake_evidence.py'
+      - 'tests/test_synthesis_case_state.py'
+      - 'examples/synthesis_intake_demo/**'
+      - 'docs/SYNTHESIS-START.md'
+      - 'docs/SYNTHESIS-INTAKE-EVIDENCE.md'
       - 'tests/test_synthesis_capture_evidence.py'
       - 'tests/fixtures/coverage_map.json'
       - '.github/workflows/synthesis-preflight.yml'
@@ -36,6 +54,8 @@ jobs:
         run: |
           python3 -m unittest discover -s tests -p 'test_synthesis_preflight.py' -v
           python3 -m unittest discover -s tests -p 'test_synthesis_capture_evidence.py' -v
+          python3 -m unittest discover -s tests -p 'test_synthesis_intake_evidence.py' -v
+          python3 -m unittest discover -s tests -p 'test_synthesis_case_state.py' -v
       - name: Check exact prompt binding and receipt generation
         run: |
           python3 scripts/synthesis_preflight.py --prompt docs/SYNTHESIS-PREFLIGHT-v1.1.md --packet examples/synthetic_packet.json --output-dir /tmp/synthesis-preflight-receipt

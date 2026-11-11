@@ -134,8 +134,8 @@ prompt/configuration, locator, code and output bindings are checked; an external
 manifest digest is required. A licensed StepWise development example and synthetic
 adverse controls exercise this contract on Windows/Linux CI. See
 [Synthesis replay](SYNTHESIS-REPLAY.md). This completes a bounded participant-check
-replay path; trial-family identity, general statistical replay, signatures and
-validated RO-Crate export remain M3 work.
+replay path; trial-family identity, general statistical replay and signatures
+remain M3 work. The provenance increment below adds a bounded RO-Crate export.
 
 M3 second increment: an optional `study_links` section in the same packet binds
 an article's registration quote/location and PMID to an archived ClinicalTrials.gov
@@ -154,6 +154,13 @@ actual profile files; migration to the newer 0.6 / 1.3 specs remains separate.
 The optional upstream check uses pinned dependencies/contexts, inherited required
 rules and defective-crate controls. Required checks, recommendation findings,
 byte integrity and scientific validity have separate results.
+
+Integration with main PR #92 retains its stricter source-token checks and
+attested-scope HOLD decisions. Replay fingerprints all ten imported local
+modules; intake evidence checks remain outside this replay contract. Both real
+examples were re-executed with unchanged source, registry, packet and prompt
+bytes. Their changed payloads and new manifest anchors are disclosed alongside
+the preserved prior receipts, including StepWise's overall NO_FLAG-to-HOLD change.
 
 ### M4 — a complete review with accountable decisions
 

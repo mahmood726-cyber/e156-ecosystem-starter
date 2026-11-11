@@ -16,6 +16,10 @@ typed PMCID/DOI/version matching, text/cell locators and typed correction links.
 source-bound distinct-arm and restricted-population accounting. The DOI normalizer
 in `synthesis_five_journal_corrections.py` is included in the verifier fingerprint.
 The new code supplies the bundle, strict inventory, external digest check and replay.
+The current profile also fingerprints the intake-evidence, count-identity,
+root-deduplication and case-state dependencies imported by the integrated preflight.
+The replay interface does not accept intake `evidence_checks` or a private case
+sidecar; those require a separately bounded replay contract.
 
 Supported packets contain one primary PMC document, one corresponding source,
 and 1–40 claims, each using `UNIQUE_ARMS` / `RESTRICTED` participant checks or
@@ -31,7 +35,7 @@ The checked-in [OA development example](../examples/synthesis-replay-stepwise)
 can be replayed without a network connection or third-party Python dependencies:
 
 ```console
-python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise --expected-sha256 8d3cfa2dc2bda703dabd79660e32be0b442360f8ab541d8934da59462e9ca905
+python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise --expected-sha256 d81086aaf3cee56b8936af0ef617085844718cdb1a200b88870fcfef7812b0d6
 ```
 
 Record your own supported packet and already licensed source snapshot:
@@ -119,7 +123,7 @@ Registry records likewise say `ARCHIVED_JSON_NOT_NETWORK_AUTHENTICATED`.
 
 Replay checks all input bytes before execution, rechecks source identity/licence
 and locations, reruns the original preflight pipeline, and compares the complete
-canonical JSON payload byte-for-byte. It also requires the six implementing
+canonical JSON payload byte-for-byte. It also requires the ten implementing
 modules to match the recorded profile, before and after execution. Python source
 fingerprints normalize CRLF to LF for normal Git checkout portability; evidence
 bytes are never normalized. A test walks local imports to detect newly unbound
@@ -157,9 +161,16 @@ The [measured receipt](../benchmarks/replay/stepwise.json) binds the source,
 manifest and resulting payload. This is a development example, not a held-out
 benchmark or a scientific accuracy estimate.
 
-The StepWise manifest was re-recorded for the study-link verifier upgrade. Source,
-packet, prompt and analytical payload bytes are unchanged; the previous manifest
-digest is retained in its receipt. Old bundles require their recorded verifier.
+The initial study-link verifier upgrade preserved the analytical payload. The
+subsequent integration of main PR #92 expanded the fingerprint from six to ten
+modules and added bounded source-token context. StepWise still reconstructs the
+same arithmetic, but its overall ledger decision is now `HOLD`, with
+`scope_status: REVIEWER_ATTESTATION_ONLY`; matching arithmetic is insufficient
+to clear an agent-declared population mapping. Its payload and manifest digests
+therefore changed. Source, packet and prompt bytes remain identical.
+The [previous receipt](../benchmarks/replay/history/stepwise-9875059.json) is
+preserved, and the current receipt records the predecessor digests. Old bundles
+require their recorded verifier; old hashes are not relabelled as current passes.
 
 The second example archives **Vahlberg B, Lundström E, Eriksson S, Holmbäck U,
 Cederholm T**, “Effects on walking performance and lower body strength by short
@@ -183,11 +194,18 @@ the observed graph are in the [STROKEWALK receipt](../benchmarks/replay/strokewa
 The selection is agent-made, `full_text_checked` remains false, and no treatment
 effect or independent adjudication is asserted.
 
+After the same main integration, STROKEWALK's result adds the two empty
+source-context boundary strings around its complete registration sentence.
+The study link, identifiers, reference type and source/registry/input bytes are
+unchanged. Its manifest and payload have new digests; the
+[previous receipt](../benchmarks/replay/history/strokewalk-9875059.json) remains
+available. Neither migration changes the selection or claims scientific accuracy.
+
 ```console
-python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk --expected-sha256 c514c54e027641eb13c6cdcb815e0e1f92ae355a572bf618f366284db5071d88
+python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk --expected-sha256 5a2d948a673a0c5ea67b9671a97bb43f0affbb00ec521e5940bf6dfe66cbe2ad
 ```
 
-Local validation: **86 synthetic replay controls** passed. Both real examples
+Local validation: **88 synthetic replay controls** passed. Both real examples
 were sealed and successfully replayed locally. CI separately replays both fixed
 digests on Windows and Linux. The control suite covers changed source/config/
 output, malformed records, forged internal hashes, broken locations, licence

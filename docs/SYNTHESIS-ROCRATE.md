@@ -3,7 +3,7 @@
 ## Implementation contract
 
 This M3 increment exports an existing verified replay bundle as an attached
-Process Run Crate. It reuses `synthesis_replay.py`, its six-module code profile,
+Process Run Crate. It reuses `synthesis_replay.py`, its ten-module code profile,
 source/registry checks, strict inventory and external manifest trust anchor.
 The exporter adds JSON-LD provenance and packages those exact inputs/results
 with the implementing source and its licence. It does not introduce an extractor,
@@ -75,7 +75,7 @@ failure. Current local Windows whole-suite restrictions remain in force.
 From the repository root, export the existing attributed example to a new directory:
 
 ```console
-python scripts/synthesis_rocrate.py export examples/synthesis-replay-strokewalk --expected-sha256 c514c54e027641eb13c6cdcb815e0e1f92ae355a572bf618f366284db5071d88 --output exported-crate
+python scripts/synthesis_rocrate.py export examples/synthesis-replay-strokewalk --expected-sha256 5a2d948a673a0c5ea67b9671a97bb43f0affbb00ec521e5940bf6dfe66cbe2ad --output exported-crate
 python scripts/synthesis_rocrate.py verify exported-crate --expected-sha256 <metadata-digest-returned-by-export>
 ```
 
@@ -106,15 +106,22 @@ context refuses the measurement. No check or inherited profile is disabled.
 
 ## Measured development result
 
-The [recorded Windows measurement](../benchmarks/rocrate/development.json) on
+The [integrated Windows measurement](../benchmarks/rocrate/development-integrated.json) on
 2026-11-11 binds the actual checker/exporter bytes, dependency lock and contexts.
 For each of the StepWise and STROKEWALK examples, the upstream validator executed
 104 checks, including **47 required checks**, with **zero skipped checks** and
 all required checks passing. Each example retained six recommendation findings;
 recommended conformance did not pass. All three deliberate defects per example
 (missing instrument, root date and payload file) were rejected by the intended
-required checks. RDF expansion preserved all 14 StepWise and 15 STROKEWALK file
+required checks. RDF expansion preserved all 18 StepWise and 19 STROKEWALK file
 digests. Both analytical payload digests matched their existing replay receipts.
+
+The [earlier measurement](../benchmarks/rocrate/development.json) remains
+unchanged as a historical observation of the six-module profile. Integration
+with main PR #92 added four imported modules and source-token context, and
+keeps StepWise's overall decision on HOLD. The [replay migration](SYNTHESIS-REPLAY.md#development-evidence-and-attribution)
+records the changed payload/manifest hashes and preserves the previous receipts.
+Original source, registry, packet and prompt bytes are unchanged.
 
 These are two development examples and synthetic adverse controls, not held-out
 scientific evaluation. The receipt describes an observed export execution; its

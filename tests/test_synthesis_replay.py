@@ -92,6 +92,23 @@ def test_repeated_seals_have_identical_payload_and_manifest(rig, tmp_path):
     assert (rig[1]/'manifest.json').read_bytes() == (tmp_path/'second/manifest.json').read_bytes()
 
 
+def test_replayed_legacy_count_retains_scope_and_decision_hold(rig):
+    seal(rig)
+    result = json.loads((rig[1]/'result.json').read_bytes())
+    finding = result['participant_count_findings'][0]
+    assert finding['unique_participants'] == 21
+    assert finding['scope_status'] == 'REVIEWER_ATTESTATION_ONLY'
+    assert finding['decision_status'] == 'HOLD'
+    assert result['ledger'][0]['effective'] == 'HOLD'
+
+
+def test_intake_evidence_checks_require_a_separate_replay_contract(rig):
+    rewrite_packet(rig, lambda p: p['claims'][0].update(evidence_checks=[]))
+    with pytest.raises(replay.Refused, match='intake evidence checks'):
+        seal(rig)
+    assert not rig[1].exists()
+
+
 @pytest.mark.parametrize('file', ['packet.json', 'prompt.md', 'result.json', 'source'])
 def test_changed_artifact_refuses_before_replay(rig, file):
     receipt = seal(rig)

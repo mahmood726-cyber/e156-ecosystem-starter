@@ -107,7 +107,8 @@ def _check_one(check: dict) -> dict:
 
 def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
                   pmc_live: bool = False, pmc_xml: Path | None = None, pmc_archive: Path | None = None,
-                  pmc_linked_xml: tuple[Path, ...] = (), pmc_follow_corrections: bool = False) -> dict:
+                  pmc_linked_xml: tuple[Path, ...] = (), pmc_follow_corrections: bool = False,
+                  private_case_state: dict | None = None) -> dict:
     problems: list[dict] = []
     def warn(code: str, message: str, claim_id: str | None = None) -> None:
         problems.append({"code": code, "claim_id": claim_id, "detail": message})
@@ -150,6 +151,7 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
     claim_ids=set()
     views=[]
     participant_checks=[]
+    evidence_checks=[]
     for claim in claims:
         if not isinstance(claim,dict):
             warn("BAD_CLAIM", "Claim must be an object")
@@ -161,6 +163,12 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
         claim_ids.add(cid)
         if "participant_count_check" in claim:
             participant_checks.append((cid, claim["participant_count_check"]))
+        if "evidence_checks" in claim:
+            entries = claim["evidence_checks"]
+            if not isinstance(entries, list) or not 1 <= len(entries) <= 40:
+                warn("BAD_EVIDENCE_CHECKS", "Supply 1 to 40 evidence checks per claim", cid)
+            else:
+                evidence_checks.extend((cid, entry) for entry in entries)
         support=claim.get("source_support")
         maturity=claim.get("evidence_maturity")
         requested=claim.get("proposed_disposition")
@@ -269,7 +277,27 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
         "UNVERIFIED_REPRODUCTION", "CHECKS_NOT_LIST", "BAD_CHECK",
         "ORPHAN_CHECK", "DUPLICATE_CHECK_ID", "INVALID_CHECK", "SOURCES_NOT_LIST", "BAD_SOURCE_IDS",
     }
+    structural_faults.add("BAD_EVIDENCE_CHECKS")
     intake_valid = not any(p["code"] in structural_faults for p in problems)
+    try:
+        from scripts.synthesis_intake_evidence import MAX_EVIDENCE_CHECKS, evidence_quotes, evidence_finding
+    except ModuleNotFoundError as exc:
+        if exc.name != "scripts":
+            raise
+        from synthesis_intake_evidence import MAX_EVIDENCE_CHECKS, evidence_quotes, evidence_finding
+    extra_quotes = []
+    if evidence_checks:
+        check_keys = [(cid, spec.get("id")) for cid, spec in evidence_checks if isinstance(spec, dict) and isinstance(spec.get("id"), str)]
+        if (len(evidence_checks) > MAX_EVIDENCE_CHECKS or len(check_keys) != len(evidence_checks) or len(set(check_keys)) != len(check_keys)
+                or not (isinstance(doc, dict) and "pmcid" in doc)):
+            warn("BAD_EVIDENCE_CHECKS", "Up to 40 uniquely identified source checks require a PMC document")
+            intake_valid = False
+        else:
+            try:
+                extra_quotes = evidence_quotes(evidence_checks)
+            except ValueError as exc:
+                warn("BAD_EVIDENCE_CHECKS", str(exc))
+                intake_valid = False
     pmc_evidence = None
     participant_findings = []
     if participant_checks:
@@ -282,7 +310,7 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
             warn("PARTICIPANT_EVIDENCE_INVALID", f"Up to {MAX_CHECKS} participant checks require a PMC document")
             intake_valid = False
     if isinstance(doc, dict) and "pmcid" in doc:
-        quotes = count_quotes(participant_checks) if participant_checks and intake_valid else ()
+        quotes = sorted(set(extra_quotes) | set(count_quotes(participant_checks) if participant_checks and intake_valid else ()))
         correction_quotes = count_quotes(participant_checks, corrections=True) if participant_checks and intake_valid else ()
         pmc_evidence = capture_packet_pmc(doc, intake_valid, pmc_live, pmc_xml, pmc_archive,
                                           pmc_linked_xml, pmc_follow_corrections, quotes, correction_quotes)
@@ -291,12 +319,39 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
             intake_valid = False
     if participant_checks and len(participant_checks) <= MAX_CHECKS:
         participant_findings = [participant_count_finding(cid, spec, pmc_evidence) for cid, spec in participant_checks]
-        held_ids = {finding["claim_id"] for finding in participant_findings if finding["status"] != "NO_FLAG"}
+        for finding in participant_findings:
+            finding["scope_status"] = "REVIEWER_ATTESTATION_ONLY"
+            finding["decision_status"] = "HOLD"
+        held_ids = {finding["claim_id"] for finding in participant_findings}
         for view in views:
             if view["id"] in held_ids and view["effective"] in {"FLAG", "RECONCILED", "NO_FLAG"}:
                 view["effective"] = "HOLD"
-                view["reasons"].append("The participant count needs reviewer attention")
+                view["reasons"].append("Legacy count arithmetic retains attested scope; source-bound analysis identity is required for a decisive outcome")
                 warn("PARTICIPANT_EVIDENCE_HOLD", view["reasons"][-1], view["id"])
+    evidence_findings = [evidence_finding(cid, spec, pmc_evidence) for cid, spec in evidence_checks[:MAX_EVIDENCE_CHECKS]]
+    held_evidence = {f["claim_id"] for f in evidence_findings if f["status"] != "NO_FLAG"}
+    for view in views:
+        if view["id"] in held_evidence and view["effective"] in {"FLAG", "RECONCILED", "NO_FLAG"}:
+            view["effective"] = "HOLD"
+            view["reasons"].append("Source evidence comparison requires review")
+            warn("SOURCE_EVIDENCE_HOLD", view["reasons"][-1], view["id"])
+    private_summary = None
+    if private_case_state is not None:
+        try:
+            from scripts.synthesis_case_state import project_state
+        except ModuleNotFoundError as exc:
+            if exc.name != "scripts": raise
+            from synthesis_case_state import project_state
+        private_summary = project_state(private_case_state, doc, claim_ids)
+        if private_summary["status"] != "VALIDATED":
+            intake_valid = False
+            warn("PRIVATE_CASE_STATE_HOLD", "Private case metadata is invalid or mismatched")
+        pending = {s["claim_id"] for s in private_summary["claims"] if s["reply_pending"]}
+        for view in views:
+            if view["id"] in pending and view["effective"] in {"FLAG", "RECONCILED", "NO_FLAG"}:
+                view["effective"] = "HOLD"
+                view["reasons"].append("A known reply point remains unresolved")
+                warn("PRIVATE_REPLY_HOLD", view["reasons"][-1], view["id"])
     if not intake_valid:
         # Invalid input cannot emit an actionable positive OR definitive negative.
         # Keep original proposed dispositions and all evidence for repair/audit.
@@ -316,6 +371,8 @@ def review_packet(packet: dict, prompt_sha256: str, input_sha256: str, *,
             "top_five":flag_summary,"ledger":views,"checks":check_results,"problems":problems,
             **({"pmc_evidence": pmc_evidence} if pmc_evidence is not None else {}),
             **({"participant_count_findings": participant_findings} if participant_checks else {}),
+            **({"evidence_findings": evidence_findings} if evidence_checks else {}),
+            **({"private_case_summary": private_summary} if private_summary is not None else {}),
             "disclaimer":"Structural verification only; no independent scientific accuracy measured."
                          + (" No outreach performed." if pmc_evidence else " No external actions performed.")}
 
@@ -369,6 +426,7 @@ def _markdown(result: dict) -> str:
         for finding in result["participant_count_findings"]:
             out.append("| " + " | ".join(esc(finding[key]) for key in ("claim_id", "status", "reason")) + " |")
         out.append("\nCount authenticity is not independently verified; matching printed arithmetic is a scoped check only.")
+        out.append("Legacy arithmetic/trace statuses retain reviewer-attested scope and hold a decisive claim outcome; use source-bound evidence_checks for analysis identity.")
         for finding in result["participant_count_findings"]:
             sweep = finding.get("revision_sweep")
             if sweep:
@@ -378,6 +436,23 @@ def _markdown(result: dict) -> str:
                                + esc(occurrence.get("text", occurrence.get("reason"))) + " — " + esc(occurrence["status"]))
                 for location in sweep.get("unchecked_locations", []):
                     out.append("- Unchecked: " + esc(location))
+    if result.get("evidence_findings"):
+        out.extend(["", "## Source evidence comparisons", "", "| Claim | Check | Kind | Status | Explanation |", "|---|---|---|---|---|"])
+        for finding in result["evidence_findings"]:
+            out.append("| " + " | ".join(esc(finding.get(k)) for k in ("claim_id", "check_id", "kind", "status", "reason")) + " |")
+            for occurrence in finding.get("occurrences", []):
+                out.append("- " + esc(occurrence["id"]) + ": " + esc(occurrence["status"]) + " (" + esc(occurrence["binding"]["locator"]) + ")")
+            for dependency in finding.get("dependencies", []):
+                out.append("- Dependency " + esc(dependency["id"]) + ": " + esc(dependency["status"]))
+        out.append("Source bindings and arithmetic do not authenticate scientific scope or underlying data.")
+    if result.get("private_case_summary"):
+        private = result["private_case_summary"]
+        out.extend(["", "## Private case status (redacted)",
+                    "Contact paused: " + str(private["contact_paused"]) + ". Email eligibility: False.",
+                    "Correspondence references and content are retained only in the private sidecar."])
+        for claim in private["claims"]:
+            out.append("- " + esc(claim["claim_id"]) + ": " + str(claim["pending_point_count"]) + " pending reply points; correction states: "
+                       + esc(", ".join(claim["correction_statuses"]) or "none recorded") + ". Publication verification remains separate.")
     out.extend(["", "## Complete, unfiltered claim ledger", "", "| Claim | Priority | Requested | Effective | Support | Maturity |", "|---|---|---|---|---|---|"])
     for v in result["ledger"]:
         out.append("| "+" | ".join(esc(v.get(k)) for k in ("id","priority","requested","effective","support","maturity"))+" |")
@@ -397,6 +472,7 @@ def main(argv: list[str] | None=None) -> int:
     p.add_argument("--prompt",type=Path,required=True,help="Exact dated prompt text; SHA verified")
     p.add_argument("--packet",type=Path,required=True)
     p.add_argument("--output-dir",type=Path,required=True)
+    p.add_argument("--private-case-state", type=Path, help="Private local reply/correction/contact metadata; only a redacted status is emitted")
     pmc_mode = p.add_mutually_exclusive_group()
     pmc_mode.add_argument("--pmc-live", action="store_true", help="Allow live PMC retrieval for a PMC packet")
     pmc_mode.add_argument("--pmc-xml", type=Path, help="Replay saved PMC XML for a packet with document.pmcid")
@@ -414,9 +490,22 @@ def main(argv: list[str] | None=None) -> int:
         p.error("--pmc-linked-xml requires --pmc-live or --pmc-xml")
     if args.pmc_follow_corrections and not args.pmc_live:
         p.error("--pmc-follow-corrections requires --pmc-live")
+    private_state = None
+    if args.private_case_state is not None:
+        try:
+            from scripts.synthesis_case_state import read_state
+        except ModuleNotFoundError as exc:
+            if exc.name != "scripts": raise
+            from synthesis_case_state import read_state
+        try:
+            private_state = read_state(args.private_case_state)
+        except (OSError, ValueError, TypeError):
+            private_state = {}
+        if private_state is None: private_state = {}
     result=review_packet(packet,digest_bytes(args.prompt.read_bytes()),digest_bytes(raw),
                          pmc_live=args.pmc_live,pmc_xml=args.pmc_xml,pmc_archive=args.output_dir / "pmc-snapshots",
-                         pmc_linked_xml=tuple(args.pmc_linked_xml),pmc_follow_corrections=args.pmc_follow_corrections)
+                         pmc_linked_xml=tuple(args.pmc_linked_xml),pmc_follow_corrections=args.pmc_follow_corrections,
+                         private_case_state=private_state)
     args.output_dir.mkdir(parents=True,exist_ok=True)
     (args.output_dir/"receipt.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     (args.output_dir/"report.md").write_text(_markdown(result),encoding="utf-8")

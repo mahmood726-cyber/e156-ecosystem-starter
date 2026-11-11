@@ -8,6 +8,10 @@ on:
       - 'scripts/synthesis_rocrate.py'
       - 'scripts/check-synthesis-rocrate.py'
       - 'scripts/synthesis_preflight.py'
+      - 'scripts/synthesis_intake_evidence.py'
+      - 'scripts/synthesis_preflight_count_identity.py'
+      - 'scripts/synthesis_preflight_root_dedup.py'
+      - 'scripts/synthesis_case_state.py'
       - 'scripts/synthesis_capture_evidence.py'
       - 'scripts/synthesis_participant_evidence.py'
       - 'scripts/synthesis_v13_nma_preflight.py'
@@ -48,11 +52,11 @@ jobs:
       - name: Recompute the archived OA development example
         run: >-
           python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise
-          --expected-sha256 8d3cfa2dc2bda703dabd79660e32be0b442360f8ab541d8934da59462e9ca905
+          --expected-sha256 d81086aaf3cee56b8936af0ef617085844718cdb1a200b88870fcfef7812b0d6
       - name: Recompute the archived report and registry link
         run: >-
           python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk
-          --expected-sha256 c514c54e027641eb13c6cdcb815e0e1f92ae355a572bf618f366284db5071d88
+          --expected-sha256 5a2d948a673a0c5ea67b9671a97bb43f0affbb00ec521e5940bf6dfe66cbe2ad
       - name: Install hash-locked upstream profile validator
         run: >-
           python -m pip install --only-binary=:all: --require-hashes -r requirements-rocrate.lock

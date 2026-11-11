@@ -38,7 +38,9 @@ MAX_REGISTRIES = 8
 JSON_LIMIT = 2 * 1024 * 1024
 CODE = ('synthesis_replay.py', 'synthesis_preflight.py', 'synthesis_capture_evidence.py',
         'synthesis_participant_evidence.py', 'synthesis_v13_nma_preflight.py',
-        'synthesis_five_journal_corrections.py')
+        'synthesis_five_journal_corrections.py', 'synthesis_intake_evidence.py',
+        'synthesis_preflight_count_identity.py', 'synthesis_preflight_root_dedup.py',
+        'synthesis_case_state.py')
 
 
 class Refused(ValueError):
@@ -127,6 +129,8 @@ def validate_scope(packet):
     for claim in claims:
         if not isinstance(claim, dict) or claim.get('source_ids') != [source.get('id')]:
             raise Refused('each claim must reference the primary source exactly once')
+        if 'evidence_checks' in claim:
+            raise Refused('intake evidence checks are outside the bounded replay contract')
         spec = claim.get('participant_count_check')
         if 'registered_trial' in claim:
             if 'participant_count_check' in claim or not isinstance(claim['registered_trial'], str) or not NCT.fullmatch(claim['registered_trial']):
