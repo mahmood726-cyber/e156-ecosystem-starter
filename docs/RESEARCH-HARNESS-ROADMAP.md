@@ -145,7 +145,8 @@ its `DERIVED` reference and leaves cohort overlap, outcome equivalence and pooli
 eligibility unresolved. Cochrane's distinction between reports and studies informs
 this boundary; see [the contract and sources](SYNTHESIS-REPLAY.md#typed-study-links).
 This is a bibliographic edge, not a validated multi-report cohort graph. Trial-family
-adjudication, general analysis replay and signatures remain outstanding.
+adjudication and general analysis replay remain outstanding. The later signing
+increment is described below.
 
 M3 provenance increment: [RO-Crate export](SYNTHESIS-ROCRATE.md) packages verified
 replay bytes with implementing software and a new execution record. The declared
@@ -169,6 +170,12 @@ verifies the result. Key identity, freshness, adjudication and scientific validi
 remain separate; no production keys are enrolled.
 
 ### M4 — a complete review with accountable decisions
+
+The [November comparison and recovery experiment](HARNESS-COMPARISON-2026-11.md)
+prioritize persistent review orchestration with dependency revalidation. The
+local LangGraph prototype resumes across process boundaries, but cached receipts
+require E156 revalidation after source/result changes. This is benchmark code,
+not a production review runner or a power-loss guarantee.
 
 Add resumable protocol/search/screen/extract/appraise/synthesise/report stages
 over that shared record. Reuse CoLRev/ASReview through optional adapters where
@@ -208,7 +215,7 @@ split is created or consumed in M1; the final test is reserved for M5.
 | BM25 constants | Existing static algorithm defaults | No parameter tuning or performance optimisation in M1 |
 | Command results and per-case outcomes | Dynamic local execution | Behavior under the recorded code/environment |
 | Overmind stored numerical references | Existing cited fixtures | Reproduction of stored references; not newly adjudicated clinical evidence |
-| External comparator features | Primary documentation, checked 2026-11-11 | Documented capability; competitors were not run locally |
+| External comparator features | Primary documentation, checked 2026-11-11 | Documented capability; separate LangGraph strategy experiment linked under M4 |
 | Future scientific rankings | Not measured | Cannot support any present superiority claim |
 
 ## Release boundary
