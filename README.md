@@ -602,3 +602,12 @@ The optional [signing adapter](docs/SYNTHESIS-SIGNING.md) binds an existing repl
 to a separately approved project/key policy, using Overmind Ed25519 signing.
 Verification checks the signature and re-executes the replay. Scientific validity,
 human review and freshness remain unestablished; no production keys are enrolled.
+
+### Persistent audit recovery
+
+The [review runner](docs/SYNTHESIS-REVIEW-RUNNER.md) persists one source-replay
+audit with an externally anchored protocol. Each advance rechecks evidence and
+code, changed dependencies invalidate the run, and retries return one stable local
+receipt. SQLite transactions support process restart and writer exclusion.
+Completion retains HOLD; search, screening and human adjudication remain future
+stages.

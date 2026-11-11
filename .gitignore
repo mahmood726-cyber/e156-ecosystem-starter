@@ -1,5 +1,7 @@
 # Local session state — never commit
 PROGRESS.md
+/review.sqlite
+/review.sqlite-*
 STUCK_FAILURES.*
 sentinel-findings.*
 *.pyc

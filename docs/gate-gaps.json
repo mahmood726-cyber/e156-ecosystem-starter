@@ -685,6 +685,36 @@
         "scripts/requirements-signing.lock": "7ebeb730aa134593ce3a0feda7fcf37e17abed5f0dd321903482c0fc259f49b7",
         "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db"
       }
+    },
+    {
+      "id": ".github/workflows/synthesis-review.yml#jobs.audit",
+      "kind": "ci-job",
+      "name": "Persistent audit recovery on Windows and Linux",
+      "stops": "Runs the bounded source-replay workflow integration controls on both OSes: explicit protocol anchoring, mandatory dependency revalidation, permanent invalidation, canonical history/receipt checks, writer exclusion, and own-worker termination before commit or after commit before response.",
+      "would_not_stop": [
+        "Physical power loss, broken filesystem locks/flushes, network-filesystem behavior, or a hostile concurrent filesystem writer. Tests terminate local subprocesses on development fixtures.",
+        "Authenticated-history forgery, compromised interpreters or trust-anchor distribution, or independently verified operator identity. Local history hashes are not signatures.",
+        "Duplicate actions in downstream email/deploy/publish systems. The stage has no external side effects and does not establish exactly-once external delivery.",
+        "Unsupported search/screen/extract/adjudicate stages, scientific errors, cohort decisions or release certification. Completion remains HOLD."
+      ],
+      "source": "scripts/synthesis_review_runner.py; tests/test_synthesis_review_runner.py; docs/SYNTHESIS-REVIEW-RUNNER.md. Reuses the unchanged source-replay checker and archived OA bundles.",
+      "seal": {
+        ".github/workflows/synthesis-review.yml#jobs.audit": "d73da018dce2ad4bf339f7c8d0b78f885d2ca3ee250e6500c3da5e42c28787f9",
+        "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626",
+        "tests/test_synthesis_review_runner.py": "9ac811700abd272622c07929048490d9d7fb9346d52d190d0070a810a2038dba",
+        "examples/synthesis-review-stepwise.json": "3a6f7f31efcd41d10a027bd5e3d2f4d3e9d7a9c1f8296a54b2d4954a679e465b",
+        "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a",
+        "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
+        "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+        "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+        "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
+        "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
+        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de"
+      }
     }
   ]
 }

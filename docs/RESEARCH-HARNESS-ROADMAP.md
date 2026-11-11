@@ -177,6 +177,13 @@ local LangGraph prototype resumes across process boundaries, but cached receipts
 require E156 revalidation after source/result changes. This is benchmark code,
 not a production review runner or a power-loss guarantee.
 
+A [bounded persistent audit stage](SYNTHESIS-REVIEW-RUNNER.md) now wraps the
+existing replay checker with SQLite transactions and an externally anchored
+protocol. Each advance revalidates dependencies; invalidation is terminal and
+completion retains HOLD. New-process and abrupt-worker-termination controls
+exercise rollback and receipt retry. This is one local stage; the full workflow
+and human decision system below remain outstanding.
+
 Add resumable protocol/search/screen/extract/appraise/synthesise/report stages
 over that shared record. Reuse CoLRev/ASReview through optional adapters where
 they fit. Preserve search queries, deduplication decisions, excluded-study
