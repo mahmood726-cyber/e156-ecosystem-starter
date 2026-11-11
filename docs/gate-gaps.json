@@ -80,14 +80,14 @@
       "name": "Python tests (Ubuntu)",
       "stops": "A failing pytest test anywhere under tests/, on Python 3.11 on Ubuntu -- including tests/test_gate_gaps.py, which is what enforces this registry. Since port S-D: an install of pytest or any dependency that is not hash-pinned in requirements-ci.lock (pip --require-hashes refuses a missing or mismatched hash); tests/test_ci_lock.py refuses any unpinned `pip install` added to the workflow.",
       "would_not_stop": [
-        "scripts/test_recall.py and scripts/test_refresh_pins.py: they live outside tests/ and `pytest tests/` does not collect them.",
+        "scripts/test_refresh_pins.py: it lives outside tests/ and `pytest tests/` does not collect it. The recall suite is now collected through tests/test_recall_legacy.py.",
         "Windows-only path or encoding behaviour, and any other Python version.",
         "A test that is skipped or xfailed: pytest reports those without failing the job.",
         "A weak test that passes whatever the code does (that is scripts/blank-and-rerun.py's question).",
         "A malicious or broken package version that a PR deliberately pins with its real hash: the lock proves integrity of the bytes, not their trustworthiness -- lock bumps need review.",
         "pip itself, which comes from the runner's setup-python image and is not pinned by the lock."
       ],
-      "source": ".github/workflows/test.yml python-tests job; scripts/ listing. Port S-D report (requirements-ci.lock, tests/test_ci_lock.py).",
+      "source": ".github/workflows/test.yml python-tests job; scripts/ listing. Port S-D report (requirements-ci.lock, tests/test_ci_lock.py). Memory suite collection adapter: tests/test_recall_legacy.py; adverse controls: tests/test_memory_contract.py.",
       "seal": {
         ".github/workflows/test.yml#jobs.python-tests": "8f518b727ceb33f149fa69bea13cc8062b748a477ed312895cc37573847457de"
       }

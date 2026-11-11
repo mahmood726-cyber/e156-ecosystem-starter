@@ -45,7 +45,7 @@ evidence. This work extends an existing project and creates no new repository.
 
 ## Milestones and acceptance criteria
 
-### M1 — trustworthy memory and a measured baseline (current implementation)
+### M1 — trustworthy memory and a measured baseline (implemented locally)
 
 1. Preserve BM25 and legacy Markdown memories; scope automatic discovery to the
    requested project. Cross-project access requires an explicit memory path.
@@ -65,12 +65,21 @@ still retrieves relevant explicit-store memories, and the full-suite result is
 reported without concealing pre-existing environment failures. No retrieval
 quality or state-of-the-art claim follows from M1.
 
+Implementation and verification are recorded in
+[HARNESS-FOUNDATION-VERIFICATION.md](HARNESS-FOUNDATION-VERIFICATION.md).
+The same evaluator now satisfies 11/11 development controls, against 5/11 in
+the preserved baseline. Cross-platform release validation remains outstanding.
+
 ### M2 — a reproducible component installation and verification boundary
 
 Use one machine-readable component lock with full commits/archive digests,
 runtime requirements, supported platforms, and component-specific smoke tests.
 Both installer languages consume or validate it. Existing-checkout updates
 must reject dirty/conflicting state and failed checkout before persisting paths.
+First repair test isolation: the Windows/Git Bash baseline exposed fake-command
+resolution failure that allowed a bootstrap test to reach the real installer.
+The bootstrap fixture now checks fake curl resolution and uses a disposable home;
+audit equivalent PATH-based stubs before running other installation tests locally.
 Add disposable Windows and Linux full-chain tests including RapidMeta and
 AACT-kit; record expected and observed commits. Keep Sentinel and Overmind
 results bound to the tested tree and never count a missing witness as PASS.

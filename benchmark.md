@@ -24,7 +24,8 @@ proof of absence.
 | [Inspect evaluation logs](https://inspect.aisi.org.uk/eval-logs.html) | Task/sample logs, failures, model usage and retry records | Keep every attempted case, preserve failure denominators, bind outcomes to the exact configuration |
 | [Anthropic agent evaluations](https://www.anthropic.com/research/demystifying-evals-for-ai-agents) | Distinguishes tasks, trials, graders, transcripts and actual outcomes | Check generated artifacts and state, rather than accepting the agent's completion claim |
 | [Workflow Run RO-Crate](https://www.researchobject.org/workflow-run-crate/) and [Process Run Crate](https://www.researchobject.org/workflow-run-crate/profiles/process_run_crate/) | Records execution provenance linking software, actions, inputs and outputs | Export a validated interoperable research bundle; cryptographic identity alone is insufficient |
-| [Cochrane/Campbell/JBI/CEE AI position](https://doi.org/10.1002/14651858.ED000178) and [Cochrane platform study](https://www.cochrane.org/about-us/news/cochrane-announces-selected-ai-tools-innovative-platform-study) | Human responsibility, transparent disclosure and contextual evaluation of AI tools | Require recorded oversight/adjudication and domain-specific validation; do not claim blanket RAISE conformance |
+| [Cochrane Methods Report 2026](https://www.cochrane.org/about-us/news/cochrane-methods-report-2026) and [Cochrane platform study](https://www.cochrane.org/about-us/news/cochrane-announces-selected-ai-tools-innovative-platform-study) | Updated RAISE guidance, human verification and contextual evaluation of AI tools | Require recorded oversight/adjudication and domain-specific validation; do not claim blanket RAISE conformance |
+| [PRISMA](https://www.prisma-statement.org/home) and [PRISMA-S](https://www.prisma-statement.org/prisma-search) | Transparent reporting of review methods and search procedures | Preserve queries, dates, sources and selection accounting as structured records; checklist completion alone does not establish methodological quality |
 
 The inference from this comparison is an engineering priority: strengthen the
 connections between existing components before adding another model or database.
@@ -38,11 +39,13 @@ read with their scope; they cannot be combined into a single quality percentage.
 | Probe | Observed result | Exact interpretation |
 |---|---|---|
 | Memory contract controls | [baseline.json](benchmarks/memory/baseline.json): 5/11 satisfied | Synthetic development controls of scoping, corpus readability and context identity; deliberately includes contracts introduced by this upgrade |
+| Memory controls after M1 | [after.json](benchmarks/memory/after.json): 11/11 satisfied with the same evaluator hash | All fixed development contracts satisfied; not a held-out retrieval-quality gain |
 | Installed Overmind gold fixtures (`a8131b0`) | 43/43 stored fixtures passed; 41 pooled fixtures; maximum reported log-estimate deviation 0.00003234215813041619 | Actual `run_gold_benchmark()` execution against its committed references. Not a new independent source audit, not the starter-pinned Overmind revision, and not clinical accuracy |
-| Starter Python tests on Windows | Initial capped run: 10 passed, 5 failed; Bash was absent from PATH | Environment failure before implementation. A Git Bash retry is recorded in the verification notes; unavailable prerequisites are not counted as passes |
+| Starter Python tests on Windows | Initial capped run: 10 passed, 5 failed without Bash on PATH; Git Bash retry: 10 passed, 8 failed | The retry exposed bootstrap test isolation failure. See [verification notes](docs/HARNESS-FOUNDATION-VERIFICATION.md); neither run is a full-suite PASS |
 | RapidMeta install provenance | Source inspection: default `v1.1.0`, checkout failure swallowed in Bash | Confirmed code path requiring M2 repair; no claim that a real install was validated |
 
-The first three rows are local observations; the fourth is a source review.
+The memory, Overmind and test-suite rows are local observations; installation
+provenance is a source review.
 No private memory was read for the benchmark, and no paid AI calls were made.
 The Overmind probe called its numerical function directly to avoid starting a
 portfolio scan or changing the user's existing benchmark artifact.
@@ -51,7 +54,7 @@ portfolio scan or changing the user's existing benchmark artifact.
 
 ```console
 python scripts/benchmark-memory.py
-python -m pytest tests/test_memory_contract.py tests/test_recall.py -q
+python -m pytest tests/test_memory_contract.py tests/test_recall_legacy.py -q
 ```
 
 The evaluator creates isolated temporary Markdown stores. It runs the real

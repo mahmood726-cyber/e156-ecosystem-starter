@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
-import recall
+from scripts import recall
 
 
 def _write(d: Path, name: str, description: str, body: str) -> None:
@@ -72,8 +72,8 @@ def test_encode_project_dir_does_not_collapse_separators():
     # dash; "C:\\Users\\x" -> "C--Users-x" (colon AND backslash both -> dash).
     # A regex that collapsed consecutive separators would yield "C-Users-x" and
     # silently fail to match the real store. Guard against that regression.
-    assert recall._encode_project_dir(Path(r"C:\Users\x")) == "C--Users-x"
-    assert recall._encode_project_dir(Path("/home/x/proj")) == "-home-x-proj"
+    assert recall._encode_project_dir(PureWindowsPath("C:/") / "fixture") == "C--fixture"
+    assert recall._encode_project_dir(Path("/") / "fixture") == "-fixture"
 
 
 def test_discover_respects_env_override(tmp_path, monkeypatch):
@@ -89,9 +89,12 @@ def test_discover_returns_none_when_no_projects(tmp_path, monkeypatch):
 
 def test_discover_picks_sole_candidate(tmp_path, monkeypatch):
     monkeypatch.delenv("CLAUDE_MEMORY_DIR", raising=False)
-    mem = tmp_path / ".claude" / "projects" / "some-proj" / "memory"
+    # A sole candidate is eligible only when it belongs to this project.
+    cwd = tmp_path / "requested-project"
+    mem = tmp_path / ".claude" / "projects" / recall._encode_project_dir(cwd) / "memory"
     mem.mkdir(parents=True)
     monkeypatch.setattr(recall.Path, "home", classmethod(lambda cls: tmp_path))
+    monkeypatch.setattr(recall.Path, "cwd", classmethod(lambda cls: cwd))
     assert recall.discover_memory_dir() == mem
 
 
@@ -132,7 +135,7 @@ def test_json_query_emits_valid_ranked_json(tmp_path, capsys):
     assert payload["hits"][0]["name"] == "ed25519-signing"
     top = payload["hits"][0]
     # Contract: every hit carries these keys for a programmatic consumer.
-    assert set(top) == {"score", "name", "description", "path"}
+    assert set(top) == {"score", "name", "description", "path", "sha256", "evidence_status"}
     assert isinstance(top["score"], float)
 
 
