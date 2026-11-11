@@ -145,7 +145,15 @@ its `DERIVED` reference and leaves cohort overlap, outcome equivalence and pooli
 eligibility unresolved. Cochrane's distinction between reports and studies informs
 this boundary; see [the contract and sources](SYNTHESIS-REPLAY.md#typed-study-links).
 This is a bibliographic edge, not a validated multi-report cohort graph. Trial-family
-adjudication, general analysis replay, signatures and RO-Crate remain outstanding.
+adjudication, general analysis replay and signatures remain outstanding.
+
+M3 provenance increment: [RO-Crate export](SYNTHESIS-ROCRATE.md) packages verified
+replay bytes with implementing software and a new execution record. The declared
+target is Process Run Crate 0.5 / RO-Crate 1.1, matching the released validator's
+actual profile files; migration to the newer 0.6 / 1.3 specs remains separate.
+The optional upstream check uses pinned dependencies/contexts, inherited required
+rules and defective-crate controls. Required checks, recommendation findings,
+byte integrity and scientific validity have separate results.
 
 ### M4 — a complete review with accountable decisions
 

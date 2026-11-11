@@ -212,9 +212,9 @@ claim, fit a meta-analysis, or make a review release-ready. A reproducible
 `REVIEW_CANDIDATE` stays a review candidate; `HOLD` in the review ledger is not
 promoted by replay. Existing private evidence/correspondence packets stay private.
 
-The [Process Run Crate 0.6 specification](https://www.researchobject.org/workflow-run-crate/profiles/process_run_crate/)
-links executions to software, inputs/configuration and outputs. That provides the
-mapping target for a later RO-Crate export. This increment does not emit JSON-LD
-or claim RO-Crate conformance. Adjudicated trial-family/cohort relations, signed trust roots,
-general analysis replay, independently validated profile export and held-out
-scientific evaluation remain separate work.
+The optional [RO-Crate exporter](SYNTHESIS-ROCRATE.md) packages this unchanged
+bundle with JSON-LD execution provenance. It targets Process Run Crate 0.5 and
+RO-Crate 1.1, the versions covered by the pinned validator. The replay command
+itself does not issue a profile-conformance verdict. Adjudicated trial-family/
+cohort relations, signed trust roots, general analysis replay, migration to the
+newer profile versions and held-out scientific evaluation remain separate work.

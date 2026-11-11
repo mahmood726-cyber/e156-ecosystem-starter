@@ -72,6 +72,24 @@ of the original committed version without resetting the checkout. `--output`
 writes the report. Preserve the baseline rather than overwriting it. Source
 hashes refer to actual local bytes, including newline encoding.
 
+## Measured provenance interoperability
+
+The [RO-Crate development receipt](benchmarks/rocrate/development.json) records
+actual exports of both existing OA replay examples, checked with
+`roc-validator==0.13.1` against Process Run Crate 0.5 / RO-Crate 1.1. Each export
+passed 47 required checks out of 104 executed checks, with none skipped. Each
+retained six recommendation findings, so recommended conformance is not claimed.
+All three deliberately broken crates per example were rejected for their intended
+missing instrument, root date or payload file. RDF expansion preserved 14 and 15
+file digests respectively; the analytical payloads retained their existing hashes.
+
+This is a Windows development measurement, bound to the checker, exporter,
+dependency lock and standard context hashes. The same gate runs on Windows and
+Linux CI. New execution UUIDs/times are measured metadata, not fixed analytical
+outputs. The [export contract](docs/SYNTHESIS-ROCRATE.md) documents the validator's
+version coverage, recommendations and limits. Neither profile validation nor the
+45 export integration controls establish scientific accuracy or human adjudication.
+
 ## Scientific benchmark protocol for later milestones
 
 The [source replay development checks](docs/SYNTHESIS-REPLAY.md) reconstruct a

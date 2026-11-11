@@ -597,16 +597,16 @@
     {
       "id": ".github/workflows/synthesis-replay.yml#jobs.replay",
       "kind": "ci-job",
-      "name": "Archived OA replay on Windows and Linux",
-      "stops": "A failing source-capture or replay control, or failure to recompute either committed OA participant/registry-link development bundle against its reviewed manifest digest, on Python 3.13 Windows/Linux.",
+      "name": "Archived OA replay and provenance on Windows and Linux",
+      "stops": "A failing source-capture, replay or export control; failure to reconstruct either fixed-digest OA bundle; failure of required Process Run 0.5 / RO-Crate 1.1 checks; skipped validation; changed pinned contexts/dependencies; or failure to reject intended defective-crate controls on Python 3.13 Windows/Linux.",
       "would_not_stop": [
-        "Incorrect reviewer mapping, scientific conclusions or undeclared relevant sources; selected development examples are not a held-out accuracy evaluation.",
-        "A malicious change approved to both verifier and external digest, interpreter/OS compromise, or untested runtime versions.",
-        "Incomplete trial-family identity, general pooled-effect analysis, signature trust or RO-Crate interoperability; none is implemented by this contract."
+        "Incorrect source/reviewer interpretation, scientific conclusions, missing relevant evidence or a forged source; development examples do not measure held-out accuracy.",
+        "Recommended metadata gaps, profile requirements absent from the upstream validator, Process Run 0.6 / RO-Crate 1.3 compatibility, or an independently authenticated execution timestamp.",
+        "A malicious approved verifier/trust-anchor change, hostile interpreter/OS, incomplete cohort/outcome adjudication, arbitrary pooled-effect analysis or signature trust."
       ],
-      "source": "scripts/synthesis_replay.py; tests/test_synthesis_replay.py; docs/SYNTHESIS-REPLAY.md.",
+      "source": "scripts/synthesis_replay.py; scripts/synthesis_rocrate.py; scripts/check-synthesis-rocrate.py; docs/SYNTHESIS-ROCRATE.md; replay and export integration tests.",
       "seal": {
-        ".github/workflows/synthesis-replay.yml#jobs.replay": "ded8b6a1108263aa32f92622fa59678bc5750f9a7a43739f5ef2850a4c563cb4"
+        ".github/workflows/synthesis-replay.yml#jobs.replay": "2ee34535284afa0680dcd9c41f2cb4b852317d42a7c7193d9ad38408d4dcbc73"
       }
     },
     {
@@ -622,6 +622,30 @@
       ],
       "source": "scripts/synthesis_replay.py and its local import closure; docs/SYNTHESIS-REPLAY.md.",
       "seal": {
+        "scripts/synthesis_replay.py": "4cb0c97753ce5ec6e2ad73f66fb4f802d49505770d552f0bde8305d5cc15fc88",
+        "scripts/synthesis_preflight.py": "a4508a7668765e3ba29a58fb106967e12e97da9667dacbde07958a9e43c9c301",
+        "scripts/synthesis_capture_evidence.py": "0e789ca464477c38c0ee232a804cef374eeb54b2c99de71ddcad59118cd60df5",
+        "scripts/synthesis_participant_evidence.py": "f79b1d847b7d001a19031d903e8416b9d2d8d71501efb7e98c519d53fcf8a659",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa"
+      }
+    },
+    {
+      "id": "scripts/check-synthesis-rocrate.py",
+      "kind": "script",
+      "name": "Required upstream provenance profile and negative controls",
+      "stops": "Changed or unavailable validator dependencies/standard contexts, broken local export integrity, dropped RDF file digests, required profile failures or skipped checks, and a validator that fails to reject a missing instrument, root date or payload file.",
+      "would_not_stop": [
+        "Missing operator/author/publisher and other recommended metadata: findings are reported, and full recommended conformance is not claimed.",
+        "An unimplemented requirement in the pinned upstream rules, a profile version other than Process Run 0.5 / RO-Crate 1.1, or forged local source/time/environment declarations.",
+        "Clinical correctness, independence of adjudication, complete cohort identity, treatment-effect validity or held-out scientific accuracy; the cases are development examples."
+      ],
+      "source": "Pinned roc-validator 0.13.1 profiles; docs/SYNTHESIS-ROCRATE.md; inherited rules plus local integrity and defect controls.",
+      "seal": {
+        "scripts/check-synthesis-rocrate.py": "acc6d4c94ed8fe4c6ceb96f02511db1c1bb7810451c2f26d9aa34b52721727ac",
+        "scripts/synthesis_rocrate.py": "05e21f7706689a17cd132ff16f28f9832ddc58a9f4759a8e9502514a2823280d",
+        "requirements-rocrate.lock": "2dd74a7c29f048134c9108da0447477b4a8e649ed69d0e5a8af1a10d2f3585d1",
+        "schemas/rocrate-contexts.json": "5d08eb549a77f814dce18c8a388cbfd3556a65e40f4c5a5e1b5832568cff4468",
         "scripts/synthesis_replay.py": "4cb0c97753ce5ec6e2ad73f66fb4f802d49505770d552f0bde8305d5cc15fc88",
         "scripts/synthesis_preflight.py": "a4508a7668765e3ba29a58fb106967e12e97da9667dacbde07958a9e43c9c301",
         "scripts/synthesis_capture_evidence.py": "0e789ca464477c38c0ee232a804cef374eeb54b2c99de71ddcad59118cd60df5",

@@ -397,6 +397,9 @@ with exact archived inputs and an external manifest digest. Licensed real-paper
 development examples are included. Registration links preserve the registry's
 reference type and leave cohort overlap and outcome equivalence unassessed;
 replay agreement does not establish scientific validity.
+An optional [RO-Crate export](docs/SYNTHESIS-ROCRATE.md) packages the verified
+bytes and software with a new execution record. Profile validation and scientific
+validity remain separate from byte integrity.
 `find-related-repos.py` reads the ProjectIndex manifest or `INDEX.md` (see
 ["Adding a portfolio index"](#adding-a-portfolio-index-v030) above) and exits
 `2` with guidance if no index exists yet. See

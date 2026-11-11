@@ -5,17 +5,22 @@ on:
     branches: [main]
     paths:
       - 'scripts/synthesis_replay.py'
+      - 'scripts/synthesis_rocrate.py'
+      - 'scripts/check-synthesis-rocrate.py'
       - 'scripts/synthesis_preflight.py'
       - 'scripts/synthesis_capture_evidence.py'
       - 'scripts/synthesis_participant_evidence.py'
       - 'scripts/synthesis_v13_nma_preflight.py'
       - 'scripts/synthesis_five_journal_corrections.py'
       - 'tests/test_synthesis_replay.py'
+      - 'tests/test_synthesis_rocrate.py'
       - 'tests/test_synthesis_capture_evidence.py'
       - 'examples/synthesis-replay-stepwise/**'
       - 'examples/synthesis-replay-strokewalk/**'
       - '.gitattributes'
       - 'requirements-ci.lock'
+      - 'requirements-rocrate.lock'
+      - 'schemas/rocrate-contexts.json'
       - '.github/workflows/synthesis-replay.yml'
   workflow_dispatch:
 
@@ -24,7 +29,7 @@ permissions:
 
 jobs:
   replay:
-    name: Archived OA replay (${{ matrix.os }})
+    name: Archived OA replay and provenance (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 8
     strategy:
@@ -39,7 +44,7 @@ jobs:
       - name: Install hash-locked test dependencies
         run: python -m pip install --require-hashes -r requirements-ci.lock
       - name: Run replay and source-capture negative controls
-        run: python -m pytest tests/test_synthesis_replay.py tests/test_synthesis_capture_evidence.py -q
+        run: python -m pytest tests/test_synthesis_replay.py tests/test_synthesis_capture_evidence.py tests/test_synthesis_rocrate.py -q
       - name: Recompute the archived OA development example
         run: >-
           python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise
@@ -48,3 +53,7 @@ jobs:
         run: >-
           python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk
           --expected-sha256 c514c54e027641eb13c6cdcb815e0e1f92ae355a572bf618f366284db5071d88
+      - name: Install hash-locked upstream profile validator
+        run: python -m pip install --only-binary=:all: --require-hashes -r requirements-rocrate.lock
+      - name: Validate real exports and reject broken provenance
+        run: python scripts/check-synthesis-rocrate.py --output rocrate-validation.json
