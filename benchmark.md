@@ -74,12 +74,15 @@ hashes refer to actual local bytes, including newline encoding.
 
 ## Scientific benchmark protocol for later milestones
 
-The [source replay development check](docs/SYNTHESIS-REPLAY.md) reconstructs one
-reviewer-selected baseline exclusion count from a real CC BY PMC snapshot. Its
-[recorded receipt](benchmarks/replay/stepwise.json) binds source identity, manifest,
-verifier profile and output. The 47 synthetic controls test refusal and replay
-behavior; neither they nor the selected example measure held-out accuracy or
-comparative scientific performance.
+The [source replay development checks](docs/SYNTHESIS-REPLAY.md) reconstruct a
+selected baseline exclusion count and a typed report-to-registry link from real
+CC BY PMC snapshots. Their [StepWise](benchmarks/replay/stepwise.json) and
+[STROKEWALK](benchmarks/replay/strokewalk.json) receipts bind source identity,
+manifest, verifier profile and output. The 86 synthetic controls test refusal
+and replay behavior; neither they nor the selected examples measure held-out
+accuracy or comparative scientific performance. The registry-link increment
+uses [Cochrane's report/study distinction](https://www.cochrane.org/authors/handbooks-and-manuals/handbook/current/chapter-05)
+to keep bibliographic linkage separate from cohort and outcome adjudication.
 
 Freeze the task definition, reference adjudication, split rule, corpus hashes,
 method configuration and budgets before optimisation. Split by review and

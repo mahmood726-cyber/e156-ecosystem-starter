@@ -27,3 +27,4 @@ install/install.ps1 text eol=lf
 
 # Archived replay inputs/results bind exact bytes, including their line endings.
 examples/synthesis-replay-stepwise/** -text
+examples/synthesis-replay-strokewalk/** -text

@@ -392,8 +392,10 @@ component installation, source-to-claim provenance, review workflows and held-ou
 evaluation. [Benchmark evidence](benchmark.md) separates executed development
 controls from external documented capabilities and unmeasured scientific accuracy.
 The [source replay contract](docs/SYNTHESIS-REPLAY.md) adds offline reconstruction
-of source-bound Synthesis participant checks, with exact archived inputs and an
-external manifest digest. A licensed real-paper development example is included;
+of source-bound Synthesis participant checks and typed report-to-trial links,
+with exact archived inputs and an external manifest digest. Licensed real-paper
+development examples are included. Registration links preserve the registry's
+reference type and leave cohort overlap and outcome equivalence unassessed;
 replay agreement does not establish scientific validity.
 `find-related-repos.py` reads the ProjectIndex manifest or `INDEX.md` (see
 ["Adding a portfolio index"](#adding-a-portfolio-index-v030) above) and exits

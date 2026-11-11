@@ -293,3 +293,228 @@ def test_partial_write_has_no_completion_marker(rig, monkeypatch):
     with pytest.raises(OSError): seal(rig)
     assert not (rig[1]/'manifest.json').exists()
     assert (rig[1]/'packet.json').is_file()
+
+
+@pytest.fixture
+def identity_rig(rig):
+    """Invented report/registry identities; only the integration contract is real."""
+    inputs, _ = rig
+    payload = XML.replace(b'</article-meta>', b'<article-id pub-id-type="pmid">12345</article-id></article-meta>')
+    payload = payload.replace(b'<table-wrap', b'<p>This trial is registered as NCT00000001.</p><table-wrap')
+    registry = {'protocolSection': {
+        'identificationModule': {'nctId': 'NCT00000001'},
+        'statusModule': {'lastUpdatePostDateStruct': {'date': '2026-01-02'}},
+        'referencesModule': {'references': [{'pmid': '12345', 'type': 'RESULT'}]},
+    }}
+    raw = replay.canonical(registry)
+    (inputs/'registry.json').write_bytes(raw)
+    (inputs/'article.xml').write_bytes(payload)
+    def update(p):
+        p['claims'][0]['participant_count_check']['snapshot_sha256'] = sha256(payload).hexdigest()
+        p['study_links'] = {'schema': 'e156-study-links-v1', 'links': [{
+            'nct_id': 'NCT00000001', 'registry_sha256': sha256(raw).hexdigest(), 'reference_type': 'RESULT',
+            'registration': {'quote': 'This trial is registered as NCT00000001.', 'locator': 'body p 2'}}]}
+    rewrite_packet(rig, update)
+    return rig
+
+
+def identity_seal(rig, registries=None):
+    inputs, output = rig
+    return replay.seal(inputs/'packet.json', inputs/'prompt.md', inputs/'article.xml', output,
+                       registry_json=registries if registries is not None else [inputs/'registry.json'])
+
+
+def change_registry(rig, change):
+    path = rig[0]/'registry.json'
+    record = json.loads(path.read_bytes())
+    change(record['protocolSection'])
+    raw = replay.canonical(record)
+    path.write_bytes(raw)
+    rewrite_packet(rig, lambda p: p['study_links']['links'][0].update(registry_sha256=sha256(raw).hexdigest()))
+
+
+def test_report_and_registry_link_replays_without_cohort_or_outcome_inference(identity_rig):
+    receipt = identity_seal(identity_rig)
+    root = identity_rig[1]
+    assert json.loads((root/'manifest.json').read_bytes())['schema'] == 'e156-synthesis-replay-v2'
+    graph = json.loads((root/'result.json').read_bytes())['study_links']
+    assert graph['report']['pmid'] == '12345'
+    assert graph['trials'][0]['nct_id'] == 'NCT00000001'
+    assert graph['links'][0]['reference_type'] == 'RESULT'
+    assert graph['links'][0]['registry_reference_locator'] == '/protocolSection/referencesModule/references/0'
+    assert graph['cohort_overlap'] == graph['outcome_equivalence'] == 'UNASSESSED'
+    assert graph['pooling_readiness'] == 'HOLD'
+    assert replay.verify(root, receipt['manifest_sha256'])['status'] == 'REPLAY_MATCHED'
+
+
+def test_derived_registry_reference_preserves_its_distinct_type(identity_rig):
+    change_registry(identity_rig, lambda p: p['referencesModule']['references'][0].update(type='DERIVED'))
+    rewrite_packet(identity_rig, lambda p: p['study_links']['links'][0].update(reference_type='DERIVED'))
+    receipt = identity_seal(identity_rig)
+    result = json.loads((identity_rig[1]/'result.json').read_bytes())
+    assert result['study_links']['links'][0]['reference_type'] == 'DERIVED'
+    assert result['study_links']['pooling_readiness'] == 'HOLD'
+    replay.verify(identity_rig[1], receipt['manifest_sha256'])
+
+
+@pytest.mark.parametrize('change', [
+    lambda p: p['identificationModule'].update(nctId='NCT00000002'),
+    lambda p: p['referencesModule']['references'][0].update(pmid='99999'),
+    lambda p: p['referencesModule']['references'][0].update(type='BACKGROUND'),
+    lambda p: p['referencesModule']['references'][0].update(type='DERIVED'),
+    lambda p: p['referencesModule']['references'].append({'pmid': '12345', 'type': 'RESULT'}),
+    lambda p: p['referencesModule'].update(references=[]),
+    lambda p: p['statusModule']['lastUpdatePostDateStruct'].update(date='2026-02-30'),
+    lambda p: p['statusModule']['lastUpdatePostDateStruct'].update(date='2026-01'),
+    lambda p: p.pop('referencesModule'),
+])
+def test_disagreeing_or_incomplete_registry_refuses(identity_rig, change):
+    change_registry(identity_rig, change)
+    with pytest.raises(replay.Refused): identity_seal(identity_rig)
+    assert not identity_rig[1].exists()
+
+
+@pytest.mark.parametrize('change', [
+    lambda l: l.update(nct_id='NCT00000002'),
+    lambda l: l.update(nct_id='nct00000001'),
+    lambda l: l.update(registry_sha256='0'*64),
+    lambda l: l['registration'].update(locator='body p 99'),
+    lambda l: l['registration'].update(quote='A missing registration quote'),
+    lambda l: l.update(cohort_verified=True),
+])
+def test_unbound_identity_declaration_refuses(identity_rig, change):
+    rewrite_packet(identity_rig, lambda p: change(p['study_links']['links'][0]))
+    with pytest.raises(replay.Refused): identity_seal(identity_rig)
+
+
+def test_missing_registry_and_unused_registry_refuse(identity_rig, rig):
+    with pytest.raises(replay.Refused): seal(identity_rig)
+    rewrite_packet(identity_rig, lambda p: p.pop('study_links'))
+    with pytest.raises(replay.Refused): identity_seal(identity_rig)
+
+
+def test_changed_registry_bytes_in_bundle_refuse(identity_rig):
+    receipt = identity_seal(identity_rig)
+    path = next((identity_rig[1]/'registries').iterdir())
+    path.write_bytes(path.read_bytes()+b' ')
+    with pytest.raises(replay.Refused, match='artifact'):
+        replay.verify(identity_rig[1], receipt['manifest_sha256'])
+
+
+def test_duplicate_links_and_duplicate_registry_inputs_refuse(identity_rig):
+    rewrite_packet(identity_rig, lambda p: p['study_links']['links'].append(p['study_links']['links'][0]))
+    with pytest.raises(replay.Refused): identity_seal(identity_rig)
+    rewrite_packet(identity_rig, lambda p: p['study_links']['links'].pop())
+    path = identity_rig[0]/'registry.json'
+    with pytest.raises(replay.Refused): identity_seal(identity_rig, [path, path])
+
+
+def test_one_ascii_space_in_printed_registration_is_explicitly_normalized(identity_rig):
+    path = identity_rig[0]/'article.xml'
+    raw = path.read_bytes().replace(b'NCT00000001', b'NCT 00000001')
+    path.write_bytes(raw)
+    def update(p):
+        p['claims'][0]['participant_count_check']['snapshot_sha256'] = sha256(raw).hexdigest()
+        p['study_links']['links'][0]['registration']['quote'] = 'This trial is registered as NCT 00000001.'
+    rewrite_packet(identity_rig, update)
+    identity_seal(identity_rig)
+    graph = json.loads((identity_rig[1]/'result.json').read_bytes())['study_links']
+    assert graph['links'][0]['registration_literal'] == 'NCT 00000001'
+    assert graph['trials'][0]['nct_id'] == 'NCT00000001'
+
+
+def test_ambiguous_registration_quote_refuses(identity_rig):
+    path = identity_rig[0]/'article.xml'
+    raw = path.read_bytes().replace(b'This trial is registered as NCT00000001.', b'NCT00000001 and NCT00000002 are cited.')
+    path.write_bytes(raw)
+    def update(p):
+        p['claims'][0]['participant_count_check']['snapshot_sha256'] = sha256(raw).hexdigest()
+        p['study_links']['links'][0]['registration']['quote'] = 'NCT00000001 and NCT00000002 are cited.'
+    rewrite_packet(identity_rig, update)
+    with pytest.raises(replay.Refused): identity_seal(identity_rig)
+
+
+def registration_only(rig):
+    def update(p):
+        claim = p['claims'][0]
+        claim.pop('participant_count_check')
+        binding = p['study_links']['links'][0]['registration']
+        claim.update(registered_trial='NCT00000001', text=binding['quote'], locator=binding['locator'])
+    rewrite_packet(rig, update)
+
+
+def test_identity_only_claim_replays_without_inventing_participant_counts(identity_rig):
+    registration_only(identity_rig)
+    receipt = identity_seal(identity_rig)
+    result = json.loads((identity_rig[1]/'result.json').read_bytes())
+    assert not result.get('participant_count_findings')
+    assert result['study_links']['pooling_readiness'] == 'HOLD'
+    assert replay.verify(identity_rig[1], receipt['manifest_sha256'])['status'] == 'REPLAY_MATCHED'
+
+
+@pytest.mark.parametrize('change', [
+    lambda p: p['claims'][0].update(registered_trial='NCT00000002'),
+    lambda p: p['claims'][0].update(text='The treatment works.'),
+    lambda p: p['claims'][0].update(locator='body p 1'),
+    lambda p: p['claims'][0].update(participant_count_check={}),
+    lambda p: p.pop('study_links'),
+])
+def test_identity_only_claim_requires_its_own_exact_registration_passage(identity_rig, change):
+    registration_only(identity_rig)
+    rewrite_packet(identity_rig, change)
+    with pytest.raises(replay.Refused): identity_seal(identity_rig)
+    assert not identity_rig[1].exists()
+
+
+def test_null_identity_contract_is_not_silently_ignored(rig):
+    rewrite_packet(rig, lambda p: p.update(study_links=None))
+    with pytest.raises(replay.Refused): seal(rig)
+
+
+def test_registry_link_requires_source_pmid(identity_rig):
+    path = identity_rig[0]/'article.xml'
+    raw = path.read_bytes().replace(b'<article-id pub-id-type="pmid">12345</article-id>', b'')
+    path.write_bytes(raw)
+    rewrite_packet(identity_rig, lambda p: p['claims'][0]['participant_count_check'].update(snapshot_sha256=sha256(raw).hexdigest()))
+    with pytest.raises(replay.Refused, match='PMID'): identity_seal(identity_rig)
+
+
+@pytest.mark.parametrize('raw', [b'[]', b'null', b'{"protocolSection":1,"protocolSection":2}', b'{"protocolSection":NaN}'])
+def test_malformed_registry_json_refuses(identity_rig, raw):
+    (identity_rig[0]/'registry.json').write_bytes(raw)
+    rewrite_packet(identity_rig, lambda p: p['study_links']['links'][0].update(registry_sha256=sha256(raw).hexdigest()))
+    with pytest.raises(replay.Refused): identity_seal(identity_rig)
+
+
+@pytest.mark.parametrize('inventory', [[], ['../escape.json'], [True], ['registries/'+'0'*64+'.json']*2])
+def test_trusted_but_malformed_registry_manifest_refuses(identity_rig, inventory):
+    identity_seal(identity_rig)
+    path = identity_rig[1]/'manifest.json'
+    m = json.loads(path.read_bytes())
+    m['registry_sources'] = inventory
+    raw = replay.canonical(m)
+    path.write_bytes(raw)
+    with pytest.raises(replay.Refused): replay.verify(identity_rig[1], sha256(raw).hexdigest())
+
+
+def test_one_report_can_link_two_trials_with_input_order_independent_replay(identity_rig, tmp_path):
+    inputs, output = identity_rig
+    path = inputs/'article.xml'
+    raw = path.read_bytes().replace(b'<table-wrap', b'<p>Second trial: NCT00000002.</p><table-wrap')
+    path.write_bytes(raw)
+    other = (inputs/'registry.json').read_bytes().replace(b'NCT00000001', b'NCT00000002')
+    (inputs/'second-registry.json').write_bytes(other)
+    def update(p):
+        p['claims'][0]['participant_count_check']['snapshot_sha256'] = sha256(raw).hexdigest()
+        p['study_links']['links'].append({
+            'nct_id': 'NCT00000002', 'registry_sha256': sha256(other).hexdigest(), 'reference_type': 'RESULT',
+            'registration': {'quote': 'Second trial: NCT00000002.', 'locator': 'body p 3'}})
+    rewrite_packet(identity_rig, update)
+    registries = [inputs/'registry.json', inputs/'second-registry.json']
+    receipt = identity_seal(identity_rig, registries)
+    second = identity_seal((inputs, tmp_path/'second-bundle'), list(reversed(registries)))
+    assert receipt == second
+    graph = json.loads((output/'result.json').read_bytes())['study_links']
+    assert len(graph['trials']) == 2
+    assert graph['cohort_overlap'] == 'UNASSESSED'
+    replay.verify(output, receipt['manifest_sha256'])

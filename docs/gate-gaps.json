@@ -598,31 +598,31 @@
       "id": ".github/workflows/synthesis-replay.yml#jobs.replay",
       "kind": "ci-job",
       "name": "Archived OA replay on Windows and Linux",
-      "stops": "A failing source-capture or replay control, or failure to recompute the committed OA development bundle against its reviewed manifest digest, on Python 3.13 Windows/Linux.",
+      "stops": "A failing source-capture or replay control, or failure to recompute either committed OA participant/registry-link development bundle against its reviewed manifest digest, on Python 3.13 Windows/Linux.",
       "would_not_stop": [
-        "Incorrect reviewer mapping, scientific conclusions or undeclared relevant sources; one selected development example is not a held-out accuracy evaluation.",
+        "Incorrect reviewer mapping, scientific conclusions or undeclared relevant sources; selected development examples are not a held-out accuracy evaluation.",
         "A malicious change approved to both verifier and external digest, interpreter/OS compromise, or untested runtime versions.",
         "Incomplete trial-family identity, general pooled-effect analysis, signature trust or RO-Crate interoperability; none is implemented by this contract."
       ],
       "source": "scripts/synthesis_replay.py; tests/test_synthesis_replay.py; docs/SYNTHESIS-REPLAY.md.",
       "seal": {
-        ".github/workflows/synthesis-replay.yml#jobs.replay": "18f3adc3f1e5776f371c62b4a4f4fd6af988c170a72a78277ce405bb3e872440"
+        ".github/workflows/synthesis-replay.yml#jobs.replay": "ded8b6a1108263aa32f92622fa59678bc5750f9a7a43739f5ef2850a4c563cb4"
       }
     },
     {
       "id": "scripts/synthesis_replay.py",
       "kind": "script",
       "name": "Source-bound Synthesis replay contract",
-      "stops": "Changed packet/prompt/snapshot/result bytes, missing or extra artifacts, malformed records, linked paths, stale verifier code, unbound participant inputs, unresolved correction links, or an analytical payload that cannot be reconstructed. Requires an externally retained manifest SHA-256.",
+      "stops": "Changed packet/prompt/XML/registry/result bytes, missing or extra artifacts, malformed records, linked paths, stale verifier code, unbound participant or registration claims, unresolved correction links, disagreement of article NCT/PMID and registry reference type, or a payload that cannot be reconstructed. Requires an externally retained manifest SHA-256.",
       "would_not_stop": [
-        "Forged source XML matching its own declared identifiers/licence or newer corrections absent from the snapshot; archived bytes are not network-authenticated.",
+        "Forged XML or registry JSON matching declared source fields, or newer corrections absent from the snapshots; archived bytes are not network-authenticated.",
         "Incorrect human scope, trial/cohort/arm mappings, exclusion completeness or independent-review declarations. Replay success does not change scientific validity or existing HOLD outcomes.",
         "Hostile local interpreter/filesystem and concurrent external changes, crash durability, or a maliciously replaced external trust anchor.",
-        "General numerical checks without participant bindings, arbitrary datasets, external supplements, trial registries, clinical performance or RO-Crate conformance."
+        "General numerical checks without participant bindings, arbitrary datasets, external supplements, cohort/outcome equivalence, unsupported registries, clinical performance or RO-Crate conformance."
       ],
       "source": "scripts/synthesis_replay.py and its local import closure; docs/SYNTHESIS-REPLAY.md.",
       "seal": {
-        "scripts/synthesis_replay.py": "bc3c7629034c8aa084d7ccf2f5fd1a237fa65eba689001b4b7f011ecf1afd08d",
+        "scripts/synthesis_replay.py": "4cb0c97753ce5ec6e2ad73f66fb4f802d49505770d552f0bde8305d5cc15fc88",
         "scripts/synthesis_preflight.py": "a4508a7668765e3ba29a58fb106967e12e97da9667dacbde07958a9e43c9c301",
         "scripts/synthesis_capture_evidence.py": "0e789ca464477c38c0ee232a804cef374eeb54b2c99de71ddcad59118cd60df5",
         "scripts/synthesis_participant_evidence.py": "f79b1d847b7d001a19031d903e8416b9d2d8d71501efb7e98c519d53fcf8a659",

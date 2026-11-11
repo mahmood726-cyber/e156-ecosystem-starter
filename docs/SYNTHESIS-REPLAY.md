@@ -1,7 +1,7 @@
-# Synthesis source-bound replay v1
+# Synthesis source-bound replay
 
-This first M3 increment packages the existing Synthesis v1.1 packet and runs its
-participant-count checks against archived PMC XML. It records exact inputs,
+These M3 increments package the existing Synthesis v1.1 packet and run its
+participant-count checks and optional study links against archived sources. They record exact inputs,
 prompt/configuration, source identifiers and versions, licences, source locations,
 verifier code and the resulting analytical payload. `REPLAY_MATCHED` means the
 recorded payload was reconstructed. Scientific validity remains `NOT_ESTABLISHED`.
@@ -18,8 +18,9 @@ in `synthesis_five_journal_corrections.py` is included in the verifier fingerpri
 The new code supplies the bundle, strict inventory, external digest check and replay.
 
 Supported packets contain one primary PMC document, one corresponding source,
-and 1–40 claims, each using `UNIQUE_ARMS` or `RESTRICTED` participant checks.
-Every claim locator must match its resolved context quote. Additional arbitrary
+and 1–40 claims, each using `UNIQUE_ARMS` / `RESTRICTED` participant checks or
+an exact registration passage with `registered_trial`. A registration claim
+cannot also carry a participant check. Every claim locator must match its resolved quote. Additional arbitrary
 numeric checks are refused because their numbers are not bound to source cells.
 The existing correction-link checks are rerun; unresolved links or unreadable
 sidecars prevent recording. External supplements are not automatically captured.
@@ -30,7 +31,7 @@ The checked-in [OA development example](../examples/synthesis-replay-stepwise)
 can be replayed without a network connection or third-party Python dependencies:
 
 ```console
-python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise --expected-sha256 8ef7bf6f59995d7198185b835b485d3f18eeca064abbf0252eae850b3cdf58b6
+python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise --expected-sha256 8d3cfa2dc2bda703dabd79660e32be0b442360f8ab541d8934da59462e9ca905
 ```
 
 Record your own supported packet and already licensed source snapshot:
@@ -41,20 +42,72 @@ python scripts/synthesis_replay.py verify new-bundle --expected-sha256 <digest-r
 ```
 
 Supply each explicit correction snapshot with `--linked-xml notice.xml`.
+Supply each registry snapshot with `--registry-json registry.json` when the
+packet declares `study_links`. The manifest is v2 when registry inputs are present;
+participant-only bundles retain v1. Both formats use the current verifier profile.
 The output directory must not exist; its parent must already exist. Exit 0 means
 recorded/matched; refusal is exit 2 with JSON on stderr. All source processing is
 offline. Bundle data cannot request network access, execute commands, or replace
 the trusted local verifier implementation.
 
+## Typed study links
+
+Studies and reports are different entities: several reports may describe one
+study, and a report may describe several studies. Cochrane recommends linking
+reports using registration identifiers and other study characteristics. The
+engineering inference here is to record a bibliographic edge and leave population
+and outcome decisions explicit. See [Cochrane Handbook, chapter 5, section 5.2](https://www.cochrane.org/authors/handbooks-and-manuals/handbook/current/chapter-05).
+
+The optional packet section has exactly this structure (angle-bracket values
+are documentation slots, not a runnable research record):
+
+```json
+{"study_links":{"schema":"e156-study-links-v1","links":[{
+  "nct_id":"<source-backed NCT identifier>",
+  "registry_sha256":"<SHA-256 of archived API JSON>",
+  "reference_type":"<RESULT or DERIVED, as recorded>",
+  "registration":{"quote":"<exact registration passage>","locator":"<resolved source locator>"}
+}]}}
+```
+
+The verifier requires the article's unambiguous PMID, an exact source-bound
+registration passage with one selected NCT, and a registry record whose primary
+`protocolSection.identificationModule.nctId` agrees. The registry must contain
+exactly one reference with that PMID and the declared `RESULT` or `DERIVED` type;
+`BACKGROUND`, missing, conflicting and duplicate matches refuse. The API v2
+JSON structure was checked against the actual official response; see the
+[NLM API announcement](https://www.nlm.nih.gov/pubs/techbull/ma24/ma24_clinicaltrials_api.html)
+and [official API documentation](https://clinicaltrials.gov/data-api/api).
+
+There are at most eight distinct NCT links per report and eight registry snapshots.
+The parser accepts canonical `NCT` plus eight ASCII digits, or one space between
+`NCT` and those digits in normalized source text; it retains the printed literal.
+It does not guess digit corrections, resolve aliases, or merge registrations.
+Other registry schemes are unsupported. Unused snapshots and unknown link fields
+refuse. Each output edge retains the source quote/location, registry content hash
+and JSON pointer to the matching reference. Partial or invalid protocol
+update-posted dates refuse instead of acquiring invented days.
+
+`REPORT_AND_REGISTRY_LINKED` establishes agreement of those selected archived
+fields. It does not establish independent trial participants, primary publication
+status, registration timing, outcome equivalence or source authenticity. A matching
+`DERIVED` reference stays `DERIVED`. `cohort_overlap` and `outcome_equivalence`
+remain `UNASSESSED`; `pooling_readiness` remains `HOLD`. This strict reciprocal
+requirement can refuse a genuine relationship when the registry omits the paper:
+refusal means the supported contract could not establish it, not that the paper
+is unrelated or fraudulent. Cross-report cohort reconciliation remains future work.
+
 ## Integrity and trust
 
 `manifest.json` binds byte sizes and SHA-256 values for `packet.json`, `prompt.md`,
-`result.json`, and every `sources/<sha256>.xml`. A completion manifest is written
+`result.json`, every `sources/<sha256>.xml`, and (v2) every
+`registries/<sha256>.json`. A completion manifest is written
 last. An interrupted write can leave an incomplete directory for inspection; it
 cannot verify. Existing bundles are never overwritten. Duplicate JSON keys,
 nonfinite numbers, invalid paths, symlinks/junctions, extra/missing files and
 oversized inputs are refused. Limits are 2 MiB for packet/prompt/manifest and
-32 MiB per XML/result, with at most eight correction snapshots.
+32 MiB per XML/result, with at most eight correction snapshots. Each registry
+snapshot is limited to 2 MiB and is parsed with the same strict JSON rules.
 
 Keep the returned manifest digest in a separate trusted record or reviewed
 version-control commit. A hash stored only beside the files it describes is not
@@ -62,6 +115,7 @@ a trust anchor. This contract has no signing key, independent timestamp or
 authenticated source retrieval. The canonical PMC URL is derived from the parsed
 identifier; local XML could have been fabricated. The recorded origin status
 explicitly says `ARCHIVED_XML_NOT_NETWORK_AUTHENTICATED`.
+Registry records likewise say `ARCHIVED_JSON_NOT_NETWORK_AUTHENTICATED`.
 
 Replay checks all input bytes before execution, rechecks source identity/licence
 and locations, reruns the original preflight pipeline, and compares the complete
@@ -103,26 +157,57 @@ The [measured receipt](../benchmarks/replay/stepwise.json) binds the source,
 manifest and resulting payload. This is a development example, not a held-out
 benchmark or a scientific accuracy estimate.
 
-Local validation: **47 synthetic replay controls** passed; the broader targeted
-preflight/capture/NMA-contract run passed **140 tests and 82 subtests**; including
-gate, ratchet and CI-lock controls, **240 tests and 82 subtests** passed. The real
-example was sealed and successfully replayed locally. CI separately replays its
-fixed digest on Windows and Linux. The control suite covers changed source/config/
+The StepWise manifest was re-recorded for the study-link verifier upgrade. Source,
+packet, prompt and analytical payload bytes are unchanged; the previous manifest
+digest is retained in its receipt. Old bundles require their recorded verifier.
+
+The second example archives **Vahlberg B, Lundström E, Eriksson S, Holmbäck U,
+Cederholm T**, “Effects on walking performance and lower body strength by short
+message service guided training after stroke or transient ischemic attack (The
+STROKEWALK Study): a randomized controlled trial,”
+[DOI 10.1177/0269215520954346](https://doi.org/10.1177/0269215520954346),
+[PMC7874373](https://pmc.ncbi.nlm.nih.gov/articles/PMC7874373/), under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The original XML bytes
+are unchanged. The selected registration sentence at `abstract 1 p 9` names
+`NCT02902367`; the archived registry lists the article's PMID `32942914` as
+`DERIVED` at `/protocolSection/referencesModule/references/2`.
+
+Only public factual identifier/date/reference metadata from the
+[official API projection](https://clinicaltrials.gov/api/v2/studies/NCT02902367?fields=NCTId,LastUpdatePostDate,ReferencePMID,ReferenceType)
+is archived, without narrative descriptions or contact information. See
+[ClinicalTrials.gov terms](https://clinicaltrials.gov/about-site/terms-conditions);
+the article's CC BY licence is not asserted for registry content. The registry's
+protocol update-posted date, `2017-09-19`, is a source field, not the retrieval
+date or a version date for later derived references. Retrieval times, hashes and
+the observed graph are in the [STROKEWALK receipt](../benchmarks/replay/strokewalk.json).
+The selection is agent-made, `full_text_checked` remains false, and no treatment
+effect or independent adjudication is asserted.
+
+```console
+python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk --expected-sha256 c514c54e027641eb13c6cdcb815e0e1f92ae355a572bf618f366284db5071d88
+```
+
+Local validation: **86 synthetic replay controls** passed. Both real examples
+were sealed and successfully replayed locally. CI separately replays both fixed
+digests on Windows and Linux. The control suite covers changed source/config/
 output, malformed records, forged internal hashes, broken locations, licence
-refusal, correction resolution, changed code, relocation and partial writes.
+refusal, correction resolution, changed code, relocation, partial writes, registry
+identity/reference disagreement, registration-only claims and one report linked
+to multiple trials. These are development cases, not held-out scientific accuracy.
 
 | Item | Static or dynamic | What it establishes |
 |---|---|---|
 | Bundle schema, supported check kinds and resource limits | Authored static contract | Intended engineering scope |
 | Synthetic XML, invented test identifiers and defect mutations | Explicit static development fixtures | Adverse controls; no real trial findings |
 | OA source XML, identity, licence and byte digest | Retrieved/parsed source record | Identity of the archived bytes; not proof they are the latest version |
+| Registry primary ID, protocol date, PMID and reference type | Retrieved/parsed public factual metadata | Reciprocal field agreement; no proof of cohort or outcome equivalence |
 | Selected count passages and analysis relationship flags | Agent-authored choices for this example | A declared extraction; no independent adjudication |
 | Counts, arithmetic, locators, payload hashes and test results | Dynamic execution | Observed reconstruction under the recorded verifier |
 | Comparative accuracy, sensitivity and superiority | Unmeasured | No present scientific performance claim |
 
 ## Remaining M3 work
 
-This bundle does not establish trial-family identity, verify every manuscript
+These bundles do not establish trial-family or cohort identity, verify every manuscript
 claim, fit a meta-analysis, or make a review release-ready. A reproducible
 `REVIEW_CANDIDATE` stays a review candidate; `HOLD` in the review ledger is not
 promoted by replay. Existing private evidence/correspondence packets stay private.
@@ -130,6 +215,6 @@ promoted by replay. Existing private evidence/correspondence packets stay privat
 The [Process Run Crate 0.6 specification](https://www.researchobject.org/workflow-run-crate/profiles/process_run_crate/)
 links executions to software, inputs/configuration and outputs. That provides the
 mapping target for a later RO-Crate export. This increment does not emit JSON-LD
-or claim RO-Crate conformance. Typed trial-family relations, signed trust roots,
+or claim RO-Crate conformance. Adjudicated trial-family/cohort relations, signed trust roots,
 general analysis replay, independently validated profile export and held-out
 scientific evaluation remain separate work.

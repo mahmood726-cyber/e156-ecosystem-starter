@@ -137,6 +137,16 @@ adverse controls exercise this contract on Windows/Linux CI. See
 replay path; trial-family identity, general statistical replay, signatures and
 validated RO-Crate export remain M3 work.
 
+M3 second increment: an optional `study_links` section in the same packet binds
+an article's registration quote/location and PMID to an archived ClinicalTrials.gov
+primary NCT and typed reference. A v2 replay inventory includes the registry JSON;
+participant-only v1 remains supported. The STROKEWALK development example preserves
+its `DERIVED` reference and leaves cohort overlap, outcome equivalence and pooling
+eligibility unresolved. Cochrane's distinction between reports and studies informs
+this boundary; see [the contract and sources](SYNTHESIS-REPLAY.md#typed-study-links).
+This is a bibliographic edge, not a validated multi-report cohort graph. Trial-family
+adjudication, general analysis replay, signatures and RO-Crate remain outstanding.
+
 ### M4 — a complete review with accountable decisions
 
 Add resumable protocol/search/screen/extract/appraise/synthesise/report stages

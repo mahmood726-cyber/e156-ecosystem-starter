@@ -13,6 +13,7 @@ on:
       - 'tests/test_synthesis_replay.py'
       - 'tests/test_synthesis_capture_evidence.py'
       - 'examples/synthesis-replay-stepwise/**'
+      - 'examples/synthesis-replay-strokewalk/**'
       - '.gitattributes'
       - 'requirements-ci.lock'
       - '.github/workflows/synthesis-replay.yml'
@@ -42,4 +43,8 @@ jobs:
       - name: Recompute the archived OA development example
         run: >-
           python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise
-          --expected-sha256 8ef7bf6f59995d7198185b835b485d3f18eeca064abbf0252eae850b3cdf58b6
+          --expected-sha256 8d3cfa2dc2bda703dabd79660e32be0b442360f8ab541d8934da59462e9ca905
+      - name: Recompute the archived report and registry link
+        run: >-
+          python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk
+          --expected-sha256 c514c54e027641eb13c6cdcb815e0e1f92ae355a572bf618f366284db5071d88
