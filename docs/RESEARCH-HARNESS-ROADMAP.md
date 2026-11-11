@@ -102,6 +102,15 @@ source boundary is reused by both components. Atomic upgrades, the combined
 ecosystem installer chain, PostgreSQL coverage and legacy test isolation remain
 outstanding; these increments do not issue an Overmind release verdict.
 
+Third increment: [paired activation and verified rollback](RESEARCH-ENVIRONMENT.md)
+stage RapidMeta/AACT in versioned directories and publish one active pointer only
+after both adapters pass. Failed-candidate controls preserve the prior pair.
+Windows/Linux component CI exercises that path; the Linux full-chain workflow
+adds the pair alongside the existing Sentinel/Overmind/ProjectIndex/extractor
+installation. The atomic boundary is the research pair's selection, not global
+Python packages, hooks, signing keys or private memory. Full Windows ecosystem
+installation, PostgreSQL and scientific validation remain outside this increment.
+
 ### M3 — a shared source-to-claim record and replay bundle
 
 Extend the existing Synthesis packet rather than introduce competing schemas.

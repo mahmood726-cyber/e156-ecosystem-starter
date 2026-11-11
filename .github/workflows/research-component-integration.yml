@@ -13,8 +13,11 @@ on:
       - "scripts/install-aact-kit.*"
       - "scripts/aact_install.py"
       - "scripts/aact_canary.py"
+      - "scripts/research_environment.py"
+      - "scripts/check-research-upgrade.py"
       - "tests/test_component_install.py"
       - "tests/test_aact_component.py"
+      - "tests/test_research_environment.py"
       - "requirements-aact-canary.lock"
       - ".github/workflows/research-component-integration.yml"
   workflow_dispatch:
@@ -69,7 +72,7 @@ jobs:
         run: |
           python -m pip install --require-hashes --only-binary=:all: -r requirements-ci.lock -r requirements-aact-canary.lock
       - name: Run isolated refusal controls
-        run: python -m pytest tests/test_aact_component.py -q
+        run: python -m pytest tests/test_aact_component.py tests/test_research_environment.py -q
       - name: Exercise real locked source through Bash
         shell: bash
         run: bash scripts/install-aact-kit.sh --target "$RUNNER_TEMP/aact-locked" --session-only --verify-runtime
@@ -77,3 +80,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: ./scripts/install-aact-kit.ps1 -Target (Join-Path $env:RUNNER_TEMP 'aact-locked') -SkipClone -SessionOnly -VerifyRuntime
+      - name: Activate and recheck the real research pair
+        shell: bash
+        run: |
+          python scripts/research_environment.py install --root "$RUNNER_TEMP/research-pair"
+          python scripts/research_environment.py verify --root "$RUNNER_TEMP/research-pair"
+          python scripts/check-research-upgrade.py --root "$RUNNER_TEMP/research-pair"

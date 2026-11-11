@@ -45,6 +45,7 @@ read with their scope; they cannot be combined into a single quality percentage.
 | RapidMeta install provenance | Source inspection: default `v1.1.0`, checkout failure swallowed in Bash | Confirmed code path requiring M2 repair; no claim that a real install was validated |
 | RapidMeta after first M2 increment | [Windows source canary](benchmarks/components/rapidmeta-windows.json): exact requested commit, identical repeated generated output, 65 resolved local assets | Real locked source with synthetic inputs; two external resource references remain; no browser or scientific accuracy measurement |
 | AACT-kit after second M2 increment | [Windows source/runtime canary](benchmarks/components/aact-windows.json): exact requested commit; matching repeated payloads across CSV, TSV, ZIP and SQLite; five checks per backend | Synthetic development controls only. Source-only mode makes no runtime claim. PostgreSQL, real snapshots and clinical/statistical accuracy are unmeasured |
+| Paired activation after third M2 increment | [Windows paired-environment control](benchmarks/components/research-environment-windows.json): real locked pair verified; deliberately missing-source candidate refused; active pointer preserved and original pair reverified | Engineering failure control, not a scientific benchmark or a successful upgrade to a different real upstream implementation |
 
 The memory, Overmind and test-suite rows are local observations; installation
 provenance is a source review.

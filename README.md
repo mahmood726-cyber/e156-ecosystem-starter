@@ -160,6 +160,21 @@ Back up the HMAC key somewhere safe — losing it invalidates all prior
 signed bundles. Pass `-HmacKey <existing-key>` to the installer to reuse a
 key across machines.
 
+### Activating the research components together
+
+With pandas and NumPy available in the selected Python environment:
+
+```bash
+python scripts/research_environment.py install --root ./research-environment
+python scripts/research_environment.py verify --root ./research-environment
+```
+
+These commands work in PowerShell too. They verify RapidMeta and AACT-kit in a
+separate versioned directory, then switch one active manifest. Failed candidates
+leave the previous pair selected. JSON output provides the verified component
+paths; existing shell bindings are not changed. Explicit rollback rechecks the
+older pair before selecting it. See the [activation and recovery contract](docs/RESEARCH-ENVIRONMENT.md).
+
 ### Installing a verified dashboard generator
 
 ```powershell

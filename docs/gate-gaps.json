@@ -159,16 +159,16 @@
       "id": ".github/workflows/full-system-integration.yml#jobs.full-linux-install",
       "kind": "ci-job",
       "name": "Linux full-chain installation and live canaries",
-      "stops": "A broken fresh Linux `install/install.sh --full` chain: any failing Sentinel install/scan, Overmind numerical canary, key check, ProjectIndex reconciliation, extractor import or agent rules file check makes the job red.",
+      "stops": "A broken fresh Linux `install/install.sh --full` chain: any failing Sentinel install/scan, Overmind numerical canary, key check, ProjectIndex reconciliation, extractor import or agent rules file check makes the job red. Also installs the locked research runtime, activates RapidMeta/AACT together, rechecks that pair, and refuses loss of the active pair after a deliberately missing-source candidate.",
       "would_not_stop": [
         "Windows PowerShell and macOS differences: the job runs only Ubuntu 24.04, Python 3.13.",
-        "Optional Meta-Harness, RapidMeta, AACT, Pairwise70, browser, cloud authentication or clinical study execution: they are not part of the default --full install chain.",
+        "Optional Meta-Harness, AACT cockpit, Pairwise70, browsers, cloud authentication or clinical study execution. The research pair is an explicit companion step, not a change to default --full behavior.",
         "Errors the selected smoke inputs do not exercise, including scientific validity, hidden numerical errors and fabricated source data.",
         "Reproducibility of every transitive dependency: Sentinel and Overmind use frozen commit pins, but pip resolution is not a complete hash-locked environment."
       ],
-      "source": ".github/workflows/full-system-integration.yml and scripts/verify-full-install.py; reviewed against the first real CI failures on Python 3.12 and the old extractor import path (23 Oct 2026).",
+      "source": ".github/workflows/full-system-integration.yml and scripts/verify-full-install.py; reviewed against the first real CI failures on Python 3.12 and the old extractor import path (23 Oct 2026). Research companion steps use research_environment.py and check-research-upgrade.py.",
       "seal": {
-        ".github/workflows/full-system-integration.yml#jobs.full-linux-install": "aad60724c6bc7e9f5d3d9ed1c2f79958ddabaa8e392775e958fe925b53f62036",
+        ".github/workflows/full-system-integration.yml#jobs.full-linux-install": "994a67e48c089c78ea649b4d7b93dea2d3254a7469ad1e4e8fd21f322eca3aa3",
         "scripts/verify-full-install.py": "ad1b1d80d45e9aceea3d585813a28466860831c58c0de2e77ce6ff9f79757758"
       }
     },
@@ -545,17 +545,53 @@
     {
       "id": ".github/workflows/research-component-integration.yml#jobs.aact-source",
       "kind": "ci-job",
-      "name": "Locked AACT local backends on Windows and Linux",
-      "stops": "Installs hash-pinned Python 3.13 canary runtime wheels, runs isolated refusal controls and exercises the actual locked AACT package through Bash on both runners and PowerShell on Windows. The live canary tests CSV/TSV/ZIP/SQLite fixture behavior.",
+      "name": "Locked AACT backends and paired activation on Windows and Linux",
+      "stops": "Installs hash-pinned Python 3.13 canary runtime wheels, runs isolated refusal controls and exercises the actual locked AACT package through Bash on both runners and PowerShell on Windows. The live canary tests CSV/TSV/ZIP/SQLite fixture behavior. Also executes paired activation and verifies that a missing source candidate preserves the current real pair.",
       "would_not_stop": [
         "PostgreSQL, macOS, other runtimes/architectures, real datasets or scientific accuracy.",
         "Optional editable pip installation/build isolation and User-registry persistence are not executed by this job.",
-        "A combined Sentinel/Overmind/AACT/RapidMeta installation or project-specific release verdict is not provided."
+        "Sentinel/Overmind are not installed by this matrix job; the separate Linux full-chain job combines them with the research pair. No project-specific release verdict is provided."
       ],
       "source": ".github/workflows/research-component-integration.yml, requirements-aact-canary.lock and AACT adapter tests.",
       "seal": {
-        ".github/workflows/research-component-integration.yml#jobs.aact-source": "0086474a1d3593b749c7a3de6bc67cbc5873f711c4df0dec29c7771c44b3b605",
+        ".github/workflows/research-component-integration.yml#jobs.aact-source": "97def6240b1a24f2a9c02247fc83a7e065db644910ea6f1b4125da87b1790f47",
         "requirements-aact-canary.lock": "0e7cb0352194d8ef29b08b47530ab3582ab101dcf07c85270fe27dc853d2b1a0"
+      }
+    },
+    {
+      "id": "scripts/research_environment.py",
+      "kind": "script",
+      "name": "Paired research activation and verified rollback",
+      "stops": "Refuses an unmarked nonempty root, linked managed paths, conflicting/stale operation locks, malformed or changed records, incomplete component receipts, source/runtime failures and mismatched current results. Both adapters and final source checks precede one atomic active-pointer replacement. Failed candidates preserve the prior selection; rollback re-verifies.",
+      "would_not_stop": [
+        "Power-loss durability, hostile filesystem races, forged trusted source/tools or Python package bytes changed without a version change.",
+        "Atomic changes to Sentinel/Overmind, hooks, signing keys, private memory, shell variables or Python environments. Existing consumers must use the returned paths.",
+        "Scientific validity, source-record truth, browser correctness, PostgreSQL or full Windows ecosystem certification.",
+        "An interrupted process may leave a lock or incomplete generation requiring inspection; old and failed trees are retained rather than automatically removed."
+      ],
+      "source": "scripts/research_environment.py, existing component adapters, tests/test_research_environment.py and real component CI.",
+      "seal": {
+        "scripts/research_environment.py": "171e1bf4afb9c85050cbe9bee41203feeb20ab45311d12425fdeff3339dafdde",
+        "scripts/component_lock.py": "2218ee9edeb0c27a3016e1bcc8ca8419043b693ec5d022bf6d054f8a3e4ac338",
+        "scripts/component_source.py": "d48e2e59bb42bc63a157a87b94cacf65de40559e47f1f43377a5e072bf986210",
+        "scripts/rapidmeta_install.py": "b9be98e480773701089d96635f1ca7a0722ea6b7dbd01b767656e20f0dec4cb0",
+        "scripts/aact_install.py": "501d3b5bd2dafcdcd7e42e0d1a2093468ebd353b5bb224d9a584b38b99dd8015",
+        "scripts/aact_canary.py": "307f5cd2540a7eeed9c126607cb4c3d915f509134a0bee7e7aaae72eb5a1284b"
+      }
+    },
+    {
+      "id": "scripts/check-research-upgrade.py",
+      "kind": "script",
+      "name": "Live missing-source upgrade control",
+      "stops": "Requires a real active pair to verify, attempts a deliberately missing commit, and fails if that attempt succeeds, the active pointer bytes change or the original pair no longer verifies.",
+      "would_not_stop": [
+        "Every possible failure mode, a successful change to a different real upstream implementation, or power-loss behavior.",
+        "Scientific accuracy or an Overmind project-specific release verdict; this is an engineering failure control."
+      ],
+      "source": "scripts/check-research-upgrade.py; disposable Windows/Linux component jobs and Linux full-chain job.",
+      "seal": {
+        "scripts/check-research-upgrade.py": "c74739b5434320dda553fae3c001700ef7eb98cdcf51152cbd1d0fcffd2a9655",
+        "scripts/research_environment.py": "171e1bf4afb9c85050cbe9bee41203feeb20ab45311d12425fdeff3339dafdde"
       }
     }
   ]
