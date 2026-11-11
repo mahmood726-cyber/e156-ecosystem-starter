@@ -6,11 +6,11 @@ import re
 
 if __package__:
     from scripts.synthesis_participant_evidence import _count_ref, _reference_key, _label
-    from scripts.synthesis_preflight_count_identity import compare_raw_counts, ESTIMATOR_FIELDS
+    from scripts.synthesis_preflight_count_identity import compare_raw_counts, ESTIMATOR_FIELDS, OPTIONAL_METHOD_ABSENCE
     from scripts.synthesis_preflight_root_dedup import group_preflight_roots
 else:
     from synthesis_participant_evidence import _count_ref, _reference_key, _label
-    from synthesis_preflight_count_identity import compare_raw_counts, ESTIMATOR_FIELDS
+    from synthesis_preflight_count_identity import compare_raw_counts, ESTIMATOR_FIELDS, OPTIONAL_METHOD_ABSENCE
     from synthesis_preflight_root_dedup import group_preflight_roots
 
 MAX_EVIDENCE_CHECKS = 40
@@ -99,8 +99,12 @@ def bind_scalar(evidence, ref):
     inequality = op.group(1) if op else None
     if ref.get("inequality") != inequality:
         raise ValueError("Printed inequality must be preserved explicitly")
-    follows_percent = re.match(r"\s*(?:%|percent\b|per\s+cent\b)", quote[match.end():], re.I)
-    if follows_percent and unit != "percent":
+    # The source suffix still governs units when the selected excerpt is clipped.
+    follows_points = re.match(r"\s*(?:percent(?:age)?|per\s+cent)\s+points?\b", following, re.I)
+    follows_percent = re.match(r"\s*(?:%|percent(?:age)?\b|per\s+cent\b)", following, re.I)
+    if follows_points and unit.casefold() not in {"percentage point", "percentage points", "percent point", "percent points"}:
+        raise ValueError("A percentage-point token requires the matching unit")
+    if follows_percent and not follows_points and unit != "percent":
         raise ValueError("A percent token requires the percent unit")
     value = Decimal(token.replace(",", "").replace("\u2212", "-"))
     if not value.is_finite() or abs(value.adjusted()) > 100:
@@ -183,6 +187,13 @@ def _percent(evidence, spec):
     identity = compare_raw_counts(numerator, denominator)
     if identity["status"] not in {"CONSISTENT", "REVIEW"}:
         return {"status": "HOLD", "reason": identity["reason"], "identity": identity}
+    for record in (numerator, denominator):
+        normalized = lambda key: re.sub(r"[\s_-]+", "_", record[key].casefold())
+        if (normalized("effect_measure") != "raw_count" or normalized("estimand") != "observed_count"
+                or any(normalized(key) not in OPTIONAL_METHOD_ABSENCE for key in ("model", "adjustment", "censoring"))
+                or normalized("missingness") not in OPTIONAL_METHOD_ABSENCE | {"observed", "complete_case", "available_case", "no_imputation"}
+                or record.get("analysis_denominator_unit", record["count_basis"]) != record["count_basis"]):
+            raise ValueError("COUNT_PERCENT requires raw observed counts, absent model/adjustment/censoring and an observed same-unit denominator")
     if _reference_key(numerator["binding"]) == _reference_key(denominator["binding"]):
         raise ValueError("Numerator and denominator need distinct source tokens")
     percent = bind_scalar(evidence, spec.get("percentage"))

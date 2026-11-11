@@ -167,6 +167,25 @@ class IntakeEvidenceTests(unittest.TestCase):
         check["denominator"] = record("Randomised population: 36 participants.", "36", "randomised")
         self.assertEqual(self.finding(check)["status"], "HOLD")
 
+    def test_percentage_method_is_checked_beyond_matching_estimator_labels(self):
+        check = {"id": "PCT", "kind": "COUNT_PERCENT", "snapshot_sha256": SHA,
+                 "numerator": record("Response count 8 of 32 treated participants (25.0%).", "8"),
+                 "denominator": record("Treated population: 32 participants.", "32"),
+                 "percentage": scalar("Response count 8 of 32 treated participants (25.0%).", "25.0", "percentage", "percent")}
+        incompatible = ({"model": "Kaplan-Meier", "censoring": "right censored",
+                         "effect_measure": "survival probability", "estimand": "time-to-event probability"},
+                        {"model": "logistic regression"}, {"adjustment": "age-adjusted"},
+                        {"estimand": "weighted count"}, {"missingness": "multiple imputation"})
+        for change in incompatible:
+            with self.subTest(change=change):
+                candidate = deepcopy(check)
+                for key in ("numerator", "denominator"): candidate[key]["identity"].update(change)
+                finding = self.finding(candidate)
+                self.assertEqual(finding["status"], "HOLD")
+                self.assertNotIn("computed_percent", finding)
+        for key in ("numerator", "denominator"): check[key]["identity"]["missingness"] = "complete_case"
+        self.assertEqual(self.finding(check)["status"], "NO_FLAG")
+
     def interval(self):
         quote = "Mean difference -1.4 units; two-sided reported interval -2.6 to -0.2 units."
         return {"id": "CI", "kind": "INTERVAL", "snapshot_sha256": SHA,
@@ -195,6 +214,28 @@ class IntakeEvidenceTests(unittest.TestCase):
         payload = XML.replace(b"to -0.2 units.", b"to - 0.2 units.")
         check["snapshot_sha256"] = sha256(payload).hexdigest()
         self.assertEqual(audit(check, payload=payload)["evidence_findings"][0]["status"], "HOLD")
+
+    def test_excerpt_cannot_relabel_an_external_percent_marker_using_another_unit_context(self):
+        for marker in (b"%", b" %", b" percent", b" percentage", b" per cent"):
+            with self.subTest(marker=marker):
+                payload = XML.replace(b"Mean difference -1.4 units;", b"Mean difference -1.4" + marker + b" units;")
+                context = {"quote": "Stale mean difference -0.8 units."}
+                check = self.interval()
+                check.update(snapshot_sha256=sha256(payload).hexdigest(),
+                             estimate={**scalar("-1.4", "-1.4"), "unit_context": context},
+                             lower={**scalar("-2.6", "-2.6", "lower"), "unit_context": context},
+                             upper=scalar("-0.2 units.", "-0.2", "upper"))
+                self.assertEqual(audit(check, payload=payload)["evidence_findings"][0]["status"], "HOLD")
+
+    def test_explicit_percentage_point_units_remain_supported(self):
+        payload = XML.replace(b"Mean difference -1.4 units;", b"Mean difference -1.4 percentage points;")
+        context = {"quote": "Mean difference -1.4 percentage points;"}
+        check = self.interval()
+        check.update(snapshot_sha256=sha256(payload).hexdigest(),
+                     estimate={**scalar("-1.4", "-1.4", unit="percentage points"), "unit_context": context},
+                     lower={**scalar("-2.6", "-2.6", "lower", "percentage points"), "unit_context": context},
+                     upper={**scalar("-0.2", "-0.2", "upper", "percentage points"), "unit_context": context})
+        self.assertEqual(audit(check, payload=payload)["evidence_findings"][0]["status"], "NO_FLAG")
 
     def test_reversed_interval_is_a_candidate_without_reconstructing_the_model(self):
         check = self.interval()
