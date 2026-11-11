@@ -243,6 +243,16 @@ def _planted_workflow(tmp_path: Path, old: str, new: str) -> Path:
 GOOD_INSTALL = "python -m pip install --require-hashes -r requirements-ci.lock"
 
 
+def _full_workflow_copy(tmp_path: Path) -> Path:
+    """Copy both actual dependency locks and prove the control before mutation."""
+    for name in ("requirements-ci.lock", "requirements-aact-canary.lock"):
+        (tmp_path / name).write_bytes((REPO_ROOT / name).read_bytes())
+    wf = tmp_path / "full-system-integration.yml"
+    wf.write_bytes(FULL_WORKFLOW.read_bytes())
+    assert workflow_problems(wf, tmp_path) == []
+    return wf
+
+
 @pytest.mark.parametrize("planted", [
     "python -m pip install pytest",
     "python -m pip install -r requirements-ci.lock",
@@ -251,22 +261,15 @@ GOOD_INSTALL = "python -m pip install --require-hashes -r requirements-ci.lock"
 ])
 def test_full_install_workflow_refuses_unlocked_dependency(tmp_path, planted):
     """Mutation checks fail closed on the *integration* workflow, not test.yml."""
-    (tmp_path / "requirements-ci.lock").write_text(
-        LOCK.read_text(encoding="utf-8"), encoding="utf-8"
-    )
-    original = FULL_WORKFLOW.read_text(encoding="utf-8")
+    wf = _full_workflow_copy(tmp_path)
+    original = wf.read_text(encoding="utf-8")
     assert GOOD_INSTALL in original
-    wf = tmp_path / "full-system-integration.yml"
     wf.write_text(original.replace(GOOD_INSTALL, planted), encoding="utf-8")
     assert workflow_problems(wf, tmp_path), planted
 
 
 def test_full_install_workflow_good_copy_passes(tmp_path):
-    (tmp_path / "requirements-ci.lock").write_text(
-        LOCK.read_text(encoding="utf-8"), encoding="utf-8"
-    )
-    wf = tmp_path / "full-system-integration.yml"
-    wf.write_text(FULL_WORKFLOW.read_text(encoding="utf-8"), encoding="utf-8")
+    wf = _full_workflow_copy(tmp_path)
     assert workflow_problems(wf, tmp_path) == []
 
 
