@@ -54,6 +54,7 @@ jobs:
           python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk
           --expected-sha256 c514c54e027641eb13c6cdcb815e0e1f92ae355a572bf618f366284db5071d88
       - name: Install hash-locked upstream profile validator
-        run: python -m pip install --only-binary=:all: --require-hashes -r requirements-rocrate.lock
+        run: >-
+          python -m pip install --only-binary=:all: --require-hashes -r requirements-rocrate.lock
       - name: Validate real exports and reject broken provenance
         run: python scripts/check-synthesis-rocrate.py --output rocrate-validation.json
