@@ -554,7 +554,7 @@
       ],
       "source": ".github/workflows/research-component-integration.yml, requirements-aact-canary.lock and AACT adapter tests.",
       "seal": {
-        ".github/workflows/research-component-integration.yml#jobs.aact-source": "421dece5f6cb3d0b50e4fc619011ca164d07dea622d0528689265daf18e0c58a",
+        ".github/workflows/research-component-integration.yml#jobs.aact-source": "0086474a1d3593b749c7a3de6bc67cbc5873f711c4df0dec29c7771c44b3b605",
         "requirements-aact-canary.lock": "0e7cb0352194d8ef29b08b47530ab3582ab101dcf07c85270fe27dc853d2b1a0"
       }
     }
