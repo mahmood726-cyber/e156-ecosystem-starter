@@ -1,0 +1,79 @@
+{
+  "all_passed": false,
+  "cases_passed": 5,
+  "cases_total": 11,
+  "evaluation_kind": "synthetic_development_contracts",
+  "evaluator_sha256": "b3851184f6dfa7aef6af23e5ebf487e4863300da33431f917d784f15d36c8fd1",
+  "held_out": false,
+  "implementation_sha256": "adee24dd7f17c81d747df1de0786153f7cfbd86cccd37350f50a315301604fa6",
+  "results": [
+    {
+      "expected": "Relevant context is retrievable",
+      "id": "relevant-explicit-store",
+      "observation": "contract satisfied",
+      "passed": true
+    },
+    {
+      "expected": "Unmatched query returns no hits",
+      "id": "no-match",
+      "observation": "contract satisfied",
+      "passed": true
+    },
+    {
+      "expected": "Exact project wins over unrelated stores",
+      "id": "exact-project",
+      "observation": "contract satisfied",
+      "passed": true
+    },
+    {
+      "expected": "Absent project store returns no inferred store",
+      "id": "no-project-store",
+      "observation": "contract satisfied",
+      "passed": true
+    },
+    {
+      "expected": "A sole unrelated store is not selected",
+      "id": "sole-unrelated-store",
+      "observation": "contract not satisfied",
+      "passed": false
+    },
+    {
+      "expected": "No newest-store fallback",
+      "id": "multiple-unrelated-stores",
+      "observation": "contract not satisfied",
+      "passed": false
+    },
+    {
+      "expected": "Missing store returns JSON error with exit 2",
+      "id": "missing-explicit-store",
+      "observation": "contract satisfied",
+      "passed": true
+    },
+    {
+      "expected": "Unreadable corpus returns JSON error with exit 2",
+      "id": "invalid-utf8",
+      "observation": "contract not satisfied",
+      "passed": false
+    },
+    {
+      "expected": "Non-file corpus entry returns JSON error with exit 2",
+      "id": "directory-as-memory",
+      "observation": "contract not satisfied",
+      "passed": false
+    },
+    {
+      "expected": "Each hit carries its actual byte SHA-256",
+      "id": "byte-identity",
+      "observation": "contract not satisfied",
+      "passed": false
+    },
+    {
+      "expected": "Each hit is explicitly unverified memory",
+      "id": "memory-is-not-evidence",
+      "observation": "contract not satisfied",
+      "passed": false
+    }
+  ],
+  "schema": "e156-memory-contract-v1",
+  "scientific_accuracy_measured": false
+}
