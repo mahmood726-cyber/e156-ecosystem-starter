@@ -667,6 +667,24 @@
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
         "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de"
       }
+    },
+    {
+      "id": ".github/workflows/synthesis-signing.yml#jobs.signing",
+      "kind": "ci-job",
+      "name": "Explicit replay signing trust on Windows and Linux",
+      "stops": "Requires locked signing dependencies and the existing locked Overmind signer, then executes signature, policy, malformed-key, project-isolation, tamper and replay integration controls. No signing dependency can be skipped in this dedicated job.",
+      "would_not_stop": [
+        "Compromised local runtime or compromised distribution of the independently retained policy digest.",
+        "Old approved policy replay, absent freshness/expiry, compromised active private keys, or an unaudited human identity behind a valid key.",
+        "Scientific errors, incorrect human adjudication, source authenticity or release certification. Tests use disposable keys and development examples only."
+      ],
+      "source": "scripts/synthesis_signing.py; tests/test_synthesis_signing.py; docs/SYNTHESIS-SIGNING.md. Independent malformed-public-key probe incorporated.",
+      "seal": {
+        ".github/workflows/synthesis-signing.yml#jobs.signing": "f6cba35f7e18df09031a8c827b11fc88f3d92351f844f4b48485115b15264e54",
+        "scripts/synthesis_signing.py": "df64981f90ada1440a18fa3c9873976b016fb130abf383a639a49a70a241295d",
+        "scripts/requirements-signing.lock": "7ebeb730aa134593ce3a0feda7fcf37e17abed5f0dd321903482c0fc259f49b7",
+        "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db"
+      }
     }
   ]
 }

@@ -68,6 +68,7 @@
   "pytest:tests/test_synthesis_replay.py": 40,
   "pytest:tests/test_synthesis_reporting.py": 14,
   "pytest:tests/test_synthesis_rocrate.py": 11,
+  "pytest:tests/test_synthesis_signing.py": 12,
   "pytest:tests/test_synthesis_v13_checks.py": 0,
   "pytest:tests/test_synthesis_v13_evidence.py": 0,
   "pytest:tests/test_synthesis_v13_feedback.py": 0,
@@ -1106,6 +1107,20 @@
    "test_malformed_execution_record_refuses",
    "test_real_export_preserves_replay_bytes_and_has_resolvable_provenance",
    "test_separate_exports_preserve_payload_but_record_distinct_executions"
+  ],
+  "pytest-names:tests/test_synthesis_signing.py": [
+   "test_changed_implementation_refuses_after_valid_signature",
+   "test_degenerate_public_key_forgery_is_rejected",
+   "test_dotdot_cannot_place_signature_inside_bundle",
+   "test_independent_dsse_signature_verifies_and_cli_needs_no_private_key",
+   "test_missing_anchor_nested_policy_and_duplicate_json_refuse",
+   "test_modified_or_ambiguous_envelope_refuses",
+   "test_overmind_roundtrip_is_deterministic_and_preserves_hold",
+   "test_policy_substitution_and_project_confusion_refuse",
+   "test_rejected_trust_policies_even_with_matching_policy_digest",
+   "test_signature_does_not_override_scientific_claim_or_signed_project",
+   "test_signature_never_substitutes_for_replay",
+   "test_signing_refuses_wrong_private_key_overwrite_and_nested_output"
   ],
   "pytest-names:tests/test_synthesis_v13_checks.py": [],
   "pytest-names:tests/test_synthesis_v13_evidence.py": [],

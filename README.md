@@ -595,3 +595,10 @@ Use, adapt, fork freely.
 
 - [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter) — narrow submission-pipeline CLI (`student new`, `student validate`, `student publish`, etc.)
 - [`e156-binary-mirror`](https://github.com/mahmood726-cyber/e156-binary-mirror) — content-stable mirror of large pinned binaries
+
+### Replay signature trust
+
+The optional [signing adapter](docs/SYNTHESIS-SIGNING.md) binds an existing replay
+to a separately approved project/key policy, using Overmind Ed25519 signing.
+Verification checks the signature and re-executes the replay. Scientific validity,
+human review and freshness remain unestablished; no production keys are enrolled.

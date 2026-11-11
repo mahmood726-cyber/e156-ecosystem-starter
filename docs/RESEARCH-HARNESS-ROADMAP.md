@@ -162,6 +162,12 @@ examples were re-executed with unchanged source, registry, packet and prompt
 bytes. Their changed payloads and new manifest anchors are disclosed alongside
 the preserved prior receipts, including StepWise's overall NO_FLAG-to-HOLD change.
 
+M3 signing increment: [explicit replay trust](SYNTHESIS-SIGNING.md) adds detached
+DSSE/Ed25519 signatures with externally anchored, project-scoped public-key policy,
+revocation and replay re-execution. It reuses Overmind signing and independently
+verifies the result. Key identity, freshness, adjudication and scientific validity
+remain separate; no production keys are enrolled.
+
 ### M4 — a complete review with accountable decisions
 
 Add resumable protocol/search/screen/extract/appraise/synthesise/report stages
