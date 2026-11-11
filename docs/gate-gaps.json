@@ -681,7 +681,7 @@
       "source": "scripts/synthesis_signing.py; tests/test_synthesis_signing.py; docs/SYNTHESIS-SIGNING.md. Independent malformed-public-key probe incorporated.",
       "seal": {
         ".github/workflows/synthesis-signing.yml#jobs.signing": "f6cba35f7e18df09031a8c827b11fc88f3d92351f844f4b48485115b15264e54",
-        "scripts/synthesis_signing.py": "df64981f90ada1440a18fa3c9873976b016fb130abf383a639a49a70a241295d",
+        "scripts/synthesis_signing.py": "0927d45b49665f9750eaf6f68048c99675a8baaea7a7fb13f950c789b14d6e06",
         "scripts/requirements-signing.lock": "7ebeb730aa134593ce3a0feda7fcf37e17abed5f0dd321903482c0fc259f49b7",
         "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db"
       }

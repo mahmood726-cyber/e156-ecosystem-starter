@@ -68,7 +68,7 @@
   "pytest:tests/test_synthesis_replay.py": 40,
   "pytest:tests/test_synthesis_reporting.py": 14,
   "pytest:tests/test_synthesis_rocrate.py": 11,
-  "pytest:tests/test_synthesis_signing.py": 12,
+  "pytest:tests/test_synthesis_signing.py": 13,
   "pytest:tests/test_synthesis_v13_checks.py": 0,
   "pytest:tests/test_synthesis_v13_evidence.py": 0,
   "pytest:tests/test_synthesis_v13_feedback.py": 0,
@@ -1110,6 +1110,7 @@
   ],
   "pytest-names:tests/test_synthesis_signing.py": [
    "test_changed_implementation_refuses_after_valid_signature",
+   "test_cli_outside_repo_with_another_scripts_namespace",
    "test_degenerate_public_key_forgery_is_rejected",
    "test_dotdot_cannot_place_signature_inside_bundle",
    "test_independent_dsse_signature_verifies_and_cli_needs_no_private_key",

@@ -1,6 +1,7 @@
 """Signing development controls; disposable keys never establish reviewer identity."""
 import base64
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -185,3 +186,16 @@ def test_degenerate_public_key_forgery_is_rejected(case, public):
 def test_dotdot_cannot_place_signature_inside_bundle(case):
     with pytest.raises(replay.Refused, match='outside'):
         sign(case, case['root'].parent/'unused'/'..'/'bundle'/'signature.json')
+
+
+def test_cli_outside_repo_with_another_scripts_namespace(case, tmp_path):
+    external_envelope(case)
+    component = tmp_path/'other-component'
+    (component/'scripts').mkdir(parents=True)
+    (component/'scripts'/'unrelated.py').write_text('# Namespace only.\n', encoding='utf-8')
+    proc = subprocess.run([sys.executable, str(ROOT/'scripts/synthesis_signing.py'), 'verify', str(case['root']),
+        '--envelope', str(case['output']), '--policy', str(case['policy_path']), '--trust-sha256', case['trust'],
+        '--project', PROJECT], cwd=tmp_path, env=dict(os.environ, PYTHONPATH=str(component)),
+        capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 0, proc.stderr
+    assert json.loads(proc.stdout)['status'] == 'TRUSTED_SIGNATURE_REPLAY_MATCHED'

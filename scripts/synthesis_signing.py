@@ -18,7 +18,10 @@ import sys
 if __package__:
     from scripts import synthesis_replay as replay
 else:
-    import synthesis_replay as replay
+    # Direct CLI execution must also resolve the replay's package-qualified
+    # imports when another component exposes a `scripts` namespace on PYTHONPATH.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from scripts import synthesis_replay as replay
 
 SCHEMA = 'e156-synthesis-signature-v1'
 TRUST_SCHEMA = 'e156-synthesis-trust-v1'
