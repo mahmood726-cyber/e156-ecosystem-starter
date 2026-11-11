@@ -91,6 +91,15 @@ def _count_ref(evidence, ref):
     if len(matches) != 1 or re.match(r"[\s*_]*(?:%|percent\b|percentage\b|per\s+cent\b)",
                                     quote[matches[0].end():], re.I):
         raise ValueError("The integer must occur once as a complete count token, not a percentage or range")
+    before = source_binding.get("quote_prefix", "") + quote[:matches[0].start()]
+    after = quote[matches[0].end():] + source_binding.get("quote_suffix", "")
+    if (re.search(r"[\w.,+\-\u2212\u00b1]$", before)
+            or re.match(r"[\w%+\-\u2212\u2013\u2014\u00b1]|[.,][0-9]", after)
+            or re.match(r"[\s*_]*(?:%|percent\b|percentage\b|per\s+cent\b)", after, re.I)
+            or re.search(r"[+\-\u2212\u00b1]\s+$", before)):
+        raise ValueError("Count excerpt cuts a larger or signed source token")
+    if re.search(r"[<>\u2264\u2265]=?\s*$", before):
+        raise ValueError("An inequality cannot supply an exact participant count")
     offset = source_binding["quote_offset"]
     if type(offset) is not int or offset < 0:
         raise ValueError("A quoted count requires an unambiguous source text offset")

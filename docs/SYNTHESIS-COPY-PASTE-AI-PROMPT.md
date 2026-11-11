@@ -1,8 +1,8 @@
 # Synthesis — copy-and-paste AI verification prompt
 
-[Human checklist](SYNTHESIS-HUMAN-CHECKLIST.md) · [Participant worksheet](SYNTHESIS-PARTICIPANT-WORKSHEET.md) · [Worked examples](SYNTHESIS-WORKED-EXAMPLES.md) · [Methods guide](SYNTHESIS-METHODS.md)
+[Start here / where it runs](SYNTHESIS-START.md) · [Human checklist](SYNTHESIS-HUMAN-CHECKLIST.md) · [Participant worksheet](SYNTHESIS-PARTICIPANT-WORKSHEET.md) · [Worked examples](SYNTHESIS-WORKED-EXAMPLES.md) · [Methods guide](SYNTHESIS-METHODS.md)
 
-**Current experimental version, 7 November 2026.** Start by copying the short core below. Add the detailed module when relevant. Provide **only material you are authorised to process**. Independent prospective detection accuracy has not been established. Linked guidance is not evidence that the assistant has accessed it. Record specialist checks that remain undone.
+**Current experimental version, 10 November 2026.** Start by copying the short core below into an assistant approved for your material. The prompt does not provide a model or hosting service. Add the detailed module when relevant. Provide **only material you are authorised to process**. Independent prospective detection accuracy has not been established. Linked guidance is not evidence that the assistant has accessed it. Record specialist checks that remain undone.
 
 ## Copy the short core
 
@@ -13,11 +13,11 @@ First establish the paper or claim, document versions, available sources, intend
 
 For every claim in the agreed scope, including apparently matching claims:
 1. FIND THE CLAIM. Verify its wording, version and page/table/figure. Check corrections; distinguish initial detection from notice-assisted tracing. Inspect uncertain extraction visually where possible.
-2. MATCH THE SOURCE. Record the supporting passage or data. Establish population, comparator, outcome, timepoint, units and analysis identity. Trace counts to the source tally or trial/cohort/arm ledger: matching arithmetic cannot verify the inputs. Record missing provenance as unresolved.
+2. MATCH THE SOURCE. Bind values and population/denominator definitions to exact source text. Establish comparator, outcome, timepoint, units and analysis identity. Trace counts to the source tally or trial/cohort/arm ledger: matching arithmetic cannot verify the inputs. Record missing provenance as unresolved.
 3. ESTABLISH THE DENOMINATOR. Record the counted unit, eligibility, missingness and observed/imputed/weighted basis. For restrictions establish strict subset, rematching, different risk set or unknown; verify actual accounting. Subtract only exhaustive, disjoint exclusions. A smaller count alone proves nothing. Do not add overlapping cohorts or shared controls twice.
-4. CHECK THE CALCULATION. Match the model, effect measure, adjustment, censoring, multiplicity, test and rounding precision first. Save inputs, formula and actual working. If code runs, save script, package versions, command and raw output. Otherwise say NOT_RUN. Do not substitute crude fractions for adjusted or survival estimates.
+4. CHECK THE CALCULATION. Match the model, effect measure, adjustment, censoring, multiplicity, test and rounding precision first. Preserve signs, inequalities, units, scale and interval method. Save inputs, formula and actual working. If code runs, save script, package versions, command and raw output. Otherwise say NOT_RUN. Do not substitute crude fractions for adjusted or survival estimates.
 5. TRY TO EXPLAIN THE MISMATCH. Test the strongest benign explanation against the source. Author agreement/disagreement alone is not proof. Leave untestable explanations unresolved.
-6. RECORD AND RECHECK. Separate presentation, numerical, analysis/code and citation issues; record demonstrated or undetermined impact. After corrections recheck abstract, prose, tables, captions and supporting files: a corrected table can leave stale prose. Preserve old/new values, versions and locators, a nearby unaffected result and unchecked locations.
+6. RECORD AND RECHECK. Separate presentation, numerical, analysis/code and citation issues; record demonstrated or undetermined impact. Track versioned dependencies across abstract, prose, tables, captions and supporting files. Preserve old/new values, locators, a nearby unaffected result and unchecked locations. Track reply points, correction stages and contact pauses separately; a request is not a verified correction.
 
 Return a short table: claim ID and locator | source/version | check and saved working | result | explanation/limits | next step. Use Pass, Review needed, Insufficient evidence or N/A with a reason. Separate arithmetic agreement, source-tally verification and correction propagation. Pass covers only this check. Missing evidence is never N/A or Pass. Preserve matching claims, concerns and abstentions. Distinguish historical corrections from current-version concerns.
 
@@ -26,7 +26,7 @@ Do not certify a paper or claim measured accuracy. Keep case records and corresp
 
 ## Detailed module when relevant
 
-Copy the following instructions with the core for statistical, review/NMA/IPD, revision or reply checks. For counts, supply the [participant worksheet](SYNTHESIS-PARTICIPANT-WORKSHEET.md) or its fields. The worksheet and examples remain guidance, not automated extraction features.
+Copy the following instructions with the core for statistical, review/NMA/IPD, revision or reply checks. For counts, supply the [participant worksheet](SYNTHESIS-PARTICIPANT-WORKSHEET.md) or its fields. The worksheet and examples remain guidance. Optional local [source-bound intake checks](SYNTHESIS-INTAKE-EVIDENCE.md) validate supplied mappings and produce receipts; they do not choose or authenticate scientific scope. Keep reply/correction/contact records in the private sidecar, using point-specific source rechecks. Preserve block-specific unit and uncertainty definitions and the exact signed numeric lexemes.
 
 ---
 

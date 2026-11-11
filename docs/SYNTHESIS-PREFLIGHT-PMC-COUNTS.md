@@ -1,5 +1,7 @@
 # Source-bound participant counts from PMC
 
+For new comparisons, use the [normal-intake evidence checks](SYNTHESIS-INTAKE-EVIDENCE.md) to bind each count's population/denominator definition and full analysis identity. Legacy `participant_count_check` results below retain their arithmetic/trace status but now have `decision_status: HOLD`; attested labels alone cannot clear a claim. The [start page](SYNTHESIS-START.md) includes a runnable synthetic example.
+
 Use the normal Synthesis preflight with `document.pmcid`, a bare DOI in `document.identifier` and the exact edition in `document.version`. `--pmc-live` allows retrieval from PMC EFetch. `--pmc-xml PATH` replays a local JATS response without network access. The CLI saves validated XML bytes under `pmc-snapshots/<sha256>.xml` inside the receipt directory. Keep that directory with the receipt. Live receipts also record the final retrieval URL and UTC timestamp. A later response for the same PMCID version can have different bytes, so use the archived snapshot to reproduce a comparison.
 
 The archive requires a single article. Responses containing nested articles, separately restricted material or contradictory rights declarations are held before any XML is saved.

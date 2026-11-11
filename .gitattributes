@@ -19,6 +19,10 @@ install/install.ps1 text eol=lf
 *.yml   text
 *.yaml  text
 
+# These bytes are bound by the runnable Synthesis example across platforms.
+docs/SYNTHESIS-PREFLIGHT-v1.1.md text eol=lf
+examples/synthesis_intake_demo/*.xml text eol=lf
+
 # Binary / generated.
 *.png   binary
 *.jpg   binary

@@ -1,6 +1,6 @@
 # Synthesis — human review checklist (v1.3 companion)
 
-**Start here if you are an author, reviewer or editor.** Use this current experimental checklist with a manuscript and its source documents. No code or AI is required. **Updated 6 November 2026.** A completed checklist does not certify a paper or establish detection accuracy.
+**Start here if you are an author, reviewer or editor.** Use this current experimental checklist with a manuscript and its source documents. No code or AI is required. **Updated 10 November 2026.** A completed checklist does not certify a paper or establish detection accuracy. The [start page](SYNTHESIS-START.md) explains the manual, optional AI and local capture routes.
 
 **Before starting:** Confirm that you are permitted to access and process each source. Respect publisher terms, requests not to contact authors and any research-ethics requirements. Do not upload restricted manuscripts or personal data into external AI systems without permission.
 

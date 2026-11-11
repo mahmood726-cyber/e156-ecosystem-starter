@@ -214,7 +214,7 @@ def article_entries(payload):
 
 
 def locate_quotes(body, tables, quotes, abstracts=()):
-    """Index only requested excerpts so receipts do not copy article prose."""
+    """Index requested excerpts with bounded numeric-token boundary context."""
     if not quotes:
         return {}, {}
     wrappers = list(body.iter("table-wrap"))
@@ -284,6 +284,8 @@ def locate_quotes(body, tables, quotes, abstracts=()):
         result[quote] = [location for location, _, _, _ in matches]
         bindings[quote] = [
             {"locator": location, "quote_offset": value.index(quote),
+             "quote_prefix": value[max(0, value.index(quote) - 64):value.index(quote)],
+             "quote_suffix": value[value.index(quote) + len(quote):value.index(quote) + len(quote) + 64],
              "count_safe": quote_safe(node, value, quote, unmerged)}
             for location, node, value, unmerged in matches]
     return result, bindings

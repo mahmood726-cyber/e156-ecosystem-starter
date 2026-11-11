@@ -2,7 +2,7 @@
 
 ## Synthesis — start here (human checklist)
 
-**For authors, clinicians, reviewers and journal editors:** [**Open the Synthesis Human Checklist — no programming required**](docs/SYNTHESIS-HUMAN-CHECKLIST.md).
+**For authors, clinicians, reviewers and journal editors:** [**Start with Synthesis — choose manual, optional AI or local evidence capture**](docs/SYNTHESIS-START.md). You can also [open the human checklist directly](docs/SYNTHESIS-HUMAN-CHECKLIST.md); no programming is required.
 
 Start with **six core checks**, then use the 27 detailed questions relevant to your manuscript. Record **Pass / Review needed / Insufficient evidence / N/A with a reason**. The checklist includes a final revision sweep, a [participant-count worksheet](docs/SYNTHESIS-PARTICIPANT-WORKSHEET.md), [three worked public examples](docs/SYNTHESIS-WORKED-EXAMPLES.md) and an [optional AI prompt](docs/SYNTHESIS-COPY-PASTE-AI-PROMPT.md). A flagged inconsistency requires investigation. The current public version remains experimental.
 
@@ -33,7 +33,7 @@ verifier, and ProjectIndex registry.
 | Sentinel pre-push hook | **v0.2.0** | `scripts/install-sentinel.ps1 -Repo <path>` pip-installs `sentinel` from the public repo and installs a pre-push hook with 53 rules (21 BLOCK / 28 WARN / 4 INFO; 656 tests) + skip-file marker (blocks: hardcoded paths, placeholder HMAC, silent sentinels, committed `.claude/` configs, empty-DataFrame access, stale agent-config versions, leaked secrets, MCP/JS lockfile + script integrity, baseline drift, dashboard-stat orphan, blueprint-implementation match). Bypass via `SENTINEL_BYPASS=1 git push` (logged to `~/.sentinel-logs/bypass.log`). |
 | Overmind verifier | **v0.4.0** | `scripts/install-overmind.ps1` pip-installs [overmind](https://github.com/mahmood726-cyber/overmind) (pinned `v1.0.0`) from GitHub and generates a 64-hex-char `TRUTHCERT_HMAC_KEY` saved as a User env var. Run `overmind scan --repo <path>` for on-demand verification (PASS / FAIL / UNVERIFIED / REJECT). **Now includes the offline evidence-synthesis subsystem**: a deterministic meta-analysis pooling engine + `overmind gold-benchmark` (MEASURED output-correctness — reproduces published pooled estimates, e.g. metafor BCG logRR to 0.0005, fail-closed), BM25+vector hybrid retrieval, screening-recall calibration vs the 0.95 bar, claim-grounding, PRISMA flow, and reporting-bias accounting (registry linkage, ROB-ME, outcome-switching). |
 | TruthCert engine | **v0.3.0** | Bundled inside Overmind (`overmind/verification/truthcert_engine.py`). HMAC-signs a certification bundle for each verified project. Requires `TRUTHCERT_HMAC_KEY` env var — installer generates and stores it. |
-| ProjectIndex seed | **v0.3.0** | `scripts/install-projectindex.ps1 -Root <dir>` drops a starter `INDEX.md` (active / submission-ready / shipped / triage sections) + `reconcile_counts.py` that fails-closed when listed project paths don't exist on disk. Parameterized — not hardcoded to `C:\ProjectIndex\`. |
+| ProjectIndex seed | **v0.3.0** | `scripts/install-projectindex.ps1 -Root <dir>` drops a starter `INDEX.md` (active / submission-ready / shipped / triage sections) + `reconcile_counts.py` that fails-closed when listed project paths don't exist on disk. Supply your own destination with `-Root`. |
 | RCT extractor | **v0.6.0** | `scripts/install-extractor.ps1 -Target <dir>` clones [rct-extractor-v2](https://github.com/mahmood726-cyber/rct-extractor-v2) at a pinned commit and persists `RCT_EXTRACTOR_PATH` so the meta-system bridges auto-find it. Turns trial PDFs / abstract text into a [meta-starter-kit](https://github.com/mahmood726-cyber/meta-starter-kit) config — auto-detecting **all 17 disease specialties** (HIV, malaria, typhoid, schistosomiasis, sickle cell, cholera, maternal/neonatal, TB, hepatitis, meningitis, pneumonia, diarrhoeal, malnutrition, helminths, hypertension, cervical cancer, diabetes). The clone also ships the `rct_extractor` pip package + the `rct-extract` CLI (`rct-extract --specialty diabetes --input abstract.txt`, `--auto`, `--list-specialties`). The student's text→config path is **stdlib-only**; heavy PDF/scientific deps (numpy/scipy/pdfplumber, ~150 MB) are opt-in via `-WithPdfDeps`. Runs under `-Full` (core only). |
 | `push-portfolio.py` | **v0.4.0** | Lightweight clone of Mahmood's `push_all_repos.py`. Scans any directory tree (configurable via `--scan-dir` / `PORTFOLIO_SCAN_DIRS` env) for git repos and either pushes existing ones or creates new GitHub repos via `gh`. Guards against the "parent repo config inheritance" gotcha (bare `.git` subdirs won't falsely inherit the home dir's remote). Flags: `--dry-run`, `--report`, `--new-only`, `--no-recursive`. |
 | `long-term-plan` (optional) | separate repo | `scripts/install-long-term-plan.ps1` clones [`mahmood726-cyber/long-term-plan`](https://github.com/mahmood726-cyber/long-term-plan) (pinned to `v0.7.0`) into `~/code/long-term-plan/` and installs the only runtime dep (`pyyaml`). A weekly-refreshed, deterministic, locally-rendered project backlog with no LLM in the loop. Ships Mahmood's real backlog (43 ideas + 5 OKRs anchored to north stars) as a reference — students are expected to fork or replace `ideas.yaml` with their own. |
@@ -176,18 +176,20 @@ Drops two files:
 
 Example:
 ```powershell
-python C:\ProjectIndex\reconcile_counts.py --root C:\ProjectIndex
-# -> OK: 3 project(s) in INDEX.md, all paths resolve.
+$projectIndexRoot = ".\ProjectIndex" # the directory selected with installer -Root
+python (Join-Path $projectIndexRoot "reconcile_counts.py") --root $projectIndexRoot
+# Reports whether the project paths you supplied resolve.
 ```
 
 ### Pushing your portfolio (v0.4.0)
 
 ```powershell
 # One-off scan + action
-python .\scripts\push-portfolio.py --scan-dir C:\Projects --github-user your-handle
+$projectRoot = Join-Path $env:USERPROFILE "Projects"
+python .\scripts\push-portfolio.py --scan-dir $projectRoot --github-user your-handle
 
 # Persistent config via env vars
-$env:PORTFOLIO_SCAN_DIRS = "C:\Projects;D:\Projects"
+$env:PORTFOLIO_SCAN_DIRS = $projectRoot # separate multiple configured roots with semicolons
 $env:PORTFOLIO_GITHUB_USER = "your-handle"
 python .\scripts\push-portfolio.py --report      # just print status table
 python .\scripts\push-portfolio.py --dry-run     # preview actions
@@ -339,7 +341,7 @@ token-budget playbook.
 
 ```powershell
 .\scripts\install-long-term-plan.ps1
-.\scripts\install-long-term-plan.ps1 -Root C:\code\long-term-plan -Ref v0.7.0
+.\scripts\install-long-term-plan.ps1 -Root (Join-Path $env:USERPROFILE "code\long-term-plan") -Ref v0.7.0
 ```
 
 Clones [`mahmood726-cyber/long-term-plan`](https://github.com/mahmood726-cyber/long-term-plan)
@@ -453,11 +455,10 @@ See [`AGENTS.md`](AGENTS.md) for the full rules.
 
 ## Adapting to your own setup
 
-The rules reference Mahmood-specific paths (`C:\E156\`, `C:\ProjectIndex\`,
-`C:\Sentinel\`, `C:\overmind\`, GitHub user `mahmood726-cyber`). These
-encode a *working* setup — you can either:
+The installed rules use configured E156, ProjectIndex, Sentinel and Overmind
+roots, plus GitHub user `mahmood726-cyber`. You can either:
 
-1. Replicate the layout at the same paths (easiest), or
+1. Use the installer defaults, or
 2. Substitute your own paths and update the rules files after install
    (your edits are preserved when you re-run `install.ps1` — your version
    is backed up as `<name>.md.user`)

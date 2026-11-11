@@ -1,0 +1,14 @@
+<article xmlns:xlink="http://www.w3.org/1999/xlink"><front><article-meta>
+<article-id pub-id-type="pmcid">PMC123</article-id><article-id pub-id-type="pmcid-ver">PMC123.2</article-id>
+<article-id pub-id-type="doi">10.1234/synthetic</article-id><permissions>
+<license xlink:href="https://creativecommons.org/licenses/by/4.0/"/></permissions>
+</article-meta></front><body><sec><title>Synthetic results</title>
+<p>One synthetic trial, arm A, endpoint E at visit V; raw observed participants.</p>
+<p>Randomised population: 36 participants. Treated population: 32 participants.</p>
+<p>Four not treated: exclusion count 4. The restricted count is 32.</p>
+<p>Response count 8 of 32 treated participants (25.0%).</p>
+<p>Same treated count: 32 participants.</p>
+<p>Mean difference -1.4 units; two-sided reported interval -2.6 to -0.2 units.</p>
+<p>Stale mean difference -0.8 units.</p>
+<p>Raw percentage label and raw scale. Interval method: reported two-sided.</p>
+</sec></body></article>

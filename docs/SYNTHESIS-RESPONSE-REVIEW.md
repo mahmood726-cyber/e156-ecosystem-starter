@@ -59,6 +59,8 @@ wrong comparator attribution or inconsistent presentation.
 
 ## Software contract and limits
 
+For persistent point, correction-stage and contact-pause metadata, use the optional [private case sidecar](SYNTHESIS-INTAKE-EVIDENCE.md#private-replies-corrections-and-contact-pauses). Normal intake holds known unresolved points and emits only a redacted summary. The sidecar does not fetch messages, authenticate explanations or verify a claimed published correction; those require the source rechecks above. A contact release never authorises outreach.
+
 `feedback_recheck(record)` in `scripts/synthesis_v13_checks.py` validates
 single-claim review declarations, original/reply references, source-recheck
 fields and calculation artifacts. It does not read emails, authenticate
