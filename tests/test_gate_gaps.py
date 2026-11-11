@@ -338,7 +338,10 @@ def real_copy(tmp_path, rgg):
     shutil.copytree(REPO_ROOT / "scripts", tmp_path / "scripts",
                     ignore=shutil.ignore_patterns("__pycache__"))
     (tmp_path / "docs").mkdir()
-    for rel in (rgg.REGISTRY_PATH, rgg.DOC_PATH):
+    # Include the non-script dependencies sealed by the AACT and provenance gates.
+    for rel in (rgg.REGISTRY_PATH, rgg.DOC_PATH, "requirements-aact-canary.lock",
+                "requirements-rocrate.lock", "schemas/rocrate-contexts.json"):
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REPO_ROOT / rel, tmp_path / rel)
     assert rgg.check(tmp_path) == (rgg.CURRENT, [])
     return tmp_path

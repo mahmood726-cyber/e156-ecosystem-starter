@@ -1,0 +1,15 @@
+{
+  "schema": "e156-rocrate-context-lock-v1",
+  "contexts": {
+    "https://w3id.org/ro/crate/1.1/context": {
+      "sha256": "4a8c4cbdfd73d3d11be5ebe135f6122a0fc711fd1433e4258a748c80cc257ab7",
+      "retrieved_at": "2026-11-11T15:11:53.879284+00:00",
+      "size": 164403
+    },
+    "https://w3id.org/ro/terms/workflow-run/context": {
+      "sha256": "1e2f771d72a9f8c8e9d85be3cdb029862f48383c857e13a9204db250a1117eb9",
+      "retrieved_at": "2026-11-11T15:11:54.334770+00:00",
+      "size": 1226
+    }
+  }
+}

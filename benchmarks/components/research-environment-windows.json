@@ -1,0 +1,40 @@
+{
+  "active_record_sha256": "9109f642c9bb69cfbf56e94e0b66334a9dc22d07660f6badfa3d359faccfe842",
+  "active_release": "ab14aad4878f25a436362ffa38babb4d120493df8865414cf47a2eef99aca771",
+  "assessment_date": "2026-11-11",
+  "component_commits": {
+    "aact-kit": "b1995128747848d1567386266eca95e9230e19b9",
+    "rapidmeta": "3de5e44cc7624138309868db1dbfa49320682e66"
+  },
+  "component_receipt_sha256": {
+    "aact-kit": "30a6e5844910fea639a029927f5b0b1d2022c03f06c0007ceb31002b2c4171b1",
+    "rapidmeta": "dcb239eb5512a91325c14f7710f18da1089d3e3acd15f5c6ea679ffcb92cd59c"
+  },
+  "failure_control": {
+    "active_preserved": true,
+    "active_release": "ab14aad4878f25a436362ffa38babb4d120493df8865414cf47a2eef99aca771",
+    "failed_candidate_refused": true,
+    "fixture_kind": "deliberate_missing_source"
+  },
+  "failure_control_sha256": "c74739b5434320dda553fae3c001700ef7eb98cdcf51152cbd1d0fcffd2a9655",
+  "held_out": false,
+  "runtime": {
+    "numpy": "2.4.6",
+    "pandas": "2.3.3",
+    "platform": "win32",
+    "python": "3.13.13"
+  },
+  "scientific_accuracy_measured": false,
+  "scope": [
+    "rapidmeta",
+    "aact-kit"
+  ],
+  "verifiers": {
+    "aact_canary.py": "307f5cd2540a7eeed9c126607cb4c3d915f509134a0bee7e7aaae72eb5a1284b",
+    "aact_install.py": "501d3b5bd2dafcdcd7e42e0d1a2093468ebd353b5bb224d9a584b38b99dd8015",
+    "component_lock.py": "2218ee9edeb0c27a3016e1bcc8ca8419043b693ec5d022bf6d054f8a3e4ac338",
+    "component_source.py": "d48e2e59bb42bc63a157a87b94cacf65de40559e47f1f43377a5e072bf986210",
+    "rapidmeta_install.py": "b9be98e480773701089d96635f1ca7a0722ea6b7dbd01b767656e20f0dec4cb0",
+    "research_environment.py": "171e1bf4afb9c85050cbe9bee41203feeb20ab45311d12425fdeff3339dafdde"
+  }
+}

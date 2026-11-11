@@ -1,0 +1,1 @@
+Replay one agent-selected report-to-trial registration link from the licensed STROKEWALK PMC snapshot and archived ClinicalTrials.gov reference metadata. Preserve the registry reference type. Do not infer cohort overlap, outcome equivalence, treatment effects or pooling eligibility.

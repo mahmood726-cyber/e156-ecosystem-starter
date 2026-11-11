@@ -1,0 +1,86 @@
+{
+  "assessment_date": "2026-11-11",
+  "fixture_kind": "real_oa_development_example",
+  "held_out": false,
+  "scientific_accuracy_measured": false,
+  "scope": "One agent-selected report registration passage matched to a typed archived registry reference",
+  "source": {
+    "pmcid": "PMC7874373",
+    "doi": "10.1177/0269215520954346",
+    "version": "PMC7874373.1",
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "snapshot_sha256": "1fb6f2d3e27d7cdfb813e9b1805efa5a2fd8c103457bb5916dd43c7d1d83dda1",
+    "pmid": "32942914",
+    "retrieval_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC7874373&retmode=xml",
+    "retrieved_at": "2026-11-11T14:34:34.871343+00:00"
+  },
+  "registry": {
+    "nct_id": "NCT02902367",
+    "snapshot_sha256": "efb09b81c86145d45ee343414ba558da2a26bfdfddf97fd8dcc7b1a48a9510a0",
+    "retrieval_url": "https://clinicaltrials.gov/api/v2/studies/NCT02902367?fields=NCTId,LastUpdatePostDate,ReferencePMID,ReferenceType",
+    "retrieved_at": "2026-11-11T14:46:29.202499+00:00",
+    "protocol_last_update_posted": "2017-09-19",
+    "reuse": "Minimal public factual identifier/date/reference metadata; see ClinicalTrials.gov terms",
+    "terms_url": "https://clinicaltrials.gov/about-site/terms-conditions"
+  },
+  "bundle": "examples/synthesis-replay-strokewalk",
+  "manifest_sha256": "c514c54e027641eb13c6cdcb815e0e1f92ae355a572bf618f366284db5071d88",
+  "payload_sha256": "ec035bca2b6198017b325bee81c8acd4d6b924e914ff95bd322a22a7ca3e5b0d",
+  "verifiers": {
+    "synthesis_capture_evidence.py": "0e789ca464477c38c0ee232a804cef374eeb54b2c99de71ddcad59118cd60df5",
+    "synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+    "synthesis_participant_evidence.py": "f79b1d847b7d001a19031d903e8416b9d2d8d71501efb7e98c519d53fcf8a659",
+    "synthesis_preflight.py": "a4508a7668765e3ba29a58fb106967e12e97da9667dacbde07958a9e43c9c301",
+    "synthesis_replay.py": "4cb0c97753ce5ec6e2ad73f66fb4f802d49505770d552f0bde8305d5cc15fc88",
+    "synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605"
+  },
+  "observed": {
+    "cohort_overlap": "UNASSESSED",
+    "links": [
+      {
+        "nct_id": "NCT02902367",
+        "reference_type": "DERIVED",
+        "registration": {
+          "count_safe": true,
+          "locator": "abstract 1 p 9",
+          "quote": "The study is registered with [ClinicalTrials.gov], number [NCT02902367].",
+          "quote_offset": 0
+        },
+        "registration_literal": "NCT02902367",
+        "registry_reference_locator": "/protocolSection/referencesModule/references/2",
+        "report": "pmc:PMC7874373.1",
+        "status": "REPORT_AND_REGISTRY_LINKED",
+        "trial": "clinicaltrials.gov:NCT02902367"
+      }
+    ],
+    "outcome_equivalence": "UNASSESSED",
+    "pooling_readiness": "HOLD",
+    "report": {
+      "doi": "10.1177/0269215520954346",
+      "id": "pmc:PMC7874373.1",
+      "license": "https://creativecommons.org/licenses/by/4.0/",
+      "pmcid": "PMC7874373",
+      "pmid": "32942914",
+      "snapshot_sha256": "1fb6f2d3e27d7cdfb813e9b1805efa5a2fd8c103457bb5916dd43c7d1d83dda1",
+      "version": "PMC7874373.1"
+    },
+    "schema": "e156-study-links-v1",
+    "trials": [
+      {
+        "id": "clinicaltrials.gov:NCT02902367",
+        "nct_id": "NCT02902367",
+        "origin_status": "ARCHIVED_JSON_NOT_NETWORK_AUTHENTICATED",
+        "protocol_last_update_posted": "2017-09-19",
+        "registry_sha256": "efb09b81c86145d45ee343414ba558da2a26bfdfddf97fd8dcc7b1a48a9510a0",
+        "source_url": "https://clinicaltrials.gov/study/NCT02902367"
+      }
+    ]
+  },
+  "replay": {
+    "status": "REPLAY_MATCHED",
+    "manifest_sha256": "c514c54e027641eb13c6cdcb815e0e1f92ae355a572bf618f366284db5071d88",
+    "payload_sha256": "ec035bca2b6198017b325bee81c8acd4d6b924e914ff95bd322a22a7ca3e5b0d",
+    "scope": "source_bound_preflight_with_study_links",
+    "scientific_validity": "NOT_ESTABLISHED"
+  }
+}

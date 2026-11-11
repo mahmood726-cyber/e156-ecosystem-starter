@@ -1,6 +1,6 @@
 # Synthesis v1.3 — auditable evidence packet and response review
 
-**Updated 6 November 2026 · development contract; no real records in this repository**
+**Updated 6 November 2026 · development contract; no private case records in this repository**
 
 ## Scope and privacy
 
@@ -9,6 +9,10 @@ This specification supports private scientific-verification records. Keep origin
 A true target item is **one distinct, substantive, independently source-verified error root that has actually been emailed**. A candidate discrepancy, methodological question, withdrawn concern, metadata-only issue, author acknowledgement without an error finding, correction learned after publication, draft, or unverified send does not qualify. Multiple affected cells from one underlying root count once; one consolidated email may document multiple distinct roots.
 
 ## Evidence packet fields
+
+The separate [source replay example](SYNTHESIS-REPLAY.md) uses an attributed,
+openly licensed public article and a development extraction packet. It contains
+no private correspondence or independently adjudicated error allegation.
 
 Every candidate needs an exact and independently checked current report identity (DOI or versioned arXiv identifier), document version and SHA-256, claim locator, original underlying report/registry/protocol identity and hash, source locator, analysis/estimand identity, reconstruction reference, candidate alternative explanation and refutation evidence, severity, source-support status and an explicit trial-family/root ID.
 

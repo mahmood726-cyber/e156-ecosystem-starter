@@ -12,6 +12,16 @@ on:
       - "scripts/install-extractor.sh"
       - "scripts/install-projectindex.sh"
       - "scripts/verify-full-install.py"
+      - "scripts/research_environment.py"
+      - "scripts/check-research-upgrade.py"
+      - "scripts/component-lock.json"
+      - "scripts/component_lock.py"
+      - "scripts/component_source.py"
+      - "scripts/rapidmeta_install.py"
+      - "scripts/aact_install.py"
+      - "scripts/aact_canary.py"
+      - "requirements-aact-canary.lock"
+      - "tests/test_research_environment.py"
       - "tests/test_full_install_verifier.py"
       - "docs/HASH-linux.txt"
       - ".github/workflows/full-system-integration.yml"
@@ -28,9 +38,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.13"
 
@@ -51,6 +61,16 @@ jobs:
         timeout-minutes: 20
         run: bash install/install.sh --full --github-user e156-integration-ci
 
+      - name: Install locked research runtime and activate the pair
+        timeout-minutes: 5
+        run: |
+          python scripts/component_lock.py --check
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-aact-canary.lock
+          python scripts/research_environment.py install --root "$RUNNER_TEMP/research-pair"
+
       - name: Check installed layers and invoke real integration canaries
         timeout-minutes: 8
-        run: python scripts/verify-full-install.py
+        run: |
+          python scripts/verify-full-install.py
+          python scripts/research_environment.py verify --root "$RUNNER_TEMP/research-pair"
+          python scripts/check-research-upgrade.py --root "$RUNNER_TEMP/research-pair"

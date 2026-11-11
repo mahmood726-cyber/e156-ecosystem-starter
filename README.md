@@ -38,9 +38,9 @@ verifier, and ProjectIndex registry.
 | `push-portfolio.py` | **v0.4.0** | Lightweight clone of Mahmood's `push_all_repos.py`. Scans any directory tree (configurable via `--scan-dir` / `PORTFOLIO_SCAN_DIRS` env) for git repos and either pushes existing ones or creates new GitHub repos via `gh`. Guards against the "parent repo config inheritance" gotcha (bare `.git` subdirs won't falsely inherit the home dir's remote). Flags: `--dry-run`, `--report`, `--new-only`, `--no-recursive`. |
 | `long-term-plan` (optional) | separate repo | `scripts/install-long-term-plan.ps1` clones [`mahmood726-cyber/long-term-plan`](https://github.com/mahmood726-cyber/long-term-plan) (pinned to `v0.7.0`) into `~/code/long-term-plan/` and installs the only runtime dep (`pyyaml`). A weekly-refreshed, deterministic, locally-rendered project backlog with no LLM in the loop. Ships Mahmood's real backlog (43 ideas + 5 OKRs anchored to north stars) as a reference — students are expected to fork or replace `ideas.yaml` with their own. |
 | `student` CLI | separate repo | Narrow submission pipeline: see [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter). |
-| **Dashboard kit** | **v0.6.0** | `scripts/install-rapidmeta.ps1` clones [`rapidmeta-kit`](https://github.com/mahmood726-cyber/rapidmeta-kit) at a pinned commit and persists `RAPIDMETA_KIT_PATH`. `clone.py` turns a small JSON config into a self-contained meta-analysis **dashboard** — **stdlib-only, offline, zero deps, no LLM**. Run `bash run_example.sh` for a token-free example. *(The upstream repository, its clone URL, its installer filenames and its environment variable keep their published names — those are identifiers of a real remote, and renaming them here would break the installer. The layer is referred to by function everywhere else.)* |
+| **Dashboard kit** | **source-locked** | Both RapidMeta installers read the shared component lock and verify the exact clean checkout plus deterministic generator output before persisting `RAPIDMETA_KIT_PATH`. The generator is stdlib-only; the HTML still references external resources. See the [installation contract](docs/COMPONENT-INSTALL-CONTRACT.md). |
 | **AACT cockpit** | **v0.6.0** | `scripts/install-aact.ps1` clones [aact-cockpit](https://github.com/mahmood726-cyber/aact-cockpit) at a pinned commit and persists `AACT_COCKPIT_PATH`. A local DuckDB-backed cockpit for large-scale ClinicalTrials.gov/AACT analysis that emits self-auditing e156 capsules. Clone is free; **running** needs `duckdb`+`numpy` (opt-in `-WithDataDeps`/`--with-data-deps`) **and a local AACT snapshot**. Zero-setup path: read the committed `analyses/` + `templates/` examples. |
-| **AACT kit** *(library)* | **v0.1.0** | `scripts/install-aact-kit.ps1` clones [aact-kit](https://github.com/mahmood726-cyber/aact-kit) at a pinned commit and persists `AACT_KIT_PATH`. The shared **library** other CT.gov projects import: one API to resolve / load / validate / aggregate AACT across five local backends (Postgres, SQLite, ZIP, pipe-delimited TSV dir, CSV dir). Only hard dep is `pandas` (`psycopg2` optional); install is opt-in `-WithDeps`/`--with-deps`. Zero-setup path: read `src/aact_kit/` + `README.md`. **Distinct from the AACT cockpit** above (which is a DuckDB analysis app). |
+| **AACT kit** *(library)* | **source-locked** | Both installers verify the shared lock and package source before setting `AACT_KIT_PATH`. Source-only and runtime receipts are distinct. Opt-in runtime checks exercise synthetic CSV/TSV/ZIP/SQLite fixtures; PostgreSQL is unverified by this adapter. See the [AACT installation contract](docs/AACT-INSTALL-CONTRACT.md). |
 | **Pairwise70 workbench** | **v0.6.0** | `scripts/install-pairwise70.ps1` clones [pairwise70-workbench](https://github.com/mahmood726-cyber/pairwise70-workbench) at a pinned commit and persists `PAIRWISE70_PATH`. An offline gallery hub that shows + reproduces every Pairwise70-family analysis; **static HTML, stats run offline in the browser, no Python deps, no tokens** — just open `index.html`. |
 | **Meta self-audit + error library** | **v0.2.0** | `python scripts/meta-self-audit.py MY_REVIEW.html` runs 18 deterministic detectors over a single-file meta-analysis dashboard — **stdlib-only, offline, zero deps, no LLM**. Mined from a 626-dashboard corpus audit plus a published-literature error registry; every class is documented with a real worked example in [`docs/META-ERROR-LIBRARY.md`](docs/META-ERROR-LIBRARY.md), and [`docs/SOURCING-METHOD.md`](docs/SOURCING-METHOD.md) sets out where to source a replacement number from open data (supplements → PMC → FDA/EMA → ClinicalTrials.gov), with provenance lines and corrections recorded *beside* the original rather than over it. Fail-closed: verdicts are `CLEAN` / `DEFECTS-FOUND` / `INCONCLUSIVE` — there is deliberately **no verdict called "passed"**, and an unestablishable check exits non-zero. Optional `--metamorphic` reuses Overmind's `MetamorphicWitness` for pooling invariants. Blind spots documented alongside the detectors. |
 | **Count-recovery harness** | **v1.0.0** | `python templates/count-recovery/count_recovery_harness.py --selftest` runs 14 pre-condition checks for per-arm 2×2 event-count extraction against **11 negative controls** — **stdlib-only, offline, zero deps, no LLM**. Every check exists because the mistake it catches was actually made on real data. Fail-closed: exit 1 on any BLOCK, and a BLOCKed extraction does not go downstream. Ships a runnable `example_extraction.json` + its committed report. The method it enforces is in [`COUNT_RECOVERY_PROCEDURE.md`](templates/count-recovery/COUNT_RECOVERY_PROCEDURE.md); the findings worth reading on their own — the registry adverse-events trap, and why a count that reproduces the published hazard ratio proves nothing — are in [`docs/REGISTRY-EXTRACTION-TRAPS.md`](docs/REGISTRY-EXTRACTION-TRAPS.md). |
@@ -98,7 +98,7 @@ Flags:
 
 - `-DryRun` — only verify the SHA gate, exit 0
 - `-Force` — overwrite existing user-edited rules (default: back them up as `*.user`)
-- `-Full` — chain Sentinel (current dir) + Overmind + ProjectIndex (C:\ProjectIndex) + RCT extractor (core only) non-interactively
+- `-Full` — chain Sentinel (current dir) + Overmind + ProjectIndex (configured root) + RCT extractor (core only) non-interactively
 - `-NonInteractive` — skip all chain prompts (base install only)
 - `-InstallSentinel <repo-path>` — chain Sentinel into a specific repo
 - `-InstallOvermind` — chain Overmind + TruthCert HMAC-key setup
@@ -160,10 +160,62 @@ Back up the HMAC key somewhere safe — losing it invalidates all prior
 signed bundles. Pass `-HmacKey <existing-key>` to the installer to reuse a
 key across machines.
 
+### Activating the research components together
+
+With pandas and NumPy available in the selected Python environment:
+
+```bash
+python scripts/research_environment.py install --root ./research-environment
+python scripts/research_environment.py verify --root ./research-environment
+```
+
+These commands work in PowerShell too. They verify RapidMeta and AACT-kit in a
+separate versioned directory, then switch one active manifest. Failed candidates
+leave the previous pair selected. JSON output provides the verified component
+paths; existing shell bindings are not changed. Explicit rollback rechecks the
+older pair before selecting it. See the [activation and recovery contract](docs/RESEARCH-ENVIRONMENT.md).
+
+### Installing a verified dashboard generator
+
+```powershell
+.\scripts\install-rapidmeta.ps1 -Target (Join-Path $env:USERPROFILE 'code/rapidmeta-locked')
+# For a disposable/session-only check, add -SessionOnly.
+```
+
+```bash
+bash scripts/install-rapidmeta.sh --target "$HOME/code/rapidmeta-locked"
+# For a disposable/session-only check, add --session-only.
+```
+
+The default source is an exact commit from `scripts/component-lock.json`.
+`RAPIDMETA_REF` overrides must also be full lowercase commit SHAs; branches and
+version tags are refused. An existing checkout must already match that commit,
+origin and clean-tree contract. Use a fresh target for a different commit.
+`--skip-clone` / `-SkipClone` still verifies source and runs the generator.
+A failed check cannot produce a success receipt or persist a discovery path.
+
+### Installing the AACT data-access library
+
+```powershell
+.\scripts\install-aact-kit.ps1 -Target (Join-Path $env:USERPROFILE 'code/aact-kit-locked') -SessionOnly
+```
+
+```bash
+bash scripts/install-aact-kit.sh --target "$HOME/code/aact-kit-locked" --session-only
+```
+
+These commands verify source only. Add `--verify-runtime` / `-VerifyRuntime` to
+check the selected Python environment and exercise four local backends without
+using a real snapshot. `--with-deps` / `-WithDeps` installs the editable package
+and requires those runtime checks; it now requires an active Python virtual
+environment. Dependency failures refuse the install. Remove session-only mode to
+persist the verified source path. See the [scope and remaining gaps](docs/AACT-INSTALL-CONTRACT.md).
+
 ### Adding a portfolio index (v0.3.0)
 
 ```powershell
-.\scripts\install-projectindex.ps1 -Root C:\ProjectIndex
+$indexRoot = Join-Path $env:USERPROFILE 'code/ProjectIndex'
+.\scripts\install-projectindex.ps1 -Root $indexRoot
 ```
 
 Drops two files:
@@ -329,8 +381,27 @@ python scripts\find-related-repos.py "transportability" --names-only
 
 `reuse.py` searches a pre-baked, committed index (`scripts/reuse-index.json`);
 run `python scripts/reuse.py build` once if you install a kit into a
-non-default location. `recall.py` auto-discovers your Claude Code memory dir
-(`~/.claude/projects/*/memory/`) or takes `--memory-dir` / `$CLAUDE_MEMORY_DIR`.
+non-default location. `recall.py` discovers only the Claude Code memory store
+whose encoded project path matches the current working directory. From another
+directory, pass `--memory-dir` or `$CLAUDE_MEMORY_DIR` explicitly; it never falls
+back to another project's sole or newest store. An unreadable Markdown entry,
+invalid UTF-8, or link outside the store refuses the query with exit 2. JSON hits
+carry `sha256` and `evidence_status: unverified_memory`: identity is not source
+verification. The store remains offline, with deterministic BM25 ranking.
+
+The [research harness roadmap](docs/RESEARCH-HARNESS-ROADMAP.md) covers memory,
+component installation, source-to-claim provenance, review workflows and held-out
+evaluation. [Benchmark evidence](benchmark.md) separates executed development
+controls from external documented capabilities and unmeasured scientific accuracy.
+The [source replay contract](docs/SYNTHESIS-REPLAY.md) adds offline reconstruction
+of source-bound Synthesis participant checks and typed report-to-trial links,
+with exact archived inputs and an external manifest digest. Licensed real-paper
+development examples are included. Registration links preserve the registry's
+reference type and leave cohort overlap and outcome equivalence unassessed;
+replay agreement does not establish scientific validity.
+An optional [RO-Crate export](docs/SYNTHESIS-ROCRATE.md) packages the verified
+bytes and software with a new execution record. Profile validation and scientific
+validity remain separate from byte integrity.
 `find-related-repos.py` reads the ProjectIndex manifest or `INDEX.md` (see
 ["Adding a portfolio index"](#adding-a-portfolio-index-v030) above) and exits
 `2` with guidance if no index exists yet. See
@@ -415,11 +486,15 @@ python scripts/refresh-ecosystem-pins.py --apply --layer extractor   # one layer
 python scripts/refresh-ecosystem-pins.py --apply --commit --push     # bump, commit, ff-only push
 ```
 
-It queries each repo's latest pushed commit (`git ls-remote … HEAD`), rewrites the
-pin in both installers and the README short-SHA, and is **idempotent**
+For eligible development SHA pins, it queries the repo's latest pushed commit
+(`git ls-remote … HEAD`), rewrites the pin in both installers and the README
+short-SHA, and is **idempotent**
 (no-op when current), **non-destructive** (review-then-commit; ff-only push), and
 **pins-only** — it never touches memory, secrets, or rules. Tag-pinned layers
-(e.g. `long-term-plan`) are left alone. After it runs, if you also hand-edited
+(e.g. `long-term-plan`) are left alone. Sentinel and Overmind remain frozen;
+RapidMeta and AACT-kit consume `scripts/component-lock.json` and requires a reviewed manual
+lock change. Errors return nonzero and prevent automatic commit/push; an error
+can leave earlier development-pin edits for inspection. After it runs, if you also hand-edited
 `install/install.{ps1,sh}`, run `bash scripts/regen-hashes.sh`.
 
 **Memory + private settings** sync through a *separate, private* channel —

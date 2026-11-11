@@ -126,6 +126,23 @@ def process_layer(layer: dict, apply: bool, root: Path) -> dict:
     sh_path = root / sh_rel
     if not sh_path.exists():
         return {"name": layer["name"], "status": "missing", "detail": sh_rel}
+    if layer["name"] in ("rapidmeta", "aact-kit"):
+        # This component consumes the shared lock at runtime. Never turn an
+        # intentional immutable source selection into a default-branch update.
+        try:
+            result = subprocess.run(
+                [sys.executable, str(root / "scripts/component_lock.py"),
+                 "--component", layer["name"], "--field", "commit"],
+                capture_output=True, text=True, timeout=15, check=True,
+            )
+            commit = result.stdout.strip()
+            if not _SHA_RE.fullmatch(commit):
+                raise ValueError("invalid locked commit")
+        except (OSError, ValueError, subprocess.SubprocessError):
+            return {"name": layer["name"], "status": "error",
+                    "detail": "shared component lock missing or invalid"}
+        return {"name": layer["name"], "status": "skip",
+                "detail": f"shared component lock {commit[:12]} (manual source review required)"}
     frozen = FROZEN_RELEASES.get(layer["name"])
     if frozen is not None:
         # Check actual defaults in both installers, not incidental hex strings.
@@ -223,6 +240,7 @@ def main(argv=None) -> int:
         elif r["status"] == "skip":
             print(f"  [skip]    {name:12s} {r['detail']}")
         elif r["status"] == "missing":
+            errors += 1
             print(f"  [missing] {name:12s} {r['detail']}")
         else:
             errors += 1
@@ -238,6 +256,9 @@ def main(argv=None) -> int:
         return 0
 
     if not args.apply:
+        if errors:
+            print(f"REFUSED: {errors} layer(s) could not be checked.")
+            return 1
         if drift:
             print(f"{drift} layer(s) stale. Re-run with --apply to update.")
         else:
@@ -246,7 +267,8 @@ def main(argv=None) -> int:
 
     # --apply path
     if errors:
-        print(f"WARNING: {errors} layer(s) could not be checked (ls-remote failed).")
+        print(f"REFUSED: {errors} layer(s) could not be checked; no automatic commit or push.")
+        return 1
     if not all_changed:
         print("All pins already current; no files changed.")
         return 0
@@ -266,7 +288,7 @@ def main(argv=None) -> int:
         msg = "chore: refresh ecosystem install-layer pins\n\n" + body
         g = git(root, "commit", "-m", msg)
         if g.returncode != 0:
-            print(f"git commit failed:\n{g.stdout}\n{g.stderr}", file=sys.stderr)
+            print("git commit failed:", g.stdout, g.stderr, sep="\n", file=sys.stderr)
             return 1
         print("Committed pin refresh.")
         if args.push:

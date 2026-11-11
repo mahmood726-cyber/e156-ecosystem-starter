@@ -27,10 +27,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
 import re
+import stat
 import sys
 from collections import Counter
 from pathlib import Path
@@ -45,7 +47,7 @@ def _encode_project_dir(path: Path) -> str:
 
 
 def discover_memory_dir() -> Path | None:
-    """Best-effort location of THIS machine's Claude Code memory dir.
+    """Locate only this project's store, unless explicitly overridden.
 
     Claude Code stores per-project memory at
     ``~/.claude/projects/<encoded-cwd>/memory/``. We never hardcode a specific
@@ -53,26 +55,17 @@ def discover_memory_dir() -> Path | None:
     and never resolves for anyone else). Resolution order:
       1. ``$CLAUDE_MEMORY_DIR`` if set (explicit override).
       2. the project whose encoded name matches the current working directory;
-      3. the sole ``projects/*/memory`` dir if there is exactly one;
-      4. otherwise the most-recently-modified ``projects/*/memory`` dir.
-    Returns ``None`` if none exists (the caller then asks for ``--memory-dir``).
+    Never borrow a sole or recently modified store from another project.
+    Returns ``None`` without an exact match; use ``--memory-dir`` or the
+    environment override for intentional cross-project recall.
     """
     env = os.environ.get("CLAUDE_MEMORY_DIR")
     if env:
         return Path(env).expanduser()
     projects = Path.home() / ".claude" / "projects"
-    if not projects.is_dir():
-        return None
-    candidates = [p for p in projects.glob("*/memory") if p.is_dir()]
-    if not candidates:
-        return None
     encoded = _encode_project_dir(Path.cwd())
-    for c in candidates:
-        if c.parent.name == encoded:
-            return c
-    if len(candidates) == 1:
-        return candidates[0]
-    return max(candidates, key=lambda p: p.stat().st_mtime)
+    candidate = projects / encoded / "memory"
+    return candidate if candidate.is_dir() else None
 
 # Recommend switching from flat-index loading to retrieval past this many
 # memories — the point where the index stops being cheap to reason over whole.
@@ -97,43 +90,78 @@ def _tokenize(text: str) -> list[str]:
     return [t for t in _TOKEN.findall(text.lower()) if len(t) > 1 and t not in _STOP]
 
 
-def _parse(path: Path) -> dict:
-    """Return {name, description, tokens} for one memory file."""
-    raw = path.read_text(encoding="utf-8", errors="replace")
+class MemoryStoreError(ValueError):
+    """The requested corpus cannot be read completely and safely."""
+
+
+def _parse(path: Path, data: bytes | None = None) -> dict:
+    """Parse one memory; its hash identifies bytes, not evidential validity."""
+    if data is None:
+        data = path.read_bytes()
+    # Accept legacy UTF-8 BOMs but hash the actual bytes including the BOM.
+    raw = data.decode("utf-8-sig").replace("\r\n", "\n")
     name, desc = path.stem, ""
     body = raw
-    if raw.startswith("---"):
-        end = raw.find("\n---", 3)
-        if end != -1:
-            front, body = raw[3:end], raw[end + 4:]
-            for line in front.splitlines():
-                m = re.match(r"\s*(name|description)\s*:\s*(.*)", line)
-                if m:
-                    val = m.group(2).strip().strip('"').strip("'")
-                    if m.group(1) == "name":
-                        name = val or name
-                    else:
-                        desc = val
+    lines = raw.splitlines(keepends=True)
+    if lines and lines[0].strip() == "---":
+        end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
+        if end is None:
+            raise MemoryStoreError(f"unclosed frontmatter: {path.name}")
+        body = "".join(lines[end + 1:])
+        for line in lines[1:end]:
+            m = re.match(r"\s*(name|description)\s*:\s*(.*)", line)
+            if m:
+                val = m.group(2).strip().strip('"').strip("'")
+                if m.group(1) == "name":
+                    name = val or name
+                else:
+                    desc = val
     # Description terms counted _DESC_WEIGHT times (boost the curated hook).
     tokens = _tokenize(body) + _tokenize(desc) * _DESC_WEIGHT
-    return {"name": name, "description": desc, "path": path, "tokens": tokens}
+    return {"name": name, "description": desc, "path": path, "tokens": tokens,
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "evidence_status": "unverified_memory"}
+
+
+def _read_corpus(memory_dir: Path) -> tuple[list[dict], int]:
+    """Read every flat Markdown entry or refuse; never return partial success.
+
+    Resolve links before opening and require regular files inside the selected
+    store. This is a local consistency check, not an adversarial filesystem
+    sandbox or a transactional snapshot of concurrent writes.
+    """
+    try:
+        root = memory_dir.expanduser().resolve(strict=True)
+        if not stat.S_ISDIR(root.stat().st_mode):
+            raise MemoryStoreError("memory store is not a directory")
+        docs, index_lines = [], 0
+        # glob may suppress scan errors on some Python versions. iterdir
+        # exposes them so unreadable and empty stores stay distinct.
+        for path in sorted(root.iterdir()):
+            if path.suffix.lower() != ".md":
+                continue
+            resolved = path.resolve(strict=True)
+            if not resolved.is_relative_to(root):
+                raise MemoryStoreError(f"memory entry resolves outside store: {path.name}")
+            if not stat.S_ISREG(resolved.stat().st_mode):
+                raise MemoryStoreError(f"memory entry is not a regular file: {path.name}")
+            data = path.read_bytes()
+            if path.name.lower() == "memory.md":
+                index_lines += len(data.decode("utf-8-sig").splitlines())
+            else:
+                docs.append(_parse(path, data))
+        return docs, index_lines
+    except (OSError, UnicodeError, RuntimeError) as exc:
+        raise MemoryStoreError(f"cannot read complete memory store ({type(exc).__name__})") from exc
 
 
 def _load(memory_dir: Path) -> list[dict]:
-    docs = []
-    for p in sorted(memory_dir.glob("*.md")):
-        if p.name == "MEMORY.md":
-            continue
-        try:
-            docs.append(_parse(p))
-        except OSError:
-            continue
-    return docs
+    return _read_corpus(memory_dir)[0]
 
 
 def _score_docs(query: str, docs: list[dict]) -> list[tuple[float, dict]]:
     """Okapi BM25. Returns (score, doc) sorted desc; score 0 for no overlap."""
-    q_terms = set(_tokenize(query))
+    q_terms = sorted(set(_tokenize(query)))
     n = len(docs)
     if not q_terms or n == 0:
         return [(0.0, d) for d in docs]
@@ -152,11 +180,13 @@ def _score_docs(query: str, docs: list[dict]) -> list[tuple[float, dict]]:
             idf = math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5))
             s += idf * (f * (_K1 + 1)) / (f + _K1 * (1 - _B + _B * dl / avgdl))
         scored.append((s, d))
-    scored.sort(key=lambda x: x[0], reverse=True)
+    scored.sort(key=lambda x: (-x[0], str(x[1]["path"])))
     return scored
 
 
 def recall(query: str, memory_dir: Path, k: int = 5) -> list[tuple[float, dict]]:
+    if type(k) is not int or k < 1:
+        raise ValueError("k must be a positive integer")
     docs = _load(memory_dir)
     return [(s, d) for s, d in _score_docs(query, docs) if s > 0][:k]
 
@@ -166,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("query", nargs="?", default="", help="search query")
     ap.add_argument("-k", type=int, default=5, help="max results (default 5)")
     ap.add_argument("--memory-dir", type=Path, default=None,
-                    help="memory dir (default: auto-discover ~/.claude/projects/*/memory, "
+                    help="memory dir (default: exact current-project store only, "
                          "or set $CLAUDE_MEMORY_DIR)")
     ap.add_argument("--health", action="store_true", help="report index size and exit")
     ap.add_argument("--json", action="store_true",
@@ -195,18 +225,19 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[recall] {msg}", file=sys.stderr)
         return 2
 
-    memory_dir = args.memory_dir or discover_memory_dir()
+    try:
+        memory_dir = args.memory_dir or discover_memory_dir()
+    except (OSError, RuntimeError) as exc:
+        return _emit_error(f"cannot locate project memory ({type(exc).__name__})")
     if memory_dir is None:
         return _emit_error(
-            "could not locate a Claude Code memory dir under "
+            "could not locate this project's Claude Code memory dir under "
             "~/.claude/projects/*/memory. Pass --memory-dir <path> or set $CLAUDE_MEMORY_DIR.")
-    if not memory_dir.is_dir():
-        return _emit_error(f"memory dir not found: {memory_dir}")
-
-    docs = _load(memory_dir)
+    try:
+        docs, idx_lines = _read_corpus(memory_dir)
+    except MemoryStoreError as exc:
+        return _emit_error(str(exc))
     if args.health:
-        idx = memory_dir / "MEMORY.md"
-        idx_lines = len(idx.read_text(encoding="utf-8").splitlines()) if idx.exists() else 0
         over_limit = len(docs) > INDEX_SOFT_LIMIT
         if args.json:
             print(json.dumps({
@@ -227,7 +258,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.query.strip():
         ap.error("a query is required unless --health is given")
-    hits = recall(args.query, memory_dir, args.k)
+    hits = [(s, d) for s, d in _score_docs(args.query, docs) if s > 0][:args.k]
     if args.json:
         print(json.dumps({
             "query": args.query,
@@ -239,6 +270,8 @@ def main(argv: list[str] | None = None) -> int:
                     "name": d["name"],
                     "description": d["description"],
                     "path": str(d["path"]),
+                    "sha256": d["sha256"],
+                    "evidence_status": d["evidence_status"],
                 }
                 for score, d in hits
             ],
@@ -247,6 +280,7 @@ def main(argv: list[str] | None = None) -> int:
     if not hits:
         print("(no relevant memories)")
         return 0
+    print("[context only] Unverified memory; recheck the source before using any claim.")
     for score, d in hits:
         print(f"{score:6.2f}  {d['name']}")
         if d["description"]:

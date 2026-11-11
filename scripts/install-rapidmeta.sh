@@ -1,155 +1,96 @@
 #!/usr/bin/env bash
-# install-rapidmeta.sh -- bash parallel of scripts/install-rapidmeta.ps1.
-#
-# Installs rapidmeta-kit -- the offline, STDLIB-ONLY meta-analysis dashboard
-# generator. Its clone.py turns a small JSON config into a self-contained
-# self-contained HTML dashboard with NO numpy/scipy and NO network. Clones the repo at
-# a pinned commit into a target dir and exports RAPIDMETA_KIT_PATH.
-#
-# Low-token by construction: the whole config -> dashboard path is deterministic
-# Python with no LLM in the loop. Nothing here needs an agent or a token budget.
-#
-# Usage:
-#   ./scripts/install-rapidmeta.sh                  # clone to ~/code/rapidmeta-kit
-#   ./scripts/install-rapidmeta.sh --target <dir>
-#   ./scripts/install-rapidmeta.sh --skip-clone     # only set env + verify existing
-#   ./scripts/install-rapidmeta.sh --import         # dot-source for tests
-
+# Install the locked RapidMeta source and verify the generator before persistence.
+# Usage: install-rapidmeta.sh [--target DIR] [--skip-clone] [--session-only]
+# --skip-clone still verifies exact identity, cleanliness and generator output.
+# --session-only avoids writes to shell startup files. --import loads helpers.
 set -euo pipefail
 
 TARGET=""
 SKIP_CLONE=0
+SESSION_ONLY=0
 IMPORT=0
-
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --target)     TARGET="$2"; shift 2 ;;
+        --target) [[ $# -ge 2 ]] || { echo "--target needs a path" >&2; exit 2; }; TARGET="$2"; shift 2 ;;
         --skip-clone) SKIP_CLONE=1; shift ;;
-        --import)     IMPORT=1; shift ;;
-        -h|--help)    grep -E '^#' "$0" | head -19; exit 0 ;;
+        --session-only) SESSION_ONLY=1; shift ;;
+        --import) IMPORT=1; shift ;;
+        -h|--help) head -5 "${BASH_SOURCE[0]}"; exit 0 ;;
         *) echo "unknown arg: $1" >&2; exit 2 ;;
     esac
 done
-
-# Resolve a REAL python: skip the Windows Store alias stub (on PATH under git-bash
-# but not an interpreter — same trap as install-*.ps1 Assert-RealPython), and
-# confirm the candidate actually executes.
+RAPIDMETA_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON=""
-for _cand in python3 python; do
-    if command -v "$_cand" >/dev/null 2>&1; then
-        case "$(command -v "$_cand")" in *WindowsApps*) continue ;; esac
-        if "$_cand" -c 'import sys; sys.exit(0)' >/dev/null 2>&1; then PYTHON="$_cand"; break; fi
+for candidate in python3 python; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+        case "$(command -v "$candidate")" in *WindowsApps*) continue ;; esac
+        if "$candidate" -c 'import sys; sys.exit(0 if sys.version_info >= (3,11) else 1)' >/dev/null 2>&1; then
+            PYTHON="$candidate"; break
+        fi
     fi
 done
-
-rapidmeta_repo_url() { echo "https://github.com/mahmood726-cyber/rapidmeta-kit.git"; }
-
-# Pinned to the v1.1.0 release tag (includes the anti-fabrication fix). Reproducible
-# clone -- same supply-chain approach as the Sentinel/Overmind installers. Override
-# with RAPIDMETA_REF=main for latest.
-RAPIDMETA_DEFAULT_REF="v1.1.0"
-rapidmeta_default_ref() { echo "${RAPIDMETA_REF:-$RAPIDMETA_DEFAULT_REF}"; }
-
-rapidmeta_default_target() { echo "${HOME}/code/rapidmeta-kit"; }
-
-# A target is usable if it carries the stdlib dashboard generator.
+rapidmeta_require_python() {
+    [[ -n "$PYTHON" ]] || { echo "REFUSED: Python 3.11+ is required" >&2; return 2; }
+}
+rapidmeta_repo_url() {
+    rapidmeta_require_python || return
+    "$PYTHON" "$RAPIDMETA_SCRIPT_DIR/component_lock.py" --component rapidmeta --field repository
+}
+rapidmeta_default_ref() {
+    rapidmeta_require_python || return
+    local ref
+    if [[ "${RAPIDMETA_REF+x}" == x ]]; then
+        ref="$RAPIDMETA_REF"
+    else
+        ref="$("$PYTHON" "$RAPIDMETA_SCRIPT_DIR/component_lock.py" --component rapidmeta --field commit)" || return
+    fi
+    [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "REFUSED: RapidMeta requires a full lowercase commit SHA" >&2; return 2; }
+    printf '%s\n' "$ref"
+}
+rapidmeta_default_target() { printf '%s/code/rapidmeta-kit\n' "$HOME"; }
 test_rapidmeta_present() { [[ -n "$1" && -f "$1/clone.py" ]]; }
 
-clone_or_update_rapidmeta() {
-    local target="$1" ref="$2" url; url="$(rapidmeta_repo_url)"
-    if [[ -d "$target/.git" ]]; then
-        echo "  existing checkout: $target (fetch + checkout ${ref:0:12})"
-        git -C "$target" fetch --quiet origin "$ref" 2>/dev/null || git -C "$target" fetch --quiet origin
-        git -C "$target" checkout --quiet "$ref" 2>&1 | sed 's/^/  /' || true
-    else
-        echo "  cloning $url"
-        local attempt
-        for attempt in 1 2 3; do
-            if git clone --quiet "$url" "$target" 2>&1 | sed 's/^/  /'; then break; fi
-            if [[ "$attempt" -lt 3 ]]; then
-                local wait=$(( 2 ** attempt ))
-                echo "  clone attempt $attempt failed; retrying in ${wait}s..." >&2
-                sleep "$wait"
-            else
-                echo "  clone failed after 3 attempts" >&2; return 1
-            fi
-        done
-        git -C "$target" checkout --quiet "$ref" 2>&1 | sed 's/^/  /' || true
-    fi
-}
-
 persist_rapidmeta_path_env() {
-    local target="$1"
-    export RAPIDMETA_KIT_PATH="$target"
-    local line="export RAPIDMETA_KIT_PATH=\"$target\""
-    local rc
-    for rc in "${HOME}/.bashrc" "${HOME}/.zshrc"; do
-        [[ -e "$rc" ]] || continue
-        if ! grep -qF "RAPIDMETA_KIT_PATH=" "$rc" 2>/dev/null; then
-            printf '\n# rapidmeta-kit (e156-ecosystem-starter)\n%s\n' "$line" >> "$rc"
-            echo "  added RAPIDMETA_KIT_PATH to $rc"
-        else
-            echo "  RAPIDMETA_KIT_PATH already set in $rc (left as-is)"
+    local target="$1" line rc binding
+    printf -v line 'export RAPIDMETA_KIT_PATH=%q' "$target"
+    # Preflight both files before writing either. Preserve conflicting settings.
+    for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+        if [[ -e "$rc" ]]; then
+            [[ -f "$rc" ]] || { echo "REFUSED: startup path is not a file" >&2; return 2; }
+            while IFS= read -r binding || [[ -n "$binding" ]]; do
+                if [[ "$binding" == *RAPIDMETA_KIT_PATH=* && "$binding" != "$line" ]]; then
+                    echo "REFUSED: conflicting RAPIDMETA_KIT_PATH in $rc; update it explicitly or use --session-only" >&2
+                    return 2
+                fi
+            done < "$rc"
         fi
     done
-    if [[ ! -e "${HOME}/.bashrc" && ! -e "${HOME}/.zshrc" ]]; then
-        printf '# rapidmeta-kit (e156-ecosystem-starter)\n%s\n' "$line" > "${HOME}/.bashrc"
-        echo "  created ~/.bashrc with RAPIDMETA_KIT_PATH"
+    if [[ ! -e "$HOME/.bashrc" && ! -e "$HOME/.zshrc" ]]; then
+        printf '# RapidMeta verified source\n%s\n' "$line" > "$HOME/.bashrc"
+    else
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+            [[ -e "$rc" ]] || continue
+            if ! grep -qxF "$line" "$rc"; then
+                printf '\n# RapidMeta verified source\n%s\n' "$line" >> "$rc"
+            fi
+        done
     fi
+    export RAPIDMETA_KIT_PATH="$target"
 }
 
-# Verify the stdlib-only generator is syntactically importable (no network/deps).
-verify_rapidmeta() {
-    local target="$1"
-    [[ -n "$PYTHON" ]] || { echo "  (python not found; skipping check)"; return 0; }
-    "$PYTHON" -c "import ast,sys; ast.parse(open(sys.argv[1],encoding='utf-8').read())" "$target/clone.py"
-}
-
-if [[ "$IMPORT" -eq 1 ]]; then
-    return 0 2>/dev/null || exit 0
-fi
-
-# === Real flow =============================================================
-log_step() { printf '==> %s\n' "$1"; }
-log_ok()   { printf '    %s\n' "$1"; }
-
+if [[ "$IMPORT" -eq 1 ]]; then return 0 2>/dev/null || exit 0; fi
+rapidmeta_require_python
 [[ -n "$TARGET" ]] || TARGET="$(rapidmeta_default_target)"
 REF="$(rapidmeta_default_ref)"
-
-echo
-echo "rapidmeta-kit installer (offline, stdlib-only meta-analysis dashboards)"
-echo
-
-if [[ "$SKIP_CLONE" -eq 1 ]]; then
-    log_step "Skipping clone (--skip-clone); using existing checkout at $TARGET"
-    test_rapidmeta_present "$TARGET" || {
-        echo "ERROR: --skip-clone but no clone.py at $TARGET." >&2; exit 1; }
+args=(--target "$TARGET" --ref "$REF")
+[[ "$SKIP_CLONE" -eq 0 ]] || args+=(--skip-clone)
+receipt="$("$PYTHON" "$RAPIDMETA_SCRIPT_DIR/rapidmeta_install.py" "${args[@]}")" || exit 2
+# Persist the absolute spelling so a later shell cannot resolve a relative path elsewhere.
+TARGET="$(cd "$TARGET" && pwd -P)"
+if [[ "$SESSION_ONLY" -eq 0 ]]; then
+    persist_rapidmeta_path_env "$TARGET"
 else
-    log_step "Installing rapidmeta-kit into $TARGET (ref: ${REF:0:12})"
-    mkdir -p "$(dirname "$TARGET")"
-    clone_or_update_rapidmeta "$TARGET" "$REF"
-    test_rapidmeta_present "$TARGET" || {
-        echo "ERROR: clone completed but $TARGET/clone.py is missing." >&2; exit 1; }
-    log_ok "checkout ready"
+    export RAPIDMETA_KIT_PATH="$TARGET"
 fi
-
-log_step "Persisting RAPIDMETA_KIT_PATH"
-persist_rapidmeta_path_env "$TARGET"
-
-log_step "Verifying the stdlib generator parses"
-if verify_rapidmeta "$TARGET" >/dev/null 2>&1; then
-    log_ok "clone.py OK (stdlib-only, no deps to install)"
-else
-    echo "    WARNING: clone.py parse check did not pass (python missing?)." >&2
-fi
-
-echo
-echo "====================================================="
-echo "  rapidmeta-kit installed at $TARGET"
-echo "  RAPIDMETA_KIT_PATH is set (reopen your shell to pick it up)."
-echo
-echo "  Token-free dashboard from the bundled example:"
-echo "    cd \"$TARGET\" && bash run_example.sh        # or RUN_EXAMPLE.bat on Windows"
-echo "  Or from your own config (config is positional):"
-echo "    python \"$TARGET/clone.py\" my.json --out dashboard.html"
-echo "====================================================="
+printf '%s\n' "$receipt"
+printf 'RapidMeta source and generator verified. Browser and scientific validation are separate.\n'

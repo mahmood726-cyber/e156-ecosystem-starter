@@ -86,14 +86,14 @@
       "name": "Python tests (Ubuntu)",
       "stops": "A failing pytest test anywhere under tests/, on Python 3.11 on Ubuntu -- including tests/test_gate_gaps.py, which is what enforces this registry. Since port S-D: an install of pytest or any dependency that is not hash-pinned in requirements-ci.lock (pip --require-hashes refuses a missing or mismatched hash); tests/test_ci_lock.py refuses any unpinned `pip install` added to the workflow.",
       "would_not_stop": [
-        "scripts/test_recall.py and scripts/test_refresh_pins.py: they live outside tests/ and `pytest tests/` does not collect them.",
+        "scripts/test_refresh_pins.py: it lives outside tests/ and `pytest tests/` does not collect it. The recall suite is now collected through tests/test_recall_legacy.py.",
         "Windows-only path or encoding behaviour, and any other Python version.",
         "A test that is skipped or xfailed: pytest reports those without failing the job.",
         "A weak test that passes whatever the code does (that is scripts/blank-and-rerun.py's question).",
         "A malicious or broken package version that a PR deliberately pins with its real hash: the lock proves integrity of the bytes, not their trustworthiness -- lock bumps need review.",
         "pip itself, which comes from the runner's setup-python image and is not pinned by the lock."
       ],
-      "source": ".github/workflows/test.yml python-tests job; scripts/ listing. Port S-D report (requirements-ci.lock, tests/test_ci_lock.py).",
+      "source": ".github/workflows/test.yml python-tests job; scripts/ listing. Port S-D report (requirements-ci.lock, tests/test_ci_lock.py). Memory suite collection adapter: tests/test_recall_legacy.py; adverse controls: tests/test_memory_contract.py.",
       "seal": {
         ".github/workflows/test.yml#jobs.python-tests": "8f518b727ceb33f149fa69bea13cc8062b748a477ed312895cc37573847457de"
       }
@@ -165,16 +165,16 @@
       "id": ".github/workflows/full-system-integration.yml#jobs.full-linux-install",
       "kind": "ci-job",
       "name": "Linux full-chain installation and live canaries",
-      "stops": "A broken fresh Linux `install/install.sh --full` chain: any failing Sentinel install/scan, Overmind numerical canary, key check, ProjectIndex reconciliation, extractor import or agent rules file check makes the job red.",
+      "stops": "A broken fresh Linux `install/install.sh --full` chain: any failing Sentinel install/scan, Overmind numerical canary, key check, ProjectIndex reconciliation, extractor import or agent rules file check makes the job red. Also installs the locked research runtime, activates RapidMeta/AACT together, rechecks that pair, and refuses loss of the active pair after a deliberately missing-source candidate.",
       "would_not_stop": [
         "Windows PowerShell and macOS differences: the job runs only Ubuntu 24.04, Python 3.13.",
-        "Optional Meta-Harness, RapidMeta, AACT, Pairwise70, browser, cloud authentication or clinical study execution: they are not part of the default --full install chain.",
+        "Optional Meta-Harness, AACT cockpit, Pairwise70, browsers, cloud authentication or clinical study execution. The research pair is an explicit companion step, not a change to default --full behavior.",
         "Errors the selected smoke inputs do not exercise, including scientific validity, hidden numerical errors and fabricated source data.",
         "Reproducibility of every transitive dependency: Sentinel and Overmind use frozen commit pins, but pip resolution is not a complete hash-locked environment."
       ],
-      "source": ".github/workflows/full-system-integration.yml and scripts/verify-full-install.py; reviewed against the first real CI failures on Python 3.12 and the old extractor import path (23 Oct 2026).",
+      "source": ".github/workflows/full-system-integration.yml and scripts/verify-full-install.py; reviewed against the first real CI failures on Python 3.12 and the old extractor import path (23 Oct 2026). Research companion steps use research_environment.py and check-research-upgrade.py.",
       "seal": {
-        ".github/workflows/full-system-integration.yml#jobs.full-linux-install": "aad60724c6bc7e9f5d3d9ed1c2f79958ddabaa8e392775e958fe925b53f62036",
+        ".github/workflows/full-system-integration.yml#jobs.full-linux-install": "994a67e48c089c78ea649b4d7b93dea2d3254a7469ad1e4e8fd21f322eca3aa3",
         "scripts/verify-full-install.py": "ad1b1d80d45e9aceea3d585813a28466860831c58c0de2e77ce6ff9f79757758"
       }
     },
@@ -298,7 +298,7 @@
       "id": "scripts/refresh-ecosystem-pins.py",
       "kind": "script",
       "name": "refresh-ecosystem-pins --check",
-      "stops": "For frozen Sentinel and Overmind v1.0.0 source commits, --check rejects missing, tagged, divergent or malformed Bash and PowerShell defaults without querying HEAD. Nonfrozen development SHA pins still check remote drift and failed ls-remote. Nonfrozen pins must come from genuine 40-hex DEFAULT_REF shell assignments; incidental comment or example SHAs cannot become pins, and tag-pinned nonfrozen installers are skipped rather than rewritten.",
+      "stops": "For frozen Sentinel and Overmind v1.0.0 source commits, --check rejects missing, tagged, divergent or malformed Bash and PowerShell defaults without querying HEAD. Nonfrozen development SHA pins still check remote drift and failed ls-remote. Nonfrozen pins must come from genuine 40-hex DEFAULT_REF shell assignments; incidental comment or example SHAs cannot become pins, and tag-pinned nonfrozen installers are skipped rather than rewritten. RapidMeta and AACT-kit is read from the validated shared component lock and cannot be advanced to remote HEAD. Missing/invalid layers fail dry-run, check and apply instead of reporting all pins current; errors prevent automatic commit/push.",
       "would_not_stop": [
         "A coordinated change to the expected frozen SHA and both installers: local consistency is not independent source review or signature authentication.",
         "Explicit SENTINEL_REF or OVERMIND_REF overrides: they opt out of the frozen default and cannot establish a certified install.",
@@ -307,11 +307,12 @@
         "This script is not a live networked CI gate: tests exercise the local frozen-release and negative/refusal behavior only.",
         "Tag-pinned nonfrozen layers: skipped; this does not establish that their release tags are immutable.",
         "Whether an upstream commit is trustworthy or whether transitive dependencies are reproducible: this helper updates explicit pins, not cryptographic provenance or dependency locks.",
-        "Live upstream pin drift in CI: offline negative parser tests run under tests/, but no CI job executes the networked refresh-ecosystem-pins.py --check. A passing fixture test is not an install canary."
+        "Live upstream pin drift in CI: offline negative parser tests run under tests/, but no CI job executes the networked refresh-ecosystem-pins.py --check. A passing fixture test is not an install canary.",
+        "Partial edits to other non-frozen layers already applied before a later layer fails; the updater is not a multi-file transaction."
       ],
-      "source": "scripts/refresh-ecosystem-pins.py frozen-release branch and tests/test_{sentinel,overmind}_frozen_release.py. Pin parser and design guarantees; tests/test_refresh_pin_safety.py refusal tests.",
+      "source": "scripts/refresh-ecosystem-pins.py frozen-release branch and tests/test_{sentinel,overmind}_frozen_release.py. Pin parser and design guarantees; tests/test_refresh_pin_safety.py refusal tests. Shared-lock branch and missing-lock CLI controls in tests/test_refresh_pin_safety.py.",
       "seal": {
-        "scripts/refresh-ecosystem-pins.py": "4dcf4c59be547afc41ab3222c196cb58862c350dc32a05e4f33fec505fdfc832"
+        "scripts/refresh-ecosystem-pins.py": "df16f2b5e89849379637c2940a82165fdabe579a02a7dfc514e3ff0679fbdb86"
       }
     },
     {
@@ -471,6 +472,200 @@
       "source": "scripts/verify-full-install.py docstring and named checks; tests/test_full_install_verifier.py negative controls.",
       "seal": {
         "scripts/verify-full-install.py": "ad1b1d80d45e9aceea3d585813a28466860831c58c0de2e77ce6ff9f79757758"
+      }
+    },
+    {
+      "id": "scripts/component_lock.py",
+      "kind": "script",
+      "name": "Component lock schema and frozen pin mirrors",
+      "stops": "Refuses malformed or duplicate JSON, missing/extra component names, noncanonical source commits, invalid runtime/platform metadata, and Sentinel/Overmind Bash/PowerShell default-pin disagreement.",
+      "would_not_stop": [
+        "Upstream authenticity, transitive dependency drift, malicious but schema-valid lock edits or unreviewed override commits.",
+        "Live Sentinel/Overmind behavior, scientific accuracy or components outside the three-entry lock.",
+        "RapidMeta/AACT-kit behavior by itself: this command checks the manifest and frozen mirrors; separate installer tests exercise RapidMeta/AACT-kit."
+      ],
+      "source": "scripts/component_lock.py and tests/test_component_install.py; runtime requirements inspected in source manifests.",
+      "seal": {
+        "scripts/component_lock.py": "2218ee9edeb0c27a3016e1bcc8ca8419043b693ec5d022bf6d054f8a3e4ac338",
+        "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db"
+      }
+    },
+    {
+      "id": "scripts/install-rapidmeta.sh",
+      "kind": "script",
+      "name": "RapidMeta shared source and generator gate",
+      "stops": "Refuses invalid refs, wrong/dirty/hidden-dirty checkouts, different existing HEADs, missing commands, failed fetch/checkout, identity mismatch, failed generation, missing fixture markers/assets and nondeterministic output before path persistence. Both wrappers invoke the shared Python verifier; existing conflicting discovery paths are preserved.",
+      "would_not_stop": [
+        "Browser rendering, external CDN failures, numerical errors or incorrect clinical evidence: the generated output is an explicitly synthetic CLI fixture.",
+        "A hostile process racing filesystem checks, a malicious trusted commit, tampered local Git/tools or forged verification receipts.",
+        "Atomic updates across multiple components: a new RapidMeta commit requires a fresh target; failed new installs may leave an unverified checkout.",
+        "Complete offline browser operation: the locked template references external resources; generator success does not certify those resources."
+      ],
+      "source": "scripts/install-rapidmeta.sh, scripts/install-rapidmeta.ps1, scripts/rapidmeta_install.py, shared component lock and isolated Git/wrapper controls. Shared checkout implementation: scripts/component_source.py.",
+      "seal": {
+        "scripts/install-rapidmeta.sh": "5adf30b66abc60a3457130af08520706026f9c7e6287744f9e18aedb404d348f",
+        "scripts/install-rapidmeta.ps1": "34c8cf5128b19626fbc2ebedd868fd0f54a664f018a9861066fd4677a96a4fb2",
+        "scripts/rapidmeta_install.py": "b9be98e480773701089d96635f1ca7a0722ea6b7dbd01b767656e20f0dec4cb0",
+        "scripts/component_lock.py": "2218ee9edeb0c27a3016e1bcc8ca8419043b693ec5d022bf6d054f8a3e4ac338",
+        "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db",
+        "scripts/component_source.py": "d48e2e59bb42bc63a157a87b94cacf65de40559e47f1f43377a5e072bf986210"
+      }
+    },
+    {
+      "id": ".github/workflows/research-component-integration.yml#jobs.rapidmeta-source",
+      "kind": "ci-job",
+      "name": "Locked RapidMeta source on disposable Windows/Linux runners",
+      "stops": "Runs schema/mirror checks, real-Git adverse fixture tests and the real locked RapidMeta generator on Ubuntu and Windows. Executes Bash wrappers on both and the PowerShell wrapper on Windows; nonzero exits fail the job.",
+      "would_not_stop": [
+        "An incorrect scientific finding, source attribution, browser runtime or statistical estimator; this is a source-and-generator canary.",
+        "macOS behavior, every Python version, real User-environment persistence on Windows, or hostile filesystem races.",
+        "A full Sentinel/Overmind/AACT-kit chain: Sentinel/Overmind get source-pin mirror checks here; the real installation canary is RapidMeta only."
+      ],
+      "source": ".github/workflows/research-component-integration.yml and tests/test_component_install.py.",
+      "seal": {
+        ".github/workflows/research-component-integration.yml#jobs.rapidmeta-source": "de872252036c365f1592c050b7f5bc6391244822bf34f90e042c27af82dcb410"
+      }
+    },
+    {
+      "id": "scripts/install-aact-kit.sh",
+      "kind": "script",
+      "name": "AACT locked source and optional local-backend gate",
+      "stops": "Both wrappers require exact source identity, clean checkout, supported metadata and parseable package files before path persistence. Requested dependency/runtime failures are fatal. Runtime reports require all declared CSV/TSV/ZIP/SQLite checks and matching repeat payloads. Pip installation requires an active virtual environment.",
+      "would_not_stop": [
+        "Source-only mode deliberately does not establish executable readiness or snapshot availability.",
+        "Clinical correctness, untested schemas, PostgreSQL, large datasets, dates and all aggregation operations are not established by synthetic backend controls.",
+        "Optional editable dependency/build resolution is not locked or atomic; a failed pip operation may modify the explicitly selected virtual environment.",
+        "Malicious trusted commits/tools, races, forged receipts and full ecosystem atomic upgrades remain outside this contract."
+      ],
+      "source": "scripts/aact_install.py, scripts/aact_canary.py, component_source.py and tests/test_aact_component.py.",
+      "seal": {
+        "scripts/install-aact-kit.sh": "3b3cafd09e96a9b5ed9a9fe02085243bdb073402f7442efcdde05271358cf26f",
+        "scripts/install-aact-kit.ps1": "d067ed006feda890c7f9018bc23f6945b93cb16f78216774354aa7a5db93c7e1",
+        "scripts/aact_install.py": "501d3b5bd2dafcdcd7e42e0d1a2093468ebd353b5bb224d9a584b38b99dd8015",
+        "scripts/aact_canary.py": "307f5cd2540a7eeed9c126607cb4c3d915f509134a0bee7e7aaae72eb5a1284b",
+        "scripts/component_source.py": "d48e2e59bb42bc63a157a87b94cacf65de40559e47f1f43377a5e072bf986210",
+        "scripts/component_lock.py": "2218ee9edeb0c27a3016e1bcc8ca8419043b693ec5d022bf6d054f8a3e4ac338",
+        "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db"
+      }
+    },
+    {
+      "id": ".github/workflows/research-component-integration.yml#jobs.aact-source",
+      "kind": "ci-job",
+      "name": "Locked AACT backends and paired activation on Windows and Linux",
+      "stops": "Installs hash-pinned Python 3.13 canary runtime wheels, runs isolated refusal controls and exercises the actual locked AACT package through Bash on both runners and PowerShell on Windows. The live canary tests CSV/TSV/ZIP/SQLite fixture behavior. Also executes paired activation and verifies that a missing source candidate preserves the current real pair.",
+      "would_not_stop": [
+        "PostgreSQL, macOS, other runtimes/architectures, real datasets or scientific accuracy.",
+        "Optional editable pip installation/build isolation and User-registry persistence are not executed by this job.",
+        "Sentinel/Overmind are not installed by this matrix job; the separate Linux full-chain job combines them with the research pair. No project-specific release verdict is provided."
+      ],
+      "source": ".github/workflows/research-component-integration.yml, requirements-aact-canary.lock and AACT adapter tests.",
+      "seal": {
+        ".github/workflows/research-component-integration.yml#jobs.aact-source": "97def6240b1a24f2a9c02247fc83a7e065db644910ea6f1b4125da87b1790f47",
+        "requirements-aact-canary.lock": "0e7cb0352194d8ef29b08b47530ab3582ab101dcf07c85270fe27dc853d2b1a0"
+      }
+    },
+    {
+      "id": "scripts/research_environment.py",
+      "kind": "script",
+      "name": "Paired research activation and verified rollback",
+      "stops": "Refuses an unmarked nonempty root, linked managed paths, conflicting/stale operation locks, malformed or changed records, incomplete component receipts, source/runtime failures and mismatched current results. Both adapters and final source checks precede one atomic active-pointer replacement. Failed candidates preserve the prior selection; rollback re-verifies.",
+      "would_not_stop": [
+        "Power-loss durability, hostile filesystem races, forged trusted source/tools or Python package bytes changed without a version change.",
+        "Atomic changes to Sentinel/Overmind, hooks, signing keys, private memory, shell variables or Python environments. Existing consumers must use the returned paths.",
+        "Scientific validity, source-record truth, browser correctness, PostgreSQL or full Windows ecosystem certification.",
+        "An interrupted process may leave a lock or incomplete generation requiring inspection; old and failed trees are retained rather than automatically removed."
+      ],
+      "source": "scripts/research_environment.py, existing component adapters, tests/test_research_environment.py and real component CI.",
+      "seal": {
+        "scripts/research_environment.py": "171e1bf4afb9c85050cbe9bee41203feeb20ab45311d12425fdeff3339dafdde",
+        "scripts/component_lock.py": "2218ee9edeb0c27a3016e1bcc8ca8419043b693ec5d022bf6d054f8a3e4ac338",
+        "scripts/component_source.py": "d48e2e59bb42bc63a157a87b94cacf65de40559e47f1f43377a5e072bf986210",
+        "scripts/rapidmeta_install.py": "b9be98e480773701089d96635f1ca7a0722ea6b7dbd01b767656e20f0dec4cb0",
+        "scripts/aact_install.py": "501d3b5bd2dafcdcd7e42e0d1a2093468ebd353b5bb224d9a584b38b99dd8015",
+        "scripts/aact_canary.py": "307f5cd2540a7eeed9c126607cb4c3d915f509134a0bee7e7aaae72eb5a1284b"
+      }
+    },
+    {
+      "id": "scripts/check-research-upgrade.py",
+      "kind": "script",
+      "name": "Live missing-source upgrade control",
+      "stops": "Requires a real active pair to verify, attempts a deliberately missing commit, and fails if that attempt succeeds, the active pointer bytes change or the original pair no longer verifies.",
+      "would_not_stop": [
+        "Every possible failure mode, a successful change to a different real upstream implementation, or power-loss behavior.",
+        "Scientific accuracy or an Overmind project-specific release verdict; this is an engineering failure control."
+      ],
+      "source": "scripts/check-research-upgrade.py; disposable Windows/Linux component jobs and Linux full-chain job.",
+      "seal": {
+        "scripts/check-research-upgrade.py": "c74739b5434320dda553fae3c001700ef7eb98cdcf51152cbd1d0fcffd2a9655",
+        "scripts/research_environment.py": "171e1bf4afb9c85050cbe9bee41203feeb20ab45311d12425fdeff3339dafdde"
+      }
+    },
+    {
+      "id": ".github/workflows/synthesis-replay.yml#jobs.replay",
+      "kind": "ci-job",
+      "name": "Archived OA replay and provenance on Windows and Linux",
+      "stops": "A failing source-capture, replay or export control; failure to reconstruct either fixed-digest OA bundle; failure of required Process Run 0.5 / RO-Crate 1.1 checks; skipped validation; changed pinned contexts/dependencies; or failure to reject intended defective-crate controls on Python 3.13 Windows/Linux.",
+      "would_not_stop": [
+        "Incorrect source/reviewer interpretation, scientific conclusions, missing relevant evidence or a forged source; development examples do not measure held-out accuracy.",
+        "Recommended metadata gaps, profile requirements absent from the upstream validator, Process Run 0.6 / RO-Crate 1.3 compatibility, or an independently authenticated execution timestamp.",
+        "A malicious approved verifier/trust-anchor change, hostile interpreter/OS, incomplete cohort/outcome adjudication, arbitrary pooled-effect analysis or signature trust."
+      ],
+      "source": "scripts/synthesis_replay.py; scripts/synthesis_rocrate.py; scripts/check-synthesis-rocrate.py; docs/SYNTHESIS-ROCRATE.md; replay and export integration tests.",
+      "seal": {
+        ".github/workflows/synthesis-replay.yml#jobs.replay": "fb1b945023d4c1b812a495d7f482a9f9cc8816d3c2d7fd5cb4fb6980f24aac2a"
+      }
+    },
+    {
+      "id": "scripts/synthesis_replay.py",
+      "kind": "script",
+      "name": "Source-bound Synthesis replay contract",
+      "stops": "Changed packet/prompt/XML/registry/result bytes, missing or extra artifacts, malformed records, linked paths, stale verifier code, unbound participant or registration claims, unresolved correction links, disagreement of article NCT/PMID and registry reference type, or a payload that cannot be reconstructed. Requires an externally retained manifest SHA-256.",
+      "would_not_stop": [
+        "Forged XML or registry JSON matching declared source fields, or newer corrections absent from the snapshots; archived bytes are not network-authenticated.",
+        "Incorrect human scope, trial/cohort/arm mappings, exclusion completeness or independent-review declarations. Replay success does not change scientific validity or existing HOLD outcomes.",
+        "Hostile local interpreter/filesystem and concurrent external changes, crash durability, or a maliciously replaced external trust anchor.",
+        "General numerical checks without participant bindings, arbitrary datasets, external supplements, cohort/outcome equivalence, unsupported registries, clinical performance or RO-Crate conformance."
+      ],
+      "source": "scripts/synthesis_replay.py and its local import closure; docs/SYNTHESIS-REPLAY.md.",
+      "seal": {
+        "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
+        "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+        "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+        "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
+        "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
+        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de"
+      }
+    },
+    {
+      "id": "scripts/check-synthesis-rocrate.py",
+      "kind": "script",
+      "name": "Required upstream provenance profile and negative controls",
+      "stops": "Changed or unavailable validator dependencies/standard contexts, broken local export integrity, dropped RDF file digests, required profile failures or skipped checks, and a validator that fails to reject a missing instrument, root date or payload file.",
+      "would_not_stop": [
+        "Missing operator/author/publisher and other recommended metadata: findings are reported, and full recommended conformance is not claimed.",
+        "An unimplemented requirement in the pinned upstream rules, a profile version other than Process Run 0.5 / RO-Crate 1.1, or forged local source/time/environment declarations.",
+        "Clinical correctness, independence of adjudication, complete cohort identity, treatment-effect validity or held-out scientific accuracy; the cases are development examples."
+      ],
+      "source": "Pinned roc-validator 0.13.1 profiles; docs/SYNTHESIS-ROCRATE.md; inherited rules plus local integrity and defect controls.",
+      "seal": {
+        "scripts/check-synthesis-rocrate.py": "acc6d4c94ed8fe4c6ceb96f02511db1c1bb7810451c2f26d9aa34b52721727ac",
+        "scripts/synthesis_rocrate.py": "05e21f7706689a17cd132ff16f28f9832ddc58a9f4759a8e9502514a2823280d",
+        "requirements-rocrate.lock": "2dd74a7c29f048134c9108da0447477b4a8e649ed69d0e5a8af1a10d2f3585d1",
+        "schemas/rocrate-contexts.json": "5d08eb549a77f814dce18c8a388cbfd3556a65e40f4c5a5e1b5832568cff4468",
+        "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
+        "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+        "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+        "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
+        "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
+        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de"
       }
     }
   ]
