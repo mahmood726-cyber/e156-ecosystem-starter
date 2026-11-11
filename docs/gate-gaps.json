@@ -292,7 +292,7 @@
       "id": "scripts/refresh-ecosystem-pins.py",
       "kind": "script",
       "name": "refresh-ecosystem-pins --check",
-      "stops": "For frozen Sentinel and Overmind v1.0.0 source commits, --check rejects missing, tagged, divergent or malformed Bash and PowerShell defaults without querying HEAD. Nonfrozen development SHA pins still check remote drift and failed ls-remote. Nonfrozen pins must come from genuine 40-hex DEFAULT_REF shell assignments; incidental comment or example SHAs cannot become pins, and tag-pinned nonfrozen installers are skipped rather than rewritten.",
+      "stops": "For frozen Sentinel and Overmind v1.0.0 source commits, --check rejects missing, tagged, divergent or malformed Bash and PowerShell defaults without querying HEAD. Nonfrozen development SHA pins still check remote drift and failed ls-remote. Nonfrozen pins must come from genuine 40-hex DEFAULT_REF shell assignments; incidental comment or example SHAs cannot become pins, and tag-pinned nonfrozen installers are skipped rather than rewritten. RapidMeta is read from the validated shared component lock and cannot be advanced to remote HEAD. Missing/invalid layers fail dry-run, check and apply instead of reporting all pins current; errors prevent automatic commit/push.",
       "would_not_stop": [
         "A coordinated change to the expected frozen SHA and both installers: local consistency is not independent source review or signature authentication.",
         "Explicit SENTINEL_REF or OVERMIND_REF overrides: they opt out of the frozen default and cannot establish a certified install.",
@@ -301,11 +301,12 @@
         "This script is not a live networked CI gate: tests exercise the local frozen-release and negative/refusal behavior only.",
         "Tag-pinned nonfrozen layers: skipped; this does not establish that their release tags are immutable.",
         "Whether an upstream commit is trustworthy or whether transitive dependencies are reproducible: this helper updates explicit pins, not cryptographic provenance or dependency locks.",
-        "Live upstream pin drift in CI: offline negative parser tests run under tests/, but no CI job executes the networked refresh-ecosystem-pins.py --check. A passing fixture test is not an install canary."
+        "Live upstream pin drift in CI: offline negative parser tests run under tests/, but no CI job executes the networked refresh-ecosystem-pins.py --check. A passing fixture test is not an install canary.",
+        "Partial edits to other non-frozen layers already applied before a later layer fails; the updater is not a multi-file transaction."
       ],
-      "source": "scripts/refresh-ecosystem-pins.py frozen-release branch and tests/test_{sentinel,overmind}_frozen_release.py. Pin parser and design guarantees; tests/test_refresh_pin_safety.py refusal tests.",
+      "source": "scripts/refresh-ecosystem-pins.py frozen-release branch and tests/test_{sentinel,overmind}_frozen_release.py. Pin parser and design guarantees; tests/test_refresh_pin_safety.py refusal tests. Shared-lock branch and missing-lock CLI controls in tests/test_refresh_pin_safety.py.",
       "seal": {
-        "scripts/refresh-ecosystem-pins.py": "4dcf4c59be547afc41ab3222c196cb58862c350dc32a05e4f33fec505fdfc832"
+        "scripts/refresh-ecosystem-pins.py": "7e71e127a2cfb22704b4c18d1d921d131b7df37e2ce0870143864ce8b3e5ad35"
       }
     },
     {
@@ -465,6 +466,57 @@
       "source": "scripts/verify-full-install.py docstring and named checks; tests/test_full_install_verifier.py negative controls.",
       "seal": {
         "scripts/verify-full-install.py": "ad1b1d80d45e9aceea3d585813a28466860831c58c0de2e77ce6ff9f79757758"
+      }
+    },
+    {
+      "id": "scripts/component_lock.py",
+      "kind": "script",
+      "name": "Component lock schema and frozen pin mirrors",
+      "stops": "Refuses malformed or duplicate JSON, missing/extra component names, noncanonical source commits, invalid runtime/platform metadata, and Sentinel/Overmind Bash/PowerShell default-pin disagreement.",
+      "would_not_stop": [
+        "Upstream authenticity, transitive dependency drift, malicious but schema-valid lock edits or unreviewed override commits.",
+        "Live Sentinel/Overmind behavior, scientific accuracy or components outside the three-entry lock.",
+        "RapidMeta behavior by itself: this command checks the manifest and frozen mirrors; separate installer tests exercise RapidMeta."
+      ],
+      "source": "scripts/component_lock.py and tests/test_component_install.py; runtime requirements inspected in source manifests.",
+      "seal": {
+        "scripts/component_lock.py": "158f0fb4154fad53468877ad29c93e93b18d943652a918c8b87d56bc0251851e",
+        "scripts/component-lock.json": "9c8e9dd563c1014754a41e0b18a90e7ff22837a0d2c61e5d4a94ed68c2eabed5"
+      }
+    },
+    {
+      "id": "scripts/install-rapidmeta.sh",
+      "kind": "script",
+      "name": "RapidMeta shared source and generator gate",
+      "stops": "Refuses invalid refs, wrong/dirty/hidden-dirty checkouts, different existing HEADs, missing commands, failed fetch/checkout, identity mismatch, failed generation, missing fixture markers/assets and nondeterministic output before path persistence. Both wrappers invoke the shared Python verifier; existing conflicting discovery paths are preserved.",
+      "would_not_stop": [
+        "Browser rendering, external CDN failures, numerical errors or incorrect clinical evidence: the generated output is an explicitly synthetic CLI fixture.",
+        "A hostile process racing filesystem checks, a malicious trusted commit, tampered local Git/tools or forged verification receipts.",
+        "Atomic updates across multiple components: a new RapidMeta commit requires a fresh target; failed new installs may leave an unverified checkout.",
+        "Complete offline browser operation: the locked template references external resources; generator success does not certify those resources."
+      ],
+      "source": "scripts/install-rapidmeta.sh, scripts/install-rapidmeta.ps1, scripts/rapidmeta_install.py, shared component lock and isolated Git/wrapper controls.",
+      "seal": {
+        "scripts/install-rapidmeta.sh": "5adf30b66abc60a3457130af08520706026f9c7e6287744f9e18aedb404d348f",
+        "scripts/install-rapidmeta.ps1": "34c8cf5128b19626fbc2ebedd868fd0f54a664f018a9861066fd4677a96a4fb2",
+        "scripts/rapidmeta_install.py": "6d4b82227f9f8b20bf1969061693773e6233c4b43bdf529ade5209f0bf658725",
+        "scripts/component_lock.py": "158f0fb4154fad53468877ad29c93e93b18d943652a918c8b87d56bc0251851e",
+        "scripts/component-lock.json": "9c8e9dd563c1014754a41e0b18a90e7ff22837a0d2c61e5d4a94ed68c2eabed5"
+      }
+    },
+    {
+      "id": ".github/workflows/research-component-integration.yml#jobs.rapidmeta-source",
+      "kind": "ci-job",
+      "name": "Locked RapidMeta source on disposable Windows/Linux runners",
+      "stops": "Runs schema/mirror checks, real-Git adverse fixture tests and the real locked RapidMeta generator on Ubuntu and Windows. Executes Bash wrappers on both and the PowerShell wrapper on Windows; nonzero exits fail the job.",
+      "would_not_stop": [
+        "An incorrect scientific finding, source attribution, browser runtime or statistical estimator; this is a source-and-generator canary.",
+        "macOS behavior, every Python version, real User-environment persistence on Windows, or hostile filesystem races.",
+        "A full Sentinel/Overmind/AACT-kit chain: Sentinel/Overmind get source-pin mirror checks here; the real installation canary is RapidMeta only."
+      ],
+      "source": ".github/workflows/research-component-integration.yml and tests/test_component_install.py.",
+      "seal": {
+        ".github/workflows/research-component-integration.yml#jobs.rapidmeta-source": "de872252036c365f1592c050b7f5bc6391244822bf34f90e042c27af82dcb410"
       }
     }
   ]

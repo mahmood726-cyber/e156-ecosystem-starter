@@ -68,3 +68,23 @@ def test_tag_pinned_installer_skips_remote_updates_even_with_historical_sha(tmp_
         assert result["status"] == "skip"
         for rel, src in zip(layer["files"], sources, strict=True):
             assert (tmp_path / rel).read_text(encoding="utf-8") == src
+
+
+def test_shared_rapidmeta_lock_is_not_automatically_advanced(monkeypatch):
+    layer = next(x for x in rp.LAYERS if x['name'] == 'rapidmeta')
+    def forbidden(*args, **kwargs):
+        raise AssertionError('locked component must not query HEAD')
+    monkeypatch.setattr(rp, 'remote_head', forbidden)
+    result = rp.process_layer(layer, apply=True, root=MODULE.parents[1])
+    assert result['status'] == 'skip'
+    assert 'shared component lock' in result['detail']
+
+
+def test_missing_lock_fails_check_and_apply_without_false_current(tmp_path, monkeypatch, capsys):
+    (tmp_path/'scripts').mkdir()
+    (tmp_path/'scripts/install-rapidmeta.sh').write_text('# fixture\n')
+    monkeypatch.setattr(rp, 'repo_root', lambda: tmp_path)
+    for mode in ('--check', '--apply'):
+        assert rp.main([mode, '--layer', 'rapidmeta']) == 1
+        output = capsys.readouterr().out
+        assert 'All pins already current' not in output

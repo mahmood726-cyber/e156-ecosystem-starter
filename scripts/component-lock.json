@@ -1,0 +1,29 @@
+{
+  "schema": "e156-component-lock-v1",
+  "components": {
+    "sentinel": {
+      "repository": "https://github.com/mahmood726-cyber/Sentinel.git",
+      "commit": "5808f2bdc024506fa3d49a367c88b42b15fdf164",
+      "python_min": "3.13",
+      "platforms": ["linux", "windows", "macos"],
+      "verification": "legacy-installer-pin-mirrors",
+      "source_note": "Existing frozen starter release; runtime requirement read from this commit's pyproject.toml."
+    },
+    "overmind": {
+      "repository": "https://github.com/mahmood726-cyber/overmind.git",
+      "commit": "d3d2de5f84d852f27d64d1686f1e105e190ac375",
+      "python_min": "3.11",
+      "platforms": ["linux", "windows", "macos"],
+      "verification": "legacy-installer-pin-mirrors",
+      "source_note": "Existing frozen starter release; runtime requirement read from this commit's pyproject.toml."
+    },
+    "rapidmeta": {
+      "repository": "https://github.com/mahmood726-cyber/rapidmeta-kit.git",
+      "commit": "3de5e44cc7624138309868db1dbfa49320682e66",
+      "python_min": "3.11",
+      "platforms": ["linux", "windows", "macos"],
+      "verification": "rapidmeta-generator-v1",
+      "source_note": "GitHub v1.1.0 annotated tag c04e8dc42335df4473572cbef9b2c7cfb585d19f resolved 2026-11-11; unsigned. Python floor is the starter adapter requirement."
+    }
+  }
+}

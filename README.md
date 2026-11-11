@@ -38,7 +38,7 @@ verifier, and ProjectIndex registry.
 | `push-portfolio.py` | **v0.4.0** | Lightweight clone of Mahmood's `push_all_repos.py`. Scans any directory tree (configurable via `--scan-dir` / `PORTFOLIO_SCAN_DIRS` env) for git repos and either pushes existing ones or creates new GitHub repos via `gh`. Guards against the "parent repo config inheritance" gotcha (bare `.git` subdirs won't falsely inherit the home dir's remote). Flags: `--dry-run`, `--report`, `--new-only`, `--no-recursive`. |
 | `long-term-plan` (optional) | separate repo | `scripts/install-long-term-plan.ps1` clones [`mahmood726-cyber/long-term-plan`](https://github.com/mahmood726-cyber/long-term-plan) (pinned to `v0.7.0`) into `~/code/long-term-plan/` and installs the only runtime dep (`pyyaml`). A weekly-refreshed, deterministic, locally-rendered project backlog with no LLM in the loop. Ships Mahmood's real backlog (43 ideas + 5 OKRs anchored to north stars) as a reference — students are expected to fork or replace `ideas.yaml` with their own. |
 | `student` CLI | separate repo | Narrow submission pipeline: see [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter). |
-| **Dashboard kit** | **v0.6.0** | `scripts/install-rapidmeta.ps1` clones [`rapidmeta-kit`](https://github.com/mahmood726-cyber/rapidmeta-kit) at a pinned commit and persists `RAPIDMETA_KIT_PATH`. `clone.py` turns a small JSON config into a self-contained meta-analysis **dashboard** — **stdlib-only, offline, zero deps, no LLM**. Run `bash run_example.sh` for a token-free example. *(The upstream repository, its clone URL, its installer filenames and its environment variable keep their published names — those are identifiers of a real remote, and renaming them here would break the installer. The layer is referred to by function everywhere else.)* |
+| **Dashboard kit** | **source-locked** | Both RapidMeta installers read the shared component lock and verify the exact clean checkout plus deterministic generator output before persisting `RAPIDMETA_KIT_PATH`. The generator is stdlib-only; the HTML still references external resources. See the [installation contract](docs/COMPONENT-INSTALL-CONTRACT.md). |
 | **AACT cockpit** | **v0.6.0** | `scripts/install-aact.ps1` clones [aact-cockpit](https://github.com/mahmood726-cyber/aact-cockpit) at a pinned commit and persists `AACT_COCKPIT_PATH`. A local DuckDB-backed cockpit for large-scale ClinicalTrials.gov/AACT analysis that emits self-auditing e156 capsules. Clone is free; **running** needs `duckdb`+`numpy` (opt-in `-WithDataDeps`/`--with-data-deps`) **and a local AACT snapshot**. Zero-setup path: read the committed `analyses/` + `templates/` examples. |
 | **AACT kit** *(library)* | **v0.1.0** | `scripts/install-aact-kit.ps1` clones [aact-kit](https://github.com/mahmood726-cyber/aact-kit) at a pinned commit and persists `AACT_KIT_PATH`. The shared **library** other CT.gov projects import: one API to resolve / load / validate / aggregate AACT across five local backends (Postgres, SQLite, ZIP, pipe-delimited TSV dir, CSV dir). Only hard dep is `pandas` (`psycopg2` optional); install is opt-in `-WithDeps`/`--with-deps`. Zero-setup path: read `src/aact_kit/` + `README.md`. **Distinct from the AACT cockpit** above (which is a DuckDB analysis app). |
 | **Pairwise70 workbench** | **v0.6.0** | `scripts/install-pairwise70.ps1` clones [pairwise70-workbench](https://github.com/mahmood726-cyber/pairwise70-workbench) at a pinned commit and persists `PAIRWISE70_PATH`. An offline gallery hub that shows + reproduces every Pairwise70-family analysis; **static HTML, stats run offline in the browser, no Python deps, no tokens** — just open `index.html`. |
@@ -159,6 +159,25 @@ overmind run-once --repo .
 Back up the HMAC key somewhere safe — losing it invalidates all prior
 signed bundles. Pass `-HmacKey <existing-key>` to the installer to reuse a
 key across machines.
+
+### Installing a verified dashboard generator
+
+```powershell
+.\scripts\install-rapidmeta.ps1 -Target (Join-Path $env:USERPROFILE 'code/rapidmeta-locked')
+# For a disposable/session-only check, add -SessionOnly.
+```
+
+```bash
+bash scripts/install-rapidmeta.sh --target "$HOME/code/rapidmeta-locked"
+# For a disposable/session-only check, add --session-only.
+```
+
+The default source is an exact commit from `scripts/component-lock.json`.
+`RAPIDMETA_REF` overrides must also be full lowercase commit SHAs; branches and
+version tags are refused. An existing checkout must already match that commit,
+origin and clean-tree contract. Use a fresh target for a different commit.
+`--skip-clone` / `-SkipClone` still verifies source and runs the generator.
+A failed check cannot produce a success receipt or persist a discovery path.
 
 ### Adding a portfolio index (v0.3.0)
 
@@ -424,11 +443,15 @@ python scripts/refresh-ecosystem-pins.py --apply --layer extractor   # one layer
 python scripts/refresh-ecosystem-pins.py --apply --commit --push     # bump, commit, ff-only push
 ```
 
-It queries each repo's latest pushed commit (`git ls-remote … HEAD`), rewrites the
-pin in both installers and the README short-SHA, and is **idempotent**
+For eligible development SHA pins, it queries the repo's latest pushed commit
+(`git ls-remote … HEAD`), rewrites the pin in both installers and the README
+short-SHA, and is **idempotent**
 (no-op when current), **non-destructive** (review-then-commit; ff-only push), and
 **pins-only** — it never touches memory, secrets, or rules. Tag-pinned layers
-(e.g. `long-term-plan`) are left alone. After it runs, if you also hand-edited
+(e.g. `long-term-plan`) are left alone. Sentinel and Overmind remain frozen;
+RapidMeta consumes `scripts/component-lock.json` and requires a reviewed manual
+lock change. Errors return nonzero and prevent automatic commit/push; an error
+can leave earlier development-pin edits for inspection. After it runs, if you also hand-edited
 `install/install.{ps1,sh}`, run `bash scripts/regen-hashes.sh`.
 
 **Memory + private settings** sync through a *separate, private* channel —

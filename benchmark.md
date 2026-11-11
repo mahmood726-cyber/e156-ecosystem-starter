@@ -43,6 +43,7 @@ read with their scope; they cannot be combined into a single quality percentage.
 | Installed Overmind gold fixtures (`a8131b0`) | 43/43 stored fixtures passed; 41 pooled fixtures; maximum reported log-estimate deviation 0.00003234215813041619 | Actual `run_gold_benchmark()` execution against its committed references. Not a new independent source audit, not the starter-pinned Overmind revision, and not clinical accuracy |
 | Starter Python tests on Windows | Initial capped run: 10 passed, 5 failed without Bash on PATH; Git Bash retry: 10 passed, 8 failed | The retry exposed bootstrap test isolation failure. See [verification notes](docs/HARNESS-FOUNDATION-VERIFICATION.md); neither run is a full-suite PASS |
 | RapidMeta install provenance | Source inspection: default `v1.1.0`, checkout failure swallowed in Bash | Confirmed code path requiring M2 repair; no claim that a real install was validated |
+| RapidMeta after first M2 increment | [Windows source canary](benchmarks/components/rapidmeta-windows.json): exact requested commit, identical repeated generated output, 65 resolved local assets | Real locked source with synthetic inputs; two external resource references remain; no browser or scientific accuracy measurement |
 
 The memory, Overmind and test-suite rows are local observations; installation
 provenance is a source review.

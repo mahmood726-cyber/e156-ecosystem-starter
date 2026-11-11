@@ -1,121 +1,70 @@
 #Requires -Version 5.1
-# install-rapidmeta.ps1 - install rapidmeta-kit (offline, stdlib-only MA dashboards).
-#
-# rapidmeta-kit's clone.py turns a small JSON config into a self-contained
-# self-contained HTML dashboard with NO numpy/scipy and NO network. Clones the repo at
-# a pinned commit and persists RAPIDMETA_KIT_PATH. Low-token by construction: the
-# whole config -> dashboard path is deterministic Python, no LLM in the loop.
-#
-# Usage:
-#   .\scripts\install-rapidmeta.ps1                 # clone to ~\code\rapidmeta-kit
-#   .\scripts\install-rapidmeta.ps1 -Target C:\code\rapidmeta-kit
-#   .\scripts\install-rapidmeta.ps1 -SkipClone      # only set env + verify existing
-#   .\scripts\install-rapidmeta.ps1 -Import         # dot-source for tests
-
+# Install the locked RapidMeta source; verify before changing user configuration.
+# -SkipClone still verifies identity and generation. -SessionOnly avoids User env writes.
 [CmdletBinding()]
-param(
-    [string]$Target,
-    [switch]$SkipClone,
-    [switch]$Import
-)
-
+param([string]$Target, [switch]$SkipClone, [switch]$SessionOnly, [switch]$Import)
 $ErrorActionPreference = 'Stop'
+$script:RapidmetaScriptRoot = $PSScriptRoot
 
-function Get-RapidmetaRepoUrl { return 'https://github.com/mahmood726-cyber/rapidmeta-kit.git' }
-
-# Pinned to the v1.1.0 release tag (includes the anti-fabrication fix). Override
-# with $env:RAPIDMETA_REF=main for latest.
-$script:RapidmetaDefaultRef = 'v1.1.0'
-function Get-RapidmetaDefaultRef {
-    if ($env:RAPIDMETA_REF) { return $env:RAPIDMETA_REF }
-    return $script:RapidmetaDefaultRef
+function Get-RapidmetaPython {
+    foreach ($candidate in @('python', 'python3')) {
+        $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+        if (-not $cmd -or $cmd.Source -like '*WindowsApps*') { continue }
+        try {
+            & $cmd.Source -c 'import sys; sys.exit(0 if sys.version_info >= (3,11) else 1)' 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) { return $cmd.Source }
+        } catch { continue }
+    }
+    throw 'REFUSED: Python 3.11+ is required'
 }
-function Get-RapidmetaDefaultTarget { return (Join-Path $env:USERPROFILE 'code\rapidmeta-kit') }
-
+function Get-RapidmetaLockField {
+    param([string]$Field)
+    $pythonExe = Get-RapidmetaPython
+    $result = & $pythonExe (Join-Path $script:RapidmetaScriptRoot 'component_lock.py') --component rapidmeta --field $Field
+    if ($LASTEXITCODE -ne 0) { throw 'REFUSED: invalid component lock' }
+    return ($result -join "`n").Trim()
+}
+function Get-RapidmetaRepoUrl { return Get-RapidmetaLockField -Field 'repository' }
+function Get-RapidmetaDefaultRef {
+    $ref = if ($env:RAPIDMETA_REF) { $env:RAPIDMETA_REF } else { Get-RapidmetaLockField -Field 'commit' }
+    if ($ref -cnotmatch '^[0-9a-f]{40}$') { throw 'REFUSED: RapidMeta requires a full lowercase commit SHA' }
+    return $ref
+}
+function Get-RapidmetaDefaultTarget { return (Join-Path $env:USERPROFILE 'code/rapidmeta-kit') }
 function Test-RapidmetaPresent {
     param([string]$Dir)
-    return [bool]($Dir -and (Test-Path (Join-Path $Dir 'clone.py')))
+    return [bool]($Dir -and (Test-Path -LiteralPath (Join-Path $Dir 'clone.py') -PathType Leaf))
 }
-
-function Install-RapidmetaClone {
-    [CmdletBinding()]
-    param([string]$TargetDir, [string]$Ref)
-    $url = Get-RapidmetaRepoUrl
-    if (Test-Path (Join-Path $TargetDir '.git')) {
-        Write-Host "  existing checkout: $TargetDir (fetch + checkout $Ref)" -ForegroundColor DarkGray
-        & git -C $TargetDir fetch --quiet origin $Ref 2>$null
-        if ($LASTEXITCODE -ne 0) { & git -C $TargetDir fetch --quiet origin 2>$null }
-        & git -C $TargetDir checkout --quiet $Ref 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
-    } else {
-        Write-Host "  cloning $url" -ForegroundColor DarkGray
-        & git clone --quiet $url $TargetDir 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
-        if ($LASTEXITCODE -ne 0) { throw "git clone failed (exit $LASTEXITCODE)" }
-        & git -C $TargetDir checkout --quiet $Ref 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
-    }
-}
-
 function Set-RapidmetaPathEnv {
-    [CmdletBinding()]
-    param([string]$TargetDir)
-    [Environment]::SetEnvironmentVariable('RAPIDMETA_KIT_PATH', $TargetDir, 'User')
+    param([string]$TargetDir, [switch]$SessionOnly)
+    if (-not $SessionOnly) {
+        $existing = [Environment]::GetEnvironmentVariable('RAPIDMETA_KIT_PATH', 'User')
+        if ($existing -and $existing -ne $TargetDir) {
+            throw 'REFUSED: conflicting User RAPIDMETA_KIT_PATH; update it explicitly or use -SessionOnly'
+        }
+        [Environment]::SetEnvironmentVariable('RAPIDMETA_KIT_PATH', $TargetDir, 'User')
+    }
     $env:RAPIDMETA_KIT_PATH = $TargetDir
 }
-
-function Test-RapidmetaParse {
-    # Stdlib-only: just confirm clone.py parses (no deps to import).
-    [CmdletBinding()]
-    param([string]$TargetDir)
-    $clone = Join-Path $TargetDir 'clone.py'
-    & python -c "import ast,sys; ast.parse(open(sys.argv[1],encoding='utf-8').read())" $clone 2>&1 | Out-Null
-    return ($LASTEXITCODE -eq 0)
-}
-
 if ($Import) { return }
-
-# === Real flow =============================================================
-function Write-Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
-function Write-Ok($msg)   { Write-Host "    $msg" -ForegroundColor Green }
-
-if (-not $Target) { $Target = Get-RapidmetaDefaultTarget }
-$ref = Get-RapidmetaDefaultRef
-
-Write-Host ""
-Write-Host "rapidmeta-kit installer (offline, stdlib-only meta-analysis dashboards)" -ForegroundColor Cyan
-Write-Host ""
-
-if ($SkipClone) {
-    Write-Step "Skipping clone (-SkipClone); using existing checkout at $Target"
-    if (-not (Test-RapidmetaPresent -Dir $Target)) {
-        Write-Host "ERROR: -SkipClone but no clone.py at $Target." -ForegroundColor Red; exit 1
+try {
+    $pythonExe = Get-RapidmetaPython
+    if (-not $Target) { $Target = Get-RapidmetaDefaultTarget }
+    $ref = Get-RapidmetaDefaultRef
+    $helperArgs = @('--target', $Target, '--ref', $ref)
+    if ($SkipClone) { $helperArgs += '--skip-clone' }
+    $receipt = & $pythonExe (Join-Path $script:RapidmetaScriptRoot 'rapidmeta_install.py') @helperArgs
+    if ($LASTEXITCODE -ne 0) { throw 'REFUSED: RapidMeta verification failed' }
+    $report = ($receipt -join "`n") | ConvertFrom-Json
+    if ($report.status -ne 'verified' -or $report.expected_commit -ne $ref -or $report.observed_commit -ne $ref) {
+        throw 'REFUSED: invalid RapidMeta verification receipt'
     }
-} else {
-    Write-Step "Installing rapidmeta-kit into $Target (ref: $($ref.Substring(0,[Math]::Min(12,$ref.Length))))"
-    $parent = Split-Path -Parent $Target
-    if ($parent -and -not (Test-Path $parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
-    Install-RapidmetaClone -TargetDir $Target -Ref $ref
-    if (-not (Test-RapidmetaPresent -Dir $Target)) {
-        Write-Host "ERROR: clone completed but $Target\clone.py is missing." -ForegroundColor Red; exit 1
-    }
-    Write-Ok "checkout ready"
+    $Target = (Resolve-Path -LiteralPath $Target).Path
+    Set-RapidmetaPathEnv -TargetDir $Target -SessionOnly:$SessionOnly
+    Write-Output ($receipt -join "`n")
+    Write-Output 'RapidMeta source and generator verified. Browser and scientific validation are separate.'
+} catch {
+    Write-Error $_ -ErrorAction Continue
+    exit 2
 }
-
-Write-Step "Persisting RAPIDMETA_KIT_PATH (User env var)"
-Set-RapidmetaPathEnv -TargetDir $Target
-Write-Ok "RAPIDMETA_KIT_PATH = $Target"
-
-Write-Step "Verifying the stdlib generator parses"
-if (Test-RapidmetaParse -TargetDir $Target) { Write-Ok "clone.py OK (stdlib-only, no deps to install)" }
-else { Write-Host "    WARNING: clone.py parse check did not pass (python missing?)." -ForegroundColor Yellow }
-
-Write-Host ""
-Write-Host "======================================================" -ForegroundColor Green
-Write-Host "  rapidmeta-kit installed at $Target"
-Write-Host "  RAPIDMETA_KIT_PATH is set (reopen PowerShell to pick it up)."
-Write-Host ""
-Write-Host "  Token-free dashboard from the bundled example:"
-Write-Host "    cd `"$Target`"; .\RUN_EXAMPLE.bat"
-Write-Host "  Or from your own config (config is positional):"
-Write-Host "    python `"$Target\clone.py`" my.json --out dashboard.html"
-Write-Host "======================================================" -ForegroundColor Green
-
 exit 0

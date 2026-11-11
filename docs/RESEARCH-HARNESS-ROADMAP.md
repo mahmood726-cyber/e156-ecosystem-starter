@@ -88,6 +88,13 @@ Acceptance: each deliberately wrong ref, unavailable tool, corrupt archive,
 dirty checkout and malformed report refuses; a clean real installation runs
 the declared adapters. No installer runs against the researcher's home as a test.
 
+First increment implemented: [component install contract](COMPONENT-INSTALL-CONTRACT.md).
+The shared lock covers Sentinel/Overmind pin mirrors and RapidMeta's actual
+installer. Both RapidMeta wrappers use one exact-source/generator verifier,
+with disposable Windows/Linux CI. New commits require fresh target directories;
+atomic upgrades, AACT-kit integration, remaining legacy test isolation and a
+full ecosystem certification are still outstanding.
+
 ### M3 — a shared source-to-claim record and replay bundle
 
 Extend the existing Synthesis packet rather than introduce competing schemas.
