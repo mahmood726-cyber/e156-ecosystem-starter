@@ -281,7 +281,7 @@
     },
     "status": "verified",
     "uses_locked_default": true,
-    "verifier_sha256": "6d4b82227f9f8b20bf1969061693773e6233c4b43bdf529ade5209f0bf658725"
+    "verifier_sha256": "d79aca8ac1aae26ec23495dc69a72d6083904103be5a8750affb4394ecea24f2"
   },
   "schema": "e156-component-benchmark-v1"
 }

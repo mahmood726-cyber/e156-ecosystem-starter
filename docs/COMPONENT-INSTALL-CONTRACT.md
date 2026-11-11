@@ -93,3 +93,11 @@ an engineering canary, not a held-out evaluation. Sentinel's changed-file scan
 returned no blocking findings; warnings remain. Cross-platform CI evidence is
 recorded on the draft pull request. macOS execution, browser E2E, full-chain M2
 coverage and a fresh project-specific Overmind release verdict are outstanding.
+
+The first remote Windows run exposed a genuine path-alias bug: its temporary
+root used an 8.3 spelling while resolved assets used the full spelling. The
+verifier now resolves the output path before both containment checks and relative
+asset naming. A regression test reproduced the failure before the fix and also
+checks that an asset outside the output directory remains refused. The real
+generator receipt was refreshed after this fix; its output and asset hashes
+remained unchanged.

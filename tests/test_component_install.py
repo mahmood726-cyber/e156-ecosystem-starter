@@ -193,6 +193,23 @@ def test_missing_local_asset_fails_even_when_generator_exits_zero(tmp_path, orig
     with pytest.raises(installer.InstallRefused): installer.install(tmp_path/'installed',component)
 
 
+def test_output_path_alias_is_canonicalized_without_allowing_asset_escape(tmp_path):
+    output = tmp_path / 'output'
+    output.mkdir()
+    (output/'check.js').write_text('// synthetic asset',encoding='utf-8')
+    page=output/'dashboard.html'
+    prefix=installer.SMOKE_TITLE+' fixture-a fixture-b '
+    page.write_text(prefix+'<script src="check.js"></script>',encoding='utf-8')
+    # Portable alias reproduces the mismatch between a resolved asset and an
+    # unresolved output root. Windows CI also exercises a native 8.3 TEMP alias.
+    alias=output/'..'/output.name/page.name
+    assert installer.inspect_output(alias)==installer.inspect_output(page)
+    (tmp_path/'outside.js').write_text('// outside output',encoding='utf-8')
+    page.write_text(prefix+'<script src="../outside.js"></script>',encoding='utf-8')
+    with pytest.raises(installer.InstallRefused,match='escaping'):
+        installer.inspect_output(alias)
+
+
 def test_missing_git_refuses(tmp_path, origin, monkeypatch):
     _, component=origin
     def missing(*args,**kwargs): raise FileNotFoundError('missing executable')

@@ -89,6 +89,9 @@ class Assets(HTMLParser):
 
 
 def inspect_output(path):
+    # Use one spelling for both containment and relative asset names. In
+    # particular, Windows TEMP may use an 8.3 alias that resolve() expands.
+    path = path.resolve(strict=True)
     raw = path.read_bytes()
     html = raw.decode("utf-8")
     for marker in (SMOKE_TITLE, "fixture-a", "fixture-b"):

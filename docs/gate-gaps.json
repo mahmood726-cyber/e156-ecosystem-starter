@@ -499,7 +499,7 @@
       "seal": {
         "scripts/install-rapidmeta.sh": "5adf30b66abc60a3457130af08520706026f9c7e6287744f9e18aedb404d348f",
         "scripts/install-rapidmeta.ps1": "34c8cf5128b19626fbc2ebedd868fd0f54a664f018a9861066fd4677a96a4fb2",
-        "scripts/rapidmeta_install.py": "6d4b82227f9f8b20bf1969061693773e6233c4b43bdf529ade5209f0bf658725",
+        "scripts/rapidmeta_install.py": "d79aca8ac1aae26ec23495dc69a72d6083904103be5a8750affb4394ecea24f2",
         "scripts/component_lock.py": "158f0fb4154fad53468877ad29c93e93b18d943652a918c8b87d56bc0251851e",
         "scripts/component-lock.json": "9c8e9dd563c1014754a41e0b18a90e7ff22837a0d2c61e5d4a94ed68c2eabed5"
       }
