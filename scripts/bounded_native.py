@@ -173,10 +173,12 @@ def _run_posix(command, timeout, environment, input):
 
 
 def run(command: list[str], timeout: float = 120, *, input: bytes | None = None,
-        stderr_sink: Callable[[bytes], object] | None = None) -> bytes:
+        stderr_sink: Callable[[bytes], object] | None = None,
+        environment: dict[str, str] | None = None) -> bytes:
     if not command or not math.isfinite(timeout) or timeout <= 0:
         raise Refused("Native command and a finite positive deadline are required")
-    environment = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "Never"}
+    environment = {**(os.environ if environment is None else environment),
+                   "GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "Never"}
     execute = _run_windows if os.name == "nt" else _run_posix
     returncode, stdout, stderr = execute(command, timeout, environment, input)
     if stderr and stderr_sink is not None:

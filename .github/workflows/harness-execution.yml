@@ -1,0 +1,70 @@
+name: Harness execution and worker containment
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/harness_*.py'
+      - 'scripts/bounded_native.py'
+      - 'scripts/component_source.py'
+      - 'tests/test_harness_*.py'
+      - 'requirements-ci.lock'
+      - '.github/workflows/harness-execution.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  execution:
+    name: Durable execution (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install locked test dependencies
+        run: python -m pip install --require-hashes -r requirements-ci.lock
+      - name: Exercise synthetic execution, recovery and context contracts
+        run: python -m pytest tests/test_harness_context.py tests/test_harness_runtime.py tests/test_harness_provider.py -q
+
+  worker:
+    name: Actual Linux Docker containment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      # Docker Official Python3.11-slim linux/amd64 manifest, retrieved2026-11-12.
+      HARNESS_DOCKER_IMAGE: python@sha256:b701198cb708b68d9413ca67d6311bd97c9389a2c5fe4da0511fc652642366cd
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install locked test dependencies
+        run: python -m pip install --require-hashes -r requirements-ci.lock
+      - name: Pull exact reviewed worker image
+        run: docker pull "$HARNESS_DOCKER_IMAGE"
+      - name: Exercise actual container boundaries and cleanup
+        run: python -m pytest tests/test_harness_worker.py -q --junitxml=worker-results.xml
+      - name: Require actual containment tests without skips
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          root = ET.parse('worker-results.xml').getroot()
+          cases = root.findall('.//testcase')
+          required = {'test_real_worker_readonly_network_credentials_and_limits',
+                      'test_real_worker_supervisor_status_and_proxy_boundary',
+                      'test_real_worker_host_process_loss_expires_container',
+                      'test_real_worker_output_overflow_refuses',
+                      'test_real_worker_timeout_removes_its_container'}
+          if not required.issubset({case.attrib.get('name') for case in cases}):
+              raise SystemExit('Required real-container cases missing')
+          if root.findall('.//skipped') or root.findall('.//failure') or root.findall('.//error'):
+              raise SystemExit('Skipped or failed containment case')
+          PY

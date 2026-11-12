@@ -1,5 +1,8 @@
 # e156-ecosystem-starter
 
+Research automation: [durable harness setup, budgets, recovery and isolated workers](docs/HARNESS-EXECUTION.md).
+Model outputs remain unreviewed candidates; offline preparation makes no paid calls.
+
 ## Synthesis — start here (human checklist)
 
 **For authors, clinicians, reviewers and journal editors:** [**Start with Synthesis — choose manual, optional AI or local evidence capture**](docs/SYNTHESIS-START.md). You can also [open the human checklist directly](docs/SYNTHESIS-HUMAN-CHECKLIST.md); no programming is required.
