@@ -94,8 +94,8 @@ done
 # --------------------------- transcript log -------------------------------
 # Mirror everything the installer prints to a per-run log file so a student
 # hitting a problem can attach it to an issue (or feed it to doctor-report).
-# Logs land at ~/.local/share/e156/logs/install-<ts>.log on Linux, and at
-# Library/Logs/e156/install-<ts>.log on macOS. Failure to start the log is
+# Logs land at ~/.local/state/e156/logs/install-<ts>-<random>.log on Linux, and at
+# Library/Logs/e156/install-<ts>-<random>.log on macOS. Log startup is
 # non-fatal.
 redact_secrets_in_log() {
     # Scrubs API keys, tokens, and high-entropy secrets from a transcript file
@@ -106,15 +106,22 @@ redact_secrets_in_log() {
     #   AIza... (Google), sk-/sk-ant- (OpenAI/Anthropic),
     #   ghp_/gho_/ghs_/ghu_ (GitHub), AKIA (AWS), 64-hex (HMAC/generic),
     #   eyJ... JWT, setx/export VAR_KEY/TOKEN/SECRET "x".
-    local f="$1"
-    [[ -f "$f" ]] || return 0
-    # macOS sed lacks -i in-place; use a tmp file for portability.
-    local tmp
-    tmp="$(mktemp "${f}.redact.XXXXXX")" || return 0
+    local f="$1" fd="${2:-}" tmp rc=0
+    # The install EXIT handler passes the exclusively-created transcript FD.
+    # Never follow the replaceable pathname when cleaning an installer log.
+    if [[ -n "$fd" ]]; then
+        [[ "$fd" =~ ^[0-9]+$ ]] || return 1
+        f="/dev/fd/$fd"
+        tmp="$(mktemp -t e156-redact.XXXXXX)" || return 1
+    else
+        # Keep the standalone helper's historical filename API for tests.
+        [[ -f "$f" ]] || return 0
+        tmp="$(mktemp "${f}.redact.XXXXXX")" || return 1
+    fi
     # Specific patterns first (preserve labels), then generic export-var
     # catch-all (skip lines that already got a labeled redaction so we don't
     # over-redact "[REDACTED-google-api-key]" -> "[REDACTED]").
-    sed -E \
+    if sed -E \
         -e 's/AIza[A-Za-z0-9_-]{35}/[REDACTED-google-api-key]/g' \
         -e 's/sk-ant-[A-Za-z0-9_-]{40,}/[REDACTED-anthropic-key]/g' \
         -e 's/sk-[A-Za-z0-9]{40,}/[REDACTED-openai-key]/g' \
@@ -123,33 +130,40 @@ redact_secrets_in_log() {
         -e 's/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/[REDACTED-jwt]/g' \
         -e 's/\b[0-9a-fA-F]{64}\b/[REDACTED-64hex]/g' \
         -e '/\[REDACTED/!s/(export[[:space:]]+[A-Za-z0-9_]*(KEY|TOKEN|SECRET|PASS|HMAC)[A-Za-z0-9_]*=)["'"'"']?[^"'"'"' ]+/\1[REDACTED]/g' \
-        "$f" > "$tmp" 2>/dev/null && mv "$tmp" "$f" || rm -f "$tmp"
-}
-
-if [[ "$IMPORT" -eq 0 ]]; then
-    case "$(uname -s)" in
-        Darwin) E156_LOG_DIR="${HOME}/Library/Logs/e156" ;;
-        *)      E156_LOG_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/e156/logs" ;;
-    esac
-    if mkdir -p "$E156_LOG_DIR" 2>/dev/null; then
-        E156_LOG_FILE="${E156_LOG_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
-        # Tee stdout+stderr through the log without breaking interactive
-        # prompts: process substitution leaves the controlling tty in place.
-        exec > >(tee -a "$E156_LOG_FILE") 2>&1
-        echo "(transcript: $E156_LOG_FILE)"
-        # Redact secrets from the transcript on exit (success or failure).
-        # Close stdout/stderr first so the tee subshell flushes and exits;
-        # then sed-substitute in place. Failure-safe: if redaction fails the
-        # raw log is still on disk for the student to clean up manually.
-        _e156_finalize_log() {
-            [[ -n "${E156_LOG_FILE:-}" ]] || return 0
-            exec >&- 2>&- 2>/dev/null || :
-            sleep 0.2 2>/dev/null || :
-            redact_secrets_in_log "$E156_LOG_FILE" 2>/dev/null || :
-        }
-        trap _e156_finalize_log EXIT
+        "$f" > "$tmp" 2>/dev/null; then
+        if [[ -n "$fd" ]]; then
+            # Flush tee first, then rewrite the original inode via its
+            # inherited descriptor. A symlink swap cannot redirect this write.
+            # Read the filtered temporary file in bounded chunks.
+            if ! "$PYTHON" - "$fd" "$tmp" <<'PY_FD_REDACT'
+import os
+import sys
+fd = int(sys.argv[1])
+with open(sys.argv[2], "rb") as redacted:
+    os.ftruncate(fd, 0)
+    os.lseek(fd, 0, os.SEEK_SET)
+    while True:
+        data = redacted.read(65536)
+        if not data:
+            break
+        while data:
+            count = os.write(fd, data)
+            if count <= 0:
+                raise OSError("short write to transcript")
+            data = data[count:]
+PY_FD_REDACT
+            then
+                rc=1
+            fi
+        else
+            mv "$tmp" "$f" || rc=1
+        fi
+    else
+        rc=1
     fi
-fi
+    rm -f -- "$tmp"
+    return "$rc"
+}
 
 # --------------------------- layout + self-SHA ----------------------------
 
@@ -213,6 +227,13 @@ MANIFEST_BACKUPS="${MANIFEST_DIR}/backups"
 : > "$MANIFEST_DIRS"
 : > "$MANIFEST_BACKUPS"
 
+# BSD/macOS does not ship GNU tac. awk is available on both platforms
+# (and already required by the installer self-SHA check). Reverse each
+# manifest in memory without changing its lines or touching user paths.
+reverse_manifest_lines() {
+    awk '{ lines[NR] = $0 } END { for (i = NR; i > 0; i--) print lines[i] }' "$1"
+}
+
 rollback() {
     local reason="$1"
     echo
@@ -220,22 +241,30 @@ rollback() {
 
     # Delete net-new files (reverse order so nested paths go first)
     if [[ -s "$MANIFEST_FILES" ]]; then
-        tac "$MANIFEST_FILES" | while IFS= read -r f; do
+        reverse_manifest_lines "$MANIFEST_FILES" | while IFS= read -r f; do
             [[ -n "$f" && -f "$f" ]] && rm -f "$f"
         done
     fi
-    # Restore backups (.user -> original)
+    # Restore both first-install (.user) and later reinstall
+    # (.user-YYYYmmdd-HHMMSS) backups. Stripping only ".user" from a
+    # timestamped name leaves the name unchanged, so mv fails and the
+    # pre-existing user edit stays overwritten after a failed install.
     if [[ -s "$MANIFEST_BACKUPS" ]]; then
         while IFS= read -r b; do
             if [[ -n "$b" && -f "$b" ]]; then
-                local orig="${b%.user}"
-                mv -f "$b" "$orig"
+                local orig
+                case "$b" in
+                    *.user)   orig="${b%.user}" ;;
+                    *.user-*) orig="${b%.user-*}" ;;
+                    *) echo "WARNING: unrecognised rollback backup: $b" >&2; continue ;;
+                esac
+                mv -f -- "$b" "$orig"
             fi
         done < "$MANIFEST_BACKUPS"
     fi
     # Remove empty net-new dirs (reverse order)
     if [[ -s "$MANIFEST_DIRS" ]]; then
-        tac "$MANIFEST_DIRS" | while IFS= read -r d; do
+        reverse_manifest_lines "$MANIFEST_DIRS" | while IFS= read -r d; do
             [[ -n "$d" && -d "$d" ]] && rmdir "$d" 2>/dev/null || true
         done
     fi
@@ -264,13 +293,175 @@ with open(out_path, "w", encoding="utf-8", newline="\n") as f:
 PY_EOF
 }
 
+# Before touching user configuration, refuse links anywhere in a
+# destination's path, including grandparents and dangling symlinks.
+# Checking only the leaf and immediate parent misses e.g. HOME/link/agent/rules
+# when HOME/link redirects to another directory. --force is not an override.
+refuse_symlink_install_path() {
+    local path="$1" parent
+    while :; do
+        if [[ -L "$path" ]]; then
+            printf 'ERROR: refusing symlink install destination: %s\n' "$path" >&2
+            return 1
+        fi
+        parent="$(dirname "$path")"
+        [[ "$parent" == "$path" || "$parent" == "." ]] && return 0
+        path="$parent"
+    done
+}
+
+# Config destinations must be regular files, never FIFOs, devices, sockets
+# or directories. Validate every target before the first write to prevent a
+# blocked write or accidental placement inside an existing directory.
+refuse_nonregular_install_file() {
+    local path="$1"
+    refuse_symlink_install_path "$path" || return 1
+    if [[ -e "$path" && ! -f "$path" ]]; then
+        printf 'ERROR: refusing non-regular install file: %s\n' "$path" >&2
+        return 1
+    fi
+    # A hardlink passes -f and -L checks, but rendering in place would
+    # also overwrite any other name for that inode, potentially outside
+    # the agent configuration tree. Python is already a required installer
+    # dependency; lstat works on Linux/macOS and avoids following links.
+    # Fail closed if link metadata cannot be read.
+    if [[ -f "$path" ]]; then
+        if ! "$PYTHON" - "$path" <<'PY_LINK_CHECK'
+import os
+import stat
+import sys
+
+try:
+    info = os.lstat(sys.argv[1])
+    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+        sys.exit(1)
+except OSError:
+    sys.exit(1)
+PY_LINK_CHECK
+        then
+            printf 'ERROR: refusing multiply-linked or unreadable install file: %s\n' "$path" >&2
+            return 1
+        fi
+    fi
+}
+
+refuse_nondirectory_install_path() {
+    local path="$1"
+    refuse_symlink_install_path "$path" || return 1
+    if [[ -e "$path" && ! -d "$path" ]]; then
+        printf 'ERROR: refusing non-directory install path: %s\n' "$path" >&2
+        return 1
+    fi
+}
+
+# Register every newly created ancestor so rollback can remove the entire
+# empty scaffold, not just its leaf directory. A plain mkdir (not mkdir -p)
+# refuses a concurrent change to an unexpected parent instead of following it.
+# Existing parent directories are never entered into the rollback manifest.
+make_tracked_install_dir() {
+    local desired="$1" cursor="$1" parent i
+    local -a missing=()
+    refuse_nondirectory_install_path "$desired" || return 1
+    [[ -d "$desired" ]] && return 0
+    while [[ ! -d "$cursor" ]]; do
+        if [[ -e "$cursor" || -L "$cursor" ]]; then
+            printf 'ERROR: refusing non-directory install ancestor: %s\n' "$cursor" >&2
+            return 1
+        fi
+        missing+=("$cursor")
+        parent="$(dirname "$cursor")"
+        if [[ "$parent" == "$cursor" || "$parent" == "." ]]; then
+            printf 'ERROR: cannot resolve install directory ancestor: %s\n' "$desired" >&2
+            return 1
+        fi
+        cursor="$parent"
+    done
+    for ((i=${#missing[@]}-1; i>=0; i--)); do
+        printf '%s\n' "${missing[$i]}" >> "$MANIFEST_DIRS"
+        mkdir -- "${missing[$i]}" || return 1
+    done
+}
+
+# Serialize installers that target the same HOME, including sub-installer calls.
+# mkdir is an atomic cross-process claim on Linux/macOS. Do not auto-remove
+# an abandoned lock after a crash: a stale-looking lock may still be in use.
+# --dry-run and --import never acquire a lock or write to HOME.
+INSTALL_LOCK_DIR=""
+INSTALL_LOCK_ID=""
+
+# Bind the lock to its original directory identity, not a replaceable name.
+# Python is already required by this installer on Linux and macOS.
+lock_directory_identity() {
+    "$PYTHON" - "$1" <<'PY_LOCK_ID'
+import os
+import stat
+import sys
+
+try:
+    entry = os.lstat(sys.argv[1])
+    if not stat.S_ISDIR(entry.st_mode):
+        sys.exit(1)
+    print(f"{entry.st_dev}:{entry.st_ino}")
+except OSError:
+    sys.exit(1)
+PY_LOCK_ID
+}
+
+acquire_install_lock() {
+    local candidate="${HOME}/.e156-ecosystem-starter-install.lock"
+    refuse_symlink_install_path "$candidate" || return 1
+    if ! mkdir -- "$candidate" 2>/dev/null; then
+        printf 'ERROR: another installation may be running (lock exists): %s\n' "$candidate" >&2
+        return 1
+    fi
+    local identity
+    if ! identity="$(lock_directory_identity "$candidate")"; then
+        printf 'ERROR: cannot establish installation lock identity: %s\n' "$candidate" >&2
+        # Unknown ownership: leave the directory untouched for inspection.
+        return 1
+    fi
+    INSTALL_LOCK_ID="$identity"
+    INSTALL_LOCK_DIR="$candidate"
+}
+
+release_install_lock() {
+    [[ -n "${INSTALL_LOCK_DIR:-}" ]] || return 0
+    local current_identity=""
+    current_identity="$(lock_directory_identity "$INSTALL_LOCK_DIR" 2>/dev/null)" || current_identity=""
+    if [[ -z "$current_identity" || "$current_identity" != "${INSTALL_LOCK_ID:-}" ]]; then
+        printf 'WARNING: installation lock ownership changed; refusing cleanup: %s\n' "$INSTALL_LOCK_DIR" >&2
+        return 1
+    fi
+    # A concurrent rename after the identity check remains a filesystem race.
+    if ! rmdir -- "$INSTALL_LOCK_DIR" 2>/dev/null; then
+        printf 'WARNING: installation lock could not be released safely: %s\n' "$INSTALL_LOCK_DIR" >&2
+        return 1
+    fi
+    INSTALL_LOCK_DIR=""
+    INSTALL_LOCK_ID=""
+}
+
+_e156_exit_cleanup() {
+    local status=$?
+    trap - EXIT
+    release_install_lock || :
+    # Preserve the transcript redaction handler previously registered on EXIT.
+    if declare -F _e156_finalize_log >/dev/null 2>&1; then
+        _e156_finalize_log || :
+    fi
+    exit "$status"
+}
+
 copy_rules_to_agent() {
     local src="$1" target="$2"; shift 2
     [[ -d "$src" ]] || { echo "ERROR: source rules dir missing: $src" >&2; return 1; }
-    if [[ ! -d "$target" ]]; then
-        mkdir -p "$target"
-        echo "$target" >> "$MANIFEST_DIRS"
-    fi
+    refuse_symlink_install_path "$(dirname "$target")" || return 1
+    refuse_nondirectory_install_path "$target" || return 1
+    local preflight_rule
+    for preflight_rule in "$src"/*.md; do
+        refuse_nonregular_install_file "$target/$(basename "$preflight_rule")" || return 1
+    done
+    make_tracked_install_dir "$target" || return 1
     local copied=0 backed=0
     for f in "$src"/*.md; do
         local name dest backup actual_backup
@@ -282,8 +473,16 @@ copy_rules_to_agent() {
             # Subsequent re-installs: back up to <name>.md.user-<timestamp> so
             # we never silently overwrite a re-edited file (the original .user
             # backup is preserved as the "first-known-edit" copy).
-            if [[ -f "$backup" ]]; then
-                actual_backup="${dest}.user-$(date +%Y%m%d-%H%M%S)"
+            if [[ -e "$backup" || -L "$backup" ]]; then
+                # Timestamp resolution is one second. Keep older backups
+                # even if two reinstalls occur during the same second.
+                local timestamp_backup="${dest}.user-$(date +%Y%m%d-%H%M%S)"
+                local backup_index=0
+                actual_backup="$timestamp_backup"
+                while [[ -e "$actual_backup" || -L "$actual_backup" ]]; do
+                    backup_index=$((backup_index + 1))
+                    actual_backup="${timestamp_backup}-${backup_index}"
+                done
             else
                 actual_backup="$backup"
             fi
@@ -293,8 +492,10 @@ copy_rules_to_agent() {
         fi
         local pre_existed=0
         [[ -f "$dest" ]] && pre_existed=1
-        render_template "$f" "$dest" "$@"
+        # Register net-new files before rendering: a renderer may fail
+        # after opening the destination and leaving a partial file.
         [[ "$pre_existed" -eq 0 ]] && echo "$dest" >> "$MANIFEST_FILES"
+        render_template "$f" "$dest" "$@"
         copied=$((copied+1))
     done
     log_ok "${target}  (${copied} copied, ${backed} backed up as .user)"
@@ -302,24 +503,42 @@ copy_rules_to_agent() {
 
 copy_context_files() {
     local src_root="$1" target="$2"; shift 2
-    if [[ ! -d "$target" ]]; then
-        mkdir -p "$target"
-        echo "$target" >> "$MANIFEST_DIRS"
-    fi
+    refuse_symlink_install_path "$(dirname "$target")" || return 1
+    refuse_nondirectory_install_path "$target" || return 1
+    local preflight_name
+    for preflight_name in AGENTS.md CLAUDE.md GEMINI.md CODEX.md; do
+        [[ -f "$src_root/$preflight_name" ]] || continue
+        refuse_nonregular_install_file "$target/$preflight_name" || return 1
+    done
+    make_tracked_install_dir "$target" || return 1
     local count=0
     for name in AGENTS.md CLAUDE.md GEMINI.md CODEX.md; do
         local src="$src_root/$name"
         [[ -f "$src" ]] || continue
         local dest="$target/$name"
         local backup="${dest}.user"
-        if [[ -f "$dest" && "$FORCE" -eq 0 && ! -f "$backup" ]]; then
-            cp "$dest" "$backup"
-            echo "$backup" >> "$MANIFEST_BACKUPS"
+        if [[ -f "$dest" && "$FORCE" -eq 0 ]]; then
+            # Like rules, context files need a fresh backup on every reinstall.
+            # A pre-existing .user snapshot must not suppress preservation of
+            # newer edits. Avoid same-second filename collisions as well.
+            local actual_backup="$backup"
+            if [[ -e "$backup" || -L "$backup" ]]; then
+                local timestamp_backup="${dest}.user-$(date +%Y%m%d-%H%M%S)"
+                local backup_index=0
+                actual_backup="$timestamp_backup"
+                while [[ -e "$actual_backup" || -L "$actual_backup" ]]; do
+                    backup_index=$((backup_index + 1))
+                    actual_backup="${timestamp_backup}-${backup_index}"
+                done
+            fi
+            cp -- "$dest" "$actual_backup"
+            echo "$actual_backup" >> "$MANIFEST_BACKUPS"
         fi
         local pre_existed=0
         [[ -f "$dest" ]] && pre_existed=1
-        render_template "$src" "$dest" "$@"
+        # Rollback must see partial new context files on renderer errors.
         [[ "$pre_existed" -eq 0 ]] && echo "$dest" >> "$MANIFEST_FILES"
+        render_template "$src" "$dest" "$@"
         count=$((count+1))
     done
     log_ok "${target}  (${count} context files)"
@@ -327,17 +546,37 @@ copy_context_files() {
 
 copy_memory_scaffold() {
     local src="$1" target="$2"
-    mkdir -p "$target"
+    refuse_symlink_install_path "$(dirname "$target")" || return 1
+    refuse_nondirectory_install_path "$target" || return 1
+    refuse_nonregular_install_file "$target/MEMORY.md" || return 1
+    refuse_nondirectory_install_path "$target/templates" || return 1
+    # A normal templates directory can contain a symlinked individual file.
+    # Preflight all nested destinations before copying MEMORY.md.
+    local template_file
+    for template_file in "$src"/templates/*.md; do
+        [[ -f "$template_file" ]] || { echo "ERROR: missing memory template: $template_file" >&2; return 1; }
+        refuse_nonregular_install_file "$target/templates/$(basename "$template_file")" || return 1
+    done
+    # Track created directories before writes, so a later step's failure
+    # can remove only scaffolding introduced by this installation.
+    make_tracked_install_dir "$target" || return 1
     if compgen -G "$target/*.md" > /dev/null; then
         log_ok "${target}  (already has memory -- preserved, templates not overwritten)"
         return
     fi
-    cp "$src/MEMORY.md" "$target/MEMORY.md"
+    # Record each new file before copying: a failed copy may leave partial
+    # content which rollback must also remove.
     echo "$target/MEMORY.md" >> "$MANIFEST_FILES"
-    mkdir -p "$target/templates"
+    cp -- "$src/MEMORY.md" "$target/MEMORY.md"
+    make_tracked_install_dir "$target/templates" || return 1
     for f in "$src/templates"/*.md; do
-        cp "$f" "$target/templates/"
-        echo "$target/templates/$(basename "$f")" >> "$MANIFEST_FILES"
+        local template_dest="$target/templates/$(basename "$f")"
+        # A memory root with no top-level Markdown can still contain
+        # user-edited nested templates; never overwrite those files.
+        if [[ ! -e "$template_dest" ]]; then
+            echo "$template_dest" >> "$MANIFEST_FILES"
+            cp -- "$f" "$template_dest"
+        fi
     done
     log_ok "${target}  (bootstrapped -- starter MEMORY.md + type templates)"
 }
@@ -365,6 +604,79 @@ if [[ "$IMPORT" -eq 1 ]]; then
     trap - ERR
     return 0 2>/dev/null || exit 0
 fi
+
+# Lock before the first agent configuration write. An occupied lock is a
+# fail-closed refusal, not an invitation to overwrite or break another run.
+if ! acquire_install_lock; then
+    # The transaction has not begun; discard its temporary empty manifest.
+    rm -rf -- "$MANIFEST_DIR"
+    exit 3
+fi
+trap _e156_exit_cleanup EXIT
+
+# A competing installer and a SHA-only dry run must not create HOME/XDG
+# transcripts. Initialize logging only AFTER claiming the per-HOME lock.
+if [[ "$IMPORT" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
+    case "$(uname -s)" in
+        Darwin) E156_LOG_DIR="${HOME}/Library/Logs/e156" ;;
+        *)      E156_LOG_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/e156/logs" ;;
+    esac
+    # The optional transcript may not follow symlinks in XDG_STATE_HOME,
+    # HOME or any intermediate log-directory ancestor. If unsafe, continue
+    # installation without logging rather than write outside the state tree.
+    if refuse_nondirectory_install_path "$E156_LOG_DIR" 2>/dev/null &&
+       mkdir -p "$E156_LOG_DIR" 2>/dev/null; then
+        # Keep the exclusive-create descriptor open until tee inherits it.
+        # Previously mkstemp closed the descriptor, then tee reopened a
+        # pathname: a symlink substitution between those operations redirected
+        # log output. Bash noclobber creates the unpredictable name atomically
+        # while the descriptor stays attached to the original inode.
+        E156_LOG_FILE=""
+        E156_LOG_FD=""
+        saved_umask="$(umask)"
+        had_noclobber=0
+        case $- in *C*) had_noclobber=1 ;; esac
+        umask 077
+        set -C
+        for attempt in 1 2 3; do
+            nonce="$("$PYTHON" -c 'import secrets; print(secrets.token_hex(12))' 2>/dev/null)" || break
+            candidate="$E156_LOG_DIR/install-$(date +%Y%m%d-%H%M%S)-$nonce.log"
+            if { exec {E156_LOG_FD}> "$candidate"; } 2>/dev/null; then
+                E156_LOG_FILE="$candidate"
+                break
+            fi
+        done
+        if [[ "$had_noclobber" -eq 0 ]]; then set +C; fi
+        umask "$saved_umask"
+        if [[ -n "$E156_LOG_FILE" ]]; then
+            # Tee writes to the already-open descriptor, never to the
+            # replaceable pathname. Process substitution preserves terminal IO.
+            exec > >(tee "/dev/fd/$E156_LOG_FD") 2>&1
+            E156_LOG_TEE_PID=$!
+            echo "(transcript: $E156_LOG_FILE)"
+            # Redact secrets from the transcript on exit (success or failure).
+            # Close stdout/stderr first so the tee subshell flushes and exits;
+            # then sed-substitute in place. Failure-safe: if redaction fails the
+            # raw log is still on disk for the student to clean up manually.
+            _e156_finalize_log() {
+                [[ -n "${E156_LOG_FILE:-}" ]] || return 0
+                exec >&- 2>&- 2>/dev/null || :
+                # Sleep cannot guarantee an asynchronous tee has flushed.
+                # Wait for its exact PID before truncating the original inode.
+                wait "$E156_LOG_TEE_PID" 2>/dev/null || :
+                # Never leave a raw transcript available if filtering fails.
+                # Truncate the original inode through its still-open FD, not
+                # the replaceable pathname. Any remaining write failure must
+                # not redirect cleanup into an unrelated user file.
+                if ! redact_secrets_in_log "$E156_LOG_FILE" "$E156_LOG_FD" 2>/dev/null; then
+                    : >| "/dev/fd/$E156_LOG_FD" 2>/dev/null || :
+                fi
+            }
+            # Lock cleanup invokes _e156_finalize_log after releasing the lock.
+        fi
+    fi
+fi
+
 
 # --------------------------- real install flow ---------------------------
 

@@ -98,6 +98,54 @@ Describe "Copy-RulesToAgent copies all .md files" {
     }
 }
 
+# The routing index is user-editable configuration, just like rules .md files.
+# Use disposable Windows fixtures; never touch any real agent profile.
+Describe "Rules routing-index backup and rollback" {
+    It "preserves an existing custom _index.yaml and restores it on rollback" {
+        $target = Join-Path $tmpRoot "index preservation-Ü-$([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        $index = Join-Path $target '_index.yaml'
+        Set-Content -LiteralPath $index -Value 'custom routing before install' -NoNewline -Encoding UTF8
+        $m = New-RollbackManifest
+        $r = Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target -Manifest $m
+        $r.Backed | Should -Contain '_index.yaml'
+        (Get-Content -LiteralPath "$index.user" -Raw).Trim() | Should -Be 'custom routing before install'
+        $m.BackedUp | Should -Contain "$index.user"
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic routing index rollback'
+        (Get-Content -LiteralPath $index -Raw).Trim() | Should -Be 'custom routing before install'
+        Test-Path -LiteralPath "$index.user" | Should -BeFalse
+    }
+
+    It "preserves successive routing-index edits without overwriting the first backup" {
+        $target = Join-Path $tmpRoot "index rerun-Ü-$([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        $index = Join-Path $target '_index.yaml'
+        Set-Content -LiteralPath $index -Value 'original custom route' -NoNewline -Encoding UTF8
+        Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target | Out-Null
+        Set-Content -LiteralPath $index -Value 'most recent custom route' -NoNewline -Encoding UTF8
+        $m = New-RollbackManifest
+        Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target -Manifest $m | Out-Null
+        (Get-Content -LiteralPath "$index.user" -Raw).Trim() | Should -Be 'original custom route'
+        $later = @($m.BackedUp | Where-Object { $_ -like "$index.user-*" })
+        $later.Count | Should -Be 1
+        (Get-Content -LiteralPath $later[0] -Raw).Trim() | Should -Be 'most recent custom route'
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic routing index reinstall rollback'
+        (Get-Content -LiteralPath $index -Raw).Trim() | Should -Be 'most recent custom route'
+        (Get-Content -LiteralPath "$index.user" -Raw).Trim() | Should -Be 'original custom route'
+    }
+
+    It "honours explicit -Force for the routing index without creating a backup" {
+        $target = Join-Path $tmpRoot "index force-$([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        $index = Join-Path $target '_index.yaml'
+        Set-Content -LiteralPath $index -Value 'replaceable custom route' -NoNewline -Encoding UTF8
+        $r = Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target -Force
+        $r.Backed | Should -Not -Contain '_index.yaml'
+        Test-Path -LiteralPath "$index.user" | Should -BeFalse
+        (Get-Content -LiteralPath $index -Raw).Trim() | Should -Not -Be 'replaceable custom route'
+    }
+}
+
 Describe "Copy-ContextFiles drops AGENTS/CLAUDE/GEMINI/CODEX" {
     It "creates all four context files when present in source" {
         $target = Join-Path $tmpRoot 'agent4'
@@ -127,6 +175,122 @@ Describe "Copy-MemoryScaffold only bootstraps empty targets" {
         $bootstrapped | Should -BeFalse
         Test-Path (Join-Path $target 'MEMORY.md') | Should -BeFalse   # scaffold SKIPPED
         Test-Path (Join-Path $target 'my_custom.md') | Should -BeTrue  # user file preserved
+    }
+}
+
+# Regression: an empty memory root can still contain user-edited nested templates.
+# Those files must not be replaced by the starter's identically named templates.
+Describe "Memory bootstrap preserves nested user templates (Role 05)" {
+    It "keeps an existing nested template and copies missing templates under a Unicode path" {
+        $memorySource = Join-Path $starterRoot 'memory'
+        $sourceTemplates = @(Get-ChildItem -LiteralPath (Join-Path $memorySource 'templates') -Filter '*.md' -File | Sort-Object Name)
+        $sourceTemplates.Count | Should -BeGreaterThan 1
+        $target = Join-Path $tmpRoot "memory existing template Ü $([guid]::NewGuid().ToString('N'))"
+        $targetTemplates = Join-Path $target 'templates'
+        New-Item -ItemType Directory -Force -Path $targetTemplates | Out-Null
+        $customTemplate = Join-Path $targetTemplates $sourceTemplates[0].Name
+        [System.IO.File]::WriteAllText($customTemplate, 'user edited template', [System.Text.Encoding]::UTF8)
+
+        $bootstrapped = Copy-MemoryScaffold -SourceMemoryDir $memorySource -TargetMemoryDir $target
+
+        $bootstrapped | Should -BeTrue
+        (Get-Content -LiteralPath $customTemplate -Raw) | Should -Be 'user edited template'
+        Test-Path -LiteralPath (Join-Path $target 'MEMORY.md') | Should -BeTrue
+        Test-Path -LiteralPath (Join-Path $targetTemplates $sourceTemplates[1].Name) | Should -BeTrue
+    }
+}
+
+# A later installer failure must undo starter-created memory without touching
+# existing user templates, even if memory/templates existed before install.
+Describe "Memory scaffold rollback manifest (Role 05)" {
+    It "removes newly bootstrapped memory files and directories after a later failure" {
+        $target = Join-Path $tmpRoot "memory rollback clean Ü $([guid]::NewGuid().ToString('N'))"
+        $m = New-RollbackManifest
+        Copy-MemoryScaffold -SourceMemoryDir (Join-Path $starterRoot 'memory') -TargetMemoryDir $target -Manifest $m | Out-Null
+        $m.CreatedFiles.Count | Should -BeGreaterThan 1
+        $m.CreatedDirs.Count | Should -Be 2
+
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic later-step failure'
+
+        Test-Path -LiteralPath $target | Should -BeFalse
+    }
+
+    It "removes only new templates and preserves user edits under an existing directory" {
+        $source = Join-Path $starterRoot 'memory'
+        $sourceTemplates = @(Get-ChildItem -LiteralPath (Join-Path $source 'templates') -Filter '*.md' -File | Sort-Object Name)
+        $sourceTemplates.Count | Should -BeGreaterThan 1
+        $target = Join-Path $tmpRoot "memory rollback existing Ü $([guid]::NewGuid().ToString('N'))"
+        $templateDir = Join-Path $target 'templates'
+        New-Item -ItemType Directory -Force -Path $templateDir | Out-Null
+        $custom = Join-Path $templateDir $sourceTemplates[0].Name
+        [System.IO.File]::WriteAllText($custom, 'user template remains', [System.Text.Encoding]::UTF8)
+        $userConfig = Join-Path $target 'settings.yaml'
+        Set-Content -LiteralPath $userConfig -Value 'user configuration' -NoNewline
+
+        $m = New-RollbackManifest
+        Copy-MemoryScaffold -SourceMemoryDir $source -TargetMemoryDir $target -Manifest $m | Out-Null
+        $m.CreatedDirs.Count | Should -Be 0
+        (Get-Content -LiteralPath $custom -Raw) | Should -Be 'user template remains'
+
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic later-step failure'
+
+        (Get-Content -LiteralPath $custom -Raw) | Should -Be 'user template remains'
+        (Get-Content -LiteralPath $userConfig -Raw) | Should -Be 'user configuration'
+        Test-Path -LiteralPath $templateDir | Should -BeTrue
+        Test-Path -LiteralPath (Join-Path $target 'MEMORY.md') | Should -BeFalse
+        Test-Path -LiteralPath (Join-Path $templateDir $sourceTemplates[1].Name) | Should -BeFalse
+    }
+
+    It "leaves pre-existing top-level memory untouched and untracked" {
+        $target = Join-Path $tmpRoot "memory rollback user Ü $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        $custom = Join-Path $target 'custom.md'
+        Set-Content -LiteralPath $custom -Value 'existing memory' -NoNewline
+        $m = New-RollbackManifest
+        $created = Copy-MemoryScaffold -SourceMemoryDir (Join-Path $starterRoot 'memory') -TargetMemoryDir $target -Manifest $m
+        $created | Should -BeFalse
+        $m.CreatedFiles.Count | Should -Be 0
+        $m.CreatedDirs.Count | Should -Be 0
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic no-op'
+        (Get-Content -LiteralPath $custom -Raw) | Should -Be 'existing memory'
+    }
+}
+
+# Disposable Windows junctions are deterministic redirection fixtures and do not
+# require privileged symbolic-link creation. All writes remain under tmpRoot.
+Describe "Windows junction destination refusal (Role 05)" {
+    It "rejects a rules destination through a junction ancestor before writing" {
+        $external = Join-Path $tmpRoot "outside rules Ü $([guid]::NewGuid().ToString('N'))"
+        $junction = Join-Path $tmpRoot "rules junction $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $external | Out-Null
+        Set-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Value 'unchanged' -NoNewline
+        New-Item -ItemType Junction -Path $junction -Target $external | Out-Null
+        $target = Join-Path $junction 'nested\rules'
+        { Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target | Out-Null } | Should -Throw '*REFUSED*'
+        (Get-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Raw) | Should -Be 'unchanged'
+        Test-Path -LiteralPath (Join-Path $external 'nested') | Should -BeFalse
+    }
+
+    It "rejects a junctioned context directory without changing the external target" {
+        $external = Join-Path $tmpRoot "outside context $([guid]::NewGuid().ToString('N'))"
+        $junction = Join-Path $tmpRoot "context junction $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $external | Out-Null
+        Set-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Value 'unchanged' -NoNewline
+        New-Item -ItemType Junction -Path $junction -Target $external | Out-Null
+        { Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $junction | Out-Null } | Should -Throw '*REFUSED*'
+        (Get-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Raw) | Should -Be 'unchanged'
+        Test-Path -LiteralPath (Join-Path $external 'AGENTS.md') | Should -BeFalse
+    }
+
+    It "rejects junctioned memory scaffolding before creating MEMORY.md" {
+        $external = Join-Path $tmpRoot "outside memory $([guid]::NewGuid().ToString('N'))"
+        $junction = Join-Path $tmpRoot "memory junction $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $external | Out-Null
+        Set-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Value 'unchanged' -NoNewline
+        New-Item -ItemType Junction -Path $junction -Target $external | Out-Null
+        { Copy-MemoryScaffold -SourceMemoryDir (Join-Path $starterRoot 'memory') -TargetMemoryDir $junction | Out-Null } | Should -Throw '*REFUSED*'
+        (Get-Content -LiteralPath (Join-Path $external 'sentinel.txt') -Raw) | Should -Be 'unchanged'
+        Test-Path -LiteralPath (Join-Path $external 'MEMORY.md') | Should -BeFalse
     }
 }
 
@@ -203,6 +367,57 @@ Describe "Copy-RulesToAgent timestamp-suffixes second-rerun backups (P2)" {
         $tsBackups = Get-ChildItem -Path $target -Filter 'lessons.md.user-*'
         $tsBackups.Count | Should -Be 1
         (Get-Content $tsBackups[0].FullName -Raw).Trim() | Should -Be 'edit-2'
+    }
+}
+
+Describe "Windows reinstall backups preserve edits and rollback" {
+    It "captures second context edit when the first .user backup exists" {
+        $target = Join-Path $tmpRoot "ctx-rerun-$([guid]::NewGuid().ToString('N'))-雪"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        $dst = Join-Path $target 'AGENTS.md'
+        Set-Content -LiteralPath $dst -Value 'first edit' -NoNewline -Encoding UTF8
+        Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $target | Out-Null
+        Set-Content -LiteralPath $dst -Value 'second edit' -NoNewline -Encoding UTF8
+        $m = New-RollbackManifest
+        Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $target -Manifest $m | Out-Null
+        (Get-Content -LiteralPath "$dst.user" -Raw).Trim() | Should -Be 'first edit'
+        $m.BackedUp.Count | Should -BeGreaterThan 0
+        $second = @($m.BackedUp | Where-Object { $_ -like "$dst.user-*" })
+        $second.Count | Should -Be 1
+        (Get-Content -LiteralPath $second[0] -Raw).Trim() | Should -Be 'second edit'
+    }
+
+    It "restores current context edit on rollback without removing older .user" {
+        $target = Join-Path $tmpRoot "ctx-rollback-$([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        $dst = Join-Path $target 'AGENTS.md'
+        Set-Content -LiteralPath $dst -Value 'older edit' -NoNewline -Encoding UTF8
+        Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $target | Out-Null
+        Set-Content -LiteralPath $dst -Value 'newest edit' -NoNewline -Encoding UTF8
+        $m = New-RollbackManifest
+        Copy-ContextFiles -SourceRoot $starterRoot -TargetDir $target -Manifest $m | Out-Null
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic context rollback'
+        (Get-Content -LiteralPath $dst -Raw).Trim() | Should -Be 'newest edit'
+        (Get-Content -LiteralPath "$dst.user" -Raw).Trim() | Should -Be 'older edit'
+        @(Get-ChildItem -LiteralPath $target -Filter 'AGENTS.md.user-*').Count | Should -Be 0
+    }
+
+    It "does not overwrite an existing same-second rules backup and can roll back" {
+        $target = Join-Path $tmpRoot "rules-collision-$([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        $dst = Join-Path $target 'lessons.md'
+        Set-Content -LiteralPath $dst -Value 'first edit' -NoNewline -Encoding UTF8
+        Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target | Out-Null
+        Set-Content -LiteralPath $dst -Value 'latest edit' -NoNewline -Encoding UTF8
+        $sameSecond = "$dst.user-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        Set-Content -LiteralPath $sameSecond -Value 'older snapshot' -NoNewline -Encoding UTF8
+        $m = New-RollbackManifest
+        Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target -Manifest $m | Out-Null
+        (Get-Content -LiteralPath $sameSecond -Raw).Trim() | Should -Be 'older snapshot'
+        Invoke-InstallRollback -Manifest $m -Reason 'synthetic rules rollback'
+        (Get-Content -LiteralPath $dst -Raw).Trim() | Should -Be 'latest edit'
+        (Get-Content -LiteralPath "$dst.user" -Raw).Trim() | Should -Be 'first edit'
+        (Get-Content -LiteralPath $sameSecond -Raw).Trim() | Should -Be 'older snapshot'
     }
 }
 
@@ -295,6 +510,173 @@ Describe "Invoke-LogRedaction scrubs secrets from transcripts (P1)" {
         $first = Get-Content -Raw $f
         Invoke-LogRedaction -Path $f
         (Get-Content -Raw $f) | Should -Be $first
+    }
+}
+
+# SHA-only checks must not initialise the transcript directory in LOCALAPPDATA.
+# All paths are isolated test fixtures; the real user profile is never touched.
+Describe "Dry-run must not initialize LOCALAPPDATA" {
+    It "verifies a matching SHA without creating a transcript directory" {
+        $stateRoot = Join-Path $script:tmpRoot 'valid dry run state-Ü'
+        $prior = $env:LOCALAPPDATA
+        try {
+            $env:LOCALAPPDATA = $stateRoot
+            $output = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script:InstallPs1 -DryRun 2>&1
+            $LASTEXITCODE | Should -Be 0
+            ($output -join ' ') | Should -Match 'Dry run: self-SHA verified'
+            Test-Path -LiteralPath $stateRoot | Should -BeFalse
+        }
+        finally {
+            $env:LOCALAPPDATA = $prior
+        }
+    }
+
+    It "rejects a mismatched SHA without creating a transcript directory" {
+        $fixtureRoot = Join-Path $script:tmpRoot 'bad SHA fixture-Ü with spaces'
+        $fixtureInstall = Join-Path $fixtureRoot 'install'
+        $fixtureDocs = Join-Path $fixtureRoot 'docs'
+        New-Item -ItemType Directory -Force -Path $fixtureInstall, $fixtureDocs | Out-Null
+        Copy-Item -LiteralPath $script:InstallPs1 -Destination (Join-Path $fixtureInstall 'install.ps1')
+        Set-Content -LiteralPath (Join-Path $fixtureDocs 'HASH.txt') -Value ('0' * 64) -NoNewline -Encoding ASCII
+        $stateRoot = Join-Path $script:tmpRoot 'bad dry run state-Ü'
+        $prior = $env:LOCALAPPDATA
+        try {
+            $env:LOCALAPPDATA = $stateRoot
+            $output = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $fixtureInstall 'install.ps1') -DryRun 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
+            ($output -join ' ') | Should -Match 'SHA does not match'
+            Test-Path -LiteralPath $stateRoot | Should -BeFalse
+        }
+        finally {
+            $env:LOCALAPPDATA = $prior
+        }
+    }
+}
+
+# Only synthetic, isolated HOME fixtures are used; never install into the real profile.
+Describe "Windows per-home installer lock (Role 05)" {
+    It "refuses a second lease without disturbing the first owner" {
+        $homeFixture = Join-Path $script:tmpRoot "lock home Ü $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $homeFixture | Out-Null
+        $owner = Enter-InstallLock -UserHome $homeFixture
+        try {
+            Test-Path -LiteralPath $owner.Path -PathType Leaf | Should -BeTrue
+            { Enter-InstallLock -UserHome $homeFixture } | Should -Throw '*REFUSED*'
+            (Get-Content -LiteralPath $owner.Path -Raw) | Should -Be $owner.Token
+        }
+        finally {
+            Exit-InstallLock -Lease $owner
+        }
+        Test-Path -LiteralPath $owner.Path | Should -BeFalse
+    }
+
+    It "does not remove a pre-existing stale lock directory or marker" {
+        $homeFixture = Join-Path $script:tmpRoot "stale lock Ü $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $homeFixture | Out-Null
+        $lockPath = Join-Path $homeFixture '.e156-ecosystem-starter-install.lock'
+        New-Item -ItemType Directory -Path $lockPath | Out-Null
+        $marker = Join-Path $lockPath 'owner.txt'
+        Set-Content -LiteralPath $marker -Value 'prior installation' -NoNewline
+        { Enter-InstallLock -UserHome $homeFixture } | Should -Throw '*REFUSED*'
+        (Get-Content -LiteralPath $marker -Raw) | Should -Be 'prior installation'
+        Test-Path -LiteralPath $lockPath -PathType Container | Should -BeTrue
+    }
+
+    It "releases after a simulated error and never deletes a replaced owner's marker" {
+        $homeFixture = Join-Path $script:tmpRoot "lock failed Ü $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $homeFixture | Out-Null
+        $owner = Enter-InstallLock -UserHome $homeFixture
+        try { throw 'synthetic later-step failure' }
+        catch { $_.Exception.Message | Should -Match 'synthetic later-step failure' }
+        finally { Exit-InstallLock -Lease $owner }
+        Test-Path -LiteralPath $owner.Path | Should -BeFalse
+        $other = Enter-InstallLock -UserHome $homeFixture
+        Set-Content -LiteralPath $other.Path -Value 'different owner' -NoNewline
+        Exit-InstallLock -Lease $other
+        (Get-Content -LiteralPath $other.Path -Raw) | Should -Be 'different owner'
+    }
+    It "refuses a locked non-interactive bootstrap before writing config or logs" {
+        $homeFixture = Join-Path $script:tmpRoot "blocked real flow Ü $([guid]::NewGuid().ToString('N'))"
+        $logsFixture = Join-Path $script:tmpRoot "blocked logs Ü $([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Force -Path $homeFixture | Out-Null
+        $priorHome = $env:USERPROFILE
+        $priorLogs = $env:LOCALAPPDATA
+        $owner = Enter-InstallLock -UserHome $homeFixture
+        try {
+            $env:USERPROFILE = $homeFixture
+            $env:LOCALAPPDATA = $logsFixture
+            $output = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script:InstallPs1 -NonInteractive 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
+            ($output -join ' ') | Should -Match 'REFUSED: installation lock'
+            Test-Path -LiteralPath (Join-Path $homeFixture '.claude') | Should -BeFalse
+            Test-Path -LiteralPath (Join-Path $homeFixture '.gemini') | Should -BeFalse
+            Test-Path -LiteralPath $logsFixture | Should -BeFalse
+            (Get-Content -LiteralPath $owner.Path -Raw) | Should -Be $owner.Token
+        }
+        finally {
+            $env:USERPROFILE = $priorHome
+            $env:LOCALAPPDATA = $priorLogs
+            Exit-InstallLock -Lease $owner
+        }
+    }
+}
+
+Describe "Installation file identity and literal path regressions" {
+    It "refuses hardlinked rule and context targets before render or copy, including force" {
+        foreach ($kind in @('rule', 'context')) {
+            foreach ($render in @($false, $true)) {
+                foreach ($force in @($false, $true)) {
+                    $fixture = Join-Path $tmpRoot ([guid]::NewGuid().ToString('N'))
+                    $src = Join-Path $fixture 'source'
+                    $dst = Join-Path $fixture 'target'
+                    [IO.Directory]::CreateDirectory($src) | Out-Null
+                    [IO.Directory]::CreateDirectory($dst) | Out-Null
+                    $name = if ($kind -eq 'rule') { 'rule.md' } else { 'AGENTS.md' }
+                    [IO.File]::WriteAllText((Join-Path $src $name), 'replacement {{X}}')
+                    $outside = Join-Path $fixture 'outside.txt'
+                    [IO.File]::WriteAllText($outside, 'preserved user text')
+                    New-Item -ItemType HardLink -Path (Join-Path $dst $name) -Target $outside | Out-Null
+                    $vars = if ($render) { @{X='text'} } else { $null }
+                    $m = New-RollbackManifest
+                    if ($kind -eq 'rule') {
+                        { Copy-RulesToAgent -SourceRulesDir $src -TargetRulesDir $dst -Vars $vars -Force:$force -Manifest $m } | Should -Throw '*REFUSED*'
+                    } else {
+                        { Copy-ContextFiles -SourceRoot $src -TargetDir $dst -Vars $vars -Force:$force -Manifest $m } | Should -Throw '*REFUSED*'
+                    }
+                    [IO.File]::ReadAllText($outside) | Should -Be 'preserved user text'
+                    $m.CreatedFiles.Count | Should -Be 0
+                    $m.BackedUp.Count | Should -Be 0
+                }
+            }
+        }
+    }
+
+    It "preserves and restores user edits with brackets in both source and target paths" {
+        foreach ($kind in @('rule', 'context')) {
+            foreach ($render in @($false, $true)) {
+                $fixture = Join-Path $tmpRoot ([guid]::NewGuid().ToString('N'))
+                $src = Join-Path $fixture 'source[1]'
+                $dst = Join-Path $fixture 'target[2]'
+                [IO.Directory]::CreateDirectory($src) | Out-Null
+                [IO.Directory]::CreateDirectory($dst) | Out-Null
+                $name = if ($kind -eq 'rule') { 'rule.md' } else { 'AGENTS.md' }
+                [IO.File]::WriteAllText((Join-Path $src $name), 'replacement {{X}}')
+                $target = Join-Path $dst $name
+                [IO.File]::WriteAllText($target, 'preserved user text')
+                $m = New-RollbackManifest
+                $vars = if ($render) { @{X='text'} } else { $null }
+                if ($kind -eq 'rule') {
+                    Copy-RulesToAgent -SourceRulesDir $src -TargetRulesDir $dst -Vars $vars -Manifest $m | Out-Null
+                } else {
+                    Copy-ContextFiles -SourceRoot $src -TargetDir $dst -Vars $vars -Manifest $m | Out-Null
+                }
+                $m.BackedUp.Count | Should -Be 1
+                $m.CreatedFiles.Count | Should -Be 0
+                [IO.File]::ReadAllText($target) | Should -Be $(if ($render) { 'replacement text' } else { 'replacement {{X}}' })
+                Invoke-InstallRollback -Manifest $m
+                [IO.File]::ReadAllText($target) | Should -Be 'preserved user text'
+            }
+        }
     }
 }
 
