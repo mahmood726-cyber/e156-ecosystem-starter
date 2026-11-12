@@ -182,7 +182,14 @@ existing replay checker with SQLite transactions and an externally anchored
 protocol. Each advance revalidates dependencies; invalidation is terminal and
 completion retains HOLD. New-process and abrupt-worker-termination controls
 exercise rollback and receipt retry. This is one local stage; the full workflow
-and human decision system below remain outstanding.
+and authenticated human decision system below remain outstanding.
+
+A [source-bound decision-record adapter](SYNTHESIS-ADJUDICATION.md) now records
+typed cohort/outcome scopes, two declared reviewer ballots and a distinct declared
+adjudicator when needed. Exact quotes, report identities, context and original
+ballots are bound and revalidated. Incomplete scope/disagreement remains explicit;
+all states retain HOLD. This is a read-only dossier verifier, not an authenticated
+review service, semantic adjudicator or automatic extension of the SQLite stage.
 
 Add resumable protocol/search/screen/extract/appraise/synthesise/report stages
 over that shared record. Reuse CoLRev/ASReview through optional adapters where

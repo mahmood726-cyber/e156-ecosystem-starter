@@ -609,5 +609,13 @@ The [review runner](docs/SYNTHESIS-REVIEW-RUNNER.md) persists one source-replay
 audit with an externally anchored protocol. Each advance rechecks evidence and
 code, changed dependencies invalidate the run, and retries return one stable local
 receipt. SQLite transactions support process restart and writer exclusion.
-Completion retains HOLD; search, screening and human adjudication remain future
-stages.
+Completion retains HOLD; search and screening remain future stages.
+
+### Source-bound decision records
+
+The [decision-record adapter](docs/SYNTHESIS-ADJUDICATION.md) binds cohort and
+outcome scopes to exact archived source passages, preserves two declared reviewer
+ballots and a separate adjudication, and revalidates all evidence on every read.
+Incomplete scope and disagreements remain explicit. Reviewer identity and semantic
+support are unverified; even agreement retains pooling HOLD. The example has no
+invented reviewer decisions.

@@ -715,6 +715,65 @@
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
         "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de"
       }
+    },
+    {
+      "id": "scripts/synthesis_adjudication.py",
+      "kind": "script",
+      "name": "Source-bound cohort and outcome decision records",
+      "stops": "Wrong externally anchored project/dossier, failed source replay, missing or ambiguous quotes/locators, duplicate primary report identity, malformed typed scopes/pairs, missing scope resolution, duplicate reviewer IDs, stale context/original ballots, and changed dependencies during verification.",
+      "would_not_stop": [
+        "Reviewer identity, independence, blinding, truthful rationale or semantic support of quotes. All recorded decisions retain pooling HOLD and scientific validity NOT_ESTABLISHED.",
+        "Authenticated append-only history, signature trust or permanent invalidation. This read-only adapter revalidates the supplied dossier; restored original bytes can verify again.",
+        "Hostile concurrent filesystem/interpreter changes, compromised external anchor distribution, newer unseen corrections or network authenticity of archived sources.",
+        "General PDF extraction, cross-file supplements, registry outcome extraction, transitive cohort graphs, independent study weighting, clinical performance or release certification."
+      ],
+      "source": "scripts/synthesis_adjudication.py; docs/SYNTHESIS-ADJUDICATION.md; unchanged replay and audit dependencies.",
+      "seal": {
+        "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
+        "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+        "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+        "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
+        "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
+        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de",
+        "scripts/synthesis_adjudication.py": "e8784b187cccbd188ca09de4177d8873c0e4b361f0026475d0f0030bd6a5d2b5",
+        "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626"
+      }
+    },
+    {
+      "id": ".github/workflows/synthesis-adjudication.yml#jobs.adjudication",
+      "kind": "ci-job",
+      "name": "Decision-record controls on Windows and Linux",
+      "stops": "Executes the decision-record integration suite and anchored unreviewed OA example on both OSes, including stale context, retained disagreement, source changes, malformed Unicode and legacy Windows console encoding.",
+      "would_not_stop": [
+        "Held-out scientific errors or actual independent human judgments: ballots are synthetic software controls and the shipped example has no reviewer decisions.",
+        "Reviewer identity, independence, blinding, truthful rationale or semantic support of quotes. All recorded decisions retain pooling HOLD and scientific validity NOT_ESTABLISHED.",
+        "Authenticated append-only history, signature trust or permanent invalidation. This read-only adapter revalidates the supplied dossier; restored original bytes can verify again.",
+        "Hostile concurrent filesystem/interpreter changes, compromised external anchor distribution, newer unseen corrections or network authenticity of archived sources.",
+        "General PDF extraction, cross-file supplements, registry outcome extraction, transitive cohort graphs, independent study weighting, clinical performance or release certification."
+      ],
+      "source": "tests/test_synthesis_adjudication.py and examples/synthesis-adjudication-stepwise.json; dedicated cross-platform workflow.",
+      "seal": {
+        "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
+        "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+        "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+        "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
+        "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
+        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de",
+        "scripts/synthesis_adjudication.py": "e8784b187cccbd188ca09de4177d8873c0e4b361f0026475d0f0030bd6a5d2b5",
+        "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626",
+        ".github/workflows/synthesis-adjudication.yml#jobs.adjudication": "f322e66fe02cdb827b33ffdc3a7c00c033c8edabf9876466c9092ef9d1c8fc87",
+        "tests/test_synthesis_adjudication.py": "ec7bcfdcf622b7606311522b1edbd1ab9eaa366d675ca51d6c8504e5b78049ae",
+        "examples/synthesis-adjudication-stepwise.json": "184552927c4defaa8741a5c792ffa508522b05d63c3987eea66abde64811e114",
+        "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a"
+      }
     }
   ]
 }

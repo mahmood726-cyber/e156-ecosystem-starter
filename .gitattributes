@@ -36,3 +36,4 @@ examples/synthesis-replay-strokewalk/** -text
 # Recovery measurements bind the protocol bytes across checkouts.
 benchmarks/harness-recovery-protocol.json text eol=lf
 examples/synthesis-review-stepwise.json text eol=lf
+examples/synthesis-adjudication-stepwise.json text eol=lf

@@ -342,7 +342,9 @@ def real_copy(tmp_path, rgg):
     for rel in (rgg.REGISTRY_PATH, rgg.DOC_PATH, "requirements-aact-canary.lock",
                 "requirements-rocrate.lock", "schemas/rocrate-contexts.json",
                 "requirements-ci.lock", "tests/test_synthesis_review_runner.py",
-                "examples/synthesis-review-stepwise.json"):
+                "examples/synthesis-review-stepwise.json",
+                "tests/test_synthesis_adjudication.py",
+                "examples/synthesis-adjudication-stepwise.json"):
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REPO_ROOT / rel, tmp_path / rel)
     assert rgg.check(tmp_path) == (rgg.CURRENT, [])
