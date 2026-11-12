@@ -2,7 +2,7 @@
 
 [Six core checks](SYNTHESIS-HUMAN-CHECKLIST.md#start-with-six-core-checks) · [Worked examples](SYNTHESIS-WORKED-EXAMPLES.md) · [AI prompt](SYNTHESIS-COPY-PASTE-AI-PROMPT.md)
 
-**Current experimental worksheet, 6 November 2026.** Complete one per count comparison using authorised sources. Blank cells mean unfinished work. Keep completed manuscript worksheets private. Use aggregate cohort labels, never patient identifiers.
+**Current experimental worksheet, 12 November 2026.** Complete one per count comparison using authorised sources. Blank cells mean unfinished work. Keep completed manuscript worksheets private. Use aggregate cohort labels, never patient identifiers.
 
 ## 1. Identify each count before doing arithmetic
 
@@ -14,14 +14,15 @@ Copy a row for every relevant count. Read prose, table headings, footnotes, figu
 | Paper/trial/cohort and arm | | |
 | Document version, source URL/file and page/table/row/column | | |
 | Counted unit (people, pregnancies, events, observations, person-time, weighted total) | | |
-| Outcome and follow-up/timepoint | | |
+| Outcome definition and follow-up/timepoint (including permanent versus temporary events) | | |
+| Data cutoff and analysis version (interim/final/restricted), with source | | |
 | Analysis population (randomised, treated, ITT, per-protocol, respondents, eligible risk set) | | |
 | Observed, imputed or weighted basis | | |
 | Eligibility and restriction definition, with source | | |
 | Missingness, exclusions and losses, with source | | |
 | Verified count and extraction uncertainty | | |
 
-Do not treat an outcome-specific denominator as the headline sample size. Do not equate events with people or weighted estimates with observed counts. A respondent-only proportion, survival estimate or imputed ITT result can legitimately differ from a crude complete-case fraction.
+Do not treat an outcome-specific denominator as the headline sample size. Do not equate events with people or weighted estimates with observed counts. A respondent-only proportion, survival estimate or imputed ITT result can legitimately differ from a crude complete-case fraction. Preserve numerator, denominator and printed decimal places separately. Record the rounding convention when known; an exact tie with an unknown convention remains unresolved.
 
 ## 2. Establish the relationship
 

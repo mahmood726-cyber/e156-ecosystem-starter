@@ -1,5 +1,5 @@
 {
-  "assessment_date": "2026-11-11",
+  "assessment_date": "2026-11-12",
   "fixture_kind": "real_oa_development_example",
   "held_out": false,
   "scientific_accuracy_measured": false,
@@ -24,19 +24,19 @@
     "terms_url": "https://clinicaltrials.gov/about-site/terms-conditions"
   },
   "bundle": "examples/synthesis-replay-strokewalk",
-  "manifest_sha256": "5a2d948a673a0c5ea67b9671a97bb43f0affbb00ec521e5940bf6dfe66cbe2ad",
+  "manifest_sha256": "e0e02c64467a9a34ad41230eb64d4586c010f5531ed3091a01ffdd3cead31481",
   "payload_sha256": "5aa5fba58164dee87d8fbd6353afc997f698be3935fd4901c7f98cfd54b032e0",
   "verifiers": {
-    "synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
-    "synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de",
-    "synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-    "synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
-    "synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+    "synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
     "synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+    "synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+    "synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+    "synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+    "synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+    "synthesis_intake_evidence.py": "2fc33205cdd416305263933a30f6b0568d3edb16eb219f7dad421a48ea7b1927",
     "synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
     "synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
-    "synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
-    "synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605"
+    "synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801"
   },
   "observed": {
     "cohort_overlap": "UNASSESSED",
@@ -84,13 +84,13 @@
   },
   "replay": {
     "status": "REPLAY_MATCHED",
-    "manifest_sha256": "5a2d948a673a0c5ea67b9671a97bb43f0affbb00ec521e5940bf6dfe66cbe2ad",
+    "manifest_sha256": "e0e02c64467a9a34ad41230eb64d4586c010f5531ed3091a01ffdd3cead31481",
     "payload_sha256": "5aa5fba58164dee87d8fbd6353afc997f698be3935fd4901c7f98cfd54b032e0",
     "scope": "source_bound_preflight_with_study_links",
     "scientific_validity": "NOT_ESTABLISHED"
   },
-  "previous_manifest_sha256": "c514c54e027641eb13c6cdcb815e0e1f92ae355a572bf618f366284db5071d88",
-  "previous_payload_sha256": "ec035bca2b6198017b325bee81c8acd4d6b924e914ff95bd322a22a7ca3e5b0d",
-  "previous_receipt": "benchmarks/replay/history/strokewalk-9875059.json",
-  "profile_update_reason": "Integrate main PR #92: expanded dependency closure, source token context and attested-scope HOLD"
+  "previous_manifest_sha256": "5a2d948a673a0c5ea67b9671a97bb43f0affbb00ec521e5940bf6dfe66cbe2ad",
+  "previous_payload_sha256": "5aa5fba58164dee87d8fbd6353afc997f698be3935fd4901c7f98cfd54b032e0",
+  "previous_receipt": "benchmarks/replay/history/strokewalk-fb511d8.json",
+  "profile_update_reason": "Scalar/bounds/rounding and registered-point upgrade; archived inputs and analytical payload unchanged"
 }

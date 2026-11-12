@@ -52,11 +52,11 @@ jobs:
       - name: Recompute the archived OA development example
         run: >-
           python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise
-          --expected-sha256 d81086aaf3cee56b8936af0ef617085844718cdb1a200b88870fcfef7812b0d6
+          --expected-sha256 9d3e611c2d06485c9f004e73d7b94847e9dec6b69e026700b1ace23c3f76dd0d
       - name: Recompute the archived report and registry link
         run: >-
           python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk
-          --expected-sha256 5a2d948a673a0c5ea67b9671a97bb43f0affbb00ec521e5940bf6dfe66cbe2ad
+          --expected-sha256 e0e02c64467a9a34ad41230eb64d4586c010f5531ed3091a01ffdd3cead31481
       - name: Install hash-locked upstream profile validator
         run: >-
           python -m pip install --only-binary=:all: --require-hashes -r requirements-rocrate.lock

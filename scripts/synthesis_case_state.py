@@ -13,9 +13,9 @@ SCHEMA = "synthesis-case-state/1"
 MAX_BYTES = 1024 * 1024
 MAX_EVENTS = 2000
 OUTCOMES = {"ACKNOWLEDGED", "EXPLANATION_UNVERIFIED", "UNRESOLVED", "SOURCE_RECHECKED",
-            "RESOLVED_ENQUIRY", "METHOD_DISCUSSION", "CONCERN_PERSISTS"}
-PENDING = {"ACKNOWLEDGED", "EXPLANATION_UNVERIFIED", "UNRESOLVED", "CONCERN_PERSISTS"}
-CORRECTIONS = {"NOT_REQUESTED", "REQUESTED", "AUTHOR_REPORTED_PUBLISHED", "PUBLIC_NOTICE_RECORDED"}
+            "RESOLVED_ENQUIRY", "FALSE_POSITIVE_ALLEGATION", "VERSION_LIMITED", "METHOD_DISCUSSION", "CONCERN_PERSISTS"}
+PENDING = {"ACKNOWLEDGED", "EXPLANATION_UNVERIFIED", "UNRESOLVED", "CONCERN_PERSISTS", "UNANSWERED"}
+CORRECTIONS = {"NOT_REQUESTED", "REQUESTED", "AUTHOR_REPORTED_PUBLISHED", "PUBLIC_NOTICE_RECORDED", "DECLINED_OR_UNAVAILABLE"}
 
 
 def _text(value):
@@ -58,7 +58,7 @@ def project_state(state, document, claim_ids):
         events = state.get("events")
         if not isinstance(events, list) or len(events) > MAX_EVENTS: return held
         claim_ids = set(claim_ids)
-        replies, corrections, pauses, seen = {}, {}, {}, set()
+        replies, points, corrections, pauses, seen = {}, {}, {}, {}, set()
         last_time = datetime.min.replace(tzinfo=timezone.utc)
         for event in events:
             if not isinstance(event, dict): return held
@@ -66,16 +66,26 @@ def project_state(state, document, claim_ids):
             if event_id in seen or when < last_time: return held
             seen.add(event_id); last_time = when
             kind = event.get("type")
-            if kind in ("REPLY_POINT", "CORRECTION_STATUS"):
+            if kind in ("POINT_REGISTERED", "REPLY_POINT", "CORRECTION_STATUS"):
                 cid, point = _text(event.get("claim_id")), _text(event.get("point_id"))
                 if cid not in claim_ids: return held
                 key = cid, point
-                if kind == "REPLY_POINT":
+                if kind == "POINT_REGISTERED":
+                    original = _text(event.get("original_question_reference"))
+                    question = event.get("question_kind")
+                    if question not in {"CLARIFICATION", "ERROR_ALLEGATION"} or key in points: return held
+                    if key in replies and replies[key][1] != original: return held
+                    points[key] = question, original
+                elif kind == "REPLY_POINT":
                     original = _text(event.get("original_question_reference"))
                     _text(event.get("reply_reference"))
                     outcome = event.get("outcome")
                     if not isinstance(outcome, str) or outcome not in OUTCOMES: return held
                     if key in replies and replies[key][1] != original: return held
+                    if key in points and points[key][1] != original: return held
+                    if outcome == "FALSE_POSITIVE_ALLEGATION" and (key not in points or points[key][0] != "ERROR_ALLEGATION"):
+                        return held
+                    if outcome == "RESOLVED_ENQUIRY" and key in points and points[key][0] != "CLARIFICATION": return held
                     if outcome not in {"ACKNOWLEDGED", "EXPLANATION_UNVERIFIED", "UNRESOLVED"}:
                         _text(event.get("source_recheck_reference")); _text(event.get("reviewer_reference"))
                     replies[key] = outcome, original
@@ -103,9 +113,18 @@ def project_state(state, document, claim_ids):
             else: return held
         summaries = []
         for cid in sorted(claim_ids):
-            outcomes = [v[0] for k, v in sorted(replies.items()) if k[0] == cid]
-            pending = sum(o in PENDING for o in outcomes)
+            keys = sorted(k for k in points.keys() | replies.keys() if k[0] == cid)
+            outcomes = [replies[k][0] if k in replies else "UNANSWERED" for k in keys]
+            # Check classifications even when an old reply was registered later.
+            if any(k in replies and ((replies[k][0] == "FALSE_POSITIVE_ALLEGATION" and points[k][0] != "ERROR_ALLEGATION")
+                                     or (replies[k][0] == "RESOLVED_ENQUIRY" and points[k][0] != "CLARIFICATION"))
+                   for k in points if k[0] == cid): return held
+            pending = sum(o in PENDING or (o == "SOURCE_RECHECKED" and k in points)
+                          for k, o in zip(keys, outcomes))
             summaries.append({"claim_id": cid, "point_count": len(outcomes), "point_outcomes": outcomes,
+                              "registered_point_count": sum(k in points for k in keys),
+                              "unanswered_point_count": outcomes.count("UNANSWERED"),
+                              "point_inventory": "DECLARED_POINTS_AND_REPLIES" if any(k in points for k in keys) else "REPLY_EVENTS_ONLY",
                               "pending_point_count": pending, "reply_pending": bool(pending),
                               "correction_statuses": [v for k, v in sorted(corrections.items()) if k[0] == cid],
                               "publication_independently_verified": False,
