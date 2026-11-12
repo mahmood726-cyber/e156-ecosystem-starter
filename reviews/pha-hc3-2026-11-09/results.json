@@ -1,0 +1,144 @@
+{
+  "status": "NOT_ENOUGH_INFO / HOLD: published HC3 GLMM statistic unresolved; no confirmed error or corrected fit",
+  "runtime": {
+    "python": "3.12.14",
+    "pandas": "2.2.3",
+    "scipy": "1.17.0"
+  },
+  "provenance": {
+    "data_zip_sha256": "2945e086af56c6922ed68bc1cafecd017efd777c93b2b970b081c06cf9a9fce8",
+    "supplement_text_sha256": "1aacf3ef4eafdb141bca3aa2861cac1210027a7c3f5187eb135755cb279fc65a",
+    "csv_sha256": {
+      "de_task1_mcq.csv": "d1f8f89dcd1632de944b9c7789a71a8132e53b742ec9f219b521080e165d2e11",
+      "de_task2_ddx_predictions.csv": "9ccc2046b2be6a032cea884070913cef040bfbea6f5e7b20b49087f74d557eb2",
+      "hc_task2_comparison.csv": "2cda8d140e5541dee3ad792e4b88765209cc8ff6b2664823752bf3a52215566f"
+    }
+  },
+  "HC3": {
+    "n_ratings": 93,
+    "agent_wins": 67,
+    "base_wins": 26,
+    "agent_win_rate": 0.7204301075268817,
+    "n_raters": 3,
+    "n_scripts": 31,
+    "ratings_per_rater": [
+      31,
+      31,
+      31
+    ],
+    "ratings_per_script": [
+      3
+    ],
+    "scripts_by_agent_win_count": {
+      "0": 1,
+      "1": 6,
+      "2": 11,
+      "3": 13
+    },
+    "reported_beta": 1.052,
+    "reported_Z": 257.65,
+    "implied_SE_if_Wald_Z": 0.004083058412575199
+  },
+  "same_table_scale_check": {
+    "rows": [
+      {
+        "rubric": "Motivational Interview Skill                            40.9\u00b15.1%     59.1\u00b15.1%",
+        "beta": 0.449,
+        "Z": 1.52,
+        "implied_SE_if_Wald": 0.29539473684210527
+      },
+      {
+        "rubric": "Health Recommendation Quality                           46.2\u00b15.2%     53.8\u00b15.2%",
+        "beta": 0.17,
+        "Z": 0.66,
+        "implied_SE_if_Wald": 0.25757575757575757
+      },
+      {
+        "rubric": "Agent Credibility                                       33.3\u00b14.9%     66.7\u00b14.9%",
+        "beta": 0.746,
+        "Z": 1.86,
+        "implied_SE_if_Wald": 0.4010752688172043
+      },
+      {
+        "rubric": "Goal & Purpose Identification (HC1)                     33.3\u00b15.0%     66.7\u00b15.0%",
+        "beta": 1.19,
+        "Z": 2.17,
+        "implied_SE_if_Wald": 0.5483870967741935
+      },
+      {
+        "rubric": "Active Listening (HC2)                                  31.2\u00b14.8%     68.8\u00b14.8%",
+        "beta": 0.808,
+        "Z": 2.82,
+        "implied_SE_if_Wald": 0.2865248226950355
+      },
+      {
+        "rubric": "Context Clarification (Priorities, Constraints) (HC3)   28.0\u00b14.8%     72.0\u00b14.8%",
+        "beta": 1.052,
+        "Z": 257.65,
+        "implied_SE_if_Wald": 0.004083058412575199
+      },
+      {
+        "rubric": "User Empowerment (HC4)                                  30.1\u00b14.6%     69.9\u00b14.6%",
+        "beta": 0.988,
+        "Z": 2.0,
+        "implied_SE_if_Wald": 0.494
+      },
+      {
+        "rubric": "Personalized & concrete Recommendations (HC5)           35.5\u00b14.9%     64.5\u00b14.9%",
+        "beta": 0.649,
+        "Z": 2.09,
+        "implied_SE_if_Wald": 0.3105263157894737
+      },
+      {
+        "rubric": "User Feedback incorporation (HC6)                       29.0\u00b14.8%     71.0\u00b14.8%",
+        "beta": 1.005,
+        "Z": 3.19,
+        "implied_SE_if_Wald": 0.31504702194357365
+      }
+    ],
+    "other_eight_min_implied_SE": 0.25757575757575757,
+    "other_eight_median_implied_SE": 0.3127866688665237,
+    "other_eight_max_implied_SE": 0.5483870967741935,
+    "min_other_to_HC3_SE_ratio": 63.08402465721856,
+    "conditional_logit_unit_coded_min_SE_from_93_Bernoulli": 0.20739033894608505,
+    "conditional_logit_n_for_that_SE_at_max_information": 239932.34866775575,
+    "limits": "These bounds require independent unweighted unit-coded Bernoulli logit contributions and a Wald statistic. Different coding, weights, link or contrast preclude direct application."
+  },
+  "diagnostic_only_not_published_GLMM": {
+    "model": "independent unweighted Bernoulli intercept-only logit; ignores script/rater dependence",
+    "log_odds": 0.946596081369484,
+    "SE": 0.2310560788983203,
+    "Wald_Z": 4.096823965345867,
+    "two_sided_exact_binomial_p": 2.5258189217190576e-05,
+    "interpretation": "Diagnostic scale comparison only; cannot replace the published GLMM or establish its multiplicity-adjusted inference."
+  },
+  "script_block_label_swap_sensitivity": {
+    "null": "Within each script, exchange agent/base labels for all three ratings together; scripts independent and exchangeable under the sharp null",
+    "allocations": 2147483648,
+    "two_sided_extreme_allocations": 941992,
+    "two_sided_p": 0.0004386492073535919,
+    "nine_test_Bonferroni_p_bound": 0.003947842866182327,
+    "limitation": "Exact for stated exchangeability null, not a replay of the mixed model or a substitute for rater and script random effects."
+  },
+  "matching_controls": {
+    "MCQ": {
+      "n": 2145,
+      "agent_only": 100,
+      "base_only": 60,
+      "continuity_corrected_McNemar_chi2": 9.50625,
+      "p": 0.002047732153668759
+    },
+    "DDx": {
+      "n": 1510,
+      "Wilcoxon_W": 126589.5,
+      "p": 0.0001592533607227584
+    }
+  },
+  "not_performed": [
+    "historical HC3 GLMM replay",
+    "LLM output regeneration",
+    "independent human adjudication",
+    "proof of transcription or fitting error",
+    "assessment of changed substantive conclusions"
+  ]
+}

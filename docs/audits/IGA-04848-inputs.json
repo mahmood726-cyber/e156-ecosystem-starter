@@ -1,0 +1,89 @@
+{
+  "schema": "synthesis-public-case-inputs-v1",
+  "case_id": "SYN-NMA-IGA-04848-20261103",
+  "doi": "10.1186/s12882-026-04848-7",
+  "accessed_date": "2026-11-03",
+  "source_html": "https://link.springer.com/article/10.1186/s12882-026-04848-7",
+  "source_html_sha256": "2e3f661d9d83f871b7854ca8348aa3107d2cd41f3331c8d7cdd5c2b6f59daf14",
+  "source_pdf": "https://link.springer.com/content/pdf/10.1186/s12882-026-04848-7.pdf",
+  "source_pdf_sha256": "f4ac34b8b02923b786b9aa5cea4d01351e5aef29c7cf33c16eb5bce048a70db8",
+  "supplement_docx": "https://static-content.springer.com/esm/art%3A10.1186%2Fs12882-026-04848-7/MediaObjects/12882_2026_4848_MOESM6_ESM.docx",
+  "supplement_sha256": "34a3d14948545e1c1ac3265d368c068266f25d05e64055b505b6045f95eb92cb",
+  "source_locations": {
+    "abstract": "Printed PDF p1 Results",
+    "results": "Printed PDF p7 Primary outcomes/proteinuria; Figure2C/D on same page"
+  },
+  "observations": [
+    {
+      "endpoint": "24-hour proteinuria",
+      "treatment": "CsA",
+      "abstract_sucra_percent": 82.1,
+      "results_rank_percent": 71.9
+    },
+    {
+      "endpoint": "24-hour proteinuria",
+      "treatment": "MMF",
+      "abstract_sucra_percent": 72.1,
+      "results_rank_percent": 69.9
+    }
+  ],
+  "unflagged_comparisons": [
+    {
+      "endpoint": "24-hour proteinuria",
+      "treatment": "AZA+CTX",
+      "abstract_percent": 95.8,
+      "results_percent": 95.8
+    },
+    {
+      "endpoint": "24-hour proteinuria",
+      "treatment": "RASi",
+      "abstract_percent": 16.4,
+      "results_percent": 16.4
+    },
+    {
+      "endpoint": "UPCR",
+      "treatment": "BAFF/APRIL inhibitors",
+      "abstract_percent": 91.3,
+      "results_percent": 91.3
+    },
+    {
+      "endpoint": "UPCR",
+      "treatment": "ERA",
+      "abstract_percent": 74.2,
+      "results_percent": 74.2
+    },
+    {
+      "endpoint": "UPCR",
+      "treatment": "MMF",
+      "abstract_percent": 74,
+      "results_percent": 74
+    }
+  ],
+  "ranking_label_question": {
+    "status": "HOLD_INTENDED_STATISTIC_AND_NATIVE_OUTPUTS",
+    "observed": "SUCRA values described as probability of being optimal.",
+    "reference": "https://doi.org/10.1002/jrsm.1454",
+    "reference_location": "Equations5-8; SUCRA=(K-E[rank])/(K-1), distinct from P(rank=1).",
+    "no_independent_error_count": true,
+    "exact_first_rank_probability_recovered": false
+  },
+  "interpretation": {
+    "root_id": "IGA-04848-RANKING-REPORTING-001",
+    "root_count": 1,
+    "status": "SOURCE_VERIFIED_INTERNAL_RANKING_DISPLAY_DIFFERENCE",
+    "severity": "S3_PROVISIONAL",
+    "target_eligibility": "HOLD_PENDING_STATISTIC_IDENTITY_AND_EXTERNAL_REVIEW",
+    "intended_corrected_values_known": false,
+    "native_NMA_refit": false,
+    "author_confirmation_public_status": "Not asserted",
+    "published_correction_verified": false
+  },
+  "limits": [
+    "PDF pages1/7 and Figure2 were read visually, with HTML corroboration.",
+    "Differences are too large for one-decimal rounding, but the exact intended statistic or sensitivity model requires clarification.",
+    "Supplementary DOCX retrieved and inspected; it contains search, heterogeneity/CINeMA tables and figures, not a recovered native posterior rank dataset.",
+    "Different ranking summaries or model versions could explain display differences; do not assert a failed model.",
+    "Bounded current-correction search retrieved no relevant notice, not proof of absence.",
+    "Private correspondence, contact details and message identifiers are excluded."
+  ]
+}
