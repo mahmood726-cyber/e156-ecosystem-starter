@@ -46,6 +46,41 @@ def _encode_project_dir(path: Path) -> str:
     return re.sub(r"[:\\/]", "-", str(path))
 
 
+ORIGIN_FILE = ".e156-project-origin.json"
+ORIGIN_SCHEMA = "e156-memory-origin-v1"
+
+
+def _project_identity(project: Path) -> str:
+    resolved = project.expanduser().resolve(strict=True)
+    if not resolved.is_dir():
+        raise ValueError("project must be an existing directory")
+    return hashlib.sha256(os.path.normcase(str(resolved)).encode("utf-8")).hexdigest()
+
+
+def bind_memory_dir(memory_dir: Path, project: Path) -> dict:
+    """Record operator-checked ownership, never inferred from a lossy name.
+
+    This does not inspect historical ownership or make mixed content safe.
+    Existing bindings are immutable through this command.
+    """
+    memory_dir = memory_dir.expanduser().resolve(strict=True)
+    identity = _project_identity(project)
+    _read_corpus(memory_dir)
+    record = {"schema": ORIGIN_SCHEMA, "project_sha256": identity}
+    with (memory_dir / ORIGIN_FILE).open("x", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(record, sort_keys=True) + "\n")
+    return record
+
+
+def _unique_origin(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate origin field")
+        result[key] = value
+    return result
+
+
 def discover_memory_dir() -> Path | None:
     """Locate only this project's store, unless explicitly overridden.
 
@@ -54,7 +89,8 @@ def discover_memory_dir() -> Path | None:
     user's path (the dir name embeds the username, so a literal default leaks it
     and never resolves for anyone else). Resolution order:
       1. ``$CLAUDE_MEMORY_DIR`` if set (explicit override).
-      2. the project whose encoded name matches the current working directory;
+      2. a matching encoded directory with an operator-verified canonical
+         project binding; the encoded name alone is ambiguous.
     Never borrow a sole or recently modified store from another project.
     Returns ``None`` without an exact match; use ``--memory-dir`` or the
     environment override for intentional cross-project recall.
@@ -63,9 +99,22 @@ def discover_memory_dir() -> Path | None:
     if env:
         return Path(env).expanduser()
     projects = Path.home() / ".claude" / "projects"
-    encoded = _encode_project_dir(Path.cwd())
+    project = Path.cwd()
+    encoded = _encode_project_dir(project)
     candidate = projects / encoded / "memory"
-    return candidate if candidate.is_dir() else None
+    try:
+        # Refuse redirects and unverifiable/malformed origin records before
+        # reading any memory contents. Explicit paths remain an operator choice.
+        if not candidate.is_dir() or candidate.resolve(strict=True) != candidate:
+            return None
+        origin = candidate / ORIGIN_FILE
+        if not origin.is_file() or origin.resolve(strict=True) != origin:
+            return None
+        record = json.loads(origin.read_text(encoding="utf-8"), object_pairs_hook=_unique_origin)
+        expected = {"schema": ORIGIN_SCHEMA, "project_sha256": _project_identity(project)}
+        return candidate if record == expected else None
+    except (OSError, ValueError, RuntimeError):
+        return None
 
 # Recommend switching from flat-index loading to retrieval past this many
 # memories — the point where the index stops being cheap to reason over whole.
@@ -199,6 +248,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="memory dir (default: exact current-project store only, "
                          "or set $CLAUDE_MEMORY_DIR)")
     ap.add_argument("--health", action="store_true", help="report index size and exit")
+    ap.add_argument("--bind-project", type=Path,
+                    help="bind an explicitly verified --memory-dir to its project; refuses replacement")
     ap.add_argument("--json", action="store_true",
                     help="emit machine-readable JSON (for agent/programmatic consumption)")
     args = ap.parse_args(argv)
@@ -225,14 +276,25 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[recall] {msg}", file=sys.stderr)
         return 2
 
+    if args.bind_project is not None:
+        if args.memory_dir is None or args.query.strip() or args.health:
+            return _emit_error("--bind-project requires --memory-dir and no query/--health")
+        try:
+            record = bind_memory_dir(args.memory_dir, args.bind_project)
+        except (OSError, ValueError, RuntimeError) as exc:
+            return _emit_error(f"cannot bind project memory ({type(exc).__name__})")
+        print(json.dumps({"status": "BOUND_BY_OPERATOR", **record}))
+        return 0
+
     try:
         memory_dir = args.memory_dir or discover_memory_dir()
     except (OSError, RuntimeError) as exc:
         return _emit_error(f"cannot locate project memory ({type(exc).__name__})")
     if memory_dir is None:
         return _emit_error(
-            "could not locate this project's Claude Code memory dir under "
-            "~/.claude/projects/*/memory. Pass --memory-dir <path> or set $CLAUDE_MEMORY_DIR.")
+            "could not verify this project's Claude Code memory ownership. "
+            "Pass --memory-dir <path> or set $CLAUDE_MEMORY_DIR after checking the store; "
+            "use --memory-dir <path> --bind-project <project> to enable automatic discovery.")
     try:
         docs, idx_lines = _read_corpus(memory_dir)
     except MemoryStoreError as exc:

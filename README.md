@@ -382,8 +382,14 @@ python scripts\find-related-repos.py "transportability" --names-only
 `reuse.py` searches a pre-baked, committed index (`scripts/reuse-index.json`);
 run `python scripts/reuse.py build` once if you install a kit into a
 non-default location. `recall.py` discovers only the Claude Code memory store
-whose encoded project path matches the current working directory. From another
-directory, pass `--memory-dir` or `$CLAUDE_MEMORY_DIR` explicitly; it never falls
+whose encoded project path matches the current working directory **and** whose
+operator-verified origin matches the canonical project identity. Encoded names
+can collide (`trial-a` versus `trial/a`), so unbound stores are refused. After
+checking that a store belongs exclusively to the project, run
+`python scripts/recall.py --memory-dir <store> --bind-project <project>` once.
+This records ownership; it cannot detect previously mixed content. The command
+never overwrites an existing binding. Moved projects require explicit review.
+From another directory, pass `--memory-dir` or `$CLAUDE_MEMORY_DIR` explicitly; it never falls
 back to another project's sole or newest store. An unreadable Markdown entry,
 invalid UTF-8, or link outside the store refuses the query with exit 2. JSON hits
 carry `sha256` and `evidence_status: unverified_memory`: identity is not source
@@ -572,16 +578,22 @@ Tests cover all eight pattern families on both shells.
 
 ## CI
 
-Every push and PR runs three jobs via GitHub Actions ([`.github/workflows/test.yml`](.github/workflows/test.yml)):
+The main [test workflow](.github/workflows/test.yml) covers:
 
-- **Pester (Windows):** all PowerShell test suites, ~83 tests covering
+- **Pester (Windows):** PowerShell test suites covering
   install helpers, redaction, supply-chain pinning, SHA gate, doctor report,
   hook-backup, second-rerun rules-backup, Sentinel/Overmind/ProjectIndex/update wrappers.
-- **Bash (Ubuntu):** ~26 bash tests covering install.sh helpers, redaction,
+- **Bash (Ubuntu):** shell tests covering install.sh helpers, redaction,
   pinning, dot-source hygiene, rollback, template rendering, hook-backup,
   second-rerun rules-backup.
 - **Lint:** ShellCheck (severity `error`) on all `.sh` files +
   PSScriptAnalyzer (severity `error`) on all `.ps1` files.
+- **Python:** the collected regression suite and enforcement contracts.
+- **Additional gates:** Windows capsule unpacking, bootstrap SHA checks,
+  Sentinel rule-list drift, and Pages link checks. Separate workflows cover
+  replay, source audit, adjudication, signatures, and reviewer authorization;
+  component/full-install workflows have their own triggers. Workflow files and
+  exact-commit Actions results are authoritative for current coverage.
 
 The intent is that any regression in install path, secret-redaction, or
 supply-chain pinning fails CI before reaching a student.

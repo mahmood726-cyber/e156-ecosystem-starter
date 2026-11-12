@@ -22,7 +22,7 @@ import tempfile
 from unittest.mock import patch
 
 
-SCHEMA = "e156-memory-contract-v1"
+SCHEMA = "e156-memory-contract-v2"
 DEFAULT_IMPLEMENTATION = Path(__file__).with_name("recall.py")
 
 
@@ -68,6 +68,13 @@ def _discovery(module, root, mode):
     if mode == "exact":
         expected = stores / module._encode_project_dir(cwd) / "memory"
         _memory(expected)
+        # v2 adds an independently declared origin to the positive fixture.
+        # Earlier v1 reports used only an ambiguous directory name. Do not
+        # compare v1/v2 scores as a fixed-evaluator performance improvement.
+        identity = hashlib.sha256(os.path.normcase(str(cwd.resolve())).encode("utf-8")).hexdigest()
+        (expected / ".e156-project-origin.json").write_text(json.dumps({
+            "schema": "e156-memory-origin-v1", "project_sha256": identity,
+        }), encoding="utf-8")
     else:
         expected = None
     if mode != "none":
