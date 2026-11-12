@@ -10,11 +10,13 @@ existing independent installation contracts.
 
 The coordinator reuses `component-lock.json`, `component_source.py`,
 `rapidmeta_install.py` and `aact_install.py`, whose exact-source adapters already
-have Windows/Linux source canaries. The existing Linux full-chain workflow and
-`verify-full-install.py` exercise Sentinel, Overmind, ProjectIndex and the
-extractor. The new CI path combines that existing chain with paired research
-activation. It does not rewrite the legacy installers or call them on a personal
-machine as a test.
+have Windows/Linux source canaries. The full-chain workflow runs the Linux
+installer with `verify-full-install.py` and the Windows installer through
+`windows_install_smoke.ps1`. Both paths combine Sentinel, Overmind, ProjectIndex
+and the extractor with paired research activation. They do not rewrite the
+legacy installers or call them on a personal machine as a test. A configured CI
+path is not evidence of a passing run; inspect the workflow result for the exact
+revision being evaluated.
 
 New code is limited to generation records, a single active pointer, exclusive
 operation locking, repeated verification, rollback and their negative controls.
@@ -76,6 +78,56 @@ external package changes, authenticate trusted source commits, prevent hostile
 filesystem races, sign scientific evidence or certify an Overmind project verdict.
 Existing processes keep whichever component paths they previously resolved.
 
+## Disposable Windows full-chain verification
+
+The `full-windows-install` job in
+[`full-system-integration.yml`](../.github/workflows/full-system-integration.yml)
+uses a fresh GitHub-hosted Windows Server 2022 runner and Python 3.13. Its
+[`windows_install_smoke.ps1`](../scripts/windows_install_smoke.ps1) entrypoint
+refuses local, self-hosted and non-Windows contexts before writing files. Runner
+environment variables are an accidental-use guard, not a security sandbox;
+never spoof them to run this script on a personal machine.
+
+The job creates a new profile directory and Python virtual environment under
+`RUNNER_TEMP`, checks the installer SHA, and runs the real `install.ps1 -Full`
+and all four legacy subinstallers. It then installs, verifies and exercises the
+failed-upgrade preservation control for the locked RapidMeta/AACT pair. The
+final verification requires installed rules/context/memory, a blocking Sentinel
+hook and live scan, Overmind's verifier-health JSON verdict, a valid generated
+TruthCert registry key, the persisted extractor path and core import canary,
+ProjectIndex reconciliation, pip dependency consistency, and Sentinel/Overmind
+source commits matching the component lock. No agent CLI login is attempted.
+
+Windows transport controls also exercise the unchanged strict Overmind JSON
+checker without PowerShell text re-encoding, and a local synthetic Git remote
+with paths beyond the legacy Windows limit. The extractor fetches only the
+requested ref, enables long paths in that checkout, and gives each Git command
+a 120-second deadline with noninteractive input and targeted process-tree
+cleanup. Missing refs still refuse installation; these controls do not assess
+the scientific accuracy of extraction.
+
+Windows' User environment registry, known-folder Desktop and clipboard are not
+isolated by changing `USERPROFILE`. The repository installers exercise those
+APIs on the disposable runner account; that account's destruction contains the
+side effects. This is why a temporary directory alone is insufficient to allow
+local full-install testing. The Linux key-file contract is not substituted for
+Windows' actual registry-key contract.
+
+On success, the job uploads only `windows-install-manifest.json`: source commits,
+installer/lock hashes, observed package/runtime versions, the paired generation,
+check outcomes and coverage limits. The key, registry export, environment,
+installation transcripts and private profile are not uploaded. Failed runs
+produce no success receipt. The extractor's legacy release-tag selection is
+recorded by its observed commit; this does not make that tag immutable or
+authenticate its publisher. Legacy pip dependencies remain unpinned transitives.
+
+This verifies installation integration on a prepared hosted runner, not setup of
+a consumer Windows machine without Git/Python. Agent authentication, PDF extras,
+PostgreSQL, hardware power loss, scientific performance and project certification
+remain outside this job. The workflow has a bounded timeout and does not retry a
+failed installation automatically. Local tests cover only refusal and confinement
+controls; actual Windows full-chain verification requires a passing hosted run.
+
 ## Static versus dynamic disclosure
 
 | Item | Kind | Meaning |
@@ -85,7 +137,9 @@ Existing processes keep whichever component paths they previously resolved.
 | Coordinator tests | Synthetic filesystem/failure controls | No network, real snapshots or scientific claims |
 | Runtime versions, verifier hashes and adapter receipts | Dynamic execution | Binds the selected runtime and tested source behavior |
 | Active pointer and rollback | Dynamic filesystem operations | One atomic pair selection after fresh verification |
-| Clinical accuracy, full Windows ecosystem, PostgreSQL | Not measured here | No completeness or scientific-performance claim |
+| Windows smoke paths and expected layer checks | Static engineering contract | Fresh hosted account only; no private-user installation |
+| Windows full-chain receipt | Dynamic CI execution, only after success | Installer outputs, live canaries, installed sources and runtime; inspect exact revision/run |
+| Clinical accuracy, consumer-machine bootstrap, PostgreSQL | Not measured here | No completeness or scientific-performance claim |
 
 Local verification on 2026-11-11: the coordinator, governance and existing
 full-install verifier suite passed 100 tests, including 26 synthetic coordinator

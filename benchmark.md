@@ -9,12 +9,21 @@ The upgrade plan is [RESEARCH-HARNESS-ROADMAP.md](docs/RESEARCH-HARNESS-ROADMAP.
 The useful target is a reproducible, source-grounded review with accountable
 human decisions and measurable failures, at a documented cost.
 
+The [November continuation comparison](docs/HARNESS-COMPARISON-2026-11.md)
+adds current OpenAI/Claude/DeepAgents/Copilot developments, research workflow and
+evaluation comparators, and an executed LangGraph recovery strategy experiment.
+All 18 development cases are retained: direct replay and revalidated checkpoint
+resumption each satisfy 6/6 integrity conditions; a deliberately unvalidated
+cached integration satisfies 2/6. Every strategy runs the same E156 checker:
+this is an integration ablation, not a scientific product ranking. See the
+[observations](benchmarks/recovery/development-windows.json) and report limits.
+
 ## External comparison: documented capabilities, not measured rankings
 
 All sources below are primary project documentation or originating organisations,
-consulted on the date above. Their tools were not run in this session. A feature
-listed here is not a claim of superior accuracy, and an omitted feature is not
-proof of absence.
+consulted on the date above. This table compares documentation; the separate
+LangGraph experiment is reported above. A feature listed here is not a claim
+of superior accuracy, and an omitted feature is not proof of absence.
 
 | Reference | Documented practice to learn from | Implication for this ecosystem |
 |---|---|---|

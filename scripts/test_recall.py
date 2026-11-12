@@ -91,8 +91,10 @@ def test_discover_picks_sole_candidate(tmp_path, monkeypatch):
     monkeypatch.delenv("CLAUDE_MEMORY_DIR", raising=False)
     # A sole candidate is eligible only when it belongs to this project.
     cwd = tmp_path / "requested-project"
+    cwd.mkdir()
     mem = tmp_path / ".claude" / "projects" / recall._encode_project_dir(cwd) / "memory"
     mem.mkdir(parents=True)
+    recall.bind_memory_dir(mem, cwd)
     monkeypatch.setattr(recall.Path, "home", classmethod(lambda cls: tmp_path))
     monkeypatch.setattr(recall.Path, "cwd", classmethod(lambda cls: cwd))
     assert recall.discover_memory_dir() == mem
@@ -108,6 +110,7 @@ def test_discover_prefers_cwd_match(tmp_path, monkeypatch):
     encoded = recall._encode_project_dir(fake_cwd)
     mine = projects / encoded / "memory"
     mine.mkdir(parents=True)
+    recall.bind_memory_dir(mine, fake_cwd)
     monkeypatch.setattr(recall.Path, "home", classmethod(lambda cls: tmp_path))
     monkeypatch.setattr(recall.Path, "cwd", classmethod(lambda cls: fake_cwd))
     assert recall.discover_memory_dir() == mine

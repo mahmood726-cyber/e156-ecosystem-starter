@@ -122,6 +122,40 @@ function Set-TruthCertHmacKey {
     $env:TRUTHCERT_HMAC_KEY = $Key
 }
 
+function Invoke-OvermindHealthCanary {
+    [CmdletBinding()]
+    param(
+        [string]$PythonPath,
+        [string]$OvermindPath,
+        [string]$CheckerPath,
+        [ValidateRange(0.01, 240)][double]$TimeoutSeconds = 240,
+        [ValidateRange(0.01, 30)][double]$CheckerTimeoutSeconds = 30
+    )
+    # Keep native stdout bytes intact. Windows PowerShell 5.1 text pipelines
+    # can prepend a UTF-8 BOM, and 2>&1 also mixes diagnostic stderr into JSON.
+    # The existing strict checker receives only the original stdout bytes;
+    # neither BOM stripping nor JSON repair may turn bad upstream data green.
+    $transport = @'
+import sys
+sys.path.insert(0, sys.argv[5])
+from bounded_native import Refused, run
+
+try:
+    result = run([sys.argv[1], 'meta-verify'], timeout=float(sys.argv[3]),
+                 stderr_sink=sys.stderr.buffer.write)
+    checked = run([sys.executable, sys.argv[2]], input=result,
+                  timeout=float(sys.argv[4]), stderr_sink=sys.stderr.buffer.write)
+except Refused as exc:
+    print('REFUSED: Overmind health check: ' + str(exc), file=sys.stderr)
+    raise SystemExit(1)
+sys.stdout.buffer.write(checked)
+'@
+    & $PythonPath -c $transport $OvermindPath $CheckerPath $TimeoutSeconds $CheckerTimeoutSeconds $PSScriptRoot
+    if ($LASTEXITCODE -ne 0) {
+        throw 'REFUSED: Overmind verifier-health result was not CERTIFIED; not reporting ready.'
+    }
+}
+
 if ($Import) { return }
 
 # An explicitly empty rotation key is not the same as omitting -HmacKey.
@@ -185,29 +219,25 @@ if ($existing -and -not $HmacKey) {
 # can return exit 0 even when its JSON contains passed=false / REJECT.
 Write-Step "overmind meta-verify (verifier-health canary)"
 $checker = Join-Path $PSScriptRoot 'check-overmind-canary.py'
-$py = Get-Command python -ErrorAction SilentlyContinue
-if (-not $py -or -not (Test-Path -LiteralPath $checker -PathType Leaf)) {
-    Write-Host "REFUSED: Python or the mandatory Overmind canary checker is missing." -ForegroundColor Red
+$py = Get-Command python -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+$overmindCommand = Get-Command overmind -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $py -or -not $overmindCommand -or -not (Test-Path -LiteralPath $checker -PathType Leaf) -or
+    -not (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'bounded_native.py') -PathType Leaf)) {
+    Write-Host "REFUSED: Python, Overmind or a mandatory canary helper is missing." -ForegroundColor Red
     exit 1
 }
-$canary = & overmind meta-verify 2>&1
-$overmindExit = $LASTEXITCODE
-if ($overmindExit -ne 0) {
-    Write-Host "REFUSED: Overmind meta-verify command failed ($overmindExit)." -ForegroundColor Red
-    exit 1
-}
-$canaryJson = $canary -join "`n"
-$canaryJson | & $py.Source $checker
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "REFUSED: Overmind verifier-health result was not CERTIFIED; not reporting ready." -ForegroundColor Red
+try {
+    Invoke-OvermindHealthCanary -PythonPath $py.Source -OvermindPath $overmindCommand.Source -CheckerPath $checker
+} catch {
+    Write-Host $_.Exception.Message -ForegroundColor Red
     exit 1
 }
 
 Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green
 Write-Host "  Overmind + TruthCert ready. Typical use:"
-Write-Host "    overmind scan --repo C:\Projects\my-paper"
-Write-Host "    overmind run-once --repo C:\Projects\my-paper"
+Write-Host "    overmind scan --repo ."
+Write-Host "    overmind run-once --repo ."
 Write-Host "    overmind portfolio-audit"
 Write-Host "======================================================" -ForegroundColor Green
 
