@@ -216,6 +216,13 @@ available; their original bundles are retained at Git revision `fb511d8`.
 Historical profile-validation measurements remain historical. The new bundles
 require a fresh export/profile check, rather than relabelling earlier validation.
 
+The concurrent trusted-review/checklist integration at public revision `34359562`
+also consumes these bundles. Its current example protocol and unreviewed dossier,
+CLI commands and test trust-anchor data were rebound to the regenerated manifests.
+The source excerpts, report/entity selections and empty reviewer-ballot lists
+remain unchanged. The original configurations remain at that public revision;
+the rebuilt checklist and dossier still retain scientific `HOLD`.
+
 At the preceding revision, local validation reported **88 synthetic replay controls** passed. Both real examples
 were sealed and successfully replayed locally. CI separately replays both fixed
 digests on Windows and Linux. The control suite covers changed source/config/

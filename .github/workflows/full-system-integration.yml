@@ -1,16 +1,20 @@
 name: Full-system installer integration
 
-# This job exercises the REAL --full Linux install chain on a disposable
-# GitHub-hosted runner. Unit tests in test.yml deliberately do not do that.
+# These jobs exercise the real full install chains on disposable GitHub-hosted
+# runners. Unit tests in test.yml deliberately do not do that.
 on:
   pull_request:
     branches: [main]
     paths:
       - "install/**"
-      - "scripts/install-sentinel.sh"
-      - "scripts/install-overmind.sh"
-      - "scripts/install-extractor.sh"
-      - "scripts/install-projectindex.sh"
+      - "scripts/install-sentinel.*"
+      - "scripts/install-overmind.*"
+      - "scripts/install-extractor.*"
+      - "scripts/bounded_native.py"
+      - "scripts/install-projectindex.*"
+      - "scripts/write-gemini-handoff.ps1"
+      - "scripts/windows_install_smoke.ps1"
+      - "scripts/check-overmind-canary.py"
       - "scripts/verify-full-install.py"
       - "scripts/research_environment.py"
       - "scripts/check-research-upgrade.py"
@@ -21,9 +25,14 @@ on:
       - "scripts/aact_install.py"
       - "scripts/aact_canary.py"
       - "requirements-aact-canary.lock"
+      - "requirements-ci.lock"
       - "tests/test_research_environment.py"
       - "tests/test_full_install_verifier.py"
+      - "tests/test_windows_install_smoke.py"
+      - "tests/test_overmind_powershell_transport.py"
+      - "tests/test_extractor_windows_transport.py"
       - "docs/HASH-linux.txt"
+      - "docs/HASH.txt"
       - ".github/workflows/full-system-integration.yml"
   workflow_dispatch:
   schedule:
@@ -74,3 +83,40 @@ jobs:
           python scripts/verify-full-install.py
           python scripts/research_environment.py verify --root "$RUNNER_TEMP/research-pair"
           python scripts/check-research-upgrade.py --root "$RUNNER_TEMP/research-pair"
+
+  full-windows-install:
+    name: Windows full-chain installation and live canaries
+    runs-on: windows-2022
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.13"
+
+      - name: Run safety and verifier refusal controls without installing
+        shell: powershell
+        run: |
+          python -m pip install --require-hashes -r requirements-ci.lock
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pytest tests/test_windows_install_smoke.py tests/test_full_install_verifier.py tests/test_overmind_powershell_transport.py tests/test_extractor_windows_transport.py -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Run real Windows installation and verify the complete chain
+        id: windows-smoke
+        timeout-minutes: 28
+        shell: powershell
+        run: ./scripts/windows_install_smoke.ps1
+
+      # Only the deliberately minimal public receipt is uploaded. The generated
+      # key, User registry, install logs and private profile are never artifacts.
+      - name: Preserve public Windows runtime and source receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: windows-install-manifest
+          path: ${{ steps.windows-smoke.outputs.evidence }}/windows-install-manifest.json
+          if-no-files-found: error
+          retention-days: 14

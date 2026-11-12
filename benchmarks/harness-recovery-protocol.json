@@ -1,0 +1,16 @@
+{
+  "schema": "e156-harness-recovery-protocol-v1",
+  "scope": "Development comparison of orchestration strategies around the SAME E156 replay verifier; not a ranking of independent scientific engines.",
+  "held_out": false,
+  "scientific_accuracy_measured": false,
+  "model_calls": 0,
+  "fixtures": ["stepwise", "strokewalk"],
+  "strategies": ["direct_replay", "langgraph_cached", "langgraph_revalidated"],
+  "scenarios": ["unchanged", "source_bytes_changed", "result_bytes_changed"],
+  "interruption": "Exit the first Python process after the audit checkpoint, then resume in a fresh Python process. Not a mid-write crash or power-loss durability test.",
+  "workflow": "audit -> emit local receipt; emit never publishes externally or establishes release readiness",
+  "integrity_contract": "Unchanged bundles complete with the anchored payload. Changed source or result bytes must refuse before emitting a current verified receipt.",
+  "metrics": ["initial outcome", "resumed outcome", "actual verifier calls before/after restart", "analytical payload hash", "wall seconds including interpreter startup"],
+  "selection": "Two existing OA development bundles already used to build the replay checker. No tuning or held-out generalization claim. Naive cached orchestration is an intentionally incomplete integration control, not a LangGraph vulnerability.",
+  "environment": "Windows, CPython 3.13; LangGraph 1.2.20 with SQLite checkpointer 3.1.3. No API credentials, private corpora, model responses or network calls during evaluation."
+}

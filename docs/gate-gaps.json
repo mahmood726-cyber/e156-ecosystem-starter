@@ -668,6 +668,203 @@
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
         "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801"
       }
+    },
+    {
+      "id": ".github/workflows/synthesis-signing.yml#jobs.signing",
+      "kind": "ci-job",
+      "name": "Explicit replay signing trust on Windows and Linux",
+      "stops": "Requires locked signing dependencies and the existing locked Overmind signer, then executes signature, policy, malformed-key, project-isolation, tamper and replay integration controls. No signing dependency can be skipped in this dedicated job.",
+      "would_not_stop": [
+        "Compromised local runtime or compromised distribution of the independently retained policy digest.",
+        "Old approved policy replay, absent freshness/expiry, compromised active private keys, or an unaudited human identity behind a valid key.",
+        "Scientific errors, incorrect human adjudication, source authenticity or release certification. Tests use disposable keys and development examples only."
+      ],
+      "source": "scripts/synthesis_signing.py; tests/test_synthesis_signing.py; docs/SYNTHESIS-SIGNING.md. Independent malformed-public-key probe incorporated.",
+      "seal": {
+        ".github/workflows/synthesis-signing.yml#jobs.signing": "f6cba35f7e18df09031a8c827b11fc88f3d92351f844f4b48485115b15264e54",
+        "scripts/synthesis_signing.py": "0927d45b49665f9750eaf6f68048c99675a8baaea7a7fb13f950c789b14d6e06",
+        "scripts/requirements-signing.lock": "7ebeb730aa134593ce3a0feda7fcf37e17abed5f0dd321903482c0fc259f49b7",
+        "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db"
+      }
+    },
+    {
+      "id": ".github/workflows/synthesis-review.yml#jobs.audit",
+      "kind": "ci-job",
+      "name": "Persistent audit recovery on Windows and Linux",
+      "stops": "Runs the bounded source-replay workflow integration controls on both OSes: explicit protocol anchoring, mandatory dependency revalidation, permanent invalidation, canonical history/receipt checks, writer exclusion, and own-worker termination before commit or after commit before response.",
+      "would_not_stop": [
+        "Physical power loss, broken filesystem locks/flushes, network-filesystem behavior, or a hostile concurrent filesystem writer. Tests terminate local subprocesses on development fixtures.",
+        "Authenticated-history forgery, compromised interpreters or trust-anchor distribution, or independently verified operator identity. Local history hashes are not signatures.",
+        "Duplicate actions in downstream email/deploy/publish systems. The stage has no external side effects and does not establish exactly-once external delivery.",
+        "Unsupported search/screen/extract/adjudicate stages, scientific errors, cohort decisions or release certification. Completion remains HOLD."
+      ],
+      "source": "scripts/synthesis_review_runner.py; tests/test_synthesis_review_runner.py; docs/SYNTHESIS-REVIEW-RUNNER.md. Reuses the unchanged source-replay checker and archived OA bundles.",
+      "seal": {
+        ".github/workflows/synthesis-review.yml#jobs.audit": "d73da018dce2ad4bf339f7c8d0b78f885d2ca3ee250e6500c3da5e42c28787f9",
+        "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626",
+        "tests/test_synthesis_review_runner.py": "02ca5ab689176b15718d55179bb9388a8bb76997653dd2d41636519232158d36",
+        "examples/synthesis-review-stepwise.json": "63bf12af4243d0dc472d29e7a4f4d57b1756b7c9f9d08fb09705af86c5b7a5b0",
+        "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a",
+        "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
+        "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+        "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+        "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
+        "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
+        "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
+        "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801"
+      }
+    },
+    {
+      "id": "scripts/synthesis_adjudication.py",
+      "kind": "script",
+      "name": "Source-bound cohort and outcome decision records",
+      "stops": "Wrong externally anchored project/dossier, failed source replay, missing or ambiguous quotes/locators, duplicate primary report identity, malformed typed scopes/pairs, missing scope resolution, duplicate reviewer IDs, stale context/original ballots, and changed dependencies during verification.",
+      "would_not_stop": [
+        "Reviewer identity, independence, blinding, truthful rationale or semantic support of quotes. All recorded decisions retain pooling HOLD and scientific validity NOT_ESTABLISHED.",
+        "Authenticated append-only history, signature trust or permanent invalidation. This read-only adapter revalidates the supplied dossier; restored original bytes can verify again.",
+        "Hostile concurrent filesystem/interpreter changes, compromised external anchor distribution, newer unseen corrections or network authenticity of archived sources.",
+        "General PDF extraction, cross-file supplements, registry outcome extraction, transitive cohort graphs, independent study weighting, clinical performance or release certification."
+      ],
+      "source": "scripts/synthesis_adjudication.py; docs/SYNTHESIS-ADJUDICATION.md; unchanged replay and audit dependencies.",
+      "seal": {
+        "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
+        "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+        "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+        "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
+        "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
+        "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
+        "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
+        "scripts/synthesis_adjudication.py": "e8784b187cccbd188ca09de4177d8873c0e4b361f0026475d0f0030bd6a5d2b5",
+        "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626"
+      }
+    },
+    {
+      "id": ".github/workflows/synthesis-adjudication.yml#jobs.adjudication",
+      "kind": "ci-job",
+      "name": "Decision-record controls on Windows and Linux",
+      "stops": "Executes the decision-record integration suite and anchored unreviewed OA example on both OSes, including stale context, retained disagreement, source changes, malformed Unicode and legacy Windows console encoding.",
+      "would_not_stop": [
+        "Held-out scientific errors or actual independent human judgments: ballots are synthetic software controls and the shipped example has no reviewer decisions.",
+        "Reviewer identity, independence, blinding, truthful rationale or semantic support of quotes. All recorded decisions retain pooling HOLD and scientific validity NOT_ESTABLISHED.",
+        "Authenticated append-only history, signature trust or permanent invalidation. This read-only adapter revalidates the supplied dossier; restored original bytes can verify again.",
+        "Hostile concurrent filesystem/interpreter changes, compromised external anchor distribution, newer unseen corrections or network authenticity of archived sources.",
+        "General PDF extraction, cross-file supplements, registry outcome extraction, transitive cohort graphs, independent study weighting, clinical performance or release certification."
+      ],
+      "source": "tests/test_synthesis_adjudication.py and examples/synthesis-adjudication-stepwise.json; dedicated cross-platform workflow.",
+      "seal": {
+        "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
+        "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+        "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+        "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
+        "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
+        "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
+        "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
+        "scripts/synthesis_adjudication.py": "e8784b187cccbd188ca09de4177d8873c0e4b361f0026475d0f0030bd6a5d2b5",
+        "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626",
+        ".github/workflows/synthesis-adjudication.yml#jobs.adjudication": "15393b95c1e48b0d04119fd882548078c3e35eef0d52f2442852e316ecc57aa3",
+        "tests/test_synthesis_adjudication.py": "2eeabc4139ceed09f63f2bfc556db5d1f1aa6f2e926400b4475affbe3164b5a6",
+        "examples/synthesis-adjudication-stepwise.json": "390e8936c3d01eb5aba71c25a283506db684eab4f9b60304b38f88c2ddd8a970",
+        "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a"
+      }
+    },
+    {
+      "id": ".github/workflows/synthesis-reviewer-auth.yml#jobs.reviewer",
+      "kind": "ci-job",
+      "name": "Reviewer-key authorization and persistent decisions on Windows/Linux",
+      "stops": "Requires the existing hash-locked signing runtime and actual locked Overmind signer, then checks complete frozen-dossier signatures, domain/project/role/roster/key bindings, duplicate assigned principals, revoked keys, unresolved decisions, dependency invalidation, forged history, writer exclusion and own-worker interruption around commit.",
+      "would_not_stop": [
+        "False person/key assignments, multiple keys controlled by one person, coerced/copied ballots, invalid semantic judgments or scientific errors. Human identity/independence remain unestablished and completion retains HOLD.",
+        "Stale but internally valid policies deliberately selected by the operator, unseen source corrections, compromised private keys, unauthenticated state history or compromised local interpreter/trust-anchor distribution.",
+        "Physical power loss, faulty storage flushes/locks, network filesystems, a hostile writer changing/restoring dependencies during verification, distributed coordination or downstream exactly-once actions.",
+        "A full review workflow, blinded/incremental ballot collection, general extraction or held-out scientific accuracy. Test keys and ballots are synthetic controls."
+      ],
+      "source": "scripts/synthesis_reviewer_auth.py; scripts/synthesis_decision_runner.py; tests/test_synthesis_reviewer_workflow.py; docs/SYNTHESIS-REVIEWER-AUTH.md. Reuses original signing trust, decision replay and SQLite helpers.",
+      "seal": {
+        "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
+        "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+        "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+        "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
+        "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
+        "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
+        "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
+        "scripts/synthesis_adjudication.py": "e8784b187cccbd188ca09de4177d8873c0e4b361f0026475d0f0030bd6a5d2b5",
+        "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626",
+        ".github/workflows/synthesis-reviewer-auth.yml#jobs.reviewer": "e17247857496fa968bf39b19634f0e561c11f416fe52c40bf32ffcaa55815d14",
+        "scripts/synthesis_signing.py": "0927d45b49665f9750eaf6f68048c99675a8baaea7a7fb13f950c789b14d6e06",
+        "scripts/synthesis_reviewer_auth.py": "64c33a238e1cc0a916e4557d4e8396907dc39b1451fa64da6478659f6825c42d",
+        "scripts/synthesis_decision_runner.py": "c4ff3dbd596bf374fc5d52ccaa5765866fe71fe5426bc18795503c7686291dcf",
+        "tests/test_synthesis_reviewer_workflow.py": "16031e46108ecb9974b44b83f111337d0605d6926b2815857652ca074a4fb0ee",
+        "scripts/requirements-signing.lock": "7ebeb730aa134593ce3a0feda7fcf37e17abed5f0dd321903482c0fc259f49b7",
+        "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db",
+        "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a"
+      }
+    },
+    {
+      "id": ".github/workflows/full-system-integration.yml#jobs.full-windows-install",
+      "kind": "ci-job",
+      "name": "Disposable Windows full-chain installation",
+      "stops": "Refuses local/self-hosted execution, reused tool/key state, unsafe roots, installer failure, absent or mismatched installed layers, invalid Windows registry bindings, nonblocking hooks, live-canary failure, source-lock mismatch, dependency conflicts and research-pair activation or failed-upgrade preservation failure.",
+      "would_not_stop": [
+        "A spoofed hosted-runner environment on a personal account: the entrypoint is an accidental-use guard, not a security sandbox.",
+        "Consumer Windows bootstrap without preinstalled Git/Python, agent login, PDF extras, PostgreSQL or physical power-loss failure.",
+        "Mutable legacy dependency resolution, dishonest source provenance, scientific errors or lack of a project-specific Overmind release verdict."
+      ],
+      "source": ".github/workflows/full-system-integration.yml full-windows-install; scripts/windows_install_smoke.ps1; existing full-install and research-pair canaries. No local full installer test.",
+      "seal": {
+        ".github/workflows/full-system-integration.yml#jobs.full-windows-install": "e4d4342b24365705a93071d146b2abce96d1ea4988c3e5ff4c1d3dbcc7e49ef1",
+        "scripts/windows_install_smoke.ps1": "81a56fe3c1146227667bccfb2ad762b32d838aedf9ba5e4cf2a30bb13c19af97",
+        "tests/test_windows_install_smoke.py": "ab38a959d348ccaa406633f56bc2fe12403da89a8a87830ae6cbbd9dc6fa98d2",
+        "scripts/verify-full-install.py": "ad1b1d80d45e9aceea3d585813a28466860831c58c0de2e77ce6ff9f79757758",
+        "tests/test_full_install_verifier.py": "7bbb1677b61f5021a6269e3710471f7ba4c1181fa26c0319065c2c2baba692ce",
+        "scripts/research_environment.py": "171e1bf4afb9c85050cbe9bee41203feeb20ab45311d12425fdeff3339dafdde",
+        "scripts/check-research-upgrade.py": "c74739b5434320dda553fae3c001700ef7eb98cdcf51152cbd1d0fcffd2a9655",
+        "scripts/install-overmind.ps1": "e04b96bd4b4150501063fc5f7f6241264deb94a5c963efb27af7f0e97b995382",
+        "scripts/check-overmind-canary.py": "2f5d71b9e85c9a1235cea3eab10f03e84bf090b64544f32a7887e01ce802460f",
+        "scripts/install-extractor.ps1": "4e458344b94e65eb23090253ff53db5f6f139da65920b23bbce4cae5a3d753ab",
+        "scripts/bounded_native.py": "57304abdadfad39a460806453a6403d0e0659e4a943a13ad3ba31fcdba60b5f8",
+        "tests/test_overmind_powershell_transport.py": "1c8e261e333895747eaeb70e11246ddfc3c8686d7e1e065b69c1a151bdbfc1c8",
+        "tests/test_extractor_windows_transport.py": "6c87039d9666e1bf6b26907696b9c843f361802f1a2dbb6bb4138969069c6864"
+      }
+    },
+    {
+      "id": ".github/workflows/synthesis-checklist.yml#jobs.checklist",
+      "kind": "ci-job",
+      "name": "Synthesis checklist coverage and project memory ownership",
+      "stops": "Windows/Linux tests refuse missing checklist claims or rows, changed guidance/software/source/evidence, malformed judgments and nonfinite times, output aliases inside sealed bundles, overwritten records, ambiguous unbound memory stores and cross-project automatic recall. Positive controls exercise actual source replay and CLI record/render; completed records remain HOLD.",
+      "would_not_stop": [
+        "False operator ownership assertions, historical mixed memory, explicitly requested cross-project recall or hostile concurrent filesystem writers.",
+        "Wrong scientific interpretations despite valid quotations/hashes, dishonest reviewer declarations, unseen corrections or unreported tasks/costs.",
+        "Missing independent human pilot, trial-family held-out evaluation, truthful blinding and current policy custody.",
+        "Manually rewritten review histories: digests are inspection aids, not signed append-only custody."
+      ],
+      "source": ".github/workflows/synthesis-checklist.yml; scripts/synthesis_checklist.py; recall ownership binding; synthetic regression controls and existing OA development examples. Human decisions and research accuracy remain unmeasured.",
+      "seal": {
+        ".github/workflows/synthesis-checklist.yml#jobs.checklist": "2bb4ca755f92d1126fc9217a4cab01da2836159c3c89dc90e096545edc0ecd1d",
+        "scripts/synthesis_checklist.py": "cc89140cbaf231e3c49ef7d7e180eaed756ebf2e42a1a14c5485671ffba5dbe5",
+        "scripts/recall.py": "601db9500240bdd9aa53a98cc4801589c13e808b3bae86329574e00c1ef4f773",
+        "scripts/test_recall.py": "efe507c156bf3a46c1fac98384db6a8958ca0997c9a4b8fc8e9edea0dde08629",
+        "scripts/benchmark-memory.py": "588e099721892ed32642b52855745424ae61142d918dc9212e455496fde4f125",
+        "tests/test_synthesis_checklist.py": "ae539b5a36fcdc96f90aae77a5446137b00cc4fa23cce00337c50ebfcb6d8402",
+        "tests/test_memory_origin.py": "103d509fdccce1608d7aea2ea401da8600c8c43da1983d9dc01f812972b98c06",
+        "tests/test_memory_contract.py": "5426718461e309e2f33bac892b19c1a25342e921a33af0fc97538696cee75d19",
+        "tests/test_recall_legacy.py": "447df7120481758d58af92b6b8743f71c838d3a2099cbc9fede360e5852201a9",
+        "docs/SYNTHESIS-v1.3-CANDIDATE.md": "bd7852addfcf7482ce5035750e6100e070ad7376c1e73269eb98ad47e7f2f19b",
+        "docs/SYNTHESIS-HUMAN-CHECKLIST.md": "c88ad96b3a1498db429ad27cd2526679cffc00820349b14413ab252b7f8aef4b",
+        "docs/SYNTHESIS-RESPONSE-REVIEW.md": "b53d4fb85f07ab10f37413c22c5f7aee64b94123334b8537165bcb72fcf7efbf",
+        "docs/SYNTHESIS-PARTICIPANT-WORKSHEET.md": "8f14cabbdfff620f25ff0b3a7c673a5d794b2de76885054af4f0b787bda13119"
+      }
     }
   ]
 }

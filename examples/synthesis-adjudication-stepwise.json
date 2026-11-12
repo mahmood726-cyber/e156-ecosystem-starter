@@ -1,0 +1,45 @@
+{
+  "schema": "e156-adjudication-v1",
+  "project": "stepwise-development",
+  "reports": [
+    {
+      "id": "stepwise",
+      "manifest_sha256": "c7fb904293fcf13ec542553b9667bfec51ca7c713d1183b418ec93b6cbb177d3"
+    }
+  ],
+  "entities": [
+    {
+      "id": "baseline-attendees",
+      "kind": "cohort",
+      "report": "stepwise",
+      "scope": {
+        "definition": {"quote": "103 attended baseline testing", "locator": "body p 32"},
+        "population": null,
+        "timepoint": null
+      }
+    },
+    {
+      "id": "eligible-participants",
+      "kind": "cohort",
+      "report": "stepwise",
+      "scope": {
+        "definition": {
+          "quote": "After baseline testing, 97 participants (82 women, 15 men) were eligible to be randomized",
+          "locator": "body p 32"
+        },
+        "population": null,
+        "timepoint": null
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "baseline-eligibility-overlap",
+      "kind": "cohort_overlap",
+      "left": "baseline-attendees",
+      "right": "eligible-participants",
+      "reviews": [],
+      "adjudication": null
+    }
+  ]
+}

@@ -382,8 +382,14 @@ python scripts\find-related-repos.py "transportability" --names-only
 `reuse.py` searches a pre-baked, committed index (`scripts/reuse-index.json`);
 run `python scripts/reuse.py build` once if you install a kit into a
 non-default location. `recall.py` discovers only the Claude Code memory store
-whose encoded project path matches the current working directory. From another
-directory, pass `--memory-dir` or `$CLAUDE_MEMORY_DIR` explicitly; it never falls
+whose encoded project path matches the current working directory **and** whose
+operator-verified origin matches the canonical project identity. Encoded names
+can collide (`trial-a` versus `trial/a`), so unbound stores are refused. After
+checking that a store belongs exclusively to the project, run
+`python scripts/recall.py --memory-dir <store> --bind-project <project>` once.
+This records ownership; it cannot detect previously mixed content. The command
+never overwrites an existing binding. Moved projects require explicit review.
+From another directory, pass `--memory-dir` or `$CLAUDE_MEMORY_DIR` explicitly; it never falls
 back to another project's sole or newest store. An unreadable Markdown entry,
 invalid UTF-8, or link outside the store refuses the query with exit 2. JSON hits
 carry `sha256` and `evidence_status: unverified_memory`: identity is not source
@@ -393,6 +399,11 @@ The [research harness roadmap](docs/RESEARCH-HARNESS-ROADMAP.md) covers memory,
 component installation, source-to-claim provenance, review workflows and held-out
 evaluation. [Benchmark evidence](benchmark.md) separates executed development
 controls from external documented capabilities and unmeasured scientific accuracy.
+The [Synthesis checklist workflow](docs/SYNTHESIS-HARNESS-PILOT.md) brings the six
+core checks, 27 detailed checks and revision sweep into source-replayed review
+records. It preserves human judgments, evidence attachments, corrections and
+declared check time; automatic checks never fill human Pass statuses. The same
+guide specifies the supervised pilot and independent unseen-cohort evaluation.
 The [source replay contract](docs/SYNTHESIS-REPLAY.md) adds offline reconstruction
 of source-bound Synthesis participant checks and typed report-to-trial links,
 with exact archived inputs and an external manifest digest. Licensed real-paper
@@ -572,16 +583,22 @@ Tests cover all eight pattern families on both shells.
 
 ## CI
 
-Every push and PR runs three jobs via GitHub Actions ([`.github/workflows/test.yml`](.github/workflows/test.yml)):
+The main [test workflow](.github/workflows/test.yml) covers:
 
-- **Pester (Windows):** all PowerShell test suites, ~83 tests covering
+- **Pester (Windows):** PowerShell test suites covering
   install helpers, redaction, supply-chain pinning, SHA gate, doctor report,
   hook-backup, second-rerun rules-backup, Sentinel/Overmind/ProjectIndex/update wrappers.
-- **Bash (Ubuntu):** ~26 bash tests covering install.sh helpers, redaction,
+- **Bash (Ubuntu):** shell tests covering install.sh helpers, redaction,
   pinning, dot-source hygiene, rollback, template rendering, hook-backup,
   second-rerun rules-backup.
 - **Lint:** ShellCheck (severity `error`) on all `.sh` files +
   PSScriptAnalyzer (severity `error`) on all `.ps1` files.
+- **Python:** the collected regression suite and enforcement contracts.
+- **Additional gates:** Windows capsule unpacking, bootstrap SHA checks,
+  Sentinel rule-list drift, and Pages link checks. Separate workflows cover
+  replay, source audit, adjudication, signatures, and reviewer authorization;
+  component/full-install workflows have their own triggers. Workflow files and
+  exact-commit Actions results are authoritative for current coverage.
 
 The intent is that any regression in install path, secret-redaction, or
 supply-chain pinning fails CI before reaching a student.
@@ -595,3 +612,34 @@ Use, adapt, fork freely.
 
 - [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter) — narrow submission-pipeline CLI (`student new`, `student validate`, `student publish`, etc.)
 - [`e156-binary-mirror`](https://github.com/mahmood726-cyber/e156-binary-mirror) — content-stable mirror of large pinned binaries
+
+### Replay signature trust
+
+The optional [signing adapter](docs/SYNTHESIS-SIGNING.md) binds an existing replay
+to a separately approved project/key policy, using Overmind Ed25519 signing.
+Verification checks the signature and re-executes the replay. Scientific validity,
+human review and freshness remain unestablished; no production keys are enrolled.
+
+### Persistent audit recovery
+
+The [review runner](docs/SYNTHESIS-REVIEW-RUNNER.md) persists one source-replay
+audit with an externally anchored protocol. Each advance rechecks evidence and
+code, changed dependencies invalidate the run, and retries return one stable local
+receipt. SQLite transactions support process restart and writer exclusion.
+Completion retains HOLD; search and screening remain future stages.
+
+### Source-bound decision records
+
+The [decision-record adapter](docs/SYNTHESIS-ADJUDICATION.md) binds cohort and
+outcome scopes to exact archived source passages, preserves two declared reviewer
+ballots and a separate adjudication, and revalidates all evidence on every read.
+Incomplete scope and disagreements remain explicit. Reviewer identity and semantic
+support are unverified; even agreement retains pooling HOLD. The example has no
+invented reviewer decisions.
+
+The optional [reviewer authorization stage](docs/SYNTHESIS-REVIEWER-AUTH.md) binds
+every recorded decision to an approved signing key and an externally anchored
+reviewer roster. Its SQLite workflow rechecks signatures, policies, evidence and
+code on every resume; changed dependencies invalidate completion. Keys are
+authenticated under the supplied policy; real-world reviewer identity,
+independence and scientific correctness remain unestablished. Completion retains HOLD.

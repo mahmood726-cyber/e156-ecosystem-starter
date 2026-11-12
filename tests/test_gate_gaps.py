@@ -338,9 +338,20 @@ def real_copy(tmp_path, rgg):
     shutil.copytree(REPO_ROOT / "scripts", tmp_path / "scripts",
                     ignore=shutil.ignore_patterns("__pycache__"))
     (tmp_path / "docs").mkdir()
-    # Include the non-script dependencies sealed by the AACT and provenance gates.
+    # Include the non-script dependencies sealed by the component/provenance/audit gates.
     for rel in (rgg.REGISTRY_PATH, rgg.DOC_PATH, "requirements-aact-canary.lock",
-                "requirements-rocrate.lock", "schemas/rocrate-contexts.json"):
+                "requirements-rocrate.lock", "schemas/rocrate-contexts.json",
+                "requirements-ci.lock", "tests/test_synthesis_review_runner.py",
+                "examples/synthesis-review-stepwise.json",
+                "tests/test_synthesis_adjudication.py",
+                "tests/test_synthesis_reviewer_workflow.py",
+                "tests/test_synthesis_checklist.py", "tests/test_memory_origin.py",
+                "tests/test_memory_contract.py", "tests/test_recall_legacy.py",
+                "tests/test_windows_install_smoke.py", "tests/test_full_install_verifier.py",
+                "tests/test_overmind_powershell_transport.py", "tests/test_extractor_windows_transport.py",
+                "docs/SYNTHESIS-v1.3-CANDIDATE.md", "docs/SYNTHESIS-HUMAN-CHECKLIST.md",
+                "docs/SYNTHESIS-RESPONSE-REVIEW.md", "docs/SYNTHESIS-PARTICIPANT-WORKSHEET.md",
+                "examples/synthesis-adjudication-stepwise.json"):
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REPO_ROOT / rel, tmp_path / rel)
     assert rgg.check(tmp_path) == (rgg.CURRENT, [])

@@ -108,8 +108,10 @@ after both adapters pass. Failed-candidate controls preserve the prior pair.
 Windows/Linux component CI exercises that path; the Linux full-chain workflow
 adds the pair alongside the existing Sentinel/Overmind/ProjectIndex/extractor
 installation. The atomic boundary is the research pair's selection, not global
-Python packages, hooks, signing keys or private memory. Full Windows ecosystem
-installation, PostgreSQL and scientific validation remain outside this increment.
+Python packages, hooks, signing keys or private memory. A subsequent disposable
+Windows full-chain job now exercises the real installer and live canaries; only
+its exact-revision passing run establishes that coverage. Consumer-machine
+bootstrap, PostgreSQL and scientific validation remain outside these increments.
 
 ### M3 — a shared source-to-claim record and replay bundle
 
@@ -145,7 +147,8 @@ its `DERIVED` reference and leaves cohort overlap, outcome equivalence and pooli
 eligibility unresolved. Cochrane's distinction between reports and studies informs
 this boundary; see [the contract and sources](SYNTHESIS-REPLAY.md#typed-study-links).
 This is a bibliographic edge, not a validated multi-report cohort graph. Trial-family
-adjudication, general analysis replay and signatures remain outstanding.
+adjudication and general analysis replay remain outstanding. The later signing
+increment is described below.
 
 M3 provenance increment: [RO-Crate export](SYNTHESIS-ROCRATE.md) packages verified
 replay bytes with implementing software and a new execution record. The declared
@@ -162,7 +165,42 @@ examples were re-executed with unchanged source, registry, packet and prompt
 bytes. Their changed payloads and new manifest anchors are disclosed alongside
 the preserved prior receipts, including StepWise's overall NO_FLAG-to-HOLD change.
 
+M3 signing increment: [explicit replay trust](SYNTHESIS-SIGNING.md) adds detached
+DSSE/Ed25519 signatures with externally anchored, project-scoped public-key policy,
+revocation and replay re-execution. It reuses Overmind signing and independently
+verifies the result. Key identity, freshness, adjudication and scientific validity
+remain separate; no production keys are enrolled.
+
 ### M4 — a complete review with accountable decisions
+
+The [November comparison and recovery experiment](HARNESS-COMPARISON-2026-11.md)
+prioritize persistent review orchestration with dependency revalidation. The
+local LangGraph prototype resumes across process boundaries, but cached receipts
+require E156 revalidation after source/result changes. This is benchmark code,
+not a production review runner or a power-loss guarantee.
+
+A [bounded persistent audit stage](SYNTHESIS-REVIEW-RUNNER.md) now wraps the
+existing replay checker with SQLite transactions and an externally anchored
+protocol. Each advance revalidates dependencies; invalidation is terminal and
+completion retains HOLD. New-process and abrupt-worker-termination controls
+exercise rollback and receipt retry. This is one local stage; the full workflow
+and authenticated human decision system below remain outstanding.
+
+A [source-bound decision-record adapter](SYNTHESIS-ADJUDICATION.md) now records
+typed cohort/outcome scopes, two declared reviewer ballots and a distinct declared
+adjudicator when needed. Exact quotes, report identities, context and original
+ballots are bound and revalidated. Incomplete scope/disagreement remains explicit;
+all states retain HOLD. This is a read-only dossier verifier, not an authenticated
+review service, semantic adjudicator or automatic extension of the SQLite stage.
+
+The [reviewer-key authorization increment](SYNTHESIS-REVIEWER-AUTH.md) now binds
+all ballots/adjudications to approved keys, explicit roles, a reviewer roster and
+the complete frozen dossier. A separate SQLite stage revalidates those signatures,
+policies, source replay and code before authentication/completion and on retry.
+It rejects reuse of a declared person/key under two roster IDs, but real-world
+identity and independent human participation remain operator-attested. Semantic
+review, blinded decision collection and held-out evaluation remain outstanding;
+this stage cannot remove pooling HOLD or grant release eligibility.
 
 Add resumable protocol/search/screen/extract/appraise/synthesise/report stages
 over that shared record. Reuse CoLRev/ASReview through optional adapters where
@@ -177,6 +215,14 @@ unresolved disagreements and changed sources cannot produce a release-ready
 state. Browser E2E and numerical parity checks inspect the resulting dashboard.
 
 ### M5 — independent, held-out scientific evaluation
+
+The [checklist integration and pilot runbook](SYNTHESIS-HARNESS-PILOT.md) adds
+source-replayed coverage for all six core checks, 27 detailed checks and the
+revision sweep. It records declared human judgments separately from automated
+receipts, preserves corrections and check time, and captures runtime observations.
+The two archived OA examples remain development material. Independent human
+operators/reference reviewers, an approved fresh sampling frame and the actual
+unseen-cohort freeze/evaluation are still required; none are fabricated by the CLI.
 
 Freeze review/trial-family splits, OA licences, corpus hashes and reference
 adjudication before tuning. Use ASReview/SYNERGY for screening where licensed
@@ -202,7 +248,7 @@ split is created or consumed in M1; the final test is reserved for M5.
 | BM25 constants | Existing static algorithm defaults | No parameter tuning or performance optimisation in M1 |
 | Command results and per-case outcomes | Dynamic local execution | Behavior under the recorded code/environment |
 | Overmind stored numerical references | Existing cited fixtures | Reproduction of stored references; not newly adjudicated clinical evidence |
-| External comparator features | Primary documentation, checked 2026-11-11 | Documented capability; competitors were not run locally |
+| External comparator features | Primary documentation, checked 2026-11-11 | Documented capability; separate LangGraph strategy experiment linked under M4 |
 | Future scientific rankings | Not measured | Cannot support any present superiority claim |
 
 ## Release boundary
