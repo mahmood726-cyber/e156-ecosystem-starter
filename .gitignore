@@ -2,6 +2,8 @@
 PROGRESS.md
 /review.sqlite
 /review.sqlite-*
+/decision.sqlite
+/decision.sqlite-*
 STUCK_FAILURES.*
 sentinel-findings.*
 *.pyc

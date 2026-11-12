@@ -344,6 +344,7 @@ def real_copy(tmp_path, rgg):
                 "requirements-ci.lock", "tests/test_synthesis_review_runner.py",
                 "examples/synthesis-review-stepwise.json",
                 "tests/test_synthesis_adjudication.py",
+                "tests/test_synthesis_reviewer_workflow.py",
                 "examples/synthesis-adjudication-stepwise.json"):
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REPO_ROOT / rel, tmp_path / rel)

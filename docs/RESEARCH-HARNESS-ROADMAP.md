@@ -191,6 +191,15 @@ ballots are bound and revalidated. Incomplete scope/disagreement remains explici
 all states retain HOLD. This is a read-only dossier verifier, not an authenticated
 review service, semantic adjudicator or automatic extension of the SQLite stage.
 
+The [reviewer-key authorization increment](SYNTHESIS-REVIEWER-AUTH.md) now binds
+all ballots/adjudications to approved keys, explicit roles, a reviewer roster and
+the complete frozen dossier. A separate SQLite stage revalidates those signatures,
+policies, source replay and code before authentication/completion and on retry.
+It rejects reuse of a declared person/key under two roster IDs, but real-world
+identity and independent human participation remain operator-attested. Semantic
+review, blinded decision collection and held-out evaluation remain outstanding;
+this stage cannot remove pooling HOLD or grant release eligibility.
+
 Add resumable protocol/search/screen/extract/appraise/synthesise/report stages
 over that shared record. Reuse CoLRev/ASReview through optional adapters where
 they fit. Preserve search queries, deduplication decisions, excluded-study

@@ -774,6 +774,41 @@
         "examples/synthesis-adjudication-stepwise.json": "184552927c4defaa8741a5c792ffa508522b05d63c3987eea66abde64811e114",
         "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a"
       }
+    },
+    {
+      "id": ".github/workflows/synthesis-reviewer-auth.yml#jobs.reviewer",
+      "kind": "ci-job",
+      "name": "Reviewer-key authorization and persistent decisions on Windows/Linux",
+      "stops": "Requires the existing hash-locked signing runtime and actual locked Overmind signer, then checks complete frozen-dossier signatures, domain/project/role/roster/key bindings, duplicate assigned principals, revoked keys, unresolved decisions, dependency invalidation, forged history, writer exclusion and own-worker interruption around commit.",
+      "would_not_stop": [
+        "False person/key assignments, multiple keys controlled by one person, coerced/copied ballots, invalid semantic judgments or scientific errors. Human identity/independence remain unestablished and completion retains HOLD.",
+        "Stale but internally valid policies deliberately selected by the operator, unseen source corrections, compromised private keys, unauthenticated state history or compromised local interpreter/trust-anchor distribution.",
+        "Physical power loss, faulty storage flushes/locks, network filesystems, a hostile writer changing/restoring dependencies during verification, distributed coordination or downstream exactly-once actions.",
+        "A full review workflow, blinded/incremental ballot collection, general extraction or held-out scientific accuracy. Test keys and ballots are synthetic controls."
+      ],
+      "source": "scripts/synthesis_reviewer_auth.py; scripts/synthesis_decision_runner.py; tests/test_synthesis_reviewer_workflow.py; docs/SYNTHESIS-REVIEWER-AUTH.md. Reuses original signing trust, decision replay and SQLite helpers.",
+      "seal": {
+        "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
+        "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
+        "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
+        "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
+        "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
+        "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
+        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
+        "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
+        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de",
+        "scripts/synthesis_adjudication.py": "e8784b187cccbd188ca09de4177d8873c0e4b361f0026475d0f0030bd6a5d2b5",
+        "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626",
+        ".github/workflows/synthesis-reviewer-auth.yml#jobs.reviewer": "e17247857496fa968bf39b19634f0e561c11f416fe52c40bf32ffcaa55815d14",
+        "scripts/synthesis_signing.py": "0927d45b49665f9750eaf6f68048c99675a8baaea7a7fb13f950c789b14d6e06",
+        "scripts/synthesis_reviewer_auth.py": "64c33a238e1cc0a916e4557d4e8396907dc39b1451fa64da6478659f6825c42d",
+        "scripts/synthesis_decision_runner.py": "c4ff3dbd596bf374fc5d52ccaa5765866fe71fe5426bc18795503c7686291dcf",
+        "tests/test_synthesis_reviewer_workflow.py": "0498a20c1046459e4de15d42a9223b003388cee5ce01d05b0564470dd341d06f",
+        "scripts/requirements-signing.lock": "7ebeb730aa134593ce3a0feda7fcf37e17abed5f0dd321903482c0fc259f49b7",
+        "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db",
+        "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a"
+      }
     }
   ]
 }

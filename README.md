@@ -619,3 +619,10 @@ ballots and a separate adjudication, and revalidates all evidence on every read.
 Incomplete scope and disagreements remain explicit. Reviewer identity and semantic
 support are unverified; even agreement retains pooling HOLD. The example has no
 invented reviewer decisions.
+
+The optional [reviewer authorization stage](docs/SYNTHESIS-REVIEWER-AUTH.md) binds
+every recorded decision to an approved signing key and an externally anchored
+reviewer roster. Its SQLite workflow rechecks signatures, policies, evidence and
+code on every resume; changed dependencies invalidate completion. Keys are
+authenticated under the supplied policy; real-world reviewer identity,
+independence and scientific correctness remain unestablished. Completion retains HOLD.
