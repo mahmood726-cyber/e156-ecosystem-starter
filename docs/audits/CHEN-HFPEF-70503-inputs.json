@@ -1,0 +1,68 @@
+{
+  "schema": "synthesis-public-case-inputs-v1",
+  "case_id": "SYN-NMA-CHEN-HFPEF-70503-20261103",
+  "doi": "10.1111/dom.70503",
+  "accessed_date": "2026-11-03",
+  "scope": "NMA",
+  "sources": {
+    "primary_deposit_xml": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC12992183/fullTextXML",
+    "xml_sha256": "5dd2a5f300a4cc33b77f7fe95dfb5e6d2e3c5dabfa32cfbcbab448e04492a7c6",
+    "deposited_version": "PMC12992183.1",
+    "supplement_package": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC12992183/supplementaryFiles",
+    "package_sha256": "3d4bb9064a94d38633732d65caf55297556d18e7b3119f238d3e9cd4c0d35b2e",
+    "supplement_docx_member": "DOM-28-3137-s001.docx",
+    "supplement_docx_sha256": "2a69bc8e257ec11b71796e6fee163137010a0237dee4e52326e1eb8a285d1fb4",
+    "statistic_definition": "https://search.r-project.org/CRAN/refmans/netmeta/html/netrank.html"
+  },
+  "primary_P_score_root": {
+    "id": "CHEN-70503-PRIMARY-PSCORE-001",
+    "status": "SOURCE_VERIFIED_ABSTRACT_RESULTS_SUPPLEMENT_CONFLICT",
+    "severity": "S2_TO_S3_MATERIALITY_HELD",
+    "treatment": "SGLT2i",
+    "outcome": "Cardiovascular death and HF hospitalisation composite",
+    "abstract_P_score": 0.807,
+    "results_section": "3.3",
+    "results_P_score": 0.7084,
+    "supplement_table": "S3",
+    "supplement_P_score": 0.7084,
+    "abstract_decimals": 3,
+    "results_decimals": 4,
+    "target_eligibility": "HOLD_SUBSTANTIVE_MATERIALITY_EXTERNAL_REVIEW",
+    "native_model_replayed": false
+  },
+  "ranking_definition_question": {
+    "status": "SOURCE_VERIFIED_LABEL_QUESTION",
+    "observed_paraphrase": "P-score described as probability of ranking first/being most effective.",
+    "definition": "Mean of one-sided pairwise superiority quantities across competing treatments; not generally probability of being the best.",
+    "separate_target_credit": false
+  },
+  "unflagged_primary_P_score_controls": [
+    {
+      "treatment": "GLP-1RA",
+      "results_and_S3": 0.8705
+    },
+    {
+      "treatment": "MRA",
+      "results_and_S3": 0.4749
+    },
+    {
+      "treatment": "Digoxin",
+      "results_and_S3": 0.432
+    },
+    {
+      "treatment": "Beta blocker",
+      "results_and_S3": 0.4173
+    },
+    {
+      "treatment": "Placebo",
+      "results_and_S3": 0.0967
+    }
+  ],
+  "limits": [
+    "Primary deposited XML and native supplementary table checked; no recovered original fitted model or source R code.",
+    "Same ranking model identity is supported by the matching Results/S3 vector; no corrected clinical effect or changed treatment order is asserted.",
+    "Direct publisher Version-of-Record retrieval failed. Archived version identity is explicit; a subsequent revised publisher supplement may differ.",
+    "Bounded current-correction search found no relevant notice; this does not prove absence.",
+    "Private author replies and author-discovered additions are excluded; no public author confirmation claimed."
+  ]
+}
