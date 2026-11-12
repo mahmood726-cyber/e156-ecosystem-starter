@@ -3,6 +3,38 @@
   "port_version": "1.0.0",
   "gates": [
     {
+      "id": ".github/workflows/harness-execution.yml#jobs.execution",
+      "kind": "ci-job",
+      "name": "Durable research execution on Windows and Linux",
+      "stops": "Synthetic regressions in frozen context/source binding, budget reservation, SQLite concurrency, interrupted request recovery, unknown outcome retention, scoped tool calls, routing and provider transport gates. Runs actual subprocess crash/race controls on both platforms without paid model calls.",
+      "would_not_stop": [
+        "Provider schema or service changes not represented by the offline transport fixtures; no paid model request is executed.",
+        "Incorrect scientific findings, unverified corpus rights, fabricated human attestations or inaccurate operator-supplied price policies.",
+        "Actual Docker containment failures; these are exercised in the separate Linux worker job.",
+        "Malicious rewriting or rollback of the complete trusted host journal and its anchors; local hash chains are not external authentication."
+      ],
+      "source": ".github/workflows/harness-execution.yml execution job and tests/test_harness_context.py, test_harness_runtime.py, test_harness_provider.py.",
+      "seal": {
+        ".github/workflows/harness-execution.yml#jobs.execution": "1a6ec043d0488a307285b1fb093d8c77128732312de2cb0e524e3ea526860be7"
+      }
+    },
+    {
+      "id": ".github/workflows/harness-execution.yml#jobs.worker",
+      "kind": "ci-job",
+      "name": "Actual isolated Linux Docker research worker",
+      "stops": "Missing Docker or digest-pinned image, skipped required cases, source/root write access, external network connection, forwarded credential canary, wrong memory/PID limits, output overflow acceptance or a surviving timeout container in the tested hosted Linux environment.",
+      "would_not_stop": [
+        "Docker daemon, kernel, runtime or image vulnerabilities outside the exercised controls; containers are not a proof against all escape techniques.",
+        "Windows Docker Desktop differences; the local Windows path refuses when Docker is unavailable and the real containment job runs Linux.",
+        "Incorrect untrusted worker calculations, scientific interpretation, or billing; output remains untrusted and does not grant scientific PASS.",
+        "A physical host power failure; the tests cover controlled timeout and cleanup, while real root-process termination still depends on the container lifetime and daemon."
+      ],
+      "source": ".github/workflows/harness-execution.yml worker job and tests/test_harness_worker.py; Python image manifest read from Docker Official Images registry on 2026-11-12.",
+      "seal": {
+        ".github/workflows/harness-execution.yml#jobs.worker": "8c99c46dd876fb10b68a81b8b8ce611e456393b32c3e35b714db2b7cda12a511"
+      }
+    },
+    {
       "id": ".github/workflows/synthesis-preflight.yml#jobs.offline-regression",
       "kind": "ci-job",
       "name": "Synthesis preflight synthetic regression (development only)",
