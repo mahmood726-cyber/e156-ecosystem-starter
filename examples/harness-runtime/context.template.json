@@ -1,0 +1,23 @@
+{
+  "schema": "e156-harness-context-v1",
+  "nodes": [
+    {
+      "id": "source",
+      "kind": "source",
+      "file": "source.txt",
+      "sha256": null,
+      "parents": [],
+      "expires_at": null,
+      "oa_rights_reference": null
+    },
+    {
+      "id": "review",
+      "kind": "skill",
+      "file": "synthesis-review.txt",
+      "sha256": null,
+      "parents": [],
+      "expires_at": null,
+      "tools": ["read_evidence"]
+    }
+  ]
+}

@@ -12,6 +12,7 @@ on:
       - 'scripts/synthesis_preflight_count_identity.py'
       - 'scripts/synthesis_preflight_root_dedup.py'
       - 'scripts/synthesis_case_state.py'
+      - 'scripts/synthesis_access_controls.py'
       - 'scripts/synthesis_capture_evidence.py'
       - 'scripts/synthesis_participant_evidence.py'
       - 'scripts/synthesis_v13_nma_preflight.py'
@@ -19,6 +20,7 @@ on:
       - 'tests/test_synthesis_replay.py'
       - 'tests/test_synthesis_rocrate.py'
       - 'tests/test_synthesis_capture_evidence.py'
+      - 'tests/test_synthesis_access_controls.py'
       - 'examples/synthesis-replay-stepwise/**'
       - 'examples/synthesis-replay-strokewalk/**'
       - '.gitattributes'
@@ -47,16 +49,16 @@ jobs:
           python-version: '3.13'
       - name: Install hash-locked test dependencies
         run: python -m pip install --require-hashes -r requirements-ci.lock
-      - name: Run replay and source-capture negative controls
-        run: python -m pytest tests/test_synthesis_replay.py tests/test_synthesis_capture_evidence.py tests/test_synthesis_rocrate.py -q
+      - name: Run replay, source-capture and source-access negative controls
+        run: python -m pytest tests/test_synthesis_replay.py tests/test_synthesis_capture_evidence.py tests/test_synthesis_rocrate.py tests/test_synthesis_access_controls.py -q
       - name: Recompute the archived OA development example
         run: >-
           python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise
-          --expected-sha256 c7fb904293fcf13ec542553b9667bfec51ca7c713d1183b418ec93b6cbb177d3
+          --expected-sha256 fc7e071298fc1fed636ed16dda1252358c026552d0d8209896607d72d23013f9
       - name: Recompute the archived report and registry link
         run: >-
           python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk
-          --expected-sha256 8ebe174bf7613830c5c919b989d8967c3f56d3ea5b742dd4a8b561293faf4533
+          --expected-sha256 3440da5463da48b023d7e85789a58035ba950e7c4a806a581b262490bf0e77f3
       - name: Install hash-locked upstream profile validator
         run: >-
           python -m pip install --only-binary=:all: --require-hashes -r requirements-rocrate.lock

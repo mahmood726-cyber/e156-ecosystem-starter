@@ -12,7 +12,7 @@ from scripts import synthesis_checklist as checklist
 
 ROOT = Path(__file__).resolve().parents[1]
 BUNDLE = ROOT / "examples" / "synthesis-replay-stepwise"
-ANCHOR = "c7fb904293fcf13ec542553b9667bfec51ca7c713d1183b418ec93b6cbb177d3"
+ANCHOR = "fc7e071298fc1fed636ed16dda1252358c026552d0d8209896607d72d23013f9"
 
 
 @pytest.fixture

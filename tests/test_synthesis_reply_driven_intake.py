@@ -3,6 +3,7 @@
 No correspondence, paper identifiers or held-out labels are used here.
 """
 from copy import deepcopy
+from decimal import Decimal, ROUND_HALF_EVEN, ROUND_HALF_UP
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -12,6 +13,7 @@ import tempfile
 import unittest
 
 from scripts import synthesis_case_state as case
+from scripts import synthesis_intake_evidence as intake
 from test_synthesis_intake_evidence import XML, CONTEXT, PROMPT, ROOT, audit, identity, matched, packet, record, scalar
 from test_synthesis_case_state import event, log, reply
 
@@ -83,13 +85,48 @@ class ReplyDrivenIntakeTests(unittest.TestCase):
                 raw, check = scalar_pair(left, right)
                 self.assertEqual(self.finding(raw, check)["status"], "NO_FLAG")
 
-    def test_unknown_tie_policy_holds_and_explicit_policy_is_preserved(self):
+    def test_displayed_value_uncertainty_remains_when_rounding_policy_is_known(self):
         raw, check = scalar_pair("2.45", "2.4")
         self.assertEqual(self.finding(raw, check)["status"], "HOLD")
         check["rounding"] = "HALF_EVEN"
-        self.assertEqual(self.finding(raw, check)["status"], "NO_FLAG")
+        self.assertEqual(self.finding(raw, check)["status"], "HOLD")
         check["rounding"] = "HALF_UP"
-        self.assertEqual(self.finding(raw, check)["status"], "REVIEW_CANDIDATE")
+        self.assertEqual(self.finding(raw, check)["status"], "HOLD")
+
+    def test_separately_rounded_displays_hold_without_an_exact_underlying_value(self):
+        for left, right in (("2.55", "2.5"), ("-2.55", "-2.5"), ("0.05", "0.0"), ("-0.05", "0.0")):
+            for policy in ("UNSPECIFIED", "HALF_UP", "HALF_EVEN"):
+                with self.subTest(left=left, right=right, policy=policy):
+                    raw, check = scalar_pair(left, right, rounding=policy)
+                    finding = self.finding(raw, check)
+                    self.assertEqual(finding["status"], "HOLD")
+                    self.assertEqual(finding["precision_status"], "OVERLAP")
+                    self.assertEqual(audit(check, payload=raw)["ledger"][0]["effective"], "HOLD")
+
+    def test_adjacent_same_precision_values_respect_rounding_endpoint_inclusion(self):
+        for left, right in (("2.4", "2.5"), ("-2.4", "-2.5"), ("0.0", "0.1")):
+            raw, check = scalar_pair(left, right)
+            self.assertEqual(self.finding(raw, check)["status"], "HOLD")
+            for policy in ("HALF_UP", "HALF_EVEN"):
+                check["rounding"] = policy
+                self.assertEqual(self.finding(raw, check)["status"], "REVIEW_CANDIDATE")
+
+    def test_disjoint_display_ranges_remain_review_candidates(self):
+        for left, right in (("2.44", "2.6"), ("-2.44", "-2.6"), ("0.01", "0.2")):
+            raw, check = scalar_pair(left, right)
+            self.assertEqual(self.finding(raw, check)["status"], "REVIEW_CANDIDATE")
+
+    def test_independently_rounded_decimal_grid_cannot_create_a_false_candidate(self):
+        # Development arithmetic oracle: quantize the actual input independently
+        # at each precision, rather than rounding the already printed value.
+        for n in range(-3000, 3001):
+            actual = Decimal(n).scaleb(-3)
+            for mode, policy in ((ROUND_HALF_UP, "HALF_UP"), (ROUND_HALF_EVEN, "HALF_EVEN")):
+                left = actual.quantize(Decimal("0.01"), rounding=mode)
+                right = actual.quantize(Decimal("0.1"), rounding=mode)
+                for supplied in (policy, "UNSPECIFIED"):
+                    result = intake._printed_scalar_result((left, right), supplied)
+                    self.assertNotEqual(result["status"], "REVIEW_CANDIDATE", (str(actual), str(left), str(right), supplied))
 
     def test_count_percent_unknown_rounding_policy_does_not_allege_a_tie_error(self):
         raw = source("Synthetic fraction 1 of 16 eligible participants (6.2%).")

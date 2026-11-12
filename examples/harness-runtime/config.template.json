@@ -1,0 +1,30 @@
+{
+  "schema": "e156-harness-runtime-v1",
+  "project_id": null,
+  "context_sha256": null,
+  "selected": ["source"],
+  "skills": ["review"],
+  "task": null,
+  "task_kind": "synthesis_review",
+  "routes": {"synthesis_review": ["primary"]},
+  "models": {
+    "primary": {
+      "model": null,
+      "max_output_tokens": 1000,
+      "input_microusd_per_million": null,
+      "output_microusd_per_million": null,
+      "price_reference": null,
+      "price_expires_at": null
+    }
+  },
+  "limits": {
+    "model_calls": 0,
+    "model_tokens": 0,
+    "tool_calls": 0,
+    "cost_microusd": 0,
+    "wall_ms": 0,
+    "request_ms": 30000,
+    "context_chars": 12000
+  },
+  "worker": null
+}

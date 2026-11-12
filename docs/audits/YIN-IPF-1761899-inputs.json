@@ -1,0 +1,154 @@
+{
+  "schema": "synthesis-public-case-inputs-v1",
+  "case_id": "SYN-NMA-YIN-IPF-1761899-20261103",
+  "doi": "10.3389/fphar.2026.1761899",
+  "accessed_date": "2026-11-03",
+  "sources": {
+    "html": "https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2026.1761899/full",
+    "html_sha256": "3d168bb2bd1e151c5d4f0b4842f33638e21d63c6409cde9281bb48a32aa29eb0",
+    "pdf": "https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2026.1761899/pdf",
+    "pdf_sha256": "2184a51e81ea3c06c0de26b1a76313d661e877972edf131cbdb111327c2d25f0",
+    "primary_deposit_xml": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC12968560/fullTextXML",
+    "xml_sha256": "cb5903ce7a5b252f438dc20dc57dfd4f195d989ef87ca6da31b39a7207dbd7d7",
+    "supplement_package": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC12968560/supplementaryFiles",
+    "package_sha256": "918c9cf329aa97488c75f982e9a31b40365c99804e9fc72bd4e9cab1e7f47383",
+    "supplement_docx_member": "Table1.docx",
+    "supplement_docx_sha256": "ac5149a7bd7e838f69a7593f9227b2affec174f8d281a7f9830c8b790ab9e40e"
+  },
+  "cutoff_root": {
+    "id": "YIN-1761899-SEARCH-DATE-001",
+    "status": "SOURCE_VERIFIED_TEXT_FIGURE_DATE_DIFFERENCE",
+    "results_text_page": 4,
+    "text_cutoff_year": 2025,
+    "figure_page": 5,
+    "figure": 1,
+    "figure_cutoff_year": 2005,
+    "removed_records": 693,
+    "included_list_earliest_year": 2005,
+    "inference": "Figure1 and inclusion of older trials support a text typo as a benign explanation, not proof that trials were wrongly excluded.",
+    "severity": "S2_REPORTING",
+    "target_eligibility": "HOLD_LOW_SUBSTANTIVE_MATERIALITY"
+  },
+  "denominator_root": {
+    "id": "YIN-1761899-CHARACTERISTICS-DENOM-002",
+    "status": "RECONCILED_138_COMPARISON_ROW_DENOMINATOR_NOT_DIVISION_ERROR",
+    "page": 6,
+    "publications": 121,
+    "studies": 162,
+    "registered": 25,
+    "registered_printed_percent": 18.1,
+    "multicentre": 28,
+    "multicentre_printed_percent": 20.3,
+    "alternative_denominator": 138,
+    "refutation": "The native S3 table has exactly138 data rows,25 with registrations and28 markedMc. The printed18.1% and20.3% are reproduced at one decimal. Relationship to162 outcome/time-point study units still needs clarification; do not report a division error.",
+    "target_eligibility": "EXCLUDED_RECONCILED_PERCENTAGES"
+  },
+  "unit_identity_lead": {
+    "id": "YIN-1761899-TIMEPOINT-UNIT-003",
+    "status": "SOURCE_VERIFIED_REPEATED_TRIAL_FAMILIES_IN_EXTRACTION_MODEL_OVERLAP_UNRESOLVED",
+    "page": 6,
+    "observed_paraphrase": "121 publications expanded to 162 studies where publications involved multiple trials or intervention time points.",
+    "benign_explanations": [
+      "Multiple independent trials within one publication may be valid units.",
+      "Separate time points could be assigned to separate outcome networks or use appropriate covariance."
+    ],
+    "needed": "Native per-outcome input rows, trial-family/dose/time-point selection and covariance model. The displayed16525 is exactly the rowwise total, not a deduplicated unique-participant count; no corrected global total or fitted double-counting result established.",
+    "target_eligibility": "HOLD_NO_ERROR_CREDIT",
+    "supplement_observations": [
+      {
+        "family": "TOMORROW",
+        "registry": "NCT00514683",
+        "rows": 8,
+        "reports": [
+          2011,
+          2018
+        ],
+        "qualification": "Four dose rows repeated across baseline and long-term report; shared controls and follow-up participants cannot be assumed unique."
+      },
+      {
+        "family": "INPULSIS",
+        "registry": [
+          "NCT01335464",
+          "NCT01335477"
+        ],
+        "reported_2014_rows_n": [
+          513,
+          548
+        ],
+        "Azuma2017_rows_n": [
+          126,
+          1061
+        ],
+        "other_pooled_2020_n": 1061,
+        "qualification": "Azuma126 is a Japanese subset of pooled1061, confirmed in its primary abstract. Registry assignments and repeated rows require a model-level map."
+      }
+    ],
+    "primary_identity_sources": [
+      "https://pubmed.ncbi.nlm.nih.gov/27997064/",
+      "https://doi.org/10.1136/thoraxjnl-2016-209701",
+      "https://doi.org/10.1056/NEJMoa1402584"
+    ]
+  },
+  "screening_control": {
+    "database_counts": [
+      891,
+      1356,
+      1184,
+      2319,
+      595,
+      768,
+      629,
+      714
+    ],
+    "identified": 8456,
+    "pre_date_exclusions": 693,
+    "duplicates": 3023,
+    "screened": 4740,
+    "study_type_exclusions": [
+      200,
+      238,
+      413,
+      537,
+      59
+    ],
+    "remaining": 3293,
+    "title_abstract_exclusions": 3083,
+    "full_text_sought": 210,
+    "not_retrieved": 27,
+    "full_text_assessed": 183,
+    "full_text_exclusions": 62,
+    "included": 121,
+    "status": "ARITHMETIC_RECONCILES"
+  },
+  "verification": {
+    "rendered_pdf_pages": [
+      4,
+      5
+    ],
+    "characteristics_text_page": 6,
+    "native_extraction_obtained": true,
+    "native_model_replayed": false,
+    "independent_human_adjudication": false,
+    "published_correction_verified": false,
+    "public_correspondence_included": false
+  },
+  "correction_check": "Current publisher source and bounded DOI/title/correction search returned no relevant notice; absence is not established.",
+  "native_S3_inventory": {
+    "table_first_header": "First Author",
+    "table_data_header_rows": 2,
+    "expected_data_columns": 22,
+    "comparison_rows": 138,
+    "registered_rows": 25,
+    "multicentre_rows": 28,
+    "sum_intervention_n": 8719,
+    "sum_control_n": 7806,
+    "sum_rowwise_total_n": 16525,
+    "sum_sex_counts": [
+      5951,
+      2736,
+      5253,
+      2512
+    ],
+    "native_effect_estimates_or_covariance_obtained": false
+  }
+}

@@ -13,7 +13,7 @@ from scripts import synthesis_adjudication as adj
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'scripts/synthesis_adjudication.py'
-ANCHOR = 'c7fb904293fcf13ec542553b9667bfec51ca7c713d1183b418ec93b6cbb177d3'
+ANCHOR = 'fc7e071298fc1fed636ed16dda1252358c026552d0d8209896607d72d23013f9'
 
 
 @pytest.fixture
@@ -203,7 +203,7 @@ def test_valid_source_unicode_survives_legacy_windows_stdout(rig, tmp_path):
     shutil.copytree(ROOT / 'examples/synthesis-replay-strokewalk', bundle)
     rig['bundles'] = {'strokewalk': bundle}
     rig['data']['reports'] = [{'id': 'strokewalk', 'manifest_sha256':
-        '8ebe174bf7613830c5c919b989d8967c3f56d3ea5b742dd4a8b561293faf4533'}]
+        '3440da5463da48b023d7e85789a58035ba950e7c4a806a581b262490bf0e77f3'}]
     for e in rig['data']['entities']:
         e['report'] = 'strokewalk'
         for f in e['scope']:
@@ -244,7 +244,7 @@ def test_real_unreviewed_example_and_documented_anchor():
     result = adj.verify(dossier=ROOT / 'examples/synthesis-adjudication-stepwise.json',
                         bundles={'stepwise': ROOT / 'examples/synthesis-replay-stepwise'},
                         project='stepwise-development',
-                        expected_sha256='390e8936c3d01eb5aba71c25a283506db684eab4f9b60304b38f88c2ddd8a970')
+                        expected_sha256='463ad965a725b508ebd2f6a54d0289dfe416ecc8c68a83a80067c7cd280552a0')
     assert result['relations'][0]['state'] == 'INCOMPLETE_SCOPE'
     assert result['relations'][0]['reviews'] == []
     assert result['relations'][0]['adjudication'] is None

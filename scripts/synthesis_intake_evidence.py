@@ -197,12 +197,52 @@ def _rounding_result(value, reported, quantum, policy):
             "rounded_value": next(iter(options.values())) if len(values) == 1 else None}
 
 
+def _printed_rounding_interval(value, policy):
+    """Possible unrounded values for one printed nearest-rounded decimal."""
+    if policy not in {"UNSPECIFIED", "HALF_UP", "HALF_EVEN"}:
+        raise ValueError("Unknown rounding policy")
+    modes = ("HALF_UP", "HALF_EVEN") if policy == "UNSPECIFIED" else (policy,)
+    with localcontext(Context(prec=64)):
+        quantum = Decimal(1).scaleb(value.as_tuple().exponent)
+        even = (value / quantum) % 2 == 0
+        lower_closed = any(even if mode == "HALF_EVEN" else value > 0 for mode in modes)
+        upper_closed = any(even if mode == "HALF_EVEN" else value < 0 for mode in modes)
+        return value - quantum / 2, value + quantum / 2, lower_closed, upper_closed
+
+
+def _rounding_contains(bounds, value):
+    lower, upper, lower_closed, upper_closed = bounds
+    return ((value > lower or (value == lower and lower_closed))
+            and (value < upper or (value == upper and upper_closed)))
+
+
+def _rounding_subset(inner, outer):
+    return ((inner[0] > outer[0] or (inner[0] == outer[0] and (not inner[2] or outer[2])))
+            and (inner[1] < outer[1] or (inner[1] == outer[1] and (not inner[3] or outer[3]))))
+
+
+def _printed_scalar_result(values, policy):
+    left, right = (_printed_rounding_interval(value, policy) for value in values)
+    lower, upper = max(left[0], right[0]), min(left[1], right[1])
+    disjoint = lower > upper or (lower == upper and not (
+        _rounding_contains(left, lower) and _rounding_contains(right, lower)))
+    contained = not disjoint and (_rounding_subset(left, right) or _rounding_subset(right, left))
+    intervals = [{"minimum": str(b[0]), "maximum": str(b[1]),
+                  "minimum_inclusive": b[2], "maximum_inclusive": b[3]} for b in (left, right)]
+    return {"status": "REVIEW_CANDIDATE" if disjoint else "NO_FLAG" if contained else "HOLD",
+            "precision_status": "DISJOINT" if disjoint else "CONTAINED" if contained else "OVERLAP",
+            "rounding": policy, "rounding_intervals": intervals,
+            "reason": ("Printed rounding intervals are disjoint" if disjoint else
+                       "Displayed values are compatible at their printed precision" if contained else
+                       "Printed rounding intervals partly overlap; the unrounded value is unavailable")}
+
+
 def _scalar_record(evidence, record):
     if not isinstance(record, dict) or record.get("scope_verified") is not True:
         raise ValueError("Each scalar requires verified scope and a source-bound definition")
     binding = bind_scalar(evidence, record.get("value"))
     if binding["role"] == "count" or binding["inequality"] is not None:
-        raise ValueError("Repeated scalars must be exact, uncensored non-count tokens")
+        raise ValueError("Repeated scalars require individually bound, uncensored non-count tokens")
     definition = bind_quote(evidence, record.get("definition"))
     identity = record.get("identity")
     optional = {"source_sha256", "locator", "analysis_denominator_n", "analysis_denominator_unit"}
@@ -253,9 +293,7 @@ def _scalars(evidence, spec):
     if mismatches:
         return {**result, "status": "HOLD"}
     values = [Decimal(v["value"]) for v in (a, b)]
-    fine, coarse = sorted(values, key=lambda v: v.as_tuple().exponent)
-    quantum = Decimal(1).scaleb(coarse.as_tuple().exponent)
-    return {**result, **_rounding_result(fine, coarse, quantum, spec.get("rounding", "UNSPECIFIED"))}
+    return {**result, **_printed_scalar_result(values, spec.get("rounding", "UNSPECIFIED"))}
 
 
 def _bounded(evidence, spec):

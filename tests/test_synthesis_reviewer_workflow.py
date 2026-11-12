@@ -21,7 +21,7 @@ from scripts import synthesis_reviewer_auth as auth
 from scripts import synthesis_decision_runner as runner
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = 'c7fb904293fcf13ec542553b9667bfec51ca7c713d1183b418ec93b6cbb177d3'
+MANIFEST = 'fc7e071298fc1fed636ed16dda1252358c026552d0d8209896607d72d23013f9'
 TYPE = 'application/vnd.e156.reviewer-authorization.v1+json'
 
 

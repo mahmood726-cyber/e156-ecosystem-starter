@@ -35,4 +35,4 @@ jobs:
       - name: Verify scoped decisions, disagreements and source invalidation
         run: python -m pytest tests/test_synthesis_adjudication.py -q
       - name: Verify the unreviewed OA example
-        run: python scripts/synthesis_adjudication.py --dossier examples/synthesis-adjudication-stepwise.json --project stepwise-development --expected-sha256 390e8936c3d01eb5aba71c25a283506db684eab4f9b60304b38f88c2ddd8a970 --bundle stepwise=examples/synthesis-replay-stepwise
+        run: python scripts/synthesis_adjudication.py --dossier examples/synthesis-adjudication-stepwise.json --project stepwise-development --expected-sha256 463ad965a725b508ebd2f6a54d0289dfe416ecc8c68a83a80067c7cd280552a0 --bundle stepwise=examples/synthesis-replay-stepwise

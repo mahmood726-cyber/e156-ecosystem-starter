@@ -3,6 +3,38 @@
   "port_version": "1.0.0",
   "gates": [
     {
+      "id": ".github/workflows/harness-execution.yml#jobs.execution",
+      "kind": "ci-job",
+      "name": "Durable research execution on Windows and Linux",
+      "stops": "Synthetic regressions in frozen context/source binding, budget reservation, SQLite concurrency, interrupted request recovery, unknown outcome retention, scoped tool calls, routing and provider transport gates. Runs actual subprocess crash/race controls on both platforms without paid model calls. Also requires source-access policy tests, with real Windows junction and manifest/log collision controls that may not skip on Windows.",
+      "would_not_stop": [
+        "Provider schema or service changes not represented by the offline transport fixtures; no paid model request is executed.",
+        "Incorrect scientific findings, unverified corpus rights, fabricated human attestations or inaccurate operator-supplied price policies.",
+        "Actual Docker containment failures; these are exercised in the separate Linux worker job.",
+        "Malicious rewriting or rollback of the complete trusted host journal and its anchors; local hash chains are not external authentication."
+      ],
+      "source": ".github/workflows/harness-execution.yml execution job and tests/test_harness_context.py, test_harness_runtime.py, test_harness_provider.py, test_synthesis_access_controls.py. The access helper is not wired into source ingress or transports and does not authenticate operator permission declarations.",
+      "seal": {
+        ".github/workflows/harness-execution.yml#jobs.execution": "9526d5898c43a0974a009af69f17e46a02eb466130456e51ee578ebf48e51a7a"
+      }
+    },
+    {
+      "id": ".github/workflows/harness-execution.yml#jobs.worker",
+      "kind": "ci-job",
+      "name": "Actual isolated Linux Docker research worker",
+      "stops": "Missing Docker or digest-pinned image, skipped required cases, source/root write access, external network connection, forwarded credential or proxy canary, task access to supervisor signals/status, wrong memory/PID limits, output overflow acceptance or a surviving timeout/process-loss container in the tested hosted Linux environment.",
+      "would_not_stop": [
+        "Docker daemon, kernel, runtime or image vulnerabilities outside the exercised controls; containers are not a proof against all escape techniques.",
+        "Windows Docker Desktop differences; the local Windows path refuses when Docker is unavailable and the real containment job runs Linux.",
+        "Incorrect untrusted worker calculations, scientific interpretation, or billing; output remains untrusted and does not grant scientific PASS.",
+        "A physical host power failure or broken daemon; the tests exercise controlled timeout and calling-process termination while the Linux Docker daemon remains running."
+      ],
+      "source": ".github/workflows/harness-execution.yml worker job and tests/test_harness_worker.py; Python image manifest read from Docker Official Images registry on 2026-11-12.",
+      "seal": {
+        ".github/workflows/harness-execution.yml#jobs.worker": "220c47146b2990c128de7e0c49de713a2235786fcb4804b1e136b43492c358fe"
+      }
+    },
+    {
       "id": ".github/workflows/synthesis-preflight.yml#jobs.offline-regression",
       "kind": "ci-job",
       "name": "Synthesis preflight synthetic regression (development only)",
@@ -23,7 +55,7 @@
       "id": "scripts/synthesis_preflight.py",
       "kind": "script",
       "name": "Synthesis local packet validator (experimental)",
-      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for PMC packets. Live capture requires an operator flag and the HTTPS EFetch origin. Archives refuse extra articles and conflicting rights declarations. Source-bound counts require a matching snapshot hash and supported integer cells or unambiguous quoted tokens, with exact locator disambiguation when needed, under reviewer-verified analysis scope. A passed restricted-count bound cannot clear missing disjoint, exhaustive exclusion accounting. A requested correction prevents an original-only comparison from clearing a claim; a separate mapped sweep retains stale occurrences and unchecked locations. Normal intake binds per-count definition quotes and result identities before same-result or strict-subset comparisons; new signed scalar and interval references retain unit context and reject partial tokens. Bounded revision maps retain stale and uninspected dependencies. Legacy count checks cannot clear a decisive claim on attested labels alone. An optional private sidecar holds known unresolved reply points and emits redacted status labels separately from contact pauses. Scalar unit checks include captured source suffix markers, and crude percentage arithmetic requires raw observed identities with no model, adjustment or censoring. Same-result scalar records require matching analysis/data versions, contrast and estimator fields; explicit source-defined scale bounds can identify out-of-range printed values. Unspecified rounding ties with multiple supported answers hold. Registered unanswered points and source-inspection-only outcomes cannot close a declared question.",
+      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for PMC packets. Live capture requires an operator flag and the HTTPS EFetch origin. Archives refuse extra articles and conflicting rights declarations. Source-bound counts require a matching snapshot hash and supported integer cells or unambiguous quoted tokens, with exact locator disambiguation when needed, under reviewer-verified analysis scope. A passed restricted-count bound cannot clear missing disjoint, exhaustive exclusion accounting. A requested correction prevents an original-only comparison from clearing a claim; a separate mapped sweep retains stale occurrences and unchecked locations. Normal intake binds per-count definition quotes and result identities before same-result or strict-subset comparisons; new signed scalar and interval references retain unit context and reject partial tokens. Bounded revision maps retain stale and uninspected dependencies. Legacy count checks cannot clear a decisive claim on attested labels alone. An optional private sidecar holds known unresolved reply points and emits redacted status labels separately from contact pauses. Scalar unit checks include captured source suffix markers, and crude percentage arithmetic requires raw observed identities with no model, adjustment or censoring. Same-result scalar records require matching analysis/data versions, contrast and estimator fields; explicit source-defined scale bounds can identify out-of-range printed values. Exact count-based proportions respect declared rounding conventions. Repeated printed scalars use rounding intervals: partial overlap holds even under a known convention, while disjoint intervals remain review candidates. Registered unanswered points and source-inspection-only outcomes cannot close a declared question.",
       "would_not_stop": [
         "Fabricated but internally consistent claim attestations or locally supplied XML: capture binds a snapshot and declared identity. Claim support and archive provenance require separate review.",
         "Incorrect source tallies despite matching printed arithmetic: count validity is explicitly not independently verified. The code does not authenticate participant records, exclusion completeness, disjointness, trial-family identities or reviewer scope attestations.",
@@ -42,7 +74,7 @@
         "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
-        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973"
@@ -605,7 +637,7 @@
       "id": ".github/workflows/synthesis-replay.yml#jobs.replay",
       "kind": "ci-job",
       "name": "Archived OA replay and provenance on Windows and Linux",
-      "stops": "A failing source-capture, replay or export control; failure to reconstruct either fixed-digest OA bundle; failure of required Process Run 0.5 / RO-Crate 1.1 checks; skipped validation; changed pinned contexts/dependencies; or failure to reject intended defective-crate controls on Python 3.13 Windows/Linux.",
+      "stops": "A failing synthetic source-access/alias, source-capture, replay or export control; failure to reconstruct either fixed-digest OA bundle; failure of required Process Run 0.5 / RO-Crate 1.1 checks; skipped validation; changed pinned contexts/dependencies; or failure to reject intended defective-crate controls on Python 3.13 Windows/Linux.",
       "would_not_stop": [
         "Incorrect source/reviewer interpretation, scientific conclusions, missing relevant evidence or a forged source; development examples do not measure held-out accuracy.",
         "Recommended metadata gaps, profile requirements absent from the upstream validator, Process Run 0.6 / RO-Crate 1.3 compatibility, or an independently authenticated execution timestamp.",
@@ -613,7 +645,7 @@
       ],
       "source": "scripts/synthesis_replay.py; scripts/synthesis_rocrate.py; scripts/check-synthesis-rocrate.py; docs/SYNTHESIS-ROCRATE.md; replay and export integration tests.",
       "seal": {
-        ".github/workflows/synthesis-replay.yml#jobs.replay": "59f05e7870da3a56ccdfdcd5e972f915c52a36b515c16261b549cef90328da0b"
+        ".github/workflows/synthesis-replay.yml#jobs.replay": "4d9ac99e35f8af804799b4d5627d273fdb2df83f820320f30776e37e70a950d2"
       }
     },
     {
@@ -635,7 +667,7 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
         "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801"
@@ -663,7 +695,7 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
         "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801"
@@ -702,8 +734,8 @@
       "seal": {
         ".github/workflows/synthesis-review.yml#jobs.audit": "d73da018dce2ad4bf339f7c8d0b78f885d2ca3ee250e6500c3da5e42c28787f9",
         "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626",
-        "tests/test_synthesis_review_runner.py": "02ca5ab689176b15718d55179bb9388a8bb76997653dd2d41636519232158d36",
-        "examples/synthesis-review-stepwise.json": "63bf12af4243d0dc472d29e7a4f4d57b1756b7c9f9d08fb09705af86c5b7a5b0",
+        "tests/test_synthesis_review_runner.py": "fd6ac35fe0ca8fbbdb6199f5239050832517f978b80e28e26a4c90a53e5ca240",
+        "examples/synthesis-review-stepwise.json": "01a0db74a114f82ec5a85eda93b1cbfd81fb60a1e22943ff32115cd5b78966bf",
         "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a",
         "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
         "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
@@ -711,7 +743,7 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
         "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801"
@@ -736,7 +768,7 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
         "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
@@ -764,15 +796,15 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
         "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
         "scripts/synthesis_adjudication.py": "e8784b187cccbd188ca09de4177d8873c0e4b361f0026475d0f0030bd6a5d2b5",
         "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626",
-        ".github/workflows/synthesis-adjudication.yml#jobs.adjudication": "15393b95c1e48b0d04119fd882548078c3e35eef0d52f2442852e316ecc57aa3",
-        "tests/test_synthesis_adjudication.py": "2eeabc4139ceed09f63f2bfc556db5d1f1aa6f2e926400b4475affbe3164b5a6",
-        "examples/synthesis-adjudication-stepwise.json": "390e8936c3d01eb5aba71c25a283506db684eab4f9b60304b38f88c2ddd8a970",
+        ".github/workflows/synthesis-adjudication.yml#jobs.adjudication": "0d809ca53b69b48f1b1fe98705e46bf2bd2cdc56a78034b0cf01e05b1cfdeb2a",
+        "tests/test_synthesis_adjudication.py": "f45c12301bf1a4f2b6b80a8a431697e5dc82938d01504357128fdb3574a8394d",
+        "examples/synthesis-adjudication-stepwise.json": "463ad965a725b508ebd2f6a54d0289dfe416ecc8c68a83a80067c7cd280552a0",
         "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a"
       }
     },
@@ -795,7 +827,7 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
         "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
@@ -805,7 +837,7 @@
         "scripts/synthesis_signing.py": "0927d45b49665f9750eaf6f68048c99675a8baaea7a7fb13f950c789b14d6e06",
         "scripts/synthesis_reviewer_auth.py": "64c33a238e1cc0a916e4557d4e8396907dc39b1451fa64da6478659f6825c42d",
         "scripts/synthesis_decision_runner.py": "c4ff3dbd596bf374fc5d52ccaa5765866fe71fe5426bc18795503c7686291dcf",
-        "tests/test_synthesis_reviewer_workflow.py": "16031e46108ecb9974b44b83f111337d0605d6926b2815857652ca074a4fb0ee",
+        "tests/test_synthesis_reviewer_workflow.py": "1581aa5dd7998bfe48e2524b94d6043604e4b575c7aabc3b16180497a87a0774",
         "scripts/requirements-signing.lock": "7ebeb730aa134593ce3a0feda7fcf37e17abed5f0dd321903482c0fc259f49b7",
         "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db",
         "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a"
@@ -833,7 +865,7 @@
         "scripts/install-overmind.ps1": "e04b96bd4b4150501063fc5f7f6241264deb94a5c963efb27af7f0e97b995382",
         "scripts/check-overmind-canary.py": "2f5d71b9e85c9a1235cea3eab10f03e84bf090b64544f32a7887e01ce802460f",
         "scripts/install-extractor.ps1": "4e458344b94e65eb23090253ff53db5f6f139da65920b23bbce4cae5a3d753ab",
-        "scripts/bounded_native.py": "57304abdadfad39a460806453a6403d0e0659e4a943a13ad3ba31fcdba60b5f8",
+        "scripts/bounded_native.py": "6a878aff3ea7029f6dfb3bc7b8c00d27030e6e5b3d4c64cde74b35ec792b0e7c",
         "tests/test_overmind_powershell_transport.py": "1c8e261e333895747eaeb70e11246ddfc3c8686d7e1e065b69c1a151bdbfc1c8",
         "tests/test_extractor_windows_transport.py": "6c87039d9666e1bf6b26907696b9c843f361802f1a2dbb6bb4138969069c6864"
       }
@@ -856,7 +888,7 @@
         "scripts/recall.py": "601db9500240bdd9aa53a98cc4801589c13e808b3bae86329574e00c1ef4f773",
         "scripts/test_recall.py": "efe507c156bf3a46c1fac98384db6a8958ca0997c9a4b8fc8e9edea0dde08629",
         "scripts/benchmark-memory.py": "588e099721892ed32642b52855745424ae61142d918dc9212e455496fde4f125",
-        "tests/test_synthesis_checklist.py": "ae539b5a36fcdc96f90aae77a5446137b00cc4fa23cce00337c50ebfcb6d8402",
+        "tests/test_synthesis_checklist.py": "20e1b729714d30326c9b66941600a19b956c9c835c94f4956a69cc49d0c2c962",
         "tests/test_memory_origin.py": "103d509fdccce1608d7aea2ea401da8600c8c43da1983d9dc01f812972b98c06",
         "tests/test_memory_contract.py": "5426718461e309e2f33bac892b19c1a25342e921a33af0fc97538696cee75d19",
         "tests/test_recall_legacy.py": "447df7120481758d58af92b6b8743f71c838d3a2099cbc9fede360e5852201a9",
