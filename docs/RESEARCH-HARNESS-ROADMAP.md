@@ -108,8 +108,10 @@ after both adapters pass. Failed-candidate controls preserve the prior pair.
 Windows/Linux component CI exercises that path; the Linux full-chain workflow
 adds the pair alongside the existing Sentinel/Overmind/ProjectIndex/extractor
 installation. The atomic boundary is the research pair's selection, not global
-Python packages, hooks, signing keys or private memory. Full Windows ecosystem
-installation, PostgreSQL and scientific validation remain outside this increment.
+Python packages, hooks, signing keys or private memory. A subsequent disposable
+Windows full-chain job now exercises the real installer and live canaries; only
+its exact-revision passing run establishes that coverage. Consumer-machine
+bootstrap, PostgreSQL and scientific validation remain outside these increments.
 
 ### M3 — a shared source-to-claim record and replay bundle
 
@@ -213,6 +215,14 @@ unresolved disagreements and changed sources cannot produce a release-ready
 state. Browser E2E and numerical parity checks inspect the resulting dashboard.
 
 ### M5 — independent, held-out scientific evaluation
+
+The [checklist integration and pilot runbook](SYNTHESIS-HARNESS-PILOT.md) adds
+source-replayed coverage for all six core checks, 27 detailed checks and the
+revision sweep. It records declared human judgments separately from automated
+receipts, preserves corrections and check time, and captures runtime observations.
+The two archived OA examples remain development material. Independent human
+operators/reference reviewers, an approved fresh sampling frame and the actual
+unseen-cohort freeze/evaluation are still required; none are fabricated by the CLI.
 
 Freeze review/trial-family splits, OA licences, corpus hashes and reference
 adjudication before tuning. Use ASReview/SYNERGY for screening where licensed

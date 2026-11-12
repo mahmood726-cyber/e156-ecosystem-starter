@@ -9,6 +9,7 @@
 - **[Complete the participant-count worksheet](SYNTHESIS-PARTICIPANT-WORKSHEET.md)** — establish populations and exclusions before comparing totals.
 - **[Follow three worked public examples](SYNTHESIS-WORKED-EXAMPLES.md)** — distinguish a historical correction, an explained difference and a limit on reproduction.
 - **[Read the methods and evidence guide](SYNTHESIS-METHODS.md)** — detailed records, software boundaries and evaluation requirements.
+- **[Use the checklist in the research harness](SYNTHESIS-HARNESS-PILOT.md)** — source-replayed development records, saved evidence, correction history and the independent evaluation runbook.
 
 ## What does Synthesis check?
 

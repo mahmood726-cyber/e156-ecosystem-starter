@@ -399,6 +399,11 @@ The [research harness roadmap](docs/RESEARCH-HARNESS-ROADMAP.md) covers memory,
 component installation, source-to-claim provenance, review workflows and held-out
 evaluation. [Benchmark evidence](benchmark.md) separates executed development
 controls from external documented capabilities and unmeasured scientific accuracy.
+The [Synthesis checklist workflow](docs/SYNTHESIS-HARNESS-PILOT.md) brings the six
+core checks, 27 detailed checks and revision sweep into source-replayed review
+records. It preserves human judgments, evidence attachments, corrections and
+declared check time; automatic checks never fill human Pass statuses. The same
+guide specifies the supervised pilot and independent unseen-cohort evaluation.
 The [source replay contract](docs/SYNTHESIS-REPLAY.md) adds offline reconstruction
 of source-bound Synthesis participant checks and typed report-to-trial links,
 with exact archived inputs and an external manifest digest. Licensed real-paper

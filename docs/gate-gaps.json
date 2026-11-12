@@ -809,6 +809,55 @@
         "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db",
         "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a"
       }
+    },
+    {
+      "id": ".github/workflows/full-system-integration.yml#jobs.full-windows-install",
+      "kind": "ci-job",
+      "name": "Disposable Windows full-chain installation",
+      "stops": "Refuses local/self-hosted execution, reused tool/key state, unsafe roots, installer failure, absent or mismatched installed layers, invalid Windows registry bindings, nonblocking hooks, live-canary failure, source-lock mismatch, dependency conflicts and research-pair activation or failed-upgrade preservation failure.",
+      "would_not_stop": [
+        "A spoofed hosted-runner environment on a personal account: the entrypoint is an accidental-use guard, not a security sandbox.",
+        "Consumer Windows bootstrap without preinstalled Git/Python, agent login, PDF extras, PostgreSQL or physical power-loss failure.",
+        "Mutable legacy dependency resolution, dishonest source provenance, scientific errors or lack of a project-specific Overmind release verdict."
+      ],
+      "source": ".github/workflows/full-system-integration.yml full-windows-install; scripts/windows_install_smoke.ps1; existing full-install and research-pair canaries. No local full installer test.",
+      "seal": {
+        ".github/workflows/full-system-integration.yml#jobs.full-windows-install": "1bda23574570ec5bf01d108b43ee0c0b7792d6dd421c2cf57bf3d33451ef3062",
+        "scripts/windows_install_smoke.ps1": "7534b23dcc893f573209f69fd621946d409bad574affbf1847007330bb09b0ef",
+        "tests/test_windows_install_smoke.py": "248f36861d49cf81915eebb43ac7d39ef41569ba89f17935a79bf3093b5659df",
+        "scripts/verify-full-install.py": "ad1b1d80d45e9aceea3d585813a28466860831c58c0de2e77ce6ff9f79757758",
+        "tests/test_full_install_verifier.py": "7bbb1677b61f5021a6269e3710471f7ba4c1181fa26c0319065c2c2baba692ce",
+        "scripts/research_environment.py": "171e1bf4afb9c85050cbe9bee41203feeb20ab45311d12425fdeff3339dafdde",
+        "scripts/check-research-upgrade.py": "c74739b5434320dda553fae3c001700ef7eb98cdcf51152cbd1d0fcffd2a9655"
+      }
+    },
+    {
+      "id": ".github/workflows/synthesis-checklist.yml#jobs.checklist",
+      "kind": "ci-job",
+      "name": "Synthesis checklist coverage and project memory ownership",
+      "stops": "Windows/Linux tests refuse missing checklist claims or rows, changed guidance/software/source/evidence, malformed judgments and nonfinite times, output aliases inside sealed bundles, overwritten records, ambiguous unbound memory stores and cross-project automatic recall. Positive controls exercise actual source replay and CLI record/render; completed records remain HOLD.",
+      "would_not_stop": [
+        "False operator ownership assertions, historical mixed memory, explicitly requested cross-project recall or hostile concurrent filesystem writers.",
+        "Wrong scientific interpretations despite valid quotations/hashes, dishonest reviewer declarations, unseen corrections or unreported tasks/costs.",
+        "Missing independent human pilot, trial-family held-out evaluation, truthful blinding and current policy custody.",
+        "Manually rewritten review histories: digests are inspection aids, not signed append-only custody."
+      ],
+      "source": ".github/workflows/synthesis-checklist.yml; scripts/synthesis_checklist.py; recall ownership binding; synthetic regression controls and existing OA development examples. Human decisions and research accuracy remain unmeasured.",
+      "seal": {
+        ".github/workflows/synthesis-checklist.yml#jobs.checklist": "2bb4ca755f92d1126fc9217a4cab01da2836159c3c89dc90e096545edc0ecd1d",
+        "scripts/synthesis_checklist.py": "cc89140cbaf231e3c49ef7d7e180eaed756ebf2e42a1a14c5485671ffba5dbe5",
+        "scripts/recall.py": "96f13f65a60aa0931b5e30bae8ea1e0bc837cd67c718b1bd59aab89757003fde",
+        "scripts/test_recall.py": "efe507c156bf3a46c1fac98384db6a8958ca0997c9a4b8fc8e9edea0dde08629",
+        "scripts/benchmark-memory.py": "588e099721892ed32642b52855745424ae61142d918dc9212e455496fde4f125",
+        "tests/test_synthesis_checklist.py": "2f39e485395b6f789a7dd988d27d80fe84498eaf901c0e2afd24a225e42b5ae3",
+        "tests/test_memory_origin.py": "40ce84b147e17cd05e106876f18ca1802110f4ecc86c3f39da2dc9259f6011b5",
+        "tests/test_memory_contract.py": "5426718461e309e2f33bac892b19c1a25342e921a33af0fc97538696cee75d19",
+        "tests/test_recall_legacy.py": "447df7120481758d58af92b6b8743f71c838d3a2099cbc9fede360e5852201a9",
+        "docs/SYNTHESIS-v1.3-CANDIDATE.md": "bd7852addfcf7482ce5035750e6100e070ad7376c1e73269eb98ad47e7f2f19b",
+        "docs/SYNTHESIS-HUMAN-CHECKLIST.md": "ef92edfae9bc4e9d5885c2c7a3c9b7d3f8995f647253ebdd4e18f2a766ae86ec",
+        "docs/SYNTHESIS-RESPONSE-REVIEW.md": "f090be5d50d796836ee2b1b3b0ad77b3aff10396c456f575488e8aec7ffed763",
+        "docs/SYNTHESIS-PARTICIPANT-WORKSHEET.md": "c3db9103a38f0d6b083f76439bceda5cc6ea972e644c51be87fc3fbafcc0a12e"
+      }
     }
   ]
 }

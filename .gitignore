@@ -4,6 +4,7 @@ PROGRESS.md
 /review.sqlite-*
 /decision.sqlite
 /decision.sqlite-*
+/review-work/
 STUCK_FAILURES.*
 sentinel-findings.*
 *.pyc
