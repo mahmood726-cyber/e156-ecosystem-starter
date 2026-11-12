@@ -187,18 +187,25 @@ function Test-ExtractorImport {
     # Verify the stdlib-only student path imports (text -> config).
     [CmdletBinding()]
     param([string]$TargetDir)
-    $py = @"
+    $py = @'
 import sys
-sys.path.insert(0, r'$TargetDir')
+sys.path.insert(0, sys.argv[1])
 import scripts.build_metakit_config
-from src.specialties.registry import detect_specialty
-assert detect_specialty('viral suppression with dolutegravir')[0] == 'hiv'
+from rct_extractor import SPECIALTIES, detect_specialty
+if len(SPECIALTIES) != 17:
+    raise RuntimeError('unexpected specialty inventory')
+if detect_specialty('viral suppression with dolutegravir')[0] != 'hiv':
+    raise RuntimeError('HIV import canary failed')
 # prove this is the 17-specialty build, not the old cardio+malaria+HIV one
-assert detect_specialty('empagliflozin in type 2 diabetes lowered HbA1c')[0] == 'diabetes'
+if detect_specialty('empagliflozin in type 2 diabetes lowered HbA1c')[0] != 'diabetes':
+    raise RuntimeError('diabetes import canary failed')
 print('ok')
-"@
-    $out = & python -c $py 2>&1
-    return ($LASTEXITCODE -eq 0 -and ($out -match 'ok'))
+'@
+    $python = Get-Command python -CommandType Application -ErrorAction Stop |
+        Select-Object -First 1
+    $transport = Join-Path $PSScriptRoot 'bounded_native.py'
+    $out = & $python.Source $transport $python.Source -c $py $TargetDir
+    return ($LASTEXITCODE -eq 0 -and ([string]$out -ceq 'ok'))
 }
 
 function Install-ExtractorPdfDeps {

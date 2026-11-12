@@ -161,3 +161,30 @@ def test_unsafe_ref_refused_before_mutation(tmp_path, ref):
     assert result.returncode != 0
     assert "invalid extractor Git ref" in result.stderr
     assert not target.exists()
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="Windows PowerShell installer")
+@pytest.mark.parametrize("optimize", ["", "1"])
+@pytest.mark.parametrize("count,wrong_result,accepted", [(17, False, True), (3, False, False), (17, True, False)])
+def test_current_public_extractor_api_is_required(tmp_path, count, wrong_result, accepted, optimize):
+    # Deliberate import fixture, not extraction output or a scientific check.
+    fixture = tmp_path / "API fixture with space and apostrophe '"
+    fixture.mkdir()
+    (fixture / "scripts").mkdir()
+    (fixture / "scripts/__init__.py").write_text("", encoding="utf-8")
+    (fixture / "scripts/build_metakit_config.py").write_text("# import fixture\n", encoding="utf-8")
+    (fixture / "rct_extractor.py").write_text(
+        f"SPECIALTIES = list(range({count}))\n"
+        "def detect_specialty(text):\n"
+        + ("    return ('wrong-specialty',)\n" if wrong_result else
+           "    return ('diabetes' if 'empagliflozin' in text else 'hiv',)\n"), encoding="utf-8")
+    driver = tmp_path / "import-check.ps1"
+    driver.write_text(
+        "param($Source,$FixturePath)\n. $Source -Import\n"
+        "if (Test-ExtractorImport -TargetDir $FixturePath) { exit 0 } else { exit 2 }\n",
+        encoding="utf-8")
+    result = subprocess.run([POWERSHELL, "-NoProfile", "-NonInteractive", "-File", str(driver),
+                             str(ROOT / "scripts/install-extractor.ps1"), str(fixture)],
+                            env={**os.environ, "PYTHONOPTIMIZE": optimize},
+                            capture_output=True, text=True, timeout=20)
+    assert (result.returncode == 0) is accepted, result.stdout + result.stderr

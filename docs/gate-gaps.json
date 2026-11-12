@@ -831,10 +831,10 @@
         "scripts/check-research-upgrade.py": "c74739b5434320dda553fae3c001700ef7eb98cdcf51152cbd1d0fcffd2a9655",
         "scripts/install-overmind.ps1": "e04b96bd4b4150501063fc5f7f6241264deb94a5c963efb27af7f0e97b995382",
         "scripts/check-overmind-canary.py": "2f5d71b9e85c9a1235cea3eab10f03e84bf090b64544f32a7887e01ce802460f",
-        "scripts/install-extractor.ps1": "c15163a720cd81b0ebd56a4d81d1eab0cea375e802cb2a00a35613f37bff6397",
+        "scripts/install-extractor.ps1": "4e458344b94e65eb23090253ff53db5f6f139da65920b23bbce4cae5a3d753ab",
         "scripts/bounded_native.py": "57304abdadfad39a460806453a6403d0e0659e4a943a13ad3ba31fcdba60b5f8",
         "tests/test_overmind_powershell_transport.py": "1c8e261e333895747eaeb70e11246ddfc3c8686d7e1e065b69c1a151bdbfc1c8",
-        "tests/test_extractor_windows_transport.py": "921c9bf0f186dae5387f838b52baac5f9b5c65276f73f2e209a6bdbe6561804d"
+        "tests/test_extractor_windows_transport.py": "6c87039d9666e1bf6b26907696b9c843f361802f1a2dbb6bb4138969069c6864"
       }
     },
     {
