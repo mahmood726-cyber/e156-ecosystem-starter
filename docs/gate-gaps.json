@@ -150,16 +150,15 @@
       "id": ".github/workflows/test.yml#jobs.i18n-parity",
       "kind": "ci-job",
       "name": "i18n landing pages match English structure",
-      "stops": "An English docs/index.html whose count of <details> blocks differs from docs/fr, pt, ar or ur index.html (the 2026-04-27 regression where non-English students lost four sections).",
+      "stops": "An English docs/index.html whose count of <details> blocks differs from docs/fr, pt, sw, ar or ur index.html (the 2026-04-27 regression where non-English students lost four sections).",
       "would_not_stop": [
-        "docs/sw/index.html: Swahili is not in the checked language list (it has 0 <details> blocks against English's 5 at the time of sealing, and passes).",
         "Translation quality or content: equal counts of different or untranslated sections pass.",
         "Any i18n page other than index.html."
       ],
-      "source": "scripts/check-i18n-parity.sh header ('We don't validate translation quality') and its langs=(fr pt ar ur) list.",
+      "source": "scripts/check-i18n-parity.sh header ('We don't validate translation quality') and its langs=(fr pt ar ur sw) list.",
       "seal": {
         ".github/workflows/test.yml#jobs.i18n-parity": "5f425065856ff0cdd938af00e59fa4921f739049064974442892a49bf0155861",
-        "scripts/check-i18n-parity.sh": "ef1e3ff1cd12dee383e868036cc74e73ee9abc55292270ad3716cb1cbb72e8ca"
+        "scripts/check-i18n-parity.sh": "359486c8f3253f751c32e697cb5e548e3b17173569a6fbea7a1a155f91dcadb1"
       }
     },
     {
@@ -283,15 +282,14 @@
       "id": "scripts/check-i18n-parity.sh",
       "kind": "script",
       "name": "check-i18n-parity",
-      "stops": "A <details>-count mismatch between docs/index.html and docs/{fr,pt,ar,ur}/index.html (exit 1), or a missing English page (exit 2).",
+      "stops": "A <details>-count mismatch between docs/index.html and docs/{fr,pt,sw,ar,ur}/index.html (exit 1), or a missing English page (exit 2).",
       "would_not_stop": [
-        "docs/sw/index.html, which is not in langs=(fr pt ar ur).",
         "Translation quality: structural parity only, stated in its own header.",
         "Equal counts of different sections."
       ],
       "source": "scripts/check-i18n-parity.sh header 'What it checks'.",
       "seal": {
-        "scripts/check-i18n-parity.sh": "ef1e3ff1cd12dee383e868036cc74e73ee9abc55292270ad3716cb1cbb72e8ca"
+        "scripts/check-i18n-parity.sh": "359486c8f3253f751c32e697cb5e548e3b17173569a6fbea7a1a155f91dcadb1"
       }
     },
     {

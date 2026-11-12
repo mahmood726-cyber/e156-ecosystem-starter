@@ -49,10 +49,14 @@ Describe "Get-HandoffPromptLocale precedence" {
         $env:E156_LANG = 'ar'
         Get-HandoffPromptLocale | Should -Be 'ar'
     }
-    It "falls back to 'en' for unsupported locales (de, ja, sw)" {
+    It "picks 'sw' from LANG=sw_KE.UTF-8" {
+        $env:LANG = 'sw_KE.UTF-8'
+        Get-HandoffPromptLocale | Should -Be 'sw'
+    }
+    It "falls back to 'en' for unsupported locales (de, ja, etc.)" {
         $env:LANG = 'de_DE.UTF-8'
         Get-HandoffPromptLocale | Should -Be 'en'
-        $env:LANG = 'sw_KE.UTF-8'
+        $env:LANG = 'ja_JP.UTF-8'
         Get-HandoffPromptLocale | Should -Be 'en'
     }
     It "is case-insensitive (LANG=FR_FR.UTF-8 -> fr)" {
@@ -87,6 +91,12 @@ Describe "Get-HandoffPromptPath returns the right localised file" {
         $env:LANG = 'ur_PK.UTF-8'
         $p = Get-HandoffPromptPath -StarterRoot $script:starterRoot
         $p | Should -Match 'gemini-handoff-prompt\.ur\.md$'
+        Test-Path $p | Should -BeTrue
+    }
+    It "returns .sw.md when locale=sw and file exists" {
+        $env:LANG = 'sw_KE.UTF-8'
+        $p = Get-HandoffPromptPath -StarterRoot $script:starterRoot
+        $p | Should -Match 'gemini-handoff-prompt\.sw\.md$'
         Test-Path $p | Should -BeTrue
     }
     It "falls back to .en.md when localised file is missing" {

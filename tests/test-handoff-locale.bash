@@ -55,7 +55,7 @@ clear_locale; export LANG=de_DE.UTF-8
 assert_eq "unsupported locale (de) -> en" "en" "$(e156_resolve_handoff_locale)"
 
 clear_locale; export LANG=sw_KE.UTF-8
-assert_eq "unsupported locale (sw) -> en" "en" "$(e156_resolve_handoff_locale)"
+assert_eq "LANG=sw_KE.UTF-8 -> sw" "sw" "$(e156_resolve_handoff_locale)"
 
 clear_locale; export LANG=FR_FR.UTF-8
 assert_eq "case-insensitive (FR_FR.UTF-8 -> fr)" "fr" "$(e156_resolve_handoff_locale)"
@@ -82,6 +82,12 @@ expected_ur="$REPO_ROOT/scripts/gemini-handoff-prompt.ur.md"
 actual_ur="$(e156_resolve_handoff_prompt_path "$REPO_ROOT")"
 assert_eq "ur -> .ur.md path" "$expected_ur" "$actual_ur"
 [[ -f "$actual_ur" ]] && ok "  resolved Urdu file exists" || ko "  resolved Urdu file exists" "file" "missing"
+
+clear_locale; export LANG=sw_KE.UTF-8
+expected_sw="$REPO_ROOT/scripts/gemini-handoff-prompt.sw.md"
+actual_sw="$(e156_resolve_handoff_prompt_path "$REPO_ROOT")"
+assert_eq "sw -> .sw.md path" "$expected_sw" "$actual_sw"
+[[ -f "$actual_sw" ]] && ok "  resolved Swahili file exists" || ko "  resolved Swahili file exists" "file" "missing"
 
 # Force a locale whose file doesn't exist; expect English fallback.
 clear_locale
