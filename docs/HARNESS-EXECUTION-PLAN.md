@@ -1,6 +1,7 @@
 # Harness execution upgrade
 
-Status: implementation in progress, 12 November 2026. Extends draft PR 96.
+Status: implementation and independent review completed, 12 November 2026;
+final remote verification tracked in draft PR 96. See the [usage guide](HARNESS-EXECUTION.md).
 HTML was already checked; this work changes the research harness, not the UI.
 
 ## Ingredients verified and reuse
@@ -34,16 +35,19 @@ prerequisites; software fixtures never count as scientific study results.
 
 ## Acceptance checks
 
-- Every billed call has a committed reservation and every response has a trace;
-  exhausted budgets prevent a call. Interrupted calls retain their reservation.
+- Every generation request has a committed reservation; validated responses and
+  ambiguous outcomes are recorded. Exhausted budgets prevent a call. Interrupted
+  calls retain their reservation; a response lost in transport cannot be recovered.
 - Restart reuses committed outputs and revalidates source/config/code bytes.
 - Unknown outcomes, malformed usage, changed context and unauthorized tools stop
   the run, preserving evidence and costs already incurred.
 - Workers cannot write source mounts or use the host network/credentials. A real
   Linux Docker CI test exercises containment; missing Docker refuses execution.
-- Source changes invalidate descendants; unaffected branches stay current;
+- Changes against a frozen source graph invalidate descendants; unaffected branches stay current;
   repeated monitoring emits no duplicate alert for unchanged evidence state.
-- No runtime has access to held-out labels, reviewers' private files or keys.
+- The worker receives only the selected public evidence snapshot. Operators must
+  exclude held-out labels and private judgments from that selection. The provider
+  adapter alone reads its API key; no automatic file classification is claimed.
 
 ## Static versus dynamic disclosure
 

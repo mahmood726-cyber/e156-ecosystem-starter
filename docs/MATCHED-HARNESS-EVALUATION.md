@@ -25,6 +25,12 @@ descriptive counts, time and separately recorded costs. It does not run a model,
 install a runtime, enforce a spending cap, authenticate people, verify a licence,
 or reproduce a scientific conclusion. No new runtime SDK dependency is needed.
 
+The optional [durable execution harness](HARNESS-EXECUTION.md) now supplies real
+model/tool execution, reservations and complete traces as separate supporting
+evidence. Its accounting is not automatically converted into observed human
+review time, end-to-end duration or billed USD; see the guide's matched-evaluation
+boundary before assembling a run ledger. The scientific study remains unstarted.
+
 ## Prospective comparison
 
 The custodian must approve and freeze the following before any test run:
