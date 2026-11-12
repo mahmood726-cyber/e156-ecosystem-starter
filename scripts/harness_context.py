@@ -69,6 +69,25 @@ def read_bytes(path):
     return data
 
 
+def control_path(path, root, manifest, *, sqlite=False, creating=False, extra_inputs=()):
+    """Control files and SQLite sidecars must never alias source material."""
+    path = guard(path)
+    candidates = [path] + ([guard(str(path) + suffix) for suffix in ("-journal", "-wal", "-shm")] if sqlite else [])
+    nodes, _ = index(manifest)
+    inputs = [artifact(root, node["file"]) for node in nodes.values()] + [guard(p) for p in extra_inputs]
+    for candidate in candidates:
+        for source in inputs:
+            require(candidate.resolve() != source.resolve() and not (candidate.exists() and source.exists() and os.path.samefile(candidate, source)),
+                    "control path overlaps an input artifact")
+    if sqlite:
+        for sidecar in candidates[1:]:
+            if sidecar.exists():
+                require(not creating and str(sidecar).endswith("-journal"), "unrelated or unsupported SQLite sidecar")
+                with sidecar.open("rb") as handle:
+                    require(handle.read(8) == bytes.fromhex("d9d505f920a163d7"), "unrecognized SQLite journal; manual recovery required")
+    return path
+
+
 def atomic_json(path, value, *, exclusive=False):
     path = guard(path)
     raw = (json.dumps(value, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n").encode("utf-8")
@@ -218,7 +237,7 @@ def pack(root, manifest, selected, skills, *, max_chars=12000):
 
 def watch(root, manifest, state):
     current = inspect(root, manifest)
-    state = guard(state)
+    state = control_path(state, root, manifest)
     previous = strict_json(read_bytes(state)) if state.exists() else None
     if previous is not None:
         require(previous.get("schema") == "e156-harness-watch-v1" and isinstance(previous.get("nodes"), dict), "watch state schema mismatch")
