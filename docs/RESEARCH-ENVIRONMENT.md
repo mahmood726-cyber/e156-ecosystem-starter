@@ -98,8 +98,16 @@ TruthCert registry key, the persisted extractor path and core import canary,
 ProjectIndex reconciliation, pip dependency consistency, and Sentinel/Overmind
 source commits matching the component lock. No agent CLI login is attempted.
 
+Windows transport controls also exercise the unchanged strict Overmind JSON
+checker without PowerShell text re-encoding, and a local synthetic Git remote
+with paths beyond the legacy Windows limit. The extractor fetches only the
+requested ref, enables long paths in that checkout, and gives each Git command
+a 120-second deadline with noninteractive input and targeted process-tree
+cleanup. Missing refs still refuse installation; these controls do not assess
+the scientific accuracy of extraction.
+
 Windows' User environment registry, known-folder Desktop and clipboard are not
-isolated by changing `USERPROFILE`. The unmodified installers exercise those
+isolated by changing `USERPROFILE`. The repository installers exercise those
 APIs on the disposable runner account; that account's destruction contains the
 side effects. This is why a temporary directory alone is insufficient to allow
 local full-install testing. The Linux key-file contract is not substituted for

@@ -16,7 +16,7 @@
 #
 # Usage:
 #   .\scripts\install-extractor.ps1                       # clone to ~\code\rct-extractor-v2 (core only)
-#   .\scripts\install-extractor.ps1 -Target C:\code\rct-extractor-v2
+#   .\scripts\install-extractor.ps1 -Target "$env:USERPROFILE\code\rct-extractor-v2"
 #   .\scripts\install-extractor.ps1 -WithPdfDeps          # also pip-install the PDF/scientific stack
 #   .\scripts\install-extractor.ps1 -SkipClone            # only set env + verify an existing clone
 #   .\scripts\install-extractor.ps1 -Import               # dot-source for tests
@@ -82,12 +82,28 @@ function Test-ExtractorPresent {
     return [bool]($Dir -and (Test-Path (Join-Path $Dir 'scripts\build_metakit_config.py')))
 }
 
+function Invoke-ExtractorGit {
+    param([string[]]$GitArguments)
+    $python = Get-Command python -CommandType Application -ErrorAction Stop |
+        Select-Object -First 1
+    $transport = Join-Path $PSScriptRoot 'bounded_native.py'
+    if (-not (Test-Path -LiteralPath $transport -PathType Leaf)) {
+        throw 'REFUSED: required bounded extractor Git transport is missing'
+    }
+    $output = & $python.Source $transport git -c credential.interactive=false @GitArguments
+    if ($LASTEXITCODE -ne 0) {
+        throw 'REFUSED: extractor Git operation failed; no successful installation claimed'
+    }
+    return $output
+}
+
 function Install-ExtractorClone {
     [CmdletBinding()]
     param([string]$TargetDir, [string]$Ref)
     # Git ref arguments must never be interpreted as command-line options.
     if ([string]::IsNullOrWhiteSpace($Ref) -or
-        $Ref -cnotmatch '^[A-Za-z0-9][A-Za-z0-9._/-]*$') {
+        $Ref -cnotmatch '^[A-Za-z0-9][A-Za-z0-9._/-]*$' -or
+        $Ref.Contains('..') -or $Ref.Contains('//') -or $Ref.EndsWith('/')) {
         throw "REFUSED: invalid extractor Git ref"
     }
 
@@ -108,29 +124,34 @@ function Install-ExtractorClone {
             $parent = Split-Path -Parent $targetFull
             New-Item -ItemType Directory -Force -Path $parent | Out-Null
             $stage = Join-Path $parent ('.extractor-stage-' + [guid]::NewGuid().ToString('N'))
-            Write-Host "  cloning $url into temporary checkout" -ForegroundColor DarkGray
-            & git clone --quiet --no-checkout $url $stage 2>$null
-            if ($LASTEXITCODE -ne 0) { throw "REFUSED: git clone failed (exit $LASTEXITCODE)" }
+            Write-Host "  preparing requested release in temporary checkout" -ForegroundColor DarkGray
+            $null = Invoke-ExtractorGit @('init', '--quiet', $stage)
+            $null = Invoke-ExtractorGit @('-C', $stage, 'remote', 'add', 'origin', $url)
             $checkout = $stage
         }
 
+        # The release contains paths longer than Win32's legacy MAX_PATH.
+        # Keep this setting local to the extractor, never change global Git.
+        $null = Invoke-ExtractorGit @('-C', $checkout, 'config', 'core.longpaths', 'true')
         # FETCH_HEAD refers to the exact newly fetched request, not a
         # potentially stale local tag/branch in an existing installation.
-        & git -C $checkout fetch --quiet origin $Ref 2>$null
-        if ($LASTEXITCODE -ne 0) { throw "REFUSED: requested extractor Git ref unavailable: $Ref" }
+        Write-Host "  fetching requested ref (120-second command deadline)" -ForegroundColor DarkGray
+        try {
+            $null = Invoke-ExtractorGit @('-C', $checkout, 'fetch', '--quiet', '--depth=1', 'origin', $Ref)
+        } catch {
+            throw "REFUSED: requested extractor Git ref unavailable: $Ref"
+        }
 
-        $resolved = (& git -C $checkout rev-parse --verify 'FETCH_HEAD^{commit}' 2>$null)
-        if ($LASTEXITCODE -ne 0 -or
-            -not $resolved -or
+        $resolved = Invoke-ExtractorGit @('-C', $checkout, 'rev-parse', '--verify', 'FETCH_HEAD^{commit}')
+        if (-not $resolved -or
             ([string]$resolved).Trim() -cnotmatch '^[0-9a-fA-F]{40}$') {
             throw "REFUSED: requested extractor ref did not resolve to a commit: $Ref"
         }
         $resolved = ([string]$resolved).Trim()
-        & git -C $checkout checkout --quiet --detach $resolved 2>$null
-        if ($LASTEXITCODE -ne 0) { throw "REFUSED: extractor checkout failed for $resolved" }
-        $actual = (& git -C $checkout rev-parse --verify HEAD 2>$null)
-        if ($LASTEXITCODE -ne 0 -or
-            -not $actual -or
+        Write-Host "  checking out verified commit" -ForegroundColor DarkGray
+        $null = Invoke-ExtractorGit @('-C', $checkout, 'checkout', '--quiet', '--detach', $resolved)
+        $actual = Invoke-ExtractorGit @('-C', $checkout, 'rev-parse', '--verify', 'HEAD')
+        if (-not $actual -or
             ([string]$actual).Trim() -ne $resolved) {
             throw "REFUSED: extractor HEAD did not match requested commit $resolved"
         }
@@ -142,7 +163,13 @@ function Install-ExtractorClone {
         Write-Host "  verified extractor commit: $resolved" -ForegroundColor DarkGray
     } finally {
         if ($stage -and (Test-Path -LiteralPath $stage)) {
-            Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+            $stageFull = [IO.Path]::GetFullPath($stage)
+            if (-not $stageFull.StartsWith($parent + [IO.Path]::DirectorySeparatorChar,
+                    [StringComparison]::OrdinalIgnoreCase) -or
+                (Split-Path -Leaf $stageFull) -notmatch '^\.extractor-stage-[0-9a-f]{32}$') {
+                throw 'REFUSED: extractor cleanup path escaped its staging parent'
+            }
+            Remove-Item -LiteralPath $stageFull -Recurse -Force -ErrorAction Stop
         }
     }
 }

@@ -85,6 +85,7 @@ $windowsPowerShell = Resolve-SmokeApplication -Name 'powershell.exe'
 $null = Get-Command git -CommandType Application -ErrorAction Stop
 foreach ($relative in @('install/install.ps1', 'docs/HASH.txt',
         'scripts/check-overmind-canary.py', 'scripts/verify-full-install.py',
+        'scripts/bounded_native.py',
         'scripts/component_lock.py',
         'scripts/research_environment.py', 'scripts/check-research-upgrade.py',
         'requirements-aact-canary.lock')) {

@@ -822,13 +822,19 @@
       ],
       "source": ".github/workflows/full-system-integration.yml full-windows-install; scripts/windows_install_smoke.ps1; existing full-install and research-pair canaries. No local full installer test.",
       "seal": {
-        ".github/workflows/full-system-integration.yml#jobs.full-windows-install": "1bda23574570ec5bf01d108b43ee0c0b7792d6dd421c2cf57bf3d33451ef3062",
-        "scripts/windows_install_smoke.ps1": "1a78b05c2a5b82e50d0dd66b0fd5dc73811cd34c087a8be0d4455e7a7850fd7d",
+        ".github/workflows/full-system-integration.yml#jobs.full-windows-install": "e4d4342b24365705a93071d146b2abce96d1ea4988c3e5ff4c1d3dbcc7e49ef1",
+        "scripts/windows_install_smoke.ps1": "81a56fe3c1146227667bccfb2ad762b32d838aedf9ba5e4cf2a30bb13c19af97",
         "tests/test_windows_install_smoke.py": "ab38a959d348ccaa406633f56bc2fe12403da89a8a87830ae6cbbd9dc6fa98d2",
         "scripts/verify-full-install.py": "ad1b1d80d45e9aceea3d585813a28466860831c58c0de2e77ce6ff9f79757758",
         "tests/test_full_install_verifier.py": "7bbb1677b61f5021a6269e3710471f7ba4c1181fa26c0319065c2c2baba692ce",
         "scripts/research_environment.py": "171e1bf4afb9c85050cbe9bee41203feeb20ab45311d12425fdeff3339dafdde",
-        "scripts/check-research-upgrade.py": "c74739b5434320dda553fae3c001700ef7eb98cdcf51152cbd1d0fcffd2a9655"
+        "scripts/check-research-upgrade.py": "c74739b5434320dda553fae3c001700ef7eb98cdcf51152cbd1d0fcffd2a9655",
+        "scripts/install-overmind.ps1": "e04b96bd4b4150501063fc5f7f6241264deb94a5c963efb27af7f0e97b995382",
+        "scripts/check-overmind-canary.py": "2f5d71b9e85c9a1235cea3eab10f03e84bf090b64544f32a7887e01ce802460f",
+        "scripts/install-extractor.ps1": "c15163a720cd81b0ebd56a4d81d1eab0cea375e802cb2a00a35613f37bff6397",
+        "scripts/bounded_native.py": "57304abdadfad39a460806453a6403d0e0659e4a943a13ad3ba31fcdba60b5f8",
+        "tests/test_overmind_powershell_transport.py": "1c8e261e333895747eaeb70e11246ddfc3c8686d7e1e065b69c1a151bdbfc1c8",
+        "tests/test_extractor_windows_transport.py": "921c9bf0f186dae5387f838b52baac5f9b5c65276f73f2e209a6bdbe6561804d"
       }
     },
     {

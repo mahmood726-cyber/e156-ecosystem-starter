@@ -348,6 +348,7 @@ def real_copy(tmp_path, rgg):
                 "tests/test_synthesis_checklist.py", "tests/test_memory_origin.py",
                 "tests/test_memory_contract.py", "tests/test_recall_legacy.py",
                 "tests/test_windows_install_smoke.py", "tests/test_full_install_verifier.py",
+                "tests/test_overmind_powershell_transport.py", "tests/test_extractor_windows_transport.py",
                 "docs/SYNTHESIS-v1.3-CANDIDATE.md", "docs/SYNTHESIS-HUMAN-CHECKLIST.md",
                 "docs/SYNTHESIS-RESPONSE-REVIEW.md", "docs/SYNTHESIS-PARTICIPANT-WORKSHEET.md",
                 "examples/synthesis-adjudication-stepwise.json"):

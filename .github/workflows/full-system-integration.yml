@@ -10,6 +10,7 @@ on:
       - "scripts/install-sentinel.*"
       - "scripts/install-overmind.*"
       - "scripts/install-extractor.*"
+      - "scripts/bounded_native.py"
       - "scripts/install-projectindex.*"
       - "scripts/write-gemini-handoff.ps1"
       - "scripts/windows_install_smoke.ps1"
@@ -28,6 +29,8 @@ on:
       - "tests/test_research_environment.py"
       - "tests/test_full_install_verifier.py"
       - "tests/test_windows_install_smoke.py"
+      - "tests/test_overmind_powershell_transport.py"
+      - "tests/test_extractor_windows_transport.py"
       - "docs/HASH-linux.txt"
       - "docs/HASH.txt"
       - ".github/workflows/full-system-integration.yml"
@@ -99,7 +102,7 @@ jobs:
         run: |
           python -m pip install --require-hashes -r requirements-ci.lock
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m pytest tests/test_windows_install_smoke.py tests/test_full_install_verifier.py -q
+          python -m pytest tests/test_windows_install_smoke.py tests/test_full_install_verifier.py tests/test_overmind_powershell_transport.py tests/test_extractor_windows_transport.py -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Run real Windows installation and verify the complete chain
