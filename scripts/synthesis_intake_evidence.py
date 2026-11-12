@@ -6,15 +6,16 @@ import re
 
 if __package__:
     from scripts.synthesis_participant_evidence import _count_ref, _reference_key, _label
-    from scripts.synthesis_preflight_count_identity import compare_raw_counts, ESTIMATOR_FIELDS, OPTIONAL_METHOD_ABSENCE
+    from scripts.synthesis_preflight_count_identity import compare_raw_counts, ESTIMATOR_FIELDS, OPTIONAL_METHOD_ABSENCE, RESULT_FIELDS, DENOMINATOR_UNITS, _missing_field
     from scripts.synthesis_preflight_root_dedup import group_preflight_roots
 else:
     from synthesis_participant_evidence import _count_ref, _reference_key, _label
-    from synthesis_preflight_count_identity import compare_raw_counts, ESTIMATOR_FIELDS, OPTIONAL_METHOD_ABSENCE
+    from synthesis_preflight_count_identity import compare_raw_counts, ESTIMATOR_FIELDS, OPTIONAL_METHOD_ABSENCE, RESULT_FIELDS, DENOMINATOR_UNITS, _missing_field
     from synthesis_preflight_root_dedup import group_preflight_roots
 
 MAX_EVIDENCE_CHECKS = 40
 MAX_OCCURRENCES = 500
+SCALAR_IDENTITY_FIELDS = tuple(k for k in RESULT_FIELDS if k != "count_basis") + ("comparison_id",)
 NUMBER = re.compile(r"[+\-\u2212]?(?:(?:0|[1-9][0-9]{0,14}|[1-9][0-9]{0,2}(?:,[0-9]{3}){1,4})(?:\.[0-9]{1,12})?|\.[0-9]{1,12})(?:[eE][+\-]?[0-9]{1,3})?\Z")
 
 
@@ -182,6 +183,138 @@ def _subset(evidence, spec):
             "reason": "Source-bound restriction accounting checked; source tally remains unverified"}
 
 
+def _rounding_result(value, reported, quantum, policy):
+    """A tie with an unspecified convention cannot establish a discrepancy."""
+    if policy not in {"UNSPECIFIED", "HALF_UP", "HALF_EVEN"}:
+        raise ValueError("Unknown rounding policy")
+    modes = {"HALF_UP": ROUND_HALF_UP, "HALF_EVEN": ROUND_HALF_EVEN}
+    chosen = modes if policy == "UNSPECIFIED" else {policy: modes[policy]}
+    with localcontext(Context(prec=64)):
+        options = {name: str(value.quantize(quantum, rounding=mode)) for name, mode in chosen.items()}
+    values = {Decimal(v) for v in options.values()}
+    status = "NO_FLAG" if values == {reported} else "HOLD" if reported in values else "REVIEW_CANDIDATE"
+    return {"status": status, "rounding": policy, "rounding_options": options,
+            "rounded_value": next(iter(options.values())) if len(values) == 1 else None}
+
+
+def _printed_rounding_interval(value, policy):
+    """Possible unrounded values for one printed nearest-rounded decimal."""
+    if policy not in {"UNSPECIFIED", "HALF_UP", "HALF_EVEN"}:
+        raise ValueError("Unknown rounding policy")
+    modes = ("HALF_UP", "HALF_EVEN") if policy == "UNSPECIFIED" else (policy,)
+    with localcontext(Context(prec=64)):
+        quantum = Decimal(1).scaleb(value.as_tuple().exponent)
+        even = (value / quantum) % 2 == 0
+        lower_closed = any(even if mode == "HALF_EVEN" else value > 0 for mode in modes)
+        upper_closed = any(even if mode == "HALF_EVEN" else value < 0 for mode in modes)
+        return value - quantum / 2, value + quantum / 2, lower_closed, upper_closed
+
+
+def _rounding_contains(bounds, value):
+    lower, upper, lower_closed, upper_closed = bounds
+    return ((value > lower or (value == lower and lower_closed))
+            and (value < upper or (value == upper and upper_closed)))
+
+
+def _rounding_subset(inner, outer):
+    return ((inner[0] > outer[0] or (inner[0] == outer[0] and (not inner[2] or outer[2])))
+            and (inner[1] < outer[1] or (inner[1] == outer[1] and (not inner[3] or outer[3]))))
+
+
+def _printed_scalar_result(values, policy):
+    left, right = (_printed_rounding_interval(value, policy) for value in values)
+    lower, upper = max(left[0], right[0]), min(left[1], right[1])
+    disjoint = lower > upper or (lower == upper and not (
+        _rounding_contains(left, lower) and _rounding_contains(right, lower)))
+    contained = not disjoint and (_rounding_subset(left, right) or _rounding_subset(right, left))
+    intervals = [{"minimum": str(b[0]), "maximum": str(b[1]),
+                  "minimum_inclusive": b[2], "maximum_inclusive": b[3]} for b in (left, right)]
+    return {"status": "REVIEW_CANDIDATE" if disjoint else "NO_FLAG" if contained else "HOLD",
+            "precision_status": "DISJOINT" if disjoint else "CONTAINED" if contained else "OVERLAP",
+            "rounding": policy, "rounding_intervals": intervals,
+            "reason": ("Printed rounding intervals are disjoint" if disjoint else
+                       "Displayed values are compatible at their printed precision" if contained else
+                       "Printed rounding intervals partly overlap; the unrounded value is unavailable")}
+
+
+def _scalar_record(evidence, record):
+    if not isinstance(record, dict) or record.get("scope_verified") is not True:
+        raise ValueError("Each scalar requires verified scope and a source-bound definition")
+    binding = bind_scalar(evidence, record.get("value"))
+    if binding["role"] == "count" or binding["inequality"] is not None:
+        raise ValueError("Repeated scalars require individually bound, uncensored non-count tokens")
+    definition = bind_quote(evidence, record.get("definition"))
+    identity = record.get("identity")
+    optional = {"source_sha256", "locator", "analysis_denominator_n", "analysis_denominator_unit"}
+    if not isinstance(identity, dict) or not set(identity) <= set(SCALAR_IDENTITY_FIELDS) | optional:
+        raise ValueError("Unsupported scalar identity fields")
+    identity = dict(identity)
+    source = evidence["source"]
+    for key, value in (("publication_id", source["doi"]), ("source_version", source["version"]),
+                       ("source_sha256", source["snapshot_sha256"]), ("locator", binding["locator"])):
+        if key in identity and identity[key] != value:
+            raise ValueError("Declared scalar identity contradicts captured source: " + key)
+        identity[key] = value
+    for key in SCALAR_IDENTITY_FIELDS:
+        # comparison_id is a core contrast/reference/coding identity, never N/A.
+        if _missing_field(identity.get(key), "source_result_id" if key == "comparison_id" else key):
+            raise ValueError("Missing or unverified scalar identity: " + key)
+    return {"binding": binding, "definition": definition, "identity": identity}
+
+
+def _scalars(evidence, spec):
+    left, right = (_scalar_record(evidence, spec.get(key)) for key in ("left", "right"))
+    a, b = left["binding"], right["binding"]
+    if _reference_key(a) == _reference_key(b):
+        raise ValueError("Repeated values require distinct physical tokens")
+    if any(a[key] != b[key] for key in ("role", "unit", "scale")):
+        raise ValueError("Scalar roles, units and scales must match; no conversion is inferred")
+    fields = list(SCALAR_IDENTITY_FIELDS)
+    for r in (left, right):
+        ident = r["identity"]
+        if ("analysis_denominator_n" in ident) != ("analysis_denominator_unit" in ident):
+            raise ValueError("Scalar denominator size and unit must be supplied together")
+    for field in ("analysis_denominator_n", "analysis_denominator_unit"):
+        if field in left["identity"] or field in right["identity"]:
+            if not all(field in r["identity"] for r in (left, right)):
+                raise ValueError("A supplied scalar denominator must be defined on both sides")
+            fields.append(field)
+    for r in (left, right):
+        ident = r["identity"]
+        if "analysis_denominator_n" in ident and (type(ident["analysis_denominator_n"]) is not int or ident["analysis_denominator_n"] <= 0):
+            raise ValueError("Scalar denominator size must be a positive exact integer")
+        if "analysis_denominator_unit" in ident and ("analysis_denominator_n" not in ident or ident["analysis_denominator_unit"] not in DENOMINATOR_UNITS):
+            raise ValueError("Scalar denominator unit needs its size and a known unit")
+    mismatches = [key for key in fields if left["identity"][key] != right["identity"][key]]
+    comparability = {"status": "NOT_COMPARABLE" if mismatches else "MATCHED", "mismatched_fields": mismatches,
+                     "scope_authenticated": False}
+    result = {"left": left, "right": right, "comparability": comparability,
+              "reason": "Repeated printed scalars at compatible precision; scientific identity is reviewer supplied"}
+    if mismatches:
+        return {**result, "status": "HOLD"}
+    values = [Decimal(v["value"]) for v in (a, b)]
+    return {**result, **_printed_scalar_result(values, spec.get("rounding", "UNSPECIFIED"))}
+
+
+def _bounded(evidence, spec):
+    if spec.get("scope_verified") is not True:
+        raise ValueError("Scale applicability must be reviewed against its source")
+    scope = bind_quote(evidence, spec.get("scope_context"))
+    refs = {key: bind_scalar(evidence, spec.get(key)) for key in ("value", "minimum", "maximum")}
+    if any(v["role"] != "value" or v["inequality"] is not None for v in refs.values()):
+        raise ValueError("Scale limits and value require exact uncensored value tokens")
+    if len({(v["unit"], v["scale"]) for v in refs.values()}) != 1:
+        raise ValueError("Scale limits and value must use the same unit and scale")
+    if len({_reference_key(v) for v in refs.values()}) != 3:
+        raise ValueError("Scale checking requires three distinct source tokens")
+    value, minimum, maximum = (Decimal(refs[key]["value"]) for key in ("value", "minimum", "maximum"))
+    if minimum >= maximum:
+        raise ValueError("Scale minimum must be strictly less than maximum")
+    return {"status": "NO_FLAG" if minimum <= value <= maximum else "REVIEW_CANDIDATE",
+            "reason": "Inclusive source-defined scale limits only; applicability remains reviewer attested",
+            "values": refs, "scope_context": scope, "scope_authenticated": False}
+
+
 def _percent(evidence, spec):
     numerator, denominator = (_count_record(evidence, spec.get(k)) for k in ("numerator", "denominator"))
     identity = compare_raw_counts(numerator, denominator)
@@ -203,18 +336,15 @@ def _percent(evidence, spec):
     n, den = numerator["value"], denominator["value"]
     if denominator["count_basis"] != numerator["count_basis"] or not 0 <= n <= den or den == 0:
         raise ValueError("Invalid same-unit numerator/denominator accounting")
-    rounding = spec.get("rounding", "HALF_UP")
-    if rounding not in {"HALF_UP", "HALF_EVEN"}:
-        raise ValueError("Unknown rounding policy")
     reported = Decimal(percent["value"])
     quantum = Decimal(1).scaleb(reported.as_tuple().exponent)
     with localcontext(Context(prec=64, rounding=ROUND_HALF_UP)):
         computed = Decimal(100) * n / den
-        rounded = computed.quantize(quantum, rounding=ROUND_HALF_UP if rounding == "HALF_UP" else ROUND_HALF_EVEN)
-    return {"status": "NO_FLAG" if rounded == reported else "REVIEW_CANDIDATE",
+    rounding = _rounding_result(computed, reported, quantum, spec.get("rounding", "UNSPECIFIED"))
+    return {**rounding,
             "reason": "Raw percentage checked at the captured printed precision",
             "numerator": numerator, "denominator": denominator, "percentage": percent,
-            "computed_percent": str(computed), "rounded_percent": str(rounded), "rounding": rounding,
+            "computed_percent": str(computed), "rounded_percent": rounding["rounded_value"],
             "formula": "100 * source numerator / source denominator",
             "identity": {"status": "MATCHED", "scope_authenticated": False}}
 
@@ -317,6 +447,8 @@ def evidence_finding(claim_id, spec, evidence):
         if kind == "MATCHED_COUNTS": result.update(_counts(evidence, spec))
         elif kind == "STRICT_SUBSET": result.update(_subset(evidence, spec))
         elif kind == "COUNT_PERCENT": result.update(_percent(evidence, spec))
+        elif kind == "MATCHED_SCALARS": result.update(_scalars(evidence, spec))
+        elif kind == "BOUNDED_VALUE": result.update(_bounded(evidence, spec))
         elif kind == "INTERVAL": result.update(_interval(evidence, spec))
         elif kind == "REVISION_SWEEP": result.update(_sweep(evidence, spec, claim_id))
         else: raise ValueError("Unknown source evidence kind")

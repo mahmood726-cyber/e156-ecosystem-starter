@@ -16,7 +16,7 @@ from scripts import synthesis_replay as replay
 from scripts import synthesis_signing as signing
 
 ROOT = Path(__file__).resolve().parents[1]
-ANCHOR = 'd81086aaf3cee56b8936af0ef617085844718cdb1a200b88870fcfef7812b0d6'
+ANCHOR = 'fc7e071298fc1fed636ed16dda1252358c026552d0d8209896607d72d23013f9'
 PROJECT = 'synthetic-signing-control'
 
 

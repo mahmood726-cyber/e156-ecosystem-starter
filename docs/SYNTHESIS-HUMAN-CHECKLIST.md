@@ -1,6 +1,6 @@
 # Synthesis — human review checklist (v1.3 companion)
 
-**Start here if you are an author, reviewer or editor.** Use this current experimental checklist with a manuscript and its source documents. No code or AI is required. **Updated 10 November 2026.** A completed checklist does not certify a paper or establish detection accuracy. The [start page](SYNTHESIS-START.md) explains the manual, optional AI and local capture routes.
+**Start here if you are an author, reviewer or editor.** Use this current experimental checklist with a manuscript and its source documents. No code or AI is required. **Updated 12 November 2026.** A completed checklist does not certify a paper or establish detection accuracy. The [start page](SYNTHESIS-START.md) explains the manual, optional AI and local capture routes.
 
 **Before starting:** Confirm that you are permitted to access and process each source. Respect publisher terms, requests not to contact authors and any research-ethics requirements. Do not upload restricted manuscripts or personal data into external AI systems without permission.
 
@@ -11,9 +11,9 @@ For each claim record **Pass / Review needed / Insufficient evidence / N/A** and
 | Core | What to do | Result and evidence |
 |---|---|---|
 | 1. Find the claim | Check its exact wording and location in the correct version, including corrections. Inspect uncertain extracted symbols and table alignment. | |
-| 2. Match the source | Find the supporting passage or data. Match the population, comparison, outcome, timepoint and units. | |
+| 2. Match the source | Find the supporting passage or data. Match the population, comparison, outcome, timepoint, units and analysis/data-cutoff version. | |
 | 3. Establish the denominator | Identify who or what was counted, exclusions, missingness and analysis population. Use the [participant worksheet](SYNTHESIS-PARTICIPANT-WORKSHEET.md) for count comparisons. | |
-| 4. Check the calculation | Establish the model, effect measure and precision first. Save inputs, formula and actual working. If code runs, save its versions, command and raw output. | |
+| 4. Check the calculation | Establish the model, effect measure and precision first. Check repeated same-result values and explicit scale limits; leave ambiguous rounding ties unresolved. Save inputs, formula and actual working. If code runs, save its versions, command and raw output. | |
 | 5. Try to explain the mismatch | Test rounding, different populations, methods, coding, versions and footnotes against the source. Leave an untestable explanation unresolved. | |
 | 6. Record and recheck | Keep matching claims and abstentions as well as concerns. Separate labels, numbers, analyses and impact. After a revision, complete the sweep below. | |
 
@@ -48,11 +48,11 @@ Use the same four results as the core. Apply the relevant study-type checks even
 | 2 | Are the abstract's numbers and conclusions consistent with the full text? | | |
 | 3 | Do tables, figures, text and supplementary files agree on results and recommendations, including eligibility, age boundaries and logical qualifiers such as “not”, “and” and “or”? | | |
 | 4 | Do reported counts and percentages agree with the stated denominators? | | |
-| 5 | Are confidence intervals ordered correctly and reported on the intended scale? | | |
+| 5 | Are confidence intervals ordered correctly, on the intended scale and consistent at repeated same-result locations? Containment alone cannot verify their endpoints. | | |
 | 6 | Are units, labels, figure axes and treatment directions consistent? | | |
 | 7 | Do references actually support the specific claims attributed to them? | | |
 | 8 | Do the population, intervention, comparator and endpoint, including its primary or secondary status, match the cited source? | | |
-| 9 | Are follow-up windows, analysis populations and endpoint definitions consistent across documents? | | |
+| 9 | Are follow-up windows, analysis populations, data cutoffs and endpoint definitions consistent, including permanent discontinuation versus temporary interruption? | | |
 | 10 | Does the reported analysis match the protocol, registration and statistical analysis plan, or are changes explained? | | |
 | 11 | Are effect measure, estimand, adjustment and model identified before comparing estimates? | | |
 | 12 | Are missing data, censoring, multiplicity and variance methods explained and appropriate to the claim? | | |
@@ -78,7 +78,8 @@ Use the same four results as the core. Apply the relevant study-type checks even
 - **Source permission and access route:**
 - **Exact claim location and wording:**
 - **Original enquiry:** clarification request / error allegation (record each point separately)
-- **Comparison source, version and location:**
+- **Comparison source, version, analysis/data cutoff and location:**
+- **Source-defined scale limits and applicability, if relevant:**
 - **What seems inconsistent (without assuming an error):**
 - **Issue class, separately for each point:** label/presentation / numerical value / analysis or code / citation / methodological discussion
 - **Impact:** display only / numerical result / interpretation or conclusion / undetermined (record supporting evidence, not an assumption)
@@ -86,6 +87,7 @@ Use the same four results as the core. Apply the relevant study-type checks even
 - **Saved inputs and working / script and raw output (if executed):**
 - **Are the estimates genuinely comparable?** Yes / No / Unclear
 - **Strongest benign explanation and how checked:**
+- **Registered original points, answered/unanswered status and attachments inspected:**
 - **Reply, source recheck and counterevidence (if any):**
 - **Point outcome:** concern persists / resolved enquiry / false-positive allegation / version-limited / methodological discussion / unresolved
 - **Source-support:** SUPPORTED / CONTRADICTED / OVERGENERALIZED / UNSUPPORTED_CITATION / SOURCE_UNAVAILABLE / NOT_ENOUGH_INFO
@@ -98,6 +100,6 @@ Use the same four results as the core. Apply the relevant study-type checks even
 
 **Decision rule:** A mismatch is not automatically an error. If sources, versions, endpoint identity, estimator or precision are insufficient, record **HOLD / NOT_ENOUGH_INFO** or **NOT_COMPARABLE** rather than alleging a mistake. An email acknowledgement is not author confirmation; author confirmation is not a published correction. Preserve a record of negative and abstained checks. Do not contact authors automatically.
 
-**Handling a reply:** Disagreement alone does not prove the enquiry wrong, and acknowledgement of one typo does not validate all its other points. A resolved clarification question is not automatically a false-positive error allegation. See the [response-review procedure](SYNTHESIS-RESPONSE-REVIEW.md) for the evidence needed to close, retain or withdraw a concern.
+**Handling a reply:** Disagreement alone does not prove the enquiry wrong, and acknowledgement of one typo does not validate all its other points. A resolved clarification question is not automatically a false-positive error allegation. Register all original questions: a reply to one does not answer another. Read any relevant response attachment before summarising it, and record unavailable attachments as unresolved. Editorial closure or an unavailable correction route does not settle scientific correctness. See the [response-review procedure](SYNTHESIS-RESPONSE-REVIEW.md) for the evidence needed to close, retain or withdraw a concern.
 
 **Technical detail and limits:** [Methods guide](SYNTHESIS-METHODS.md) · [Synthesis overview](SYNTHESIS-v1.3-CANDIDATE.md) · [Blinded validation plan](SYNTHESIS-v1.3-BLINDED-VALIDATION-PLAN.md) · [Audit packet](SYNTHESIS-v1.3-AUDIT-PACKET.md). The v1.3 candidate remains experimental and has not undergone independent prospective real-paper accuracy validation.

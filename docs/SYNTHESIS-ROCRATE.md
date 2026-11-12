@@ -75,7 +75,7 @@ failure. Current local Windows whole-suite restrictions remain in force.
 From the repository root, export the existing attributed example to a new directory:
 
 ```console
-python scripts/synthesis_rocrate.py export examples/synthesis-replay-strokewalk --expected-sha256 5a2d948a673a0c5ea67b9671a97bb43f0affbb00ec521e5940bf6dfe66cbe2ad --output exported-crate
+python scripts/synthesis_rocrate.py export examples/synthesis-replay-strokewalk --expected-sha256 3440da5463da48b023d7e85789a58035ba950e7c4a806a581b262490bf0e77f3 --output exported-crate
 python scripts/synthesis_rocrate.py verify exported-crate --expected-sha256 <metadata-digest-returned-by-export>
 ```
 

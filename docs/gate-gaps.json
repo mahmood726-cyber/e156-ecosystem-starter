@@ -55,17 +55,18 @@
       "id": "scripts/synthesis_preflight.py",
       "kind": "script",
       "name": "Synthesis local packet validator (experimental)",
-      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for PMC packets. Live capture requires an operator flag and the HTTPS EFetch origin. Archives refuse extra articles and conflicting rights declarations. Source-bound counts require a matching snapshot hash and supported integer cells or unambiguous quoted tokens, with exact locator disambiguation when needed, under reviewer-verified analysis scope. A passed restricted-count bound cannot clear missing disjoint, exhaustive exclusion accounting. A requested correction prevents an original-only comparison from clearing a claim; a separate mapped sweep retains stale occurrences and unchecked locations. Normal intake binds per-count definition quotes and result identities before same-result or strict-subset comparisons; new signed scalar and interval references retain unit context and reject partial tokens. Bounded revision maps retain stale and uninspected dependencies. Legacy count checks cannot clear a decisive claim on attested labels alone. An optional private sidecar holds known unresolved reply points and emits redacted status labels separately from contact pauses. Scalar unit checks include captured source suffix markers, and crude percentage arithmetic requires raw observed identities with no model, adjustment or censoring.",
+      "stops": "Malformed or incomplete v1.1 packets, an unbound prompt hash, and capture or document-identity failures for PMC packets. Live capture requires an operator flag and the HTTPS EFetch origin. Archives refuse extra articles and conflicting rights declarations. Source-bound counts require a matching snapshot hash and supported integer cells or unambiguous quoted tokens, with exact locator disambiguation when needed, under reviewer-verified analysis scope. A passed restricted-count bound cannot clear missing disjoint, exhaustive exclusion accounting. A requested correction prevents an original-only comparison from clearing a claim; a separate mapped sweep retains stale occurrences and unchecked locations. Normal intake binds per-count definition quotes and result identities before same-result or strict-subset comparisons; new signed scalar and interval references retain unit context and reject partial tokens. Bounded revision maps retain stale and uninspected dependencies. Legacy count checks cannot clear a decisive claim on attested labels alone. An optional private sidecar holds known unresolved reply points and emits redacted status labels separately from contact pauses. Scalar unit checks include captured source suffix markers, and crude percentage arithmetic requires raw observed identities with no model, adjustment or censoring. Same-result scalar records require matching analysis/data versions, contrast and estimator fields; explicit source-defined scale bounds can identify out-of-range printed values. Exact count-based proportions respect declared rounding conventions. Repeated printed scalars use rounding intervals: partial overlap holds even under a known convention, while disjoint intervals remain review candidates. Registered unanswered points and source-inspection-only outcomes cannot close a declared question.",
       "would_not_stop": [
         "Fabricated but internally consistent claim attestations or locally supplied XML: capture binds a snapshot and declared identity. Claim support and archive provenance require separate review.",
         "Incorrect source tallies despite matching printed arithmetic: count validity is explicitly not independently verified. The code does not authenticate participant records, exclusion completeness, disjointness, trial-family identities or reviewer scope attestations.",
         "Unmapped correction occurrences or uninspected figure pixels and dependencies: a matching trace or selected sweep cannot certify complete correction propagation. Word numbers, ambiguous or unsupported count markup remain manual work.",
         "An unavailable or superseded external attachment or correction: inline supplement tables and verified linked PMC corrections can be traced, but unresolved links require follow-up and correction evidence does not automatically close a claim.",
-        "Statistically valid alternative methods, adjusted or survival estimators, and complex meta-analysis pipelines outside its five narrow calculation kinds.",
+        "Statistically valid alternative methods, adjusted or survival estimators, and complex meta-analysis pipelines outside its declared bounded calculation kinds.",
         "Missed paper errors in unflagged claims or incorrect human interpretation of reported source text: these require separate review and held-out assessment.",
         "Incorrect human adjudication, false claims of author confirmation or bias in how papers were selected; none are adjudicated by this script.",
         "Incorrect semantic mapping of a captured definition, a unit or an estimator: these remain reviewer attestations. Interval checks establish printed ordering/containment only, not coverage or CI/P-value equivalence.",
-        "Omitted private replies or contact pauses, manually altered histories, false source-recheck declarations or a falsely reported published correction: the offline sidecar does not read mail or authenticate correspondence and never authorises contact."
+        "Omitted private replies or contact pauses, manually altered histories, false source-recheck declarations or a falsely reported published correction: the offline sidecar does not read mail or authenticate correspondence and never authorises contact.",
+        "Incorrect reviewer-declared scale applicability, analysis cutoff/contrast or original-question inventory. Matching displayed values do not verify the source analysis, and editorial closure does not resolve scientific questions."
       ],
       "source": "scripts/synthesis_preflight.py, scripts/synthesis_capture_evidence.py, scripts/synthesis_participant_evidence.py and the restricted-count arithmetic in scripts/synthesis_v13_nma_preflight.py, with prompt v1.1 and synthetic regressions. New source checks and redacted case state are implemented in scripts/synthesis_intake_evidence.py and scripts/synthesis_case_state.py, reusing the count-identity and root-grouping helpers.",
       "seal": {
@@ -73,8 +74,8 @@
         "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
-        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
-        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
+        "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973"
       }
@@ -636,7 +637,7 @@
       "id": ".github/workflows/synthesis-replay.yml#jobs.replay",
       "kind": "ci-job",
       "name": "Archived OA replay and provenance on Windows and Linux",
-      "stops": "A failing source-capture, replay or export control; failure to reconstruct either fixed-digest OA bundle; failure of required Process Run 0.5 / RO-Crate 1.1 checks; skipped validation; changed pinned contexts/dependencies; or failure to reject intended defective-crate controls on Python 3.13 Windows/Linux.",
+      "stops": "A failing synthetic source-access/alias, source-capture, replay or export control; failure to reconstruct either fixed-digest OA bundle; failure of required Process Run 0.5 / RO-Crate 1.1 checks; skipped validation; changed pinned contexts/dependencies; or failure to reject intended defective-crate controls on Python 3.13 Windows/Linux.",
       "would_not_stop": [
         "Incorrect source/reviewer interpretation, scientific conclusions, missing relevant evidence or a forged source; development examples do not measure held-out accuracy.",
         "Recommended metadata gaps, profile requirements absent from the upstream validator, Process Run 0.6 / RO-Crate 1.3 compatibility, or an independently authenticated execution timestamp.",
@@ -644,7 +645,7 @@
       ],
       "source": "scripts/synthesis_replay.py; scripts/synthesis_rocrate.py; scripts/check-synthesis-rocrate.py; docs/SYNTHESIS-ROCRATE.md; replay and export integration tests.",
       "seal": {
-        ".github/workflows/synthesis-replay.yml#jobs.replay": "fb1b945023d4c1b812a495d7f482a9f9cc8816d3c2d7fd5cb4fb6980f24aac2a"
+        ".github/workflows/synthesis-replay.yml#jobs.replay": "4d9ac99e35f8af804799b4d5627d273fdb2df83f820320f30776e37e70a950d2"
       }
     },
     {
@@ -666,10 +667,10 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
-        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de"
+        "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801"
       }
     },
     {
@@ -694,10 +695,10 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
-        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de"
+        "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801"
       }
     },
     {
@@ -733,8 +734,8 @@
       "seal": {
         ".github/workflows/synthesis-review.yml#jobs.audit": "d73da018dce2ad4bf339f7c8d0b78f885d2ca3ee250e6500c3da5e42c28787f9",
         "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626",
-        "tests/test_synthesis_review_runner.py": "9ac811700abd272622c07929048490d9d7fb9346d52d190d0070a810a2038dba",
-        "examples/synthesis-review-stepwise.json": "3a6f7f31efcd41d10a027bd5e3d2f4d3e9d7a9c1f8296a54b2d4954a679e465b",
+        "tests/test_synthesis_review_runner.py": "fd6ac35fe0ca8fbbdb6199f5239050832517f978b80e28e26a4c90a53e5ca240",
+        "examples/synthesis-review-stepwise.json": "01a0db74a114f82ec5a85eda93b1cbfd81fb60a1e22943ff32115cd5b78966bf",
         "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a",
         "scripts/synthesis_replay.py": "623edf437027a55d7afe7b9d2177ef5849b3ac49d3fca7b1bdc35ec050b4bfe1",
         "scripts/synthesis_preflight.py": "c948887405bfc1c965268c7bd8b768213a1e701abf19a0cb398ce2e4095defcb",
@@ -742,10 +743,10 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
-        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de"
+        "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801"
       }
     },
     {
@@ -767,10 +768,10 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
-        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de",
+        "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
         "scripts/synthesis_adjudication.py": "e8784b187cccbd188ca09de4177d8873c0e4b361f0026475d0f0030bd6a5d2b5",
         "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626"
       }
@@ -795,15 +796,15 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
-        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de",
+        "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
         "scripts/synthesis_adjudication.py": "e8784b187cccbd188ca09de4177d8873c0e4b361f0026475d0f0030bd6a5d2b5",
         "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626",
-        ".github/workflows/synthesis-adjudication.yml#jobs.adjudication": "f322e66fe02cdb827b33ffdc3a7c00c033c8edabf9876466c9092ef9d1c8fc87",
-        "tests/test_synthesis_adjudication.py": "ec7bcfdcf622b7606311522b1edbd1ab9eaa366d675ca51d6c8504e5b78049ae",
-        "examples/synthesis-adjudication-stepwise.json": "184552927c4defaa8741a5c792ffa508522b05d63c3987eea66abde64811e114",
+        ".github/workflows/synthesis-adjudication.yml#jobs.adjudication": "0d809ca53b69b48f1b1fe98705e46bf2bd2cdc56a78034b0cf01e05b1cfdeb2a",
+        "tests/test_synthesis_adjudication.py": "f45c12301bf1a4f2b6b80a8a431697e5dc82938d01504357128fdb3574a8394d",
+        "examples/synthesis-adjudication-stepwise.json": "463ad965a725b508ebd2f6a54d0289dfe416ecc8c68a83a80067c7cd280552a0",
         "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a"
       }
     },
@@ -826,17 +827,17 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "c02416be544c594813fd0ddb9955d17076b478b508bb815cd15564a1fba60b5c",
+        "scripts/synthesis_intake_evidence.py": "15f75e8546b587a2726032d3694cb0759011803b2a63fc09a82818f9c0e9f1f8",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
-        "scripts/synthesis_case_state.py": "8987544533dd86e257c96e75280bc69d4e965c0c227c9e4aabc3d67f85ada3de",
+        "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
         "scripts/synthesis_adjudication.py": "e8784b187cccbd188ca09de4177d8873c0e4b361f0026475d0f0030bd6a5d2b5",
         "scripts/synthesis_review_runner.py": "65ec3258bbb7761176c2fdc52735c59c9c1133119df7b37e800cc7734e0e4626",
         ".github/workflows/synthesis-reviewer-auth.yml#jobs.reviewer": "e17247857496fa968bf39b19634f0e561c11f416fe52c40bf32ffcaa55815d14",
         "scripts/synthesis_signing.py": "0927d45b49665f9750eaf6f68048c99675a8baaea7a7fb13f950c789b14d6e06",
         "scripts/synthesis_reviewer_auth.py": "64c33a238e1cc0a916e4557d4e8396907dc39b1451fa64da6478659f6825c42d",
         "scripts/synthesis_decision_runner.py": "c4ff3dbd596bf374fc5d52ccaa5765866fe71fe5426bc18795503c7686291dcf",
-        "tests/test_synthesis_reviewer_workflow.py": "0498a20c1046459e4de15d42a9223b003388cee5ce01d05b0564470dd341d06f",
+        "tests/test_synthesis_reviewer_workflow.py": "1581aa5dd7998bfe48e2524b94d6043604e4b575c7aabc3b16180497a87a0774",
         "scripts/requirements-signing.lock": "7ebeb730aa134593ce3a0feda7fcf37e17abed5f0dd321903482c0fc259f49b7",
         "scripts/component-lock.json": "c74df3a223c6b11e9230d530f8574187a409a1e490fadbd0f14db132817e27db",
         "requirements-ci.lock": "9dcb7085f9f590ce7462e9f761d3542ee14b2dc6839214f7abb5226e475cdb6a"
@@ -887,14 +888,14 @@
         "scripts/recall.py": "601db9500240bdd9aa53a98cc4801589c13e808b3bae86329574e00c1ef4f773",
         "scripts/test_recall.py": "efe507c156bf3a46c1fac98384db6a8958ca0997c9a4b8fc8e9edea0dde08629",
         "scripts/benchmark-memory.py": "588e099721892ed32642b52855745424ae61142d918dc9212e455496fde4f125",
-        "tests/test_synthesis_checklist.py": "2f39e485395b6f789a7dd988d27d80fe84498eaf901c0e2afd24a225e42b5ae3",
+        "tests/test_synthesis_checklist.py": "20e1b729714d30326c9b66941600a19b956c9c835c94f4956a69cc49d0c2c962",
         "tests/test_memory_origin.py": "103d509fdccce1608d7aea2ea401da8600c8c43da1983d9dc01f812972b98c06",
         "tests/test_memory_contract.py": "5426718461e309e2f33bac892b19c1a25342e921a33af0fc97538696cee75d19",
         "tests/test_recall_legacy.py": "447df7120481758d58af92b6b8743f71c838d3a2099cbc9fede360e5852201a9",
         "docs/SYNTHESIS-v1.3-CANDIDATE.md": "bd7852addfcf7482ce5035750e6100e070ad7376c1e73269eb98ad47e7f2f19b",
-        "docs/SYNTHESIS-HUMAN-CHECKLIST.md": "ef92edfae9bc4e9d5885c2c7a3c9b7d3f8995f647253ebdd4e18f2a766ae86ec",
-        "docs/SYNTHESIS-RESPONSE-REVIEW.md": "f090be5d50d796836ee2b1b3b0ad77b3aff10396c456f575488e8aec7ffed763",
-        "docs/SYNTHESIS-PARTICIPANT-WORKSHEET.md": "c3db9103a38f0d6b083f76439bceda5cc6ea972e644c51be87fc3fbafcc0a12e"
+        "docs/SYNTHESIS-HUMAN-CHECKLIST.md": "c88ad96b3a1498db429ad27cd2526679cffc00820349b14413ab252b7f8aef4b",
+        "docs/SYNTHESIS-RESPONSE-REVIEW.md": "b53d4fb85f07ab10f37413c22c5f7aee64b94123334b8537165bcb72fcf7efbf",
+        "docs/SYNTHESIS-PARTICIPANT-WORKSHEET.md": "8f14cabbdfff620f25ff0b3a7c673a5d794b2de76885054af4f0b787bda13119"
       }
     }
   ]
