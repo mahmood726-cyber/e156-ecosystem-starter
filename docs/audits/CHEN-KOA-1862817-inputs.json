@@ -1,0 +1,130 @@
+{
+  "schema": "synthesis-public-case-inputs-v1",
+  "case_id": "SYN-NMA-CHEN-KOA-1862817-20261103",
+  "doi": "10.3389/fmed.2026.1862817",
+  "accessed_date": "2026-11-03",
+  "source_pdf": "https://www.frontiersin.org/journals/medicine/articles/10.3389/fmed.2026.1862817/pdf",
+  "source_html": "https://www.frontiersin.org/journals/medicine/articles/10.3389/fmed.2026.1862817/full",
+  "source_pdf_sha256": "10dd78e1f333791fe3f92be8a620f3b7571d7d090336cfbc946b217b2e444a0d",
+  "source_locations": {
+    "total": "Section 3.3.2.2, printed page 5",
+    "pain": "Section 3.3.2.3, printed page 5",
+    "function": "Section 3.3.2.4, printed page 7",
+    "sensitivity": "Section 3.3.4, printed page 7"
+  },
+  "observations": [
+    {
+      "endpoint": "WOMAC total",
+      "treatment": "Celecoxib",
+      "estimate": -0.97,
+      "lower": -5.41,
+      "upper": 3.46,
+      "narrative_claims_significant": true
+    },
+    {
+      "endpoint": "WOMAC total",
+      "treatment": "Glucosamine",
+      "estimate": -3.14,
+      "lower": -5.75,
+      "upper": -0.53,
+      "narrative_claims_significant": true
+    },
+    {
+      "endpoint": "WOMAC total",
+      "treatment": "Krill oil",
+      "estimate": -1.05,
+      "lower": -3.62,
+      "upper": 1.52,
+      "narrative_claims_significant": true
+    },
+    {
+      "endpoint": "WOMAC total",
+      "treatment": "Probiotics",
+      "estimate": -0.67,
+      "lower": -3.24,
+      "upper": 1.89,
+      "narrative_claims_significant": true
+    },
+    {
+      "endpoint": "WOMAC pain",
+      "treatment": "Krill oil",
+      "estimate": -4.12,
+      "lower": -5.61,
+      "upper": -2.63,
+      "narrative_claims_significant": true
+    },
+    {
+      "endpoint": "WOMAC pain",
+      "treatment": "Metformin",
+      "estimate": -1.36,
+      "lower": -2.28,
+      "upper": -0.44,
+      "narrative_claims_significant": true
+    },
+    {
+      "endpoint": "WOMAC pain",
+      "treatment": "Celecoxib",
+      "estimate": -0.63,
+      "lower": -1.38,
+      "upper": 0.13,
+      "narrative_claims_significant": true
+    },
+    {
+      "endpoint": "WOMAC pain",
+      "treatment": "Probiotics",
+      "estimate": -2.62,
+      "lower": -3.59,
+      "upper": -1.65,
+      "narrative_claims_significant": true
+    },
+    {
+      "endpoint": "WOMAC function",
+      "treatment": "Krill oil",
+      "estimate": -1.67,
+      "lower": -3.05,
+      "upper": -0.29,
+      "narrative_claims_significant": true
+    },
+    {
+      "endpoint": "WOMAC function",
+      "treatment": "Metformin",
+      "estimate": -0.72,
+      "lower": -1.66,
+      "upper": 0.22,
+      "narrative_claims_significant": true
+    },
+    {
+      "endpoint": "WOMAC function",
+      "treatment": "Celecoxib",
+      "estimate": -0.9,
+      "lower": -1.76,
+      "upper": -0.04,
+      "narrative_claims_significant": true
+    },
+    {
+      "endpoint": "WOMAC function",
+      "treatment": "Glucosamine",
+      "estimate": -0.86,
+      "lower": -2.19,
+      "upper": 0.47,
+      "narrative_claims_significant": false
+    }
+  ],
+  "interpretation": {
+    "grouped_root_id": "SYN-NMA-CHEN1862817-SIGNIFICANCE-001",
+    "root_count": 1,
+    "status": "SOURCE_VERIFIED_REPORTING_CONTRADICTION",
+    "target_eligibility": "PENDING_EXTERNAL_REVIEW_AND_ESTIMATOR_RECONCILIATION",
+    "author_confirmed": false,
+    "independent_human_adjudication": false,
+    "published_correction_verified": false
+  },
+  "limits": [
+    "Twelve printed main-text contrasts checked, not all native NMA output.",
+    "Six intervals contain zero; only five of those are covered by a significance claim. Glucosamine function is an unflagged control.",
+    "One grouped reporting root, not five or six errors.",
+    "Table 2 has different-looking estimates; intended outcome/model mapping remains unresolved.",
+    "No original p-values, corrected estimates, native-model refit, or external human adjudication.",
+    "Correction search retrieved no relevant notice; absence not established."
+  ]
+}
