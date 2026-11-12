@@ -60,10 +60,10 @@ Describe "Copy-RulesToAgent copies all .md files" {
     It "renders template vars when -Vars is passed" {
         $target = Join-Path $tmpRoot 'agent-render\rules'
         $vars = @{
-            'E156_HOME' = 'D:\Mine\E156'
-            'PROJECTINDEX_ROOT' = 'D:\Mine\Idx'
-            'SENTINEL_ROOT' = 'D:\Mine\Sentinel'
-            'OVERMIND_ROOT' = 'D:\Mine\overmind'
+            'E156_HOME' = Join-Path $tmpRoot 'student E156'
+            'PROJECTINDEX_ROOT' = Join-Path $tmpRoot 'student index'
+            'SENTINEL_ROOT' = Join-Path $tmpRoot 'student Sentinel'
+            'OVERMIND_ROOT' = Join-Path $tmpRoot 'student Overmind'
             'GITHUB_USER' = 'alice42'
         }
         $null = Copy-RulesToAgent -SourceRulesDir (Join-Path $starterRoot 'rules') -TargetRulesDir $target -Vars $vars
@@ -72,7 +72,7 @@ Describe "Copy-RulesToAgent copies all .md files" {
         $e156Content | Should -Not -Match 'C:\\E156'
         $e156Content | Should -Not -Match 'mahmood726-cyber'
         # Student's values landed
-        $e156Content | Should -Match 'D:\\Mine\\E156'
+        $e156Content | Should -Match ([regex]::Escape($vars.E156_HOME))
         $e156Content | Should -Match 'alice42'
     }
 
@@ -447,7 +447,7 @@ Describe "Invoke-LogRedaction scrubs secrets from transcripts (P1)" {
 
     It "scrubs Anthropic keys (sk-ant-...)" {
         $f = Join-Path $script:redactDir 'anthropic.log'
-        $key = 'sk-ant-api03-abcdef1234567890ABCDEFghijklmnopqrstuvwxyz'
+        $key = 'sk-ant-api03-abcdef1234567890ABCDEFghijklmnopqrstuvwxyz' # Synthetic example for redaction testing; never a real credential.
         Set-Content -Path $f -Value "ANTHROPIC_API_KEY=$key" -NoNewline
         Invoke-LogRedaction -Path $f
         (Get-Content -Raw $f) | Should -Not -Match $key
@@ -455,7 +455,7 @@ Describe "Invoke-LogRedaction scrubs secrets from transcripts (P1)" {
 
     It "scrubs GitHub tokens (ghp_/gho_...)" {
         $f = Join-Path $script:redactDir 'gh.log'
-        $key = 'ghp_1234567890abcdef1234567890abcdef1234'
+        $key = 'ghp_1234567890abcdef1234567890abcdef1234' # Synthetic example for redaction testing; never a real credential.
         Set-Content -Path $f -Value "GH_TOKEN=$key" -NoNewline
         Invoke-LogRedaction -Path $f
         (Get-Content -Raw $f) | Should -Not -Match $key
@@ -463,7 +463,7 @@ Describe "Invoke-LogRedaction scrubs secrets from transcripts (P1)" {
 
     It "scrubs AWS access keys (AKIA...)" {
         $f = Join-Path $script:redactDir 'aws.log'
-        $key = 'AKIAIOSFODNN7EXAMPLE'
+        $key = 'AKIAIOSFODNN7EXAMPLE' # Synthetic example for redaction testing; never a real credential.
         Set-Content -Path $f -Value "AWS_ACCESS_KEY_ID=$key" -NoNewline
         Invoke-LogRedaction -Path $f
         (Get-Content -Raw $f) | Should -Not -Match $key
