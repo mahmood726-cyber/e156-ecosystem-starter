@@ -2,7 +2,9 @@
 
 This is a *software policy gate*, not a statement of copyright law or proof
 that a reviewer actually checked permissions. All fixtures are synthetic.
-Call at every source ingress and every outgoing-transport boundary.
+Optional helper: current ingress and transport callers are not integrated.
+An adopter must call it at every ingress/transport boundary; its permission
+fields remain declarations, not authenticated evidence or legal advice.
 """
 from __future__ import annotations
 
@@ -16,6 +18,11 @@ from pathlib import Path
 import re
 import stat
 from urllib.parse import urlsplit
+
+if __package__:
+    from scripts.component_source import linked
+else:
+    from component_source import linked
 
 SOURCE_POLICY = "SYN-SOURCE-HOLD-JAMA-20261104|reviewed-operation-specific-permissions-v1"
 OUTGOING_POLICY = "SYN-OUTGOING-PAUSE-20261105|SYN-NOCONTACT-ZUIN-20261105"
@@ -254,21 +261,22 @@ def source_preflight(source, operation, *, manifest_path=None, decision_log=None
     """
     manifest_path = manifest_path or os.getenv("SYNTHESIS_SOURCE_RIGHTS_MANIFEST")
     decision_log = decision_log or os.getenv("SYNTHESIS_SOURCE_ACCESS_LOG")
-    manifest, manifest_digest = None, None
+    manifest, manifest_digest, manifest_stat = None, None, None
     try:
         raw = None
         if manifest_path:
-            path = Path(manifest_path)
+            path = Path(manifest_path).absolute()
             # Permission evidence is part of the authorization boundary.
             # Do not let links silently substitute another private manifest.
-            if any(component.is_symlink() for component in (path, *path.parents)):
-                raise OSError("permission manifest path contains a symlink")
+            if any(linked(component) for component in (path, *path.parents)):
+                raise OSError("permission manifest path contains a link or reparse point")
             flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
             descriptor = os.open(path, flags)
             try:
                 opened = os.fstat(descriptor)
                 if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
                     raise OSError("permission manifest must be an unaliased regular file")
+                manifest_stat = opened
                 with os.fdopen(descriptor, "rb") as handle:
                     descriptor = None
                     raw = handle.read()
@@ -306,18 +314,20 @@ def source_preflight(source, operation, *, manifest_path=None, decision_log=None
     if not decision_log:
         return {**receipt, "decision": "SOURCE_RIGHTS_HOLD", "reason": "private decision log unavailable"}
     try:
-        path = Path(decision_log)
+        path = Path(decision_log).absolute()
         # A permission receipt is sensitive: aliases must not redirect writes
         # into another file or a location outside the intended private log.
         # Keep this path check, and protect the final component at open time.
-        if any(component.is_symlink() for component in (path, *path.parents)):
-            raise OSError("decision log path contains a symlink")
+        if any(linked(component) for component in (path, *path.parents)):
+            raise OSError("decision log path contains a link or reparse point")
         flags = os.O_WRONLY | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
         descriptor = os.open(path, flags)  # Never create an absent log.
         try:
             opened = os.fstat(descriptor)
             if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
                 raise OSError("decision log must be an unaliased regular file")
+            if manifest_stat is not None and os.path.samestat(opened, manifest_stat):
+                raise OSError("decision log must not be the permission manifest")
             with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
                 descriptor = None  # fdopen now owns the descriptor.
                 handle.write(json.dumps(receipt, sort_keys=True) + "\n")

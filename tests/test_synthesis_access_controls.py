@@ -1,6 +1,8 @@
 """Synthetic source-permission and no-contact enforcement tests; no transports."""
 from datetime import date, timedelta
 import json
+import os
+import subprocess
 from base64 import b64encode
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -29,6 +31,47 @@ MANIFEST = {"schema": "source-permissions-v1", "permissions": [PERMISSION]}
 
 
 class SourceRightsTests(unittest.TestCase):
+    def test_manifest_cannot_be_its_own_decision_log(self):
+        with TemporaryDirectory() as root:
+            path = Path(root) / 'rights.json'
+            original = json.dumps(MANIFEST).encode('utf-8')
+            path.write_bytes(original)
+            action = Mock(return_value=b'synthetic')
+            with self.assertRaises(PermissionError):
+                execute_source_action(SOURCE, 'CACHE_READ', action, manifest_path=path,
+                                      decision_log=path, on_date=TODAY)
+            action.assert_not_called()
+            self.assertEqual(path.read_bytes(), original)
+
+    @unittest.skipUnless(os.name == 'nt', 'actual Windows junction contract')
+    def test_windows_junction_manifest_and_log_are_refused(self):
+        with TemporaryDirectory() as root:
+            base = Path(root)
+            real = base / 'real'; real.mkdir()
+            alias = base / 'alias'
+            manifest = real / 'rights.json'
+            original = json.dumps(MANIFEST).encode('utf-8')
+            manifest.write_bytes(original)
+            log = real / 'decisions.jsonl'; log.touch()
+            command = "param($Link,$Target); New-Item -ItemType Junction -Path $Link -Target $Target -ErrorAction Stop | Out-Null"
+            script = base / 'junction.ps1'; script.write_text(command, encoding='utf-8')
+            subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-File',
+                            str(script), str(alias), str(real)], check=True, capture_output=True, timeout=15)
+            try:
+                for manifest_path, log_path in ((alias / 'rights.json', log), (manifest, alias / 'decisions.jsonl')):
+                    with self.subTest(manifest=manifest_path, log=log_path):
+                        log.write_bytes(b'')
+                        action = Mock(return_value=b'synthetic')
+                        with self.assertRaises(PermissionError):
+                            execute_source_action(SOURCE, 'CACHE_READ', action,
+                                                  manifest_path=manifest_path, decision_log=log_path, on_date=TODAY)
+                        action.assert_not_called()
+                        self.assertEqual(manifest.read_bytes(), original)
+                        if log_path.parent == alias:
+                            self.assertEqual(log.read_bytes(), b'')
+            finally:
+                os.rmdir(alias)
+
     def test_exact_reviewed_fixture_allowed(self):
         self.assertEqual(assess_source(MANIFEST, SOURCE, 'CACHE_READ', on_date=TODAY)[0], 'ALLOW')
 

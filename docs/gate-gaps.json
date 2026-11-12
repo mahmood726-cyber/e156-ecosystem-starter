@@ -6,16 +6,16 @@
       "id": ".github/workflows/harness-execution.yml#jobs.execution",
       "kind": "ci-job",
       "name": "Durable research execution on Windows and Linux",
-      "stops": "Synthetic regressions in frozen context/source binding, budget reservation, SQLite concurrency, interrupted request recovery, unknown outcome retention, scoped tool calls, routing and provider transport gates. Runs actual subprocess crash/race controls on both platforms without paid model calls.",
+      "stops": "Synthetic regressions in frozen context/source binding, budget reservation, SQLite concurrency, interrupted request recovery, unknown outcome retention, scoped tool calls, routing and provider transport gates. Runs actual subprocess crash/race controls on both platforms without paid model calls. Also requires source-access policy tests, with real Windows junction and manifest/log collision controls that may not skip on Windows.",
       "would_not_stop": [
         "Provider schema or service changes not represented by the offline transport fixtures; no paid model request is executed.",
         "Incorrect scientific findings, unverified corpus rights, fabricated human attestations or inaccurate operator-supplied price policies.",
         "Actual Docker containment failures; these are exercised in the separate Linux worker job.",
         "Malicious rewriting or rollback of the complete trusted host journal and its anchors; local hash chains are not external authentication."
       ],
-      "source": ".github/workflows/harness-execution.yml execution job and tests/test_harness_context.py, test_harness_runtime.py, test_harness_provider.py.",
+      "source": ".github/workflows/harness-execution.yml execution job and tests/test_harness_context.py, test_harness_runtime.py, test_harness_provider.py, test_synthesis_access_controls.py. The access helper is not wired into source ingress or transports and does not authenticate operator permission declarations.",
       "seal": {
-        ".github/workflows/harness-execution.yml#jobs.execution": "1a6ec043d0488a307285b1fb093d8c77128732312de2cb0e524e3ea526860be7"
+        ".github/workflows/harness-execution.yml#jobs.execution": "9526d5898c43a0974a009af69f17e46a02eb466130456e51ee578ebf48e51a7a"
       }
     },
     {
