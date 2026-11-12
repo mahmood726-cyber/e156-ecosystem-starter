@@ -59,6 +59,8 @@ jobs:
           root = ET.parse('worker-results.xml').getroot()
           cases = root.findall('.//testcase')
           required = {'test_real_worker_readonly_network_credentials_and_limits',
+                      'test_real_worker_supervisor_status_and_proxy_boundary',
+                      'test_real_worker_host_process_loss_expires_container',
                       'test_real_worker_output_overflow_refuses',
                       'test_real_worker_timeout_removes_its_container'}
           if not required.issubset({case.attrib.get('name') for case in cases}):

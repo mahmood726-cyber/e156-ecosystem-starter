@@ -1,11 +1,27 @@
 """Artificial context and dependency contracts; no publication data."""
 import copy
 import hashlib
+import json
+import subprocess
+import sys
 from datetime import datetime, timezone
 
 import pytest
 
 from scripts import harness_context as context
+
+
+def test_freshness_cli_gate_fails_changed_dependency(graph):
+    root, manifest = graph
+    path = root / "manifest.json"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    cmd = [sys.executable, "-m", "scripts.harness_context", "check", "--root", str(root), "--manifest", str(path)]
+    good = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+    assert good.returncode == 0, good.stderr
+    (root / "paper.txt").write_text("SYNTHETIC changed source", encoding="utf-8")
+    bad = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+    assert bad.returncode == 1
+    assert json.loads(bad.stdout)["claim"]["status"] == "DEPENDENCY_INVALID"
 
 
 @pytest.fixture

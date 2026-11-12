@@ -249,7 +249,7 @@ def watch(root, manifest, state):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("action", choices=("inspect", "watch"))
+    p.add_argument("action", choices=("inspect", "watch", "check"))
     p.add_argument("--manifest", type=Path, required=True)
     p.add_argument("--root", type=Path, required=True)
     p.add_argument("--state", type=Path)
@@ -262,6 +262,8 @@ def main():
         else:
             result = inspect(a.root, manifest)
         print(json.dumps(result, sort_keys=True, indent=2))
+        if a.action == "check" and any(node["status"] != "CURRENT" for node in result.values()):
+            raise SystemExit(1)
     except (Refused, OSError, ValueError, TypeError, RecursionError) as exc:
         p.error(str(exc))
 

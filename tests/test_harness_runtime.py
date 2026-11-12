@@ -6,11 +6,28 @@ from pathlib import Path
 import sqlite3
 import subprocess
 import sys
+import os
 
 import pytest
 
 from scripts import harness_context as context
 from scripts import harness_runtime as runtime
+
+
+def test_offline_prepare_creates_empty_source_bound_journal(job):
+    config, graph, root, db = job
+    for filename, value in (("config.json", config), ("context.json", graph)):
+        (root / filename).write_text(json.dumps(value), encoding="utf-8")
+    output = root / "prepared.json"
+    command = [sys.executable, "-m", "scripts.harness_runtime", "prepare", "--config", str(root / "config.json"),
+               "--manifest", str(root / "context.json"), "--root", str(root), "--state", str(db), "--output", str(output)]
+    result = subprocess.run(command, capture_output=True, text=True, timeout=15,
+                            env={k: v for k, v in os.environ.items() if k != "OPENAI_API_KEY"})
+    assert result.returncode == 0, result.stderr
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["status"] == "PREPARED_NOT_RUN"
+    assert len(report["events"]) == 1
+    assert all(value == 0 for value in report["usage"].values())
 
 
 @pytest.fixture

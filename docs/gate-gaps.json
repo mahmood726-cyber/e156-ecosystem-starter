@@ -22,16 +22,16 @@
       "id": ".github/workflows/harness-execution.yml#jobs.worker",
       "kind": "ci-job",
       "name": "Actual isolated Linux Docker research worker",
-      "stops": "Missing Docker or digest-pinned image, skipped required cases, source/root write access, external network connection, forwarded credential canary, wrong memory/PID limits, output overflow acceptance or a surviving timeout container in the tested hosted Linux environment.",
+      "stops": "Missing Docker or digest-pinned image, skipped required cases, source/root write access, external network connection, forwarded credential or proxy canary, task access to supervisor signals/status, wrong memory/PID limits, output overflow acceptance or a surviving timeout/process-loss container in the tested hosted Linux environment.",
       "would_not_stop": [
         "Docker daemon, kernel, runtime or image vulnerabilities outside the exercised controls; containers are not a proof against all escape techniques.",
         "Windows Docker Desktop differences; the local Windows path refuses when Docker is unavailable and the real containment job runs Linux.",
         "Incorrect untrusted worker calculations, scientific interpretation, or billing; output remains untrusted and does not grant scientific PASS.",
-        "A physical host power failure; the tests cover controlled timeout and cleanup, while real root-process termination still depends on the container lifetime and daemon."
+        "A physical host power failure or broken daemon; the tests exercise controlled timeout and calling-process termination while the Linux Docker daemon remains running."
       ],
       "source": ".github/workflows/harness-execution.yml worker job and tests/test_harness_worker.py; Python image manifest read from Docker Official Images registry on 2026-11-12.",
       "seal": {
-        ".github/workflows/harness-execution.yml#jobs.worker": "8c99c46dd876fb10b68a81b8b8ce611e456393b32c3e35b714db2b7cda12a511"
+        ".github/workflows/harness-execution.yml#jobs.worker": "220c47146b2990c128de7e0c49de713a2235786fcb4804b1e136b43492c358fe"
       }
     },
     {
@@ -864,7 +864,7 @@
         "scripts/install-overmind.ps1": "e04b96bd4b4150501063fc5f7f6241264deb94a5c963efb27af7f0e97b995382",
         "scripts/check-overmind-canary.py": "2f5d71b9e85c9a1235cea3eab10f03e84bf090b64544f32a7887e01ce802460f",
         "scripts/install-extractor.ps1": "4e458344b94e65eb23090253ff53db5f6f139da65920b23bbce4cae5a3d753ab",
-        "scripts/bounded_native.py": "57304abdadfad39a460806453a6403d0e0659e4a943a13ad3ba31fcdba60b5f8",
+        "scripts/bounded_native.py": "6a878aff3ea7029f6dfb3bc7b8c00d27030e6e5b3d4c64cde74b35ec792b0e7c",
         "tests/test_overmind_powershell_transport.py": "1c8e261e333895747eaeb70e11246ddfc3c8686d7e1e065b69c1a151bdbfc1c8",
         "tests/test_extractor_windows_transport.py": "6c87039d9666e1bf6b26907696b9c843f361802f1a2dbb6bb4138969069c6864"
       }

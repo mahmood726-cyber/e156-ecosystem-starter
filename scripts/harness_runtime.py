@@ -338,7 +338,7 @@ def run(config, manifest, root, state, *, provider=None, allow_paid=False, creat
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("action", choices=("run", "resume", "inspect"))
+    p.add_argument("action", choices=("prepare", "run", "resume", "inspect"))
     for field in ("config", "manifest", "root", "state", "output"):
         p.add_argument("--" + field, type=Path, required=True)
     p.add_argument("--allow-paid", action="store_true")
@@ -346,9 +346,11 @@ def main():
     try:
         config = context.strict_json(context.read_bytes(a.config))
         manifest = context.strict_json(context.read_bytes(a.manifest))
-        context.control_path(a.state, a.root, manifest, sqlite=True, creating=a.action == "run", extra_inputs=(a.config, a.manifest))
+        context.control_path(a.state, a.root, manifest, sqlite=True, creating=a.action in {"run", "prepare"}, extra_inputs=(a.config, a.manifest))
         context.control_path(a.output, a.root, manifest, extra_inputs=(a.config, a.manifest, a.state))
-        if a.action == "inspect":
+        if a.action == "prepare":
+            result = Journal(a.state, config, manifest, a.root, create=True).report("PREPARED_NOT_RUN")
+        elif a.action == "inspect":
             result = Journal(a.state, config, manifest, a.root).report("INSPECTED")
         else:
             result = run(config, manifest, a.root, a.state, allow_paid=a.allow_paid, create=a.action == "run")
