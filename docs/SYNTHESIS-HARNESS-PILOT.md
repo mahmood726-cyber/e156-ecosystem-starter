@@ -11,6 +11,11 @@ prerequisites are an independent scientific custodian, two qualified reviewers,
 a separate adjudicator for disagreements, and an approved fresh OA sampling frame.
 AI code reviewers do not satisfy those prerequisites.
 
+The [matched-harness evaluation contract](MATCHED-HARNESS-EVALUATION.md) adds
+frozen comparator configurations, checked common inputs, complete run records,
+masked review exports and paired descriptive scoring. Its independent scientific
+study remains pending the prerequisites above.
+
 ## Integrated contract
 
 `scripts/synthesis_checklist.py` initializes every claim in a supported source-replay
