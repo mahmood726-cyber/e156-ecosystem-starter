@@ -16,7 +16,7 @@ def frame(name):
     if len(hits)!=1: raise ValueError((name,hits))
     return pd.read_csv(io.BytesIO(z.read(hits[0])))
 def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
-text=a.supplement_text.read_text()
+text=a.supplement_text.read_text(encoding='utf-8')
 match=re.search(r'Context Clarification \(Priorities, Constraints\) \(HC3\)[^\n]*?([\d.]+)\s+Z=([\d.]+)\s+<0.001',text)
 if match is None: raise ValueError('HC3 source row not found; inspect PDF and extracted text')
 beta,reported_z=map(float,match.groups())
@@ -70,4 +70,4 @@ out={
  'script_block_label_swap_sensitivity':{'null':'Within each script, exchange agent/base labels for all three ratings together; scripts independent and exchangeable under the sharp null','allocations':permutation_n,'two_sided_extreme_allocations':permutation_extreme,'two_sided_p':permutation_extreme/permutation_n,'nine_test_Bonferroni_p_bound':min(1,9*permutation_extreme/permutation_n),'limitation':'Exact for stated exchangeability null, not a replay of the mixed model or a substitute for rater and script random effects.'},
  'matching_controls':{'MCQ':{'n':len(mcq),'agent_only':b,'base_only':c,'continuity_corrected_McNemar_chi2':stat,'p':float(chi2.sf(stat,1))},'DDx':{'n':len(d),'Wilcoxon_W':float(w.statistic),'p':float(w.pvalue)}},
  'not_performed':['historical HC3 GLMM replay','LLM output regeneration','independent human adjudication','proof of transcription or fitting error','assessment of changed substantive conclusions']}
-a.output.write_text(json.dumps(out,indent=2)+'\n');print(json.dumps(out,indent=2))
+a.output.write_text(json.dumps(out,indent=2)+'\n',encoding='utf-8');print(json.dumps(out,indent=2))
