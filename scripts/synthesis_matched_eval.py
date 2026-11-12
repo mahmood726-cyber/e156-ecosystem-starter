@@ -16,8 +16,10 @@ from pathlib import Path, PurePosixPath
 
 if __package__:
     from scripts import synthesis_blind_eval as blind
+    from scripts.component_source import linked
 else:
     import synthesis_blind_eval as blind
+    from component_source import linked
 
 Refused = blind.EvaluationError
 digest = blind.sha256_json
@@ -101,12 +103,14 @@ def _file(root, name, expected):
           "input_file must remain within inputs root")
     _hash(expected, "input_sha256")
     root = Path(root).absolute()
+    _need(root.is_dir(), "inputs root missing")
     for parent in (root, *root.parents):
-        _need(not parent.is_symlink() and not parent.is_junction(), "linked inputs root refused")
+        _need(not linked(parent), "linked inputs root refused")
     target = root
     for part in relative.parts:
         target = target / part
-        _need(not target.is_symlink() and not target.is_junction(), "linked input refused")
+        _need(target.exists(), f"input file missing: {raw}")
+        _need(not linked(target), "linked input refused")
     _need(target.is_file(), f"input file missing: {raw}")
     _need(hashlib.sha256(target.read_bytes()).hexdigest() == expected, f"input bytes changed: {raw}")
 

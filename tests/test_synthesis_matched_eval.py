@@ -225,6 +225,12 @@ def test_verified_source_must_match_checked_inventory(study):
         matched.prepare(m, p, root)
 
 
+def test_prepare_works_without_python312_path_junction_api(study, monkeypatch):
+    m, p, _, root = study
+    monkeypatch.delattr(Path, "is_junction", raising=False)
+    assert matched.prepare(m, p, root)["status"] == "PREPARED_NOT_RUN"
+
+
 def test_wrong_root_counts_as_false_alarm_and_missed_error(study):
     m, p, r, root = study
     judgments = reference(study)
