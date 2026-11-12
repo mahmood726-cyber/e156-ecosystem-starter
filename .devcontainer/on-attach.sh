@@ -57,9 +57,14 @@ file_present() {
 # the technical terms have no good vernacular equivalent).
 locale="${E156_LANG:-${LANG:-en}}"
 locale="$(printf '%s' "$locale" | cut -c1-2 | tr 'A-Z' 'a-z')"
-case "$locale" in en|fr|pt|ar|ur) ;; *) locale=en ;; esac
+case "$locale" in en|fr|pt|ar|ur|sw) ;; *) locale=en ;; esac
 
 case "$locale" in
+    sw) BANNER_TITLE="E156 Ecosystem Starter -- tayari kwa matumizi"
+        BANNER_INSTALLED="Kilichosakinishwa sasa hivi kwenye codespace hii:"
+        BANNER_NEXT="AMRI MOJA YA KUANZA -- hii inamwanzisha wakala wako wa AI na maelezo mafupi:"
+        BANNER_HOW="Andika tu:"
+        BANNER_BROWSE="Unataka kusoma maelezo mafupi kwanza? Tazama ~/.config/e156/handoff.md (inaonekana kwenye kivinjari cha faili)" ;;
     fr) BANNER_TITLE="E156 Ecosystem Starter -- prêt à utiliser"
         BANNER_INSTALLED="Ce qui vient d'être installé dans ce codespace :"
         BANNER_NEXT="UNE COMMANDE POUR DÉMARRER -- ceci lance votre agent IA avec le briefing :"
