@@ -320,6 +320,15 @@ def source_preflight(source, operation, *, manifest_path=None, decision_log=None
         # Keep this path check, and protect the final component at open time.
         if any(linked(component) for component in (path, *path.parents)):
             raise OSError("decision log path contains a link or reparse point")
+        # A rejected manifest alias still names evidence that must not become
+        # the log. Check identity even when manifest parsing was refused.
+        if manifest_path:
+            try:
+                collides = os.path.samefile(manifest_path, path)
+            except FileNotFoundError:
+                collides = False
+            if collides:
+                raise OSError("decision log aliases the permission manifest")
         flags = os.O_WRONLY | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
         descriptor = os.open(path, flags)  # Never create an absent log.
         try:

@@ -58,7 +58,8 @@ class SourceRightsTests(unittest.TestCase):
             subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-File',
                             str(script), str(alias), str(real)], check=True, capture_output=True, timeout=15)
             try:
-                for manifest_path, log_path in ((alias / 'rights.json', log), (manifest, alias / 'decisions.jsonl')):
+                for manifest_path, log_path in ((alias / 'rights.json', log), (manifest, alias / 'decisions.jsonl'),
+                                                (alias / 'rights.json', manifest)):
                     with self.subTest(manifest=manifest_path, log=log_path):
                         log.write_bytes(b'')
                         action = Mock(return_value=b'synthetic')
