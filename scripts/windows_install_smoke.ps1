@@ -53,6 +53,14 @@ function Invoke-CheckedNative {
     }
 }
 
+function Resolve-SmokeApplication {
+    param([string]$Name)
+    # -CommandType Application may enumerate every PATH match on Windows.
+    # Match ordinary command invocation: use the first executable only.
+    return (Get-Command -Name $Name -CommandType Application -ErrorAction Stop |
+        Select-Object -First 1).Source
+}
+
 if ($Import) { return } # Imports safety helpers only; never calls an installer.
 
 Assert-DisposableWindowsRunner
@@ -72,8 +80,8 @@ foreach ($name in @('TRUTHCERT_HMAC_KEY', 'RCT_EXTRACTOR_PATH')) {
         throw "REFUSED: $name is already set; this is not a fresh installer context."
     }
 }
-$pythonCommand = (Get-Command python -CommandType Application -ErrorAction Stop).Source
-$windowsPowerShell = (Get-Command powershell.exe -CommandType Application -ErrorAction Stop).Source
+$pythonCommand = Resolve-SmokeApplication -Name 'python'
+$windowsPowerShell = Resolve-SmokeApplication -Name 'powershell.exe'
 $null = Get-Command git -CommandType Application -ErrorAction Stop
 foreach ($relative in @('install/install.ps1', 'docs/HASH.txt',
         'scripts/check-overmind-canary.py', 'scripts/verify-full-install.py',

@@ -105,10 +105,18 @@ def discover_memory_dir() -> Path | None:
     try:
         # Refuse redirects and unverifiable/malformed origin records before
         # reading any memory contents. Explicit paths remain an operator choice.
-        if not candidate.is_dir() or candidate.resolve(strict=True) != candidate:
+        if not candidate.is_dir() or any(
+            p.is_symlink() or (hasattr(p, "is_junction") and p.is_junction())
+            for p in (candidate, *candidate.parents)
+        ):
+            return None
+        # Windows runner temp paths can use harmless 8.3 aliases. Compare actual
+        # filesystem identity after rejecting links, not lexical spelling.
+        if not candidate.samefile(candidate.resolve(strict=True)):
             return None
         origin = candidate / ORIGIN_FILE
-        if not origin.is_file() or origin.resolve(strict=True) != origin:
+        if (not origin.is_file() or origin.is_symlink()
+                or not origin.samefile(origin.resolve(strict=True))):
             return None
         record = json.loads(origin.read_text(encoding="utf-8"), object_pairs_hook=_unique_origin)
         expected = {"schema": ORIGIN_SCHEMA, "project_sha256": _project_identity(project)}

@@ -106,3 +106,21 @@ def test_linked_runner_temp_is_refused(tmp_path):
     assert result.returncode != 0
     assert "linked paths" in result.stderr
     assert list(target.iterdir()) == []
+
+
+def test_multiple_executable_matches_choose_first_path(tmp_path):
+    driver = tmp_path / "application-resolution.ps1"
+    driver.write_text(
+        "param($Source)\n"
+        "$ErrorActionPreference = 'Stop'\n"
+        ". $Source -Import\n"
+        "function Get-Command { param($Name, $CommandType, $ErrorAction)\n"
+        "  [pscustomobject]@{Source = 'first-python.exe'}\n"
+        "  [pscustomobject]@{Source = 'second-python.exe'}\n"
+        "}\n"
+        "$selected = Resolve-SmokeApplication -Name 'python'\n"
+        "if ($selected -cne 'first-python.exe') { throw 'Multiple applications combined' }\n"
+        "Write-Output $selected\n", encoding="utf-8")
+    result = run_script(driver, SCRIPT)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "first-python.exe"

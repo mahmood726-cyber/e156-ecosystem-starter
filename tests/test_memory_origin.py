@@ -1,5 +1,6 @@
 """Synthetic project-identity controls; never read the user's memory."""
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -112,3 +113,25 @@ def test_tilde_binding_validates_and_writes_the_same_store(tmp_path, monkeypatch
     recall.bind_memory_dir(Path("~") / "memory", home)
     assert (store / recall.ORIGIN_FILE).is_file()
     assert not (shadow / recall.ORIGIN_FILE).exists()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows short-path aliases")
+def test_windows_short_path_alias_keeps_verified_owner(tmp_path, monkeypatch):
+    import ctypes
+    long_home = tmp_path / "long home directory for memory"
+    long_home.mkdir()
+    buffer = ctypes.create_unicode_buffer(32768)
+    size = ctypes.windll.kernel32.GetShortPathNameW(str(long_home), buffer, len(buffer))
+    assert size > 0
+    short_home = Path(buffer.value)
+    # A volume may disable 8.3 aliases; retain the identity check either way.
+    assert short_home.samefile(long_home)
+    project = short_home / "working-project"
+    project.mkdir()
+    store = short_home / ".claude/projects" / recall._encode_project_dir(project) / "memory"
+    store.mkdir(parents=True)
+    recall.bind_memory_dir(store, project)
+    monkeypatch.delenv("CLAUDE_MEMORY_DIR", raising=False)
+    monkeypatch.setattr(Path, "home", lambda: short_home)
+    monkeypatch.setattr(Path, "cwd", lambda: project)
+    assert recall.discover_memory_dir() == store
