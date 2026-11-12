@@ -35,7 +35,7 @@ The checked-in [OA development example](../examples/synthesis-replay-stepwise)
 can be replayed without a network connection or third-party Python dependencies:
 
 ```console
-python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise --expected-sha256 9d3e611c2d06485c9f004e73d7b94847e9dec6b69e026700b1ace23c3f76dd0d
+python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise --expected-sha256 c7fb904293fcf13ec542553b9667bfec51ca7c713d1183b418ec93b6cbb177d3
 ```
 
 Record your own supported packet and already licensed source snapshot:
@@ -202,7 +202,7 @@ unchanged. Its manifest and payload have new digests; the
 available. Neither migration changes the selection or claims scientific accuracy.
 
 ```console
-python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk --expected-sha256 e0e02c64467a9a34ad41230eb64d4586c010f5531ed3091a01ffdd3cead31481
+python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk --expected-sha256 8ebe174bf7613830c5c919b989d8967c3f56d3ea5b742dd4a8b561293faf4533
 ```
 
 On 12 November 2026, the scalar, source-bound scale, rounding and reply-inventory

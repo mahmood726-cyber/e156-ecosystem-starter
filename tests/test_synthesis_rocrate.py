@@ -13,8 +13,8 @@ from scripts import synthesis_rocrate as crate
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = {
-    'stepwise': '9d3e611c2d06485c9f004e73d7b94847e9dec6b69e026700b1ace23c3f76dd0d',
-    'strokewalk': 'e0e02c64467a9a34ad41230eb64d4586c010f5531ed3091a01ffdd3cead31481',
+    'stepwise': 'c7fb904293fcf13ec542553b9667bfec51ca7c713d1183b418ec93b6cbb177d3',
+    'strokewalk': '8ebe174bf7613830c5c919b989d8967c3f56d3ea5b742dd4a8b561293faf4533',
 }
 
 

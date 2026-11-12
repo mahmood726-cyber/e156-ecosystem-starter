@@ -42,7 +42,7 @@
         "scripts/synthesis_capture_evidence.py": "0a32b4a34bf3af4330423eec31e9a600697d6d387fa8b975df5617d57202b3c8",
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
-        "scripts/synthesis_intake_evidence.py": "2fc33205cdd416305263933a30f6b0568d3edb16eb219f7dad421a48ea7b1927",
+        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
         "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973"
@@ -613,7 +613,7 @@
       ],
       "source": "scripts/synthesis_replay.py; scripts/synthesis_rocrate.py; scripts/check-synthesis-rocrate.py; docs/SYNTHESIS-ROCRATE.md; replay and export integration tests.",
       "seal": {
-        ".github/workflows/synthesis-replay.yml#jobs.replay": "f7db311fd3acdd80a0c39054b1c1ec062458a3e3f5a8a1ca98204351641755f1"
+        ".github/workflows/synthesis-replay.yml#jobs.replay": "59f05e7870da3a56ccdfdcd5e972f915c52a36b515c16261b549cef90328da0b"
       }
     },
     {
@@ -635,7 +635,7 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "2fc33205cdd416305263933a30f6b0568d3edb16eb219f7dad421a48ea7b1927",
+        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
         "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801"
@@ -663,7 +663,7 @@
         "scripts/synthesis_participant_evidence.py": "25f5fdd97bb98316143f593205157353f85d269aee1148c2379e81375062a9ae",
         "scripts/synthesis_v13_nma_preflight.py": "e33b240f4056d306338bc7cee165fcb323024e0365b538fa90dc1a5740031605",
         "scripts/synthesis_five_journal_corrections.py": "9bcde9cb84fe7c01052a5d0ecf66673a66d136e6226c3cc32c30d0a1874b09aa",
-        "scripts/synthesis_intake_evidence.py": "2fc33205cdd416305263933a30f6b0568d3edb16eb219f7dad421a48ea7b1927",
+        "scripts/synthesis_intake_evidence.py": "39f454a5f2b951ad050d8a164ef4ec86d6bda427b3e95b92b84bc274b780f08c",
         "scripts/synthesis_preflight_count_identity.py": "38f690dfe0a1bee39d661a1de4b7c18eaac84e2e71f38d231080d05547d05999",
         "scripts/synthesis_preflight_root_dedup.py": "2e6f2717615b9291031f1630170f0d6d5244e4377fc4e4246eb1fe3a721be973",
         "scripts/synthesis_case_state.py": "b22be187d75eacb90f6e2da743bf404f7507a0941fe3d5acda645330fc425801"

@@ -230,6 +230,10 @@ def _scalars(evidence, spec):
     if any(a[key] != b[key] for key in ("role", "unit", "scale")):
         raise ValueError("Scalar roles, units and scales must match; no conversion is inferred")
     fields = list(SCALAR_IDENTITY_FIELDS)
+    for r in (left, right):
+        ident = r["identity"]
+        if ("analysis_denominator_n" in ident) != ("analysis_denominator_unit" in ident):
+            raise ValueError("Scalar denominator size and unit must be supplied together")
     for field in ("analysis_denominator_n", "analysis_denominator_unit"):
         if field in left["identity"] or field in right["identity"]:
             if not all(field in r["identity"] for r in (left, right)):

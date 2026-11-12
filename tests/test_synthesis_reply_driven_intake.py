@@ -171,6 +171,15 @@ class ReplyDrivenIntakeTests(unittest.TestCase):
         for side in ("left", "right"): check[side]["identity"]["analysis_denominator_unit"] = "unknown-unit"
         self.assertEqual(self.finding(raw, check)["status"], "HOLD")
 
+    def test_scalar_denominator_size_without_a_typed_unit_holds(self):
+        raw, check = scalar_pair("2.46", "2.5")
+        for side in ("left", "right"):
+            check[side]["identity"]["analysis_denominator_n"] = 20
+        self.assertEqual(self.finding(raw, check)["status"], "HOLD")
+        for side in ("left", "right"):
+            check[side]["identity"]["analysis_denominator_unit"] = "unique_participants"
+        self.assertEqual(self.finding(raw, check)["status"], "NO_FLAG")
+
     def test_all_registered_points_resolve_independently_and_editorial_status_is_separate(self):
         events = [registered(1, "P1"), registered(2, "P2"),
                   reply(3, "P1", "RESOLVED_ENQUIRY"), reply(4, "P2", "VERSION_LIMITED"),
