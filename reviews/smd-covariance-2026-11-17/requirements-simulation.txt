@@ -1,0 +1,2 @@
+# Optional scientific simulation only. The deterministic replay is stdlib-only.
+numpy==2.4.6

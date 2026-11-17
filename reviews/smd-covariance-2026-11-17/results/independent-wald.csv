@@ -1,0 +1,2 @@
+"n_each","delta","rho","repetitions","rejection","mcse","limit","empirical_nvar","mean_reported_nvar","true_limit","reported_limit"
+12000,1.5,0.8,300000,0.0742433333333333,0.000478648307872941,0.0738230143597517,1.20510460498813,1.00256413749851,1.205,1.0025

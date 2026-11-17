@@ -11,6 +11,8 @@ Start with **six core checks**, then use the 27 detailed questions relevant to y
 
 **Need the details?** See the [methods and evidence guide](docs/SYNTHESIS-METHODS.md), [Synthesis overview](docs/SYNTHESIS-v1.3-CANDIDATE.md), [audit packet](docs/SYNTHESIS-v1.3-AUDIT-PACKET.md) and [blinded validation plan](docs/SYNTHESIS-v1.3-BLINDED-VALIDATION-PLAN.md). Independent prospective real-paper accuracy has not been established. The repository uses the [MIT licence](LICENSE); linked source papers retain their own licences. Keep manuscript evidence and correspondence private.
 
+Candidate research: [reproducible SMD equation and covariance audit](reviews/smd-covariance-2026-11-17/README.md), with source pins, counterexamples and limits. Author adjudication and novelty remain open.
+
 ---
 
 Bootstrap Mahmood's quality-dev ecosystem on a student's laptop.
