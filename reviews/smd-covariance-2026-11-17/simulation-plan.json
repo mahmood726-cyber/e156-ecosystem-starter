@@ -1,0 +1,13 @@
+{
+  "purpose": "Additional fixed scenarios selected after the original rho=0.5 calculations; no coefficient is fitted or tuned on this grid.",
+  "frozen_before_execution": "2026-11-17",
+  "scope": "Complete bivariate Normal outcomes, fixed true correlation, equal true effects; source-formula Wald comparison.",
+  "cases": [
+    {"n": 50000, "delta": 0.75, "rho": -0.6, "reps": 200000, "seed": 2026111761},
+    {"n": 50000, "delta": 1.25, "rho": -0.6, "reps": 200000, "seed": 2026111762},
+    {"n": 50000, "delta": 0.75, "rho": 0.2, "reps": 200000, "seed": 2026111763},
+    {"n": 50000, "delta": 1.25, "rho": 0.2, "reps": 200000, "seed": 2026111764},
+    {"n": 50000, "delta": 0.75, "rho": 0.8, "reps": 200000, "seed": 2026111765},
+    {"n": 50000, "delta": 1.25, "rho": 0.8, "reps": 200000, "seed": 2026111766}
+  ]
+}
