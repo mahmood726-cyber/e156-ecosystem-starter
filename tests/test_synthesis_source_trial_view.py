@@ -52,6 +52,7 @@ class SourceTrialViewerTests(unittest.TestCase):
         }
         return {
             "case_id": "invented-case",
+            "claim_version_status": "CURRENT_UNCORRECTED",
             "published": self._snapshot("published.txt", self.left),
             "primary": self._snapshot("source.txt", self.right),
             "contexts": {"published": identity.copy(), "primary": identity.copy()},
@@ -151,6 +152,79 @@ class SourceTrialViewerTests(unittest.TestCase):
         self.packet["duplicate_effects"] = [row, {**row, "report_id": "report-two"}]
         report = module.evaluate_packet(self.packet, self.root)
         self.assertEqual(report["duplicate_preflight"]["status"], "HOLD")
+
+    def test_unbound_numeric_payload_holds(self):
+        # A copied/mistyped count not present in the quoted source is not evidence.
+        self.packet["cases"][0]["comparison"]["published"] = 99
+        case = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(case["status"], "HOLD")
+        self.assertIn("not anchored", case["reason"])
+
+    def test_partial_digit_match_does_not_bind(self):
+        case = self.packet["cases"][0]
+        case["published"] = self._snapshot("partial.txt", "Synthetic report says 142 events")
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+
+    def test_ishikawa_notice_is_historical_not_new_error(self):
+        # From published correction DOI 10.1007/s00737-026-01767-2.
+        # The local snippets are transcribed *fixtures*, not raw original sources.
+        case = self.packet["cases"][0]
+        case["published"] = self._snapshot("ishikawa-old.txt",
+            "In the original version, 76,242 controls were stated.")
+        case["primary"] = self._snapshot("ishikawa-new.txt",
+            "The correction states 7,624 controls.")
+        case["comparison"] = {"kind": "integer_count",
+                              "published": 76242, "primary": 7624}
+        case["claim_version_status"] = "HISTORICAL_CORRECTED"
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+        self.assertIn("historical correction", out["reason"])
+
+    def test_aqeel_notice_is_historical_not_independent_recount(self):
+        # From DOI 10.3390/nu12051263; no trial-level recount is supplied.
+        case = self.packet["cases"][0]
+        case["published"] = self._snapshot("aqeel-old.txt",
+            "The original abstract gave 352 participants.")
+        case["primary"] = self._snapshot("aqeel-new.txt",
+            "The correction states 332 participants.")
+        case["comparison"] = {"kind": "integer_count",
+                              "published": 352, "primary": 332}
+        case["claim_version_status"] = "HISTORICAL_CORRECTED"
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+
+    def test_benralizumab_2_of_67_percent_error_is_missed_by_count_only(self):
+        # DOI 10.1038/s41591-026-04425-3: historic 2 (1.5%) -> 2 (3.0%).
+        # This is an intentionally limited count-only comparison; no claim of
+        # successful identification of the wrong percentage may be made.
+        case = self.packet["cases"][0]
+        case["published"] = self._snapshot("hes-old.txt", "2 (1.5%)")
+        case["primary"] = self._snapshot("hes-new.txt", "2 (3.0%)")
+        case["comparison"] = {"kind": "integer_count", "published": 2, "primary": 2}
+        case["claim_version_status"] = "HISTORICAL_CORRECTED"
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "NO_SCOPED_DIFFERENCE")
+        self.assertIn("no other claims assessed", out["reason"])
+
+    def test_brooklyn_signed_ci_correction_not_implemented(self):
+        # DOI 10.1038/s41591-026-04405-7, historical upper bound -2.0 to 2.0.
+        case = self.packet["cases"][0]
+        case["published"] = self._snapshot("brooklyn-old.txt", "95% CI to -2.0%")
+        case["primary"] = self._snapshot("brooklyn-new.txt", "95% CI to 2.0%")
+        case["comparison"] = {"kind": "signed_ci_limit",
+                              "published": -2.0, "primary": 2.0}
+        case["claim_version_status"] = "HISTORICAL_CORRECTED"
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+        self.assertIn("only integer_count or variance_label supported", out["reason"])
+
+    def test_unverified_claim_version_never_produces_candidate(self):
+        case = self.packet["cases"][0]
+        case.pop("claim_version_status")
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+        self.assertIn("current uncorrected", out["reason"])
 
     def test_cli_writes_offline_review_html(self):
         packet = self.root / "packet.json"
