@@ -1,0 +1,166 @@
+"""Synthetic-only tests of the supervised source/trial viewer; not accuracy evidence."""
+import hashlib
+import importlib.util
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location(
+    "synthesis_source_trial_view",
+    Path(__file__).resolve().parents[1] / "scripts" / "synthesis_source_trial_view.py",
+)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+
+class SourceTrialViewerTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.left = "Synthetic manuscript reports 14 events. <script>alert(1)</script>"
+        self.right = "Synthetic original source records 12 events."
+        self.packet = {
+            "cases": [self._case()],
+        }
+
+    def _snapshot(self, name, quote):
+        path = self.root / name
+        path.write_text("HEADER\n" + quote + "\nFOOTER", encoding="utf-8")
+        return {
+            "path": name,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "version": "invented-source-v1",
+            "locator": "invented Table 1",
+            "quote": quote,
+        }
+
+    def _case(self):
+        identity = {
+            "trial_family_id": "SYNTHETIC-FAMILY",
+            "cohort_id": "SYNTHETIC-COHORT",
+            "population": "invented adults",
+            "intervention": "therapy A",
+            "comparator": "placebo",
+            "endpoint": "invented outcome",
+            "time_window": "day 30",
+            "analysis_set": "intention-to-treat",
+            "effect_measure": "event count",
+            "estimand": "crude count",
+            "statistic_id": "treatment arm events",
+        }
+        return {
+            "case_id": "invented-case",
+            "published": self._snapshot("published.txt", self.left),
+            "primary": self._snapshot("source.txt", self.right),
+            "contexts": {"published": identity.copy(), "primary": identity.copy()},
+            "comparison": {"kind": "integer_count", "published": 14, "primary": 12},
+            "refutation": {
+                "alternative": "Maybe different follow-up",
+                "checked_against": "invented Table 1 and Methods",
+                "result": "NOT_SUPPORTED",
+            },
+        }
+
+    def test_verified_quotes_generate_candidate_not_confirmed_error(self):
+        report = module.evaluate_packet(self.packet, self.root)
+        case = report["cases"][0]
+        self.assertEqual(case["status"], "REVIEW_CANDIDATE")
+        self.assertIn("14 - source 12 = 2", case["calculation"])
+
+    def test_html_displays_both_sources_and_escapes_untrusted_text(self):
+        html = module.render_html(module.evaluate_packet(self.packet, self.root))
+        self.assertIn("Published claim", html)
+        self.assertIn("Original source", html)
+        self.assertIn("&lt;script&gt;", html)
+        self.assertNotIn("<script>alert(1)</script>", html)
+        self.assertIn("SHA-256", html)
+
+    def test_missing_original_snapshot_holds(self):
+        self.packet["cases"][0]["primary"]["sha256"] = "0" * 64
+        case = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(case["status"], "HOLD")
+        self.assertIn("SHA-256", case["reason"])
+
+    def test_context_mismatch_is_not_comparable_not_error(self):
+        self.packet["cases"][0]["contexts"]["primary"]["time_window"] = "day 60"
+        case = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(case["status"], "NOT_COMPARABLE")
+
+    def test_unknown_context_holds_even_if_numbers_mismatch(self):
+        self.packet["cases"][0]["contexts"]["primary"]["cohort_id"] = "unknown"
+        case = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(case["status"], "HOLD")
+
+    def test_unrefuted_difference_is_hold(self):
+        self.packet["cases"][0]["refutation"]["result"] = "UNTESTED"
+        case = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(case["status"], "HOLD")
+
+    def test_matching_count_does_not_certify_article(self):
+        self.packet["cases"][0]["comparison"]["primary"] = 14
+        case = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(case["status"], "NO_SCOPED_DIFFERENCE")
+
+    def test_sd_se_discrepancy_is_review_candidate(self):
+        self.packet["cases"][0]["comparison"] = {
+            "kind": "variance_label", "published": "SD", "primary": "SE",
+        }
+        case = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(case["status"], "REVIEW_CANDIDATE")
+        self.assertIn("source label SE", case["calculation"])
+
+    def test_bad_quote_abstains(self):
+        self.packet["cases"][0]["primary"]["quote"] = "quotation not present"
+        case = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(case["status"], "HOLD")
+
+    def test_file_outside_source_root_is_rejected(self):
+        self.packet["cases"][0]["primary"]["path"] = "../exfiltrate.txt"
+        case = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(case["status"], "HOLD")
+
+    def test_missing_page_image_is_not_rendered_as_verified(self):
+        html = module.render_html(module.evaluate_packet(self.packet, self.root))
+        self.assertIn("No page image supplied", html)
+        self.assertNotIn("<img", html)
+
+    def test_duplicate_preflight_reuses_existing_conservative_detector(self):
+        row = {
+            "synthesis_id": "synthetic-meta", "trial_family_id": "family-A",
+            "cohort_id": "shared-cohort", "endpoint": "mortality",
+            "time_window": "day 30", "contrast_id": "A vs B",
+            "source_version": "v1", "source_locator": "Table 2",
+            "report_id": "report-one", "dependence_handling": "INDEPENDENT_UNCORRELATED",
+            "same_cohort_source_verified": True, "included_as_independent_effect": True,
+        }
+        self.packet["duplicate_effects"] = [row, {**row, "report_id": "report-two"}]
+        report = module.evaluate_packet(self.packet, self.root)
+        self.assertEqual(report["duplicate_preflight"]["status"], "REVIEW_CANDIDATE")
+
+    def test_duplicate_unverified_overlap_holds(self):
+        row = {
+            "synthesis_id": "synthetic-meta", "trial_family_id": "family-A",
+            "cohort_id": "shared-cohort", "endpoint": "mortality",
+            "time_window": "day 30", "contrast_id": "A vs B",
+            "source_version": "v1", "source_locator": "Table 2",
+            "report_id": "report-one", "dependence_handling": "INDEPENDENT_UNCORRELATED",
+            "same_cohort_source_verified": False, "included_as_independent_effect": True,
+        }
+        self.packet["duplicate_effects"] = [row, {**row, "report_id": "report-two"}]
+        report = module.evaluate_packet(self.packet, self.root)
+        self.assertEqual(report["duplicate_preflight"]["status"], "HOLD")
+
+    def test_cli_writes_offline_review_html(self):
+        packet = self.root / "packet.json"
+        packet.write_text(json.dumps(self.packet), encoding="utf-8")
+        output = self.root / "private" / "viewer.html"
+        self.assertEqual(module.main(["--packet", str(packet), "--source-root",
+                                      str(self.root), "--html-out", str(output)]), 0)
+        self.assertTrue(output.is_file())
+        self.assertIn("Experimental reviewer aid", output.read_text(encoding="utf-8"))
+
+
+if __name__ == "__main__":
+    unittest.main()
