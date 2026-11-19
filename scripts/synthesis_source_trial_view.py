@@ -86,12 +86,12 @@ def _verbatim_value_in_quote(quote: str, value) -> bool:
     """Minimal literal tie to source bytes; still not semantic cell authentication."""
     if type(value) is int:
         literals = (str(value), format(value, ","))
-    elif value in ("SD", "SE"):
-        literals = (value,)
-    else:
-        return False
-    return any(re.search(r"(?<![0-9A-Za-z.,])" + re.escape(literal) +
-                         r"(?![0-9A-Za-z.,])", quote) for literal in literals)
+        return any(re.search(r"(?<![0-9A-Za-z.,])" + re.escape(literal) +
+                             r"(?![0-9A-Za-z.,])", quote) for literal in literals)
+    if value in ("SD", "SE"):
+        # A trailing full stop in "SD." is punctuation, not a numeric decimal.
+        return bool(re.search(r"(?<![A-Za-z])" + value + r"(?![A-Za-z])", quote))
+    return False
 
 
 def evaluate_case(case: dict, root: Path) -> dict:
