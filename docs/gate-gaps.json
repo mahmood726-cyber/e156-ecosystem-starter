@@ -896,6 +896,21 @@
         "docs/SYNTHESIS-RESPONSE-REVIEW.md": "f090be5d50d796836ee2b1b3b0ad77b3aff10396c456f575488e8aec7ffed763",
         "docs/SYNTHESIS-PARTICIPANT-WORKSHEET.md": "c3db9103a38f0d6b083f76439bceda5cc6ea972e644c51be87fc3fbafcc0a12e"
       }
+    },
+    {
+      "id": ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic",
+      "kind": "ci-job",
+      "name": "Experimental source-trial viewer synthetic CI",
+      "stops": "Fails on Python syntax errors or failing synthetic-only regression tests for the source-trial viewer, including source-byte/quote anchoring, path containment, comparison-context abstention, and existing NMA duplicate-preflight integration.",
+      "would_not_stop": [
+        "False scientific assertions from incorrectly attributed quotations, trial identities, source versions, or investigator-supplied refutation statements: only simple synthetic fixtures are tested.",
+        "Failures of the repository's other CI jobs, live source retrieval, real-patient or real-study data extraction, original-model reanalysis, or human adjudication.",
+        "Prospective error-detection accuracy, clinical impact, publisher correction status, and licensing compliance for sources supplied by users."
+      ],
+      "source": ".github/workflows/synthesis-source-trial-pilot.yml offline-synthetic job, scripts/synthesis_source_trial_view.py, tests/test_synthesis_source_trial_view.py; synthetic software controls only.",
+      "seal": {
+        ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic": "89f0f1f95e6913a30ea3687c975b0a3f8f7a84f15b065ea4fb961c4d9cd6b73f"
+      }
     }
   ]
 }
