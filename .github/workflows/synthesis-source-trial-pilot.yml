@@ -1,0 +1,26 @@
+name: Synthesis source-trial pilot (synthetic-only)
+on:
+  pull_request:
+    paths:
+      - 'scripts/synthesis_source_trial_view.py'
+      - 'tests/test_synthesis_source_trial_view.py'
+      - 'docs/SYNTHESIS-SOURCE-TRIAL-PILOT.md'
+      - '.github/workflows/synthesis-source-trial-pilot.yml'
+  push:
+    paths:
+      - 'scripts/synthesis_source_trial_view.py'
+      - 'tests/test_synthesis_source_trial_view.py'
+      - 'docs/SYNTHESIS-SOURCE-TRIAL-PILOT.md'
+      - '.github/workflows/synthesis-source-trial-pilot.yml'
+permissions:
+  contents: read
+jobs:
+  offline-synthetic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Compile experimental module and tests
+        run: python3 -B -m py_compile scripts/synthesis_source_trial_view.py tests/test_synthesis_source_trial_view.py
+      - name: Run synthetic-only source-trial regressions
+        run: python3 -B -m unittest discover -s tests -p 'test_synthesis_source_trial_view.py' -v
