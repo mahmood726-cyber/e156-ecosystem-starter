@@ -154,6 +154,11 @@ def evaluate_case(case: dict, root: Path) -> dict:
             result.update(status="HOLD",
                           reason="mismatch observed but specific alternative has not been source-refuted")
             return result
+        if case.get("claim_version_status") != "CURRENT_UNCORRECTED":
+            result.update(status="HOLD",
+                          reason="current uncorrected published claim not established; "
+                                 "historical correction or unknown version cannot be a new flag")
+            return result
         result.update(status="REVIEW_CANDIDATE",
                       reason="source-quoted mismatch, contexts attested comparable; human adjudication required")
     except (ValueError, OSError) as exc:
