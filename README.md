@@ -11,6 +11,9 @@ Start with **six core checks**, then use the 27 detailed questions relevant to y
 
 **Need the details?** See the [methods and evidence guide](docs/SYNTHESIS-METHODS.md), [Synthesis overview](docs/SYNTHESIS-v1.3-CANDIDATE.md), [audit packet](docs/SYNTHESIS-v1.3-AUDIT-PACKET.md) and [blinded validation plan](docs/SYNTHESIS-v1.3-BLINDED-VALIDATION-PLAN.md). Independent prospective real-paper accuracy has not been established. The repository uses the [MIT licence](LICENSE); linked source papers retain their own licences. Keep manuscript evidence and correspondence private.
 
+**Experimental source-evidence viewer (reviewer supervised):** [Inspect a published claim next to a hash-checked primary-source quotation and optional page image](docs/SYNTHESIS-SOURCE-TRIAL-PILOT.md). The offline script checks only declared comparable integer counts or SD/SE labels and reuses NMA trial-identity preflight. It does not authenticate source interpretation, fit meta-analysis models, or establish scientific accuracy. Keep extracted evidence private unless rights permit sharing.
+
+
 ---
 
 Bootstrap Mahmood's quality-dev ecosystem on a student's laptop.
