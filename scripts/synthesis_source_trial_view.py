@@ -12,6 +12,7 @@ import hashlib
 import html
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 IDENTITY = (
@@ -81,6 +82,18 @@ def _capture(snapshot: dict, root: Path) -> dict:
     return result
 
 
+def _verbatim_value_in_quote(quote: str, value) -> bool:
+    """Minimal literal tie to source bytes; still not semantic cell authentication."""
+    if type(value) is int:
+        literals = (str(value), format(value, ","))
+    elif value in ("SD", "SE"):
+        literals = (value,)
+    else:
+        return False
+    return any(re.search(r"(?<![0-9A-Za-z.,])" + re.escape(literal) +
+                         r"(?![0-9A-Za-z.,])", quote) for literal in literals)
+
+
 def evaluate_case(case: dict, root: Path) -> dict:
     """Candidate statuses are NEVER verified errors or a paper-level pass."""
     case_id = case.get("case_id") if isinstance(case, dict) else None
@@ -124,6 +137,11 @@ def evaluate_case(case: dict, root: Path) -> dict:
             equal = lhs == rhs
         else:
             raise ValueError("only integer_count or variance_label supported")
+        for side, value in (("published", lhs), ("primary", rhs)):
+            if not _verbatim_value_in_quote(result["evidence"][side]["quote"], value):
+                result.update(status="HOLD",
+                              reason="comparison value not anchored in verbatim " + side + " quote")
+                return result
         if equal:
             result.update(status="NO_SCOPED_DIFFERENCE",
                           reason="supplied values agree; no other claims assessed")
