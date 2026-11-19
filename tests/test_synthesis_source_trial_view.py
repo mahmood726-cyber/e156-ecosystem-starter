@@ -101,10 +101,19 @@ class SourceTrialViewerTests(unittest.TestCase):
 
     def test_matching_count_does_not_certify_article(self):
         self.packet["cases"][0]["comparison"]["primary"] = 14
+        self.packet["cases"][0]["primary"] = self._snapshot(
+            "source-agree.txt", "Synthetic original source records 14 events."
+        )
         case = module.evaluate_packet(self.packet, self.root)["cases"][0]
         self.assertEqual(case["status"], "NO_SCOPED_DIFFERENCE")
 
     def test_sd_se_discrepancy_is_review_candidate(self):
+        self.packet["cases"][0]["published"] = self._snapshot(
+            "published-label.txt", "Synthetic report labels uncertainty SD."
+        )
+        self.packet["cases"][0]["primary"] = self._snapshot(
+            "source-label.txt", "Synthetic source labels uncertainty SE."
+        )
         self.packet["cases"][0]["comparison"] = {
             "kind": "variance_label", "published": "SD", "primary": "SE",
         }
