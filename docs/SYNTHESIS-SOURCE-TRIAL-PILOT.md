@@ -55,6 +55,7 @@ the quoted strings. All values and identifiers here are invented.
 {
   "cases": [{
     "case_id": "synthetic-001",
+    "claim_version_status": "CURRENT_UNCORRECTED",
     "published": {
       "path": "paper.txt", "sha256": "REAL_SHA256_REQUIRED",
       "version": "paper-v1", "locator": "Table 2",
@@ -113,10 +114,10 @@ same_cohort_source_verified attestations. Outputs remain separate.
 
 | Status | Meaning |
 | --- | --- |
-| REVIEW_CANDIDATE | Archived quotes verified, reviewer-declared contexts agree, difference exists and a specific alternative is recorded as source-refuted. This **is not a confirmed error**. |
+| REVIEW_CANDIDATE | Archived quotes verified, each compared literal appears in its respective archived quotation, reviewer-declared contexts agree, version is attested CURRENT_UNCORRECTED, difference exists and a specific alternative is recorded as source-refuted. This **is not a confirmed error**. |
 | NO_SCOPED_DIFFERENCE | Selected values agree. No other statement about the paper follows. |
 | NOT_COMPARABLE | One or more declared population/endpoint/time/estimator identities differ. |
-| HOLD | Missing file, mismatched hash/quote, incomplete context, invalid input or alternative not refuted. |
+| HOLD | Missing file, mismatched hash/quote, numeric value not present as a complete literal in its quote, unknown/already-corrected version, incomplete context, invalid input or alternative not refuted. |
 
 No result authorises correspondence or allegations. Human source review,
 statistical review and independent adjudication remain necessary. Keep private
@@ -146,3 +147,26 @@ Inspiration (concepts only; **no third-party code copied**): PaperTrace side-by-
 evidence, Scientific Claim Verification Engine provenance and abstention,
 CSPaper second-pass checking, MetaCheck modularity, and SciCoQA paired benchmarking.
 Review upstream licences before future code integration.
+
+## Retrospective lessons from previous cases (2026-11-19)
+
+These are **historical regression illustrations transcribed from public publisher notices**, not runs over the original dated manuscript PDFs, study-level data, current Version of Record or blinded papers. Each transcribed fixture is explicitly labelled synthetic in tests/test_synthesis_source_trial_view.py. Do **not** count statuses as retrospective detection performance.
+
+| Published case | Notice-established change | Expected scoped behaviour with transcribed fixtures | Important limit |
+| --- | --- | --- | --- |
+| Ishikawa, DOI 10.1007/s00737-026-01767-2 | Matched controls 76,242 → 7,624 | HOLD because HISTORICAL_CORRECTED | The printed subtraction does not independently recount matched participants |
+| Aqeel, DOI 10.3390/nu12051263 | Participants 352 → 332 and studies 20 → 17 | HOLD because HISTORICAL_CORRECTED | No study-by-study inclusion or statistical reanalysis |
+| Benralizumab HES, DOI 10.1038/s41591-026-04425-3 | 2 (1.5%) → 2 (3.0%), denominator 67 | NO_SCOPED_DIFFERENCE for **count 2 versus 2 only** | The incorrect *percentage* is missed; percentage/denominator module not implemented |
+| BROOKLYN obicetrapib, DOI 10.1038/s41591-026-04405-7 | Upper CI limit -2.0% → +2.0% | HOLD; signed-CI comparison is unsupported | CI method, scale, confidence bounds and version need separate verification |
+| Previously investigated duplicate-trial and SD-versus-SE examples | Trial family overlap or data extraction labels | Synthetic overlap/label gates exist; **real original-source replay NOT RUN** | Qualified trial-identity and method adjudication required |
+| Silverii network meta-analysis correction | Corrected pooled effect estimates | NOT TESTABLE with this module | Requires source-based trial extraction and actual estimator replay |
+
+**Failure-mode checks added:** arbitrary mismatched count values not appearing in their quotations must HOLD, including partial-digit matches (e.g. printed 142 is not evidence for a reported 14). The value tie is syntactic only and does not authenticate table-cell assignment, population or timing. Historical corrected claims must HOLD rather than generate new flags. A matched numerator must not be misrepresented as validation of its percentage or denominator.
+
+Related correction notices:
+- https://doi.org/10.1007/s00737-026-01767-2
+- https://doi.org/10.3390/nu12051263
+- https://doi.org/10.1038/s41591-026-04425-3
+- https://doi.org/10.1038/s41591-026-04405-7
+
+**Next work:** Add source-anchored count/percent precision checking with true endpoint/denominator identity, source-version gate and negative controls. Build an independently reviewable original-versus-corrected *model* replay separately; do not infer an analysis change from a notice alone.
