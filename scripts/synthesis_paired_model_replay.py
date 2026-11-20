@@ -66,6 +66,11 @@ def _check_original_report(packet, root, viewer, ledger):
     if not isinstance(report.get("method_quote"), str) or not report["method_quote"].strip() or \
             report["method_quote"] not in snapshot["quote"]:
         raise ValueError("published method quote not bound to archived report")
+    if report.get("published_variance_floor_source_verified") is not True:
+        raise ValueError("published confidence-interval variance-floor modification not source verified")
+    floor_quote = report.get("variance_floor_quote")
+    if not isinstance(floor_quote, str) or not floor_quote.strip() or floor_quote not in snapshot["quote"]:
+        raise ValueError("modified Knapp-Hartung variance-floor description not bound to report")
     labels = {}
     for name in ("pooled_or", "ci_low", "ci_high"):
         text = report.get(name + "_text")
