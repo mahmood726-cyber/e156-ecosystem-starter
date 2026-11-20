@@ -6,6 +6,31 @@ protected held-out cohorts, private correspondence, or existing manuscript intak
 It does not extract directly from PDFs, authenticate the meaning of source text,
 or re-fit meta-analysis models. Only authorised material may be used.
 
+## Relationship to the existing, stronger count/percent gate
+
+Synthesis **already implemented** a source-bound `COUNT_PERCENT` check in
+`scripts/synthesis_intake_evidence.py`, used by the PMC intake workflow.
+That existing module binds selected numerator, denominator, and printed
+percentage tokens in a versioned source snapshot, checks a much richer
+methodological identity, and records the declared rounding convention.
+The present `count_percentage` viewer extension is **not a newly invented
+scientific detector** and must not replace that source-bound workflow.
+
+The viewer adds a lightweight display-level *prescreen* for reviewer-supplied
+archived text/PDF-derived quotations where the full PMC token-binding contract
+has not been completed. It requires source bytes/quote matching and declared
+context but cannot authenticate which cell represents an outcome or a risk set.
+If the exact paper is available through the established PMC intake, prefer
+`COUNT_PERCENT` as the primary numerical evidence record and use the viewer
+only to communicate what the reviewer actually inspected.
+
+A `REVIEW_CANDIDATE` from the viewer is never a validated `COUNT_PERCENT`
+finding, an independent adjudication, or permission for outreach. Converting
+between the two schemas without replaying the corresponding source evidence
+would be misleading. The viewer treats exact halfway rounding ties
+conservatively, whereas the canonical gate records an explicit `HALF_UP`
+or `HALF_EVEN` convention.
+
 ## Reuse versus new work
 
 * **Existing detector reused:** scripts/synthesis_v13_nma_preflight.py for
