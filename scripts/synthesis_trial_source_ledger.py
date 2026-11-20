@@ -43,7 +43,7 @@ def _exact_binding(quote: str, binding: dict, expected) -> bool:
         # Avoid binding a decimal, signed number, large integer or neighbouring token.
         before = quote[offset - 1] if offset else ""
         after = quote[offset + len(text):offset + len(text) + 1]
-        return before not in "0123456789.,−-" and after not in "0123456789.,"
+        return (not before or before not in "0123456789.,−-") and (not after or after not in "0123456789.,")
     if isinstance(expected, str):
         if text != expected:
             return False
@@ -153,7 +153,7 @@ def review_ledger(packet: dict, root: Path) -> dict:
             continue
         identity = case.get("contexts", {})
         primary_identity = identity.get("primary", {}) if isinstance(identity, dict) else {}
-        if trial_key != row.get("trial_key") or not isinstance(primary_identity, dict):
+        if not isinstance(primary_identity, dict):
             outcomes.append(_hold(row_id, "primary identity unavailable", checked))
             continue
         analysis = row.get("analysis")
