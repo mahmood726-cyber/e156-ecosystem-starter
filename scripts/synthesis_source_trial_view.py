@@ -123,7 +123,7 @@ def _count_percentage(check: dict, evidence: dict, contexts: dict) -> dict:
     printed = check.get("published_percentage")
     if not isinstance(printed, str):
         return {"status": "HOLD", "reason": "verbatim printed percent absent"}
-    m = re.fullmatch(r"(0|[1-9][0-9]*)(?:\\.([0-9]{1,8}))?%", printed)
+    m = re.fullmatch(r"(0|[1-9][0-9]*)(?:\.([0-9]{1,8}))?%", printed)
     if not m:
         return {"status": "HOLD", "reason": "unsupported percentage literal or display precision"}
     digits = m.group(2) or ""
