@@ -98,8 +98,48 @@ the quoted strings. All values and identifiers here are invented.
 }
 ~~~
 
-The second supported comparison kind is variance_label, with published and
-primary labels SD or SE. Neither kind reproduces a fitted statistical model.
+The second comparison kind is `variance_label`, with published and primary
+labels SD or SE. A third comparison kind, `count_percentage`, checks a
+**simple unweighted person count divided by the same population denominator**,
+provided exact source-located counts and the printed percentage are present in
+the respective archived quotations. None of these checks reproduces a fitted
+statistical model.
+
+For `count_percentage`, provide this `comparison` object (synthetic values):
+
+~~~json
+{
+  "kind": "count_percentage",
+  "published_count": 2,
+  "published_denominator": 67,
+  "published_percentage": "1.5%",
+  "primary_count": 2,
+  "primary_denominator": 67,
+  "percentage_method": "RAW_UNWEIGHTED_PERSON_FRACTION",
+  "raw_fraction_source_verified": true,
+  "denominator_basis_source_verified": true
+}
+~~~
+
+Both context records must additionally have **the same meaningful
+`denominator_basis`** (for example, a clearly identified treated population),
+with matching trial, cohort, endpoint, analysis population and time-window
+identities. The published source quotation must contain the exact numerator,
+denominator and printed percentage, and the primary source quotation must
+contain the numerator and denominator. These literals appearing somewhere
+in a quotation **do not authenticate their assignment to a particular cell
+or subgroup**; that remains a human responsibility.
+
+The checker uses integer arithmetic to calculate compatibility with the
+percentage's printed decimal precision. It tolerates exact half-step rounding
+ties rather than accusing a paper because its rounding convention differs.
+For 2/67, 3.0% is compatible while 1.5% is not. However, a review candidate
+still requires the required source attestations, a documented refutation of
+alternative explanations and a genuinely **current, uncorrected** claim.
+Historical corrections are held and are not treated as new discoveries.
+Missing source denominators, different count populations, Kaplan-Meier
+percentages, weighted event rates, person-time incidences, and incomplete
+analysis definitions produce HOLD or NOT_COMPARABLE rather than a flag.
 
 To display a captured page alongside the quotation, add the optional
 page_image object to either source snapshot, containing path and sha256 for an
@@ -134,6 +174,7 @@ manuscripts, protected extracts, identities and correspondence outside GitHub.
 | Clinical impact, detection accuracy and actual model replay | No | **Not supported** |
 
 The included synthetic tests cover matching and mismatching counts, SD/SE labels,
+source-anchored raw count/percent arithmetic and rounding boundaries,
 missing hashes, missing quotes, context mismatch, alternative-refutation gate,
 path containment, HTML escaping and existing NMA duplicate-preflight integration.
 Passing them cannot establish field sensitivity or accuracy.
@@ -156,7 +197,7 @@ These are **historical regression illustrations transcribed from public publishe
 | --- | --- | --- | --- |
 | Ishikawa, DOI 10.1007/s00737-026-01767-2 | Matched controls 76,242 → 7,624 | HOLD because HISTORICAL_CORRECTED | The printed subtraction does not independently recount matched participants |
 | Aqeel, DOI 10.3390/nu12051263 | Participants 352 → 332 and studies 20 → 17 | HOLD because HISTORICAL_CORRECTED | No study-by-study inclusion or statistical reanalysis |
-| Benralizumab HES, DOI 10.1038/s41591-026-04425-3 | 2 (1.5%) → 2 (3.0%), denominator 67 | NO_SCOPED_DIFFERENCE for **count 2 versus 2 only** | The incorrect *percentage* is missed; percentage/denominator module not implemented |
+| Benralizumab HES, DOI 10.1038/s41591-026-04425-3 | 2 (1.5%) → 2 (3.0%), denominator 67 | Count-only mode says NO_SCOPED_DIFFERENCE; new raw-percent mode finds the arithmetic mismatch in synthetic **current-claim** scenarios but yields HOLD for the historical corrected notice | No detection claim from transcribed data; original source and current-Version-of-Record meaning not independently authenticated |
 | BROOKLYN obicetrapib, DOI 10.1038/s41591-026-04405-7 | Upper CI limit -2.0% → +2.0% | HOLD; signed-CI comparison is unsupported | CI method, scale, confidence bounds and version need separate verification |
 | Previously investigated duplicate-trial and SD-versus-SE examples | Trial family overlap or data extraction labels | Synthetic overlap/label gates exist; **real original-source replay NOT RUN** | Qualified trial-identity and method adjudication required |
 | Silverii network meta-analysis correction | Corrected pooled effect estimates | NOT TESTABLE with this module | Requires source-based trial extraction and actual estimator replay |
@@ -169,4 +210,5 @@ Related correction notices:
 - https://doi.org/10.1038/s41591-026-04425-3
 - https://doi.org/10.1038/s41591-026-04405-7
 
-**Next work:** Add source-anchored count/percent precision checking with true endpoint/denominator identity, source-version gate and negative controls. Build an independently reviewable original-versus-corrected *model* replay separately; do not infer an analysis change from a notice alone.
+**Implemented next:** Bounded count/percentage precision checks on human-attested matched denominators, plus negative controls for missing counts, alternative populations, weighted/KM methods and historical corrections. This is arithmetic checking, **not** independent verification of endpoint/denominator identity.
+**Next work:** Improve source-to-cell assignment with a reviewable per-trial extraction ledger and independent model replay; never infer an analysis change from a notice alone.
