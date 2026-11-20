@@ -5,6 +5,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location(
     "synthesis_source_trial_view",
@@ -674,11 +675,23 @@ class PairedModelReplayTests(unittest.TestCase):
         }
 
     def _replay(self, run_engine=True):
-        return paired.check_replay(
-            self.packet, self.root,
-            engine_path=self.fake_engine if run_engine else None,
-            engine_sha256=self.engine_digest if run_engine else None,
-        )
+        if not run_engine:
+            return paired.check_replay(self.packet, self.root)
+        # Fake engine exercises orchestration only, not real pooling correctness
+        # or trust in the separately pinned external meta-starter-kit source.
+        import types
+        def make_effect(name, tE, tN, cE, cN, nct=None):
+            return types.SimpleNamespace(tE=tE, name=name)
+        def fake_pool(effects, scale):
+            if scale != "OR":
+                raise ValueError("unsupported")
+            point = 0.8 if sum(e.tE for e in effects) == 10 else 0.9
+            return types.SimpleNamespace(k=len(effects), pooled=point,
+                ci_low=0.60, ci_high=1.05, tau2=0.01, i2=10.0)
+        toy = types.SimpleNamespace(binary_effect=make_effect, pool_effects=fake_pool)
+        with patch.object(paired, "_engine_at", return_value=toy):
+            return paired.check_replay(self.packet, self.root,
+                engine_path=self.fake_engine, engine_sha256=self.engine_digest)
 
     def test_preflight_without_engine_does_not_claim_model_replay(self):
         result = self._replay(False)
@@ -779,6 +792,17 @@ class PairedModelReplayTests(unittest.TestCase):
     def test_published_or_requires_exact_quote_location(self):
         self.packet["publication"]["pooled_or_binding"]["offset"] += 1
         self.assertEqual(self._replay()["status"], "HOLD")
+
+    def test_exact_engine_source_pin_is_checked(self):
+        self.assertEqual(
+            paired.SUPPORTED_ENGINE_GIT_BLOB_SHA1,
+            "9b25f4a98bb882c2d09c18288f93028de5bcf83b",
+        )
+        # User-selected SHA-256 alone is insufficient to substitute a fake file.
+        result = paired.check_replay(self.packet, self.root,
+                      engine_path=self.fake_engine, engine_sha256=self.engine_digest)
+        self.assertEqual(result["status"], "HOLD")
+        self.assertIn("pinned Git blob", result["reason"])
 
     def test_engine_unavailable_does_not_execute(self):
         result = paired.check_replay(self.packet, self.root,
