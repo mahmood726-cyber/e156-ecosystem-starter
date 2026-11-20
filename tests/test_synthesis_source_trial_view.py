@@ -577,7 +577,8 @@ class TrialSourceLedgerTests(unittest.TestCase):
         self.assertIn("Published claim", html_out.read_text(encoding="utf-8"))
         data = json.loads(json_out.read_text(encoding="utf-8"))
         self.assertFalse(data["certified"])
-        self.assertNotIn("quote", json.dumps(data))
+        self.assertNotIn("quote", data["rows"][0])
+        self.assertNotIn("ARCHIVED TEST", json.dumps(data))
 
 
 if __name__ == "__main__":
