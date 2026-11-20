@@ -227,9 +227,19 @@ def main(argv=None) -> int:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
         args.html_out.write_text(viewer.render_html(to_viewer_report(report)), encoding="utf-8")
         # Persist source locators and row statuses, not raw private quotes, in JSON.
-        public_rows = [{k: row.get(k) for k in ("case_id", "status", "reason", "trial_key",
+        public_rows = []
+        for row in report["rows"]:
+            record = {k: row.get(k) for k in ("case_id", "status", "reason", "trial_key",
                                                 "source_tier", "calculation")}
-                       for row in report["rows"]]
+            evidence = row.get("evidence", {})
+            # Hashes/locators are machine-readable provenance; no quotations,
+            # private page image data, or raw source text enter the JSON receipt.
+            record["source_snapshots"] = {
+                side: {k: evidence[side][k] for k in ("path", "sha256", "version", "locator")
+                       if k in evidence[side]}
+                for side in ("published", "primary") if side in evidence
+            }
+            public_rows.append(record)
         args.json_out.write_text(json.dumps({
             "synthesis_id": report["synthesis_id"], "rows": public_rows,
             "counts": report["counts"], "duplicate_preflight": report["duplicate_preflight"],
