@@ -896,6 +896,22 @@
         "docs/SYNTHESIS-RESPONSE-REVIEW.md": "f090be5d50d796836ee2b1b3b0ad77b3aff10396c456f575488e8aec7ffed763",
         "docs/SYNTHESIS-PARTICIPANT-WORKSHEET.md": "c3db9103a38f0d6b083f76439bceda5cc6ea972e644c51be87fc3fbafcc0a12e"
       }
+    },
+    {
+      "id": ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic",
+      "kind": "ci-job",
+      "name": "Experimental Synthesis source-trial verification and pinned-engine integration CI",
+      "stops": "Runs fail-closed synthetic source/trial binding and paired OR replay regression tests, checks for Python syntax errors, and separately checks the actual pinned meta-starter-kit source engine against an independently calculated low-heterogeneity identity and a published paper-table Hartung-Knapp negative control.",
+      "would_not_stop": [
+        "Incorrect source-to-trial assignment, omitted original trials, study-population overlap, wrong method labels supplied by a reviewer, or clinically unsound pooling despite green synthetic tests.",
+        "Numerical differences for complex estimators, zero-cell models, network and IPD meta-analyses, alternative confidence-interval adjustments, or software versions outside the exact pinned engine.",
+        "Original trial data not independently retrieved: the published paper-table example checks only printed study rows and does not adjudicate an error or establish clinical effect.",
+        "Reproducibility of all research software or prospective accuracy of Synthesis; the external code identity is pinned but independent R-based statistical evaluation and blinded adjudication remain separate."
+      ],
+      "source": ".github/workflows/synthesis-source-trial-pilot.yml offline-synthetic; tests/test_synthesis_source_trial_view.py and tests/test_synthesis_real_engine.py; scripts/synthesis_paired_model_replay.py. Real engine is checked out from pinned public meta-starter-kit commit, never accepted from an arbitrary user-provided path.",
+      "seal": {
+        ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic": "f478a3718b6a3c58baa6152d8610fba66b9fd07f191d64614ab8ab7773d807e0"
+      }
     }
   ]
 }
