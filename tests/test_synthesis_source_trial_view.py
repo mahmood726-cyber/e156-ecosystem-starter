@@ -369,5 +369,216 @@ class SourceTrialViewerTests(unittest.TestCase):
         self.assertIn("Experimental reviewer aid", output.read_text(encoding="utf-8"))
 
 
+
+
+ledger_spec = importlib.util.spec_from_file_location(
+    "synthesis_trial_source_ledger",
+    Path(__file__).resolve().parents[1] / "scripts" / "synthesis_trial_source_ledger.py",
+)
+ledger = importlib.util.module_from_spec(ledger_spec)
+ledger_spec.loader.exec_module(ledger)
+
+
+class TrialSourceLedgerTests(unittest.TestCase):
+    """Source-to-cell crosswalk fixtures are invented, not clinical findings."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+
+    def _snapshot(self, filename, quote):
+        path = self.root / filename
+        path.write_text("ARCHIVED TEST\n" + quote + "\nEND\n", encoding="utf-8")
+        return {
+            "path": filename, "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "version": "synthetic-source-v1", "locator": "invented Table 1",
+            "quote": quote,
+        }
+
+    def _row(self, row_id="R1", count=4, source_count=2, report_id="report-1",
+             cohort_id="cohort-A", trial_key="SYNTHETIC-TRIAL-001"):
+        published_quote = f"Review lists {count} events for {trial_key} at day 30."
+        primary_quote = f"{trial_key} primary report records {source_count} events at day 30."
+        keys = dict(
+            trial_family_id="synthetic-family-A", cohort_id=cohort_id,
+            population="invented adults ITT", intervention="invented A",
+            comparator="invented C", endpoint="invented mortality",
+            time_window="day 30", analysis_set="ITT", effect_measure="event count",
+            estimand="raw people count", statistic_id="treatment arm events",
+        )
+        return {
+            "row_id": row_id, "trial_key": trial_key, "trial_key_type": "OTHER_SOURCE_ID",
+            "trial_key_source_checked": True,
+            "trial_key_binding": {"text": trial_key, "offset": primary_quote.index(trial_key)},
+            "source_tier": "T1",
+            "case": {
+                "claim_version_status": "CURRENT_UNCORRECTED",
+                "published": self._snapshot(f"{row_id}-review.txt", published_quote),
+                "primary": self._snapshot(f"{row_id}-primary.txt", primary_quote),
+                "contexts": {"published": dict(keys), "primary": dict(keys)},
+                "comparison": {"kind": "integer_count", "published": count,
+                               "primary": source_count},
+                "refutation": {"alternative": "possible different analysis population",
+                               "checked_against": "invented trial Methods",
+                               "result": "NOT_SUPPORTED"},
+            },
+            "bindings": {
+                "published_value": {"text": str(count),
+                                    "offset": published_quote.index(f"{count} events")},
+                "primary_value": {"text": str(source_count),
+                                  "offset": primary_quote.index(f"{source_count} events")},
+            },
+            "analysis": {
+                "report_id": report_id, "contrast_id": "A_vs_C",
+                "included_as_independent_effect": True,
+                "same_cohort_source_verified": True,
+                "dependence_handling": "INDEPENDENT_UNCORRELATED",
+            },
+        }
+
+    def _review(self, *rows):
+        return ledger.review_ledger({
+            "ledger_version": "0.1", "synthesis_id": "synthetic-synthesis-A",
+            "rows": list(rows),
+        }, self.root)
+
+    def test_quoted_difference_is_review_only(self):
+        report = self._review(self._row())
+        self.assertFalse(report["certified"])
+        self.assertEqual(report["rows"][0]["status"], "REVIEW_CANDIDATE")
+        self.assertEqual(report["rows"][0]["trial_key"], "SYNTHETIC-TRIAL-001")
+
+    def test_matched_count_not_paper_certification(self):
+        report = self._review(self._row(count=4, source_count=4))
+        self.assertEqual(report["rows"][0]["status"], "NO_SCOPED_DIFFERENCE")
+        self.assertFalse(report["certified"])
+
+    def test_missing_trial_identity_source_holds(self):
+        row = self._row()
+        row["trial_key_source_checked"] = False
+        self.assertEqual(self._review(row)["rows"][0]["status"], "HOLD")
+
+    def test_wrong_trial_identity_offset_holds(self):
+        row = self._row()
+        row["trial_key_binding"]["offset"] += 1
+        out = self._review(row)
+        self.assertEqual(out["rows"][0]["status"], "HOLD")
+        self.assertIn("trial identifier", out["rows"][0]["reason"])
+
+    def test_unbound_source_count_holds(self):
+        row = self._row()
+        row["bindings"]["primary_value"]["offset"] += 1
+        out = self._review(row)
+        self.assertEqual(out["rows"][0]["status"], "HOLD")
+        self.assertIn("source-cell offsets", out["rows"][0]["reason"])
+
+    def test_secondary_meta_source_is_not_a_primary_recheck(self):
+        row = self._row()
+        row["source_tier"] = "T4"
+        self.assertEqual(self._review(row)["rows"][0]["status"], "HOLD")
+
+    def test_unknown_cohort_holds(self):
+        row = self._row()
+        row["case"]["contexts"]["primary"]["cohort_id"] = "unknown"
+        self.assertEqual(self._review(row)["rows"][0]["status"], "HOLD")
+
+    def test_distinct_timepoint_not_comparable(self):
+        row = self._row()
+        row["case"]["contexts"]["primary"]["time_window"] = "day 60"
+        self.assertEqual(self._review(row)["rows"][0]["status"], "NOT_COMPARABLE")
+
+    def test_historical_corrected_claim_not_new_flag(self):
+        row = self._row()
+        row["case"]["claim_version_status"] = "HISTORICAL_CORRECTED"
+        self.assertEqual(self._review(row)["rows"][0]["status"], "HOLD")
+
+    def test_duplicate_row_id_holds_only_repeated_row(self):
+        report = self._review(self._row(), self._row())
+        self.assertEqual(report["rows"][0]["status"], "REVIEW_CANDIDATE")
+        self.assertEqual(report["rows"][1]["status"], "HOLD")
+        self.assertIn("duplicate row_id", report["rows"][1]["reason"])
+
+    def test_duplicate_trial_family_preflight_reused(self):
+        report = self._review(self._row(), self._row(
+            row_id="R2", report_id="report-2"))
+        self.assertEqual(report["duplicate_preflight"]["status"], "REVIEW_CANDIDATE")
+        self.assertEqual(report["counts"]["REVIEW_CANDIDATE"], 2)
+
+    def test_unverified_overlap_abstains_in_duplicate_preflight(self):
+        row = self._row()
+        row["analysis"]["same_cohort_source_verified"] = False
+        report = self._review(row, self._row(row_id="R2", report_id="report-2"))
+        self.assertEqual(report["duplicate_preflight"]["status"], "HOLD")
+
+    def test_absent_primary_file_holds(self):
+        row = self._row()
+        (self.root / row["case"]["primary"]["path"]).unlink()
+        self.assertEqual(self._review(row)["rows"][0]["status"], "HOLD")
+
+    def test_unregistered_trial_key_format_requires_attested_other_id(self):
+        row = self._row()
+        row["trial_key_type"] = "REGISTRY"
+        self.assertEqual(self._review(row)["rows"][0]["status"], "HOLD")
+
+    def test_bounded_input_refuses_empty_and_oversized(self):
+        with self.assertRaises(ValueError):
+            self._review()
+        with self.assertRaises(ValueError):
+            self._review(*[{} for _ in range(ledger.MAX_ROWS + 1)])
+
+    def test_quoted_percentage_cells_have_exact_offsets(self):
+        row = self._row()
+        key = row["trial_key"]
+        pub = f"Review {key}: 2/67 (1.5%) participants."
+        pri = f"{key} source reports 2 of 67 participants."
+        row["case"]["published"] = self._snapshot("pct-review.txt", pub)
+        row["case"]["primary"] = self._snapshot("pct-source.txt", pri)
+        row["case"]["contexts"]["primary"].update(
+            denominator_basis="observed people", effect_measure="raw participant percentage",
+            estimand="unweighted participants with outcome")
+        row["case"]["contexts"]["published"].update(
+            denominator_basis="observed people", effect_measure="raw participant percentage",
+            estimand="unweighted participants with outcome")
+        row["case"]["comparison"] = {
+            "kind": "count_percentage", "published_count": 2,
+            "published_denominator": 67, "published_percentage": "1.5%",
+            "primary_count": 2, "primary_denominator": 67,
+            "percentage_method": "RAW_UNWEIGHTED_PERSON_FRACTION",
+            "raw_fraction_source_verified": True,
+            "denominator_basis_source_verified": True,
+        }
+        row["trial_key_binding"] = {"text": key, "offset": pri.index(key)}
+        row["bindings"] = {
+            "published_count": {"text": "2", "offset": pub.index("2/67")},
+            "published_denominator": {"text": "67", "offset": pub.index("67")},
+            "published_percentage": {"text": "1.5%", "offset": pub.index("1.5%")},
+            "primary_count": {"text": "2", "offset": pri.index("2 of")},
+            "primary_denominator": {"text": "67", "offset": pri.index("67")},
+        }
+        report = self._review(row)
+        self.assertEqual(report["rows"][0]["status"], "REVIEW_CANDIDATE")
+        row["bindings"]["published_denominator"]["offset"] += 1
+        self.assertEqual(self._review(row)["rows"][0]["status"], "HOLD")
+
+    def test_cli_writes_private_html_and_sanitised_json(self):
+        packet = self.root / "ledger.json"
+        packet.write_text(json.dumps({
+            "ledger_version": "0.1", "synthesis_id": "synthetic-synthesis-A",
+            "rows": [self._row()],
+        }), encoding="utf-8")
+        html_out = self.root / "out" / "private.html"
+        json_out = self.root / "out" / "receipt.json"
+        rc = ledger.main([
+            "--packet", str(packet), "--source-root", str(self.root),
+            "--html-out", str(html_out), "--json-out", str(json_out),
+        ])
+        self.assertEqual(rc, 0)
+        self.assertIn("Published claim", html_out.read_text(encoding="utf-8"))
+        data = json.loads(json_out.read_text(encoding="utf-8"))
+        self.assertFalse(data["certified"])
+        self.assertNotIn("quote", json.dumps(data))
+
+
 if __name__ == "__main__":
     unittest.main()
