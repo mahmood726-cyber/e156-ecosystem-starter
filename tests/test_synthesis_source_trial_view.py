@@ -613,7 +613,7 @@ class PairedModelReplayTests(unittest.TestCase):
         }
         self.trials = [self._trial("SYN-T-A", 5, 6),
                        self._trial("SYN-T-B", 5, 5)]
-        publication = "Analysis used Paule-Mandel and floored Knapp-Hartung. Reported pooled OR: 0.80."
+        publication = "Analysis used Paule-Mandel and floored Knapp-Hartung. Reported pooled OR: 0.80 (95% CI 0.60 to 1.05)."
         self.packet = {
             "schema_version": "0.1",
             "claim_version_status": "CURRENT_UNCORRECTED",
@@ -624,6 +624,10 @@ class PairedModelReplayTests(unittest.TestCase):
                 "method_quote": "Paule-Mandel and floored Knapp-Hartung",
                 "pooled_or_text": "0.80",
                 "pooled_or_binding": {"text": "0.80", "offset": publication.index("0.80")},
+                "ci_low_text": "0.60",
+                "ci_low_binding": {"text": "0.60", "offset": publication.index("0.60")},
+                "ci_high_text": "1.05",
+                "ci_high_binding": {"text": "1.05", "offset": publication.index("1.05")},
                 "trial_set_complete_source_checked": True,
             },
             "trials": self.trials,
@@ -717,6 +721,17 @@ class PairedModelReplayTests(unittest.TestCase):
         result = self._replay()
         self.assertEqual(result["status"], "PUBLISHED_REPLAY_MISMATCH")
         self.assertEqual(result["corrected_replay"], "NOT_RUN")
+
+    def test_published_interval_mismatch_blocks_corrected_fit(self):
+        pub = self.packet["publication"]
+        pub["ci_high_text"] = "1.06"
+        txt = pub["snapshot"]["quote"].replace("1.05", "1.06")
+        pub["snapshot"] = self._snapshot("meta.txt", txt)
+        pub["ci_high_binding"]["text"] = "1.06"
+        out = self._replay()
+        self.assertEqual(out["status"], "PUBLISHED_REPLAY_MISMATCH")
+        self.assertIn("ci_high", out["reason"])
+        self.assertEqual(out["corrected_replay"], "NOT_RUN")
 
     def test_corrected_rows_unchanged_do_not_claim_changed_effect(self):
         a = self.trials[0]
