@@ -40,7 +40,7 @@ Top-level fields: schema_version 0.1, claim_version_status CURRENT_UNCORRECTED, 
 
 The analysis mapping must provide named population, endpoint, time_window, analysis_set, intervention, comparator, effect_measure OR, and estimand UNADJUSTED_TWO_ARM_LOG_OR.
 
-The publication record must provide a hash-checked text snapshot, source-checked matching method, a verbatim methods excerpt and three source-bound decimal literals with 1–6 digits of decimal precision: pooled_or_text, ci_low_text and ci_high_text, each with a corresponding *_binding offset and text. It also requires trial_set_complete_source_checked true.
+The publication record must provide a hash-checked text snapshot, source-checked matching method, a verbatim methods excerpt, **published_variance_floor_source_verified: true** and a **variance_floor_quote** present in that original published passage, and three source-bound decimal literals with 1–6 digits of decimal precision: pooled_or_text, ci_low_text and ci_high_text, each with a corresponding *_binding offset and text. It also requires trial_set_complete_source_checked true.
 
 Each trial record requires unique trial_key and trial_family_id, primary source tier T1/T2/T3, attested distinct participant population, matching analysis map, two hash-checked captured source records (published_extraction and primary_trial), trial-key binding in the primary quote, original and corrected four-cell tables (tE, tN, cE, cN), and exact, non-aliased original_bindings and corrected_bindings. Changed cells require correction_source_checked true and a specific correction_rationale.
 
@@ -60,6 +60,6 @@ These are **reviewer-supplied assertions**. Source hashing and exact token match
 
 ## Validation status
 
-The new synthetic unit tests use a **toy/mock pooling interface**, clearly separated from the real upstream meta-starter-kit engine. They validate execution order, early refusal, bookkeeping and SHA/source gates, **not** the numerical accuracy of the real external engine. No historical Synthesis paper, NMA or original trial data was actually replayed in this development phase. A separate real-engine run and statistical cross-check against an independent implementation (such as R metafor), using an authorised published pairwise analysis with precisely matched methods, remain prerequisites for scientific promotion.
+The synthetic unit tests use a **toy/mock pooling interface** to validate execution order, early refusal, bookkeeping and SHA/source gates. The separate `test_synthesis_real_engine.py` integration suite requires an **actual checked-out, pinned upstream engine**. It tests real engine output against an independent low-heterogeneity closed-form calculation and a **published paper-table negative control** from [Zhang et al., Frontiers in Medicine, 2026](SYNTHESIS-HK-PAPER-NEGATIVE-CONTROL.md): ordinary and variance-floored Knapp–Hartung correctly produce different confidence limits from identical trial rows. The published table is not independent primary-trial source verification, and no corrected original clinical study result has been demonstrated. Broader validation against R `metafor` on independently checked primary-trial data remains necessary.
 
 Keep the pull request in draft pending methods review and proper validation. No source-confirmed findings may be emailed based on this module alone.
