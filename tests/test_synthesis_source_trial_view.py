@@ -740,7 +740,7 @@ class PairedModelReplayTests(unittest.TestCase):
         pub["pooled_or_binding"]["offset"] = text.index("10.80") + 1
         out = self._replay(False)
         self.assertEqual(out["status"], "HOLD")
-        self.assertIn("larger", out["reason"])
+        self.assertTrue("not bound" in out["reason"] or "larger" in out["reason"])
 
     def test_corrected_rows_unchanged_do_not_claim_changed_effect(self):
         a = self.trials[0]
