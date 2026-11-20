@@ -167,7 +167,7 @@ class PinnedEngineIntegration(unittest.TestCase):
                 "variance_floor_quote": "modified Hartung-Knapp variance floor",
                 "trial_set_complete_source_checked": True,
                 "pooled_or_text": "1.005",
-                "pooled_or_binding": token(methods, "OR", "1.005"),
+                "pooled_or_binding": {"text": "1.005", "offset": methods.index("1.005")},
                 "ci_low_text": "0.204",
                 "ci_low_binding": {"text": "0.204", "offset": methods.index("0.204")},
                 "ci_high_text": "4.948",
