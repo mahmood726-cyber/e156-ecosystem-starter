@@ -622,6 +622,8 @@ class PairedModelReplayTests(unittest.TestCase):
                 "snapshot": self._snapshot("meta.txt", publication),
                 "model": paired.METHOD, "published_method_source_checked": True,
                 "method_quote": "Paule-Mandel and floored Knapp-Hartung",
+                "published_variance_floor_source_verified": True,
+                "variance_floor_quote": "floored Knapp-Hartung",
                 "pooled_or_text": "0.80",
                 "pooled_or_binding": {"text": "0.80", "offset": publication.index("0.80")},
                 "ci_low_text": "0.60",
@@ -792,6 +794,18 @@ class PairedModelReplayTests(unittest.TestCase):
                       engine_path=self.fake_engine, engine_sha256="0" * 64)
         self.assertEqual(result["status"], "HOLD")
         self.assertIn("SHA-256", result["reason"])
+
+    def test_unverified_variance_floor_blocks_before_replay(self):
+        self.packet["publication"]["published_variance_floor_source_verified"] = False
+        result = self._replay()
+        self.assertEqual(result["status"], "HOLD")
+        self.assertIn("variance-floor", result["reason"])
+
+    def test_variance_floor_quote_must_be_in_original_paper(self):
+        self.packet["publication"]["variance_floor_quote"] = "not found in publication"
+        result = self._replay()
+        self.assertEqual(result["status"], "HOLD")
+        self.assertIn("not bound to report", result["reason"])
 
     def test_model_not_supported_blocks(self):
         self.packet["publication"]["model"] = "REML"
