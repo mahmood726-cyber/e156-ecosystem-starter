@@ -710,6 +710,7 @@ class PairedModelReplayTests(unittest.TestCase):
         a["corrected"] = dict(a["original"])
         a["primary_trial"] = self._snapshot("SYN-T-A-primary.txt",
                         "SYN-T-A primary tE=5 tN=50 cE=7 cN=55 participants.")
+        a["corrected_bindings"]["tE"] = {"text": "5", "offset": a["primary_trial"]["quote"].index("tE=5") + 3}
         result = self._replay()
         self.assertEqual(result["status"], "ORIGINAL_REPLAY_MATCHED_NO_INPUT_CHANGE")
         self.assertEqual(result["corrected_replay"], "NOT_RUN")
