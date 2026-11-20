@@ -30,11 +30,19 @@ Separately, its modified HK sensitivity analysis reports **0.20–4.95** for
 the same point estimate. The review explicitly distinguishes the modified
 HK interval from the primary analysis.
 
-**Critical limit:** These numbers were read from the 2026 review's own
-figure, not independently checked against Li 2014, Vasavada 2018, or
-Freedman 2021 original trial records and denominators. Treatment
-definitions, first-eye versus eye-level accounting, follow-up, overlap
-and inclusion eligibility are not independently authenticated.
+**Source coverage update (20 November 2026):** Only part of the included-trial
+evidence has been checked beyond the 2026 review's own Figure 2.
+
+| Trial row | External source check | Status |
+| --- | --- | --- |
+| Li 2014, DOI 10.1111/aos.12465 | The accessible original Acta Ophthalmologica full text specifies 30 patients per arm and 3 glaucoma cases with IOL versus 1 with aphakia after one year. https://onlinelibrary.wiley.com/doi/10.1111/aos.12465 | **Source-text count match** for that scoped endpoint; this does not verify all trial methods and corrections |
+| Vasavada 2018, DOI 10.1016/j.ajo.2018.06.005 | The 2022 Cochrane review DOI 10.1002/14651858.CD003171.pub3 reports 4/29 pseudophakic versus 4/25 aphakic eyes at five years, consistent with the 2026 article. https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD003171.pub3/pdf/full | **Secondary independent review match, original trial not checked**. PDF visual rendering returned a 403 and was not independently visually inspected |
+| Freedman 2021, DOI 10.1001/jamaophthalmol.2020.5664 | The original publication belongs to JAMA Network, for which automated processing is excluded under the project's existing publisher restriction | **Original report not processed**; counts remain reproduced from the 2026 review table only |
+
+This is **not** an independently source-verified three-trial extraction ledger:
+endpoint definitions and differing follow-up periods (one, five and ten
+years), first-eye versus eye-level counting, publication corrections, and
+clinical comparability remain to be reviewed by a qualified researcher.
 No author/editor contact is authorised by these calculations.
 
 ## Recalculation, conditional on exactly these printed counts
@@ -100,7 +108,7 @@ identity and data extraction must still be independently checked.
 | --- | --- |
 | Paper title, DOI, Figure 2 labels, printed counts and intervals | Public paper, manually selected |
 | Engine source commit, blob identity and formula | Pinned code contract |
-| Original-trial event/denominator validity | **Not verified** |
+| Original-trial event/denominator validity | **Partially checked only** (Li original count matches; Vasavada Cochrane secondary source matches; Freedman original left unchecked) |
 | Independent closed-form 3-trial calculation | Mathematical recalculation on reported study rows |
 | Real external engine execution and comparison | Executed by the dedicated GitHub CI if its step completes successfully |
 | Scientific error or clinical conclusion impact | **None established** |
