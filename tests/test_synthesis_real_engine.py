@@ -11,6 +11,7 @@ import hashlib
 import importlib.util
 import math
 import os
+import tempfile
 from pathlib import Path
 import unittest
 
@@ -109,6 +110,105 @@ class PinnedEngineIntegration(unittest.TestCase):
         self.assertTrue(paired._precision_overlap(
             PAPER_PRIMARY_HK["ci_high"], math.exp(mu + tcrit * se_unmodified)
         ))
+
+    def _synthetic_paired_packet(self, root):
+        """Invented evidence text; never a real published correction record."""
+        def capture(filename, quote):
+            path = root / filename
+            path.write_text(quote, encoding="utf-8")
+            return {"path": filename, "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                    "version": "INVENTED-FIXTURE-ONLY", "locator": "fabricated demo row",
+                    "quote": quote}
+
+        def token(text, label, value):
+            string = str(value)
+            return {"text": string, "offset": text.index(label + "=" + string) + len(label) + 1}
+
+        analysis = {
+            "population": "invented infants", "endpoint": "synthetic glaucoma outcome",
+            "time_window": "invented standardized day",
+            "analysis_set": "invented ITT",
+            "intervention": "invented IOL", "comparator": "invented aphakia",
+            "effect_measure": "OR", "estimand": "UNADJUSTED_TWO_ARM_LOG_OR",
+        }
+        rows = []
+        for i, (_, a, n1, c, n0) in enumerate(PAPER_FIGURE_COUNTS, start=1):
+            key = f"INVENTED-TRIAL-{i}"
+            original = {"tE": a, "tN": n1, "cE": c, "cN": n0}
+            corrected = {**original, "tE": a + 1 if i == 1 else a}
+            def make_quote(hint, counts):
+                return (f"{key} invented {hint} tE={counts['tE']} tN={counts['tN']} "
+                        f"cE={counts['cE']} cN={counts['cN']} people")
+            before = make_quote("published", original)
+            after = make_quote("primary", corrected)
+            rows.append({
+                "trial_key": key, "trial_family_id": f"INVENTED-FAMILY-{i}",
+                "trial_identity_source_checked": True, "source_tier": "T1",
+                "independent_trial_source_verified": True, "analysis": dict(analysis),
+                "published_extraction": capture(f"old-{i}.txt", before),
+                "primary_trial": capture(f"source-{i}.txt", after),
+                "trial_key_binding": {"text": key, "offset": after.index(key)},
+                "original": original, "corrected": corrected,
+                "original_bindings": {k: token(before, k, v) for k, v in original.items()},
+                "corrected_bindings": {k: token(after, k, v) for k, v in corrected.items()},
+                "correction_source_checked": True,
+                "correction_rationale": "invented count adjustment for software test",
+            })
+        methods = ("Invented published methods: Paule-Mandel modified Hartung-Knapp "
+                   "variance floor. Original OR 1.005 (95% CI 0.204 to 4.948) in invented set")
+        return {
+            "schema_version": "0.1", "claim_version_status": "CURRENT_UNCORRECTED",
+            "analysis": analysis,
+            "publication": {
+                "snapshot": capture("invented-publication.txt", methods),
+                "model": paired.METHOD, "published_method_source_checked": True,
+                "method_quote": "Paule-Mandel modified Hartung-Knapp",
+                "published_variance_floor_source_verified": True,
+                "variance_floor_quote": "modified Hartung-Knapp variance floor",
+                "trial_set_complete_source_checked": True,
+                "pooled_or_text": "1.005",
+                "pooled_or_binding": token(methods, "OR", "1.005"),
+                "ci_low_text": "0.204",
+                "ci_low_binding": {"text": "0.204", "offset": methods.index("0.204")},
+                "ci_high_text": "4.948",
+                "ci_high_binding": {"text": "4.948", "offset": methods.index("4.948")},
+            },
+            "trials": rows,
+        }
+
+    def test_real_engine_full_synthetic_original_then_corrected_execution(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            packet = self._synthetic_paired_packet(root)
+            result = paired.check_replay(packet, root,
+                engine_path=Path(os.environ["SYNTHESIS_PINNED_ENGINE_FILE"]),
+                engine_sha256=self.digest)
+        self.assertEqual(result["status"], "PAIRED_MODEL_REPLAYED_FOR_REVIEW", result)
+        self.assertEqual(result["model_fit"], "ACTUALLY_EXECUTED")
+        self.assertEqual(result["changed_trials"], 1)
+        self.assertNotEqual(result["corrected_replay"]["pooled"],
+                            result["published_replay"]["pooled"])
+        self.assertFalse(result["scientific_error_confirmed"])
+        self.assertEqual(result["conclusion_impact"], "NOT_ASSESSED")
+
+    def test_real_engine_original_ci_mismatch_blocks_corrected_execution(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            packet = self._synthetic_paired_packet(root)
+            pub = packet["publication"]
+            changed_text = pub["snapshot"]["quote"].replace("4.948", "4.949")
+            file = root / pub["snapshot"]["path"]
+            file.write_text(changed_text, encoding="utf-8")
+            pub["snapshot"]["sha256"] = hashlib.sha256(file.read_bytes()).hexdigest()
+            pub["snapshot"]["quote"] = changed_text
+            pub["ci_high_text"] = "4.949"
+            pub["ci_high_binding"]["text"] = "4.949"
+            result = paired.check_replay(packet, root,
+                engine_path=Path(os.environ["SYNTHESIS_PINNED_ENGINE_FILE"]),
+                engine_sha256=self.digest)
+        self.assertEqual(result["status"], "PUBLISHED_REPLAY_MISMATCH", result)
+        self.assertEqual(result["corrected_replay"], "NOT_RUN")
+        self.assertFalse(result["scientific_error_confirmed"])
 
     def test_real_engine_source_pin_is_not_a_user_supplied_sha_only(self):
         # _engine_at checks source Git blob as well as caller SHA.
