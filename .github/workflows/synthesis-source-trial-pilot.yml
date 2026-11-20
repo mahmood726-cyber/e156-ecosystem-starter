@@ -1,26 +1,44 @@
-name: Synthesis source-trial pilot (synthetic-only)
+name: Synthesis source-trial pilot (synthetic and real-engine integration)
 on:
   pull_request:
     paths:
       - 'scripts/synthesis_source_trial_view.py'
+      - 'scripts/synthesis_paired_model_replay.py'
+      - 'scripts/synthesis_trial_source_ledger.py'
       - 'tests/test_synthesis_source_trial_view.py'
+      - 'tests/test_synthesis_real_engine.py'
       - 'docs/SYNTHESIS-SOURCE-TRIAL-PILOT.md'
+      - 'docs/SYNTHESIS-PAIRED-OR-REPLAY.md'
       - '.github/workflows/synthesis-source-trial-pilot.yml'
   push:
     paths:
       - 'scripts/synthesis_source_trial_view.py'
+      - 'scripts/synthesis_paired_model_replay.py'
+      - 'scripts/synthesis_trial_source_ledger.py'
       - 'tests/test_synthesis_source_trial_view.py'
+      - 'tests/test_synthesis_real_engine.py'
       - 'docs/SYNTHESIS-SOURCE-TRIAL-PILOT.md'
+      - 'docs/SYNTHESIS-PAIRED-OR-REPLAY.md'
       - '.github/workflows/synthesis-source-trial-pilot.yml'
 permissions:
   contents: read
 jobs:
   offline-synthetic:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Compile experimental module and tests
-        run: python3 -B -m py_compile scripts/synthesis_source_trial_view.py tests/test_synthesis_source_trial_view.py
+        run: python3 -B -m py_compile scripts/synthesis_source_trial_view.py scripts/synthesis_paired_model_replay.py scripts/synthesis_trial_source_ledger.py tests/test_synthesis_source_trial_view.py tests/test_synthesis_real_engine.py
       - name: Run synthetic-only source-trial regressions
         run: python3 -B -m unittest discover -s tests -p 'test_synthesis_source_trial_view.py' -v
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: mahmood726-cyber/meta-starter-kit
+          ref: 464fd88eb50825985b46b60cda248516d4b495ab
+          path: .external/meta-starter-kit
+          persist-credentials: false
+      - name: Real pinned meta-starter-kit engine; public paper-table negative control
+        env:
+          SYNTHESIS_PINNED_ENGINE_FILE: .external/meta-starter-kit/metakit/engine.py
+        run: python3 -B -m unittest discover -s tests -p 'test_synthesis_real_engine.py' -v
