@@ -1,6 +1,9 @@
 # Source-linked trial evidence review (experimental pilot)
 
 **Development aid only, not a scientifically validated error detector.**
+
+**Next supervised layer:** [Source-to-cell trial extraction ledger](SYNTHESIS-TRIAL-SOURCE-LEDGER.md) binds meta-analysis rows to exact archived primary-trial quotation offsets and records trial-family identifiers, T1/T2/T3 source tiers, cohort/endpoint/arm definitions and optional NMA overlap preflight. It reuses this viewer and does not claim a corrected pooled analysis.
+
 This addition does not alter Synthesis v1.3's six-core/27-detailed checklist,
 protected held-out cohorts, private correspondence, or existing manuscript intake.
 It does not extract directly from PDFs, authenticate the meaning of source text,
