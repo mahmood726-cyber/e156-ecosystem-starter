@@ -19,6 +19,10 @@ import sys
 
 MAX_TRIALS = 40
 METHOD = "META_STARTER_KIT_PM_HKSJ_FLOORED_LOG_OR"
+# Exact Git blob identity verified against the user's meta-starter-kit repository.
+# Commit 464fd88eb50825985b46b60cda248516d4b495ab, metakit/engine.py.
+# A caller-selected SHA-256 alone cannot establish software identity.
+SUPPORTED_ENGINE_GIT_BLOB_SHA1 = "9b25f4a98bb882c2d09c18288f93028de5bcf83b"
 CELL_FIELDS = ("tE", "tN", "cE", "cN")
 ANALYSIS_FIELDS = ("population", "endpoint", "time_window", "analysis_set",
                    "intervention", "comparator", "effect_measure", "estimand")
@@ -164,6 +168,9 @@ def _engine_at(path: Path, digest: str):
     raw = path.read_bytes()
     if hashlib.sha256(raw).hexdigest() != digest:
         raise ValueError("external engine bytes differ from expected SHA-256")
+    git_blob = hashlib.sha1(b"blob " + str(len(raw)).encode("ascii") + b"\0" + raw).hexdigest()
+    if git_blob != SUPPORTED_ENGINE_GIT_BLOB_SHA1:
+        raise ValueError("engine is not the reviewed meta-starter-kit pinned Git blob")
     spec = importlib.util.spec_from_file_location("_synthesis_pinned_metakit_engine", path)
     if spec is None or spec.loader is None:
         raise ValueError("unable to load pinned engine")
