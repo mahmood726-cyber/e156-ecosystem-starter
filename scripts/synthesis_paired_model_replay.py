@@ -77,8 +77,17 @@ def _check_original_report(packet, root, viewer, ledger):
             raise ValueError("published OR/CI invalid") from exc
         if value <= 0 or value > Decimal("1000000"):
             raise ValueError("reported OR or CI outside supported comparison range")
-        if not _number_bind(snapshot, report.get(name + "_binding"), text, ledger):
+        binding = report.get(name + "_binding")
+        if not _number_bind(snapshot, binding, text, ledger):
             raise ValueError("published OR/CI not bound to selected manuscript quote")
+        # Decimal tokens cannot be suffixes of a longer number (e.g. 0.80
+        # inside 10.80), or prefixes of a higher-precision printed value.
+        offset = binding["offset"]
+        quote = snapshot["quote"]
+        left = quote[offset - 1] if offset else ""
+        right = quote[offset + len(text):offset + len(text) + 1]
+        if (left and left in "0123456789.+-") or (right and right in "0123456789."):
+            raise ValueError("reported OR/CI binding is part of a larger or signed numeric token")
         labels[name] = text
     if not (Decimal(labels["ci_low"]) <= Decimal(labels["pooled_or"]) <= Decimal(labels["ci_high"])):
         raise ValueError("reported pooled OR lies outside its labelled confidence interval")
