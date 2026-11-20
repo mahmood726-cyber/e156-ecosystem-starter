@@ -87,7 +87,7 @@ by verified SHA-256 and pinned Git blob, against:
   unfloored *primary* interval.
 
 The GitHub Actions workflow runs the existing synthetic unit suite and
-the **real external numerical-engine integration** separately. This does
+the **real external numerical-engine integration** separately. An additional real-engine end-to-end test uses explicitly **invented source files and an invented corrected event count** to confirm the original-before-corrected execution and the corrected-run refusal after an original CI mismatch. That simulated correction is not evidence about the 2026 ophthalmology paper. This does
 not establish general engine correctness across many datasets, validate
 the published trial set, or reproduce any corrected clinical analysis.
 
