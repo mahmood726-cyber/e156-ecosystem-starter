@@ -94,6 +94,71 @@ def _verbatim_value_in_quote(quote: str, value) -> bool:
     return False
 
 
+
+def _count_percentage(check: dict, evidence: dict, contexts: dict) -> dict:
+    """Screen a source-anchored unweighted people/people percentage.
+
+    Exact-integer cross multiplication implements conservative nearest-decimal
+    compatibility, including either halfway tie. Inputs and raw-fraction method
+    remain human attestations; this cannot authenticate clinical denominators.
+    """
+    if (check.get("percentage_method") != "RAW_UNWEIGHTED_PERSON_FRACTION"
+            or check.get("raw_fraction_source_verified") is not True
+            or check.get("denominator_basis_source_verified") is not True):
+        return {"status": "HOLD", "reason": "raw participant-fraction method and denominator basis unverified"}
+    published_context, primary_context = contexts["published"], contexts["primary"]
+    basis_a = published_context.get("denominator_basis")
+    basis_b = primary_context.get("denominator_basis")
+    if not _meaningful(basis_a) or not _meaningful(basis_b):
+        return {"status": "HOLD", "reason": "denominator basis missing from source contexts"}
+    if basis_a != basis_b:
+        return {"status": "NOT_COMPARABLE", "reason": "published and primary denominator bases differ"}
+    keys = ("published_count", "published_denominator", "primary_count", "primary_denominator")
+    values = [check.get(k) for k in keys]
+    if any(type(value) is not int or value < 0 for value in values):
+        return {"status": "HOLD", "reason": "numerators and denominators must be exact nonnegative integers"}
+    count, denominator, source_count, source_denominator = values
+    if not denominator or not source_denominator or count > denominator or source_count > source_denominator:
+        return {"status": "HOLD", "reason": "participant counts exceed or lack their denominators"}
+    printed = check.get("published_percentage")
+    if not isinstance(printed, str):
+        return {"status": "HOLD", "reason": "verbatim printed percent absent"}
+    m = re.fullmatch(r"(0|[1-9][0-9]*)(?:\\.([0-9]{1,8}))?%", printed)
+    if not m:
+        return {"status": "HOLD", "reason": "unsupported percentage literal or display precision"}
+    digits = m.group(2) or ""
+    scale = 10 ** len(digits)
+    reported_scaled = int(m.group(1)) * scale + int(digits or "0")
+    if reported_scaled > 100 * scale:
+        return {"status": "HOLD", "reason": "reported participant percentage outside 0 to 100"}
+    pub_quote = evidence["published"]["quote"]
+    src_quote = evidence["primary"]["quote"]
+    expected_literals = (
+        ("published count", pub_quote, count),
+        ("published denominator", pub_quote, denominator),
+        ("primary count", src_quote, source_count),
+        ("primary denominator", src_quote, source_denominator),
+    )
+    for name, quote, value in expected_literals:
+        if not _verbatim_value_in_quote(quote, value):
+            return {"status": "HOLD", "reason": name + " not anchored in its verbatim source quote"}
+    if not re.search(r"(?<![0-9A-Za-z.+-])" + re.escape(printed) +
+                     r"(?![0-9A-Za-z.%])", pub_quote):
+        return {"status": "HOLD", "reason": "published percentage not anchored in verbatim published quote"}
+    if count != source_count or denominator != source_denominator:
+        return {"status": "HOLD", "reason": "source count or denominator differs; resolve extraction before percentage check"}
+    # exact fraction: percentage = (100 * count) / denominator;
+    # printed interval ± 0.5 / scale percent, including ties conservatively.
+    delta = abs(100 * count * scale - reported_scaled * denominator)
+    compatible = 2 * delta <= denominator
+    calculation = (f"100 * {count} / {denominator} percent versus published {printed}; "
+                   f"nearest {len(digits)} decimal(s), halfway ties treated as compatible")
+    return {"status": "CONSISTENT" if compatible else "REVIEW",
+            "reason": "source-anchored raw fraction compatible with printed rounding"
+                      if compatible else "raw fraction outside printed rounding interval; human review required",
+            "calculation": calculation}
+
+
 def evaluate_case(case: dict, root: Path) -> dict:
     """Candidate statuses are NEVER verified errors or a paper-level pass."""
     case_id = case.get("case_id") if isinstance(case, dict) else None
@@ -135,13 +200,21 @@ def evaluate_case(case: dict, root: Path) -> dict:
                 raise ValueError("variance labels must be SD or SE")
             result["calculation"] = f"source label {rhs}; reported label {lhs}; no numeric model replay"
             equal = lhs == rhs
-        else:
-            raise ValueError("only integer_count or variance_label supported")
-        for side, value in (("published", lhs), ("primary", rhs)):
-            if not _verbatim_value_in_quote(result["evidence"][side]["quote"], value):
-                result.update(status="HOLD",
-                              reason="comparison value not anchored in verbatim " + side + " quote")
+        elif kind == "count_percentage":
+            percentage = _count_percentage(check, result["evidence"], contexts)
+            result["calculation"] = percentage.get("calculation", "NOT_RUN")
+            if percentage["status"] in ("HOLD", "NOT_COMPARABLE"):
+                result.update(status=percentage["status"], reason=percentage["reason"])
                 return result
+            equal = percentage["status"] == "CONSISTENT"
+        else:
+            raise ValueError("only integer_count, variance_label or count_percentage supported")
+        if kind != "count_percentage":
+            for side, value in (("published", lhs), ("primary", rhs)):
+                if not _verbatim_value_in_quote(result["evidence"][side]["quote"], value):
+                    result.update(status="HOLD",
+                                  reason="comparison value not anchored in verbatim " + side + " quote")
+                    return result
         if equal:
             result.update(status="NO_SCOPED_DIFFERENCE",
                           reason="supplied values agree; no other claims assessed")
