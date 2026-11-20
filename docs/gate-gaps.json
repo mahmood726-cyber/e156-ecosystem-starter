@@ -900,16 +900,17 @@
     {
       "id": ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic",
       "kind": "ci-job",
-      "name": "Experimental source-trial viewer synthetic CI",
-      "stops": "Fails on Python syntax errors or failing synthetic-only regression tests for the source-trial viewer, including source-byte/quote anchoring, path containment, comparison-context abstention, and existing NMA duplicate-preflight integration.",
+      "name": "Experimental Synthesis source-trial verification and pinned-engine integration CI",
+      "stops": "Runs fail-closed synthetic source/trial binding and paired OR replay regression tests, checks for Python syntax errors, and separately checks the actual pinned meta-starter-kit source engine against an independently calculated low-heterogeneity identity and a published paper-table Hartung-Knapp negative control.",
       "would_not_stop": [
-        "False scientific assertions from incorrectly attributed quotations, trial identities, source versions, or investigator-supplied refutation statements: only simple synthetic fixtures are tested.",
-        "Failures of the repository's other CI jobs, live source retrieval, real-patient or real-study data extraction, original-model reanalysis, or human adjudication.",
-        "Prospective error-detection accuracy, clinical impact, publisher correction status, and licensing compliance for sources supplied by users."
+        "Incorrect source-to-trial assignment, omitted original trials, study-population overlap, wrong method labels supplied by a reviewer, or clinically unsound pooling despite green synthetic tests.",
+        "Numerical differences for complex estimators, zero-cell models, network and IPD meta-analyses, alternative confidence-interval adjustments, or software versions outside the exact pinned engine.",
+        "Original trial data not independently retrieved: the published paper-table example checks only printed study rows and does not adjudicate an error or establish clinical effect.",
+        "Reproducibility of all research software or prospective accuracy of Synthesis; the external code identity is pinned but independent R-based statistical evaluation and blinded adjudication remain separate."
       ],
-      "source": ".github/workflows/synthesis-source-trial-pilot.yml offline-synthetic job, scripts/synthesis_source_trial_view.py, tests/test_synthesis_source_trial_view.py; synthetic software controls only.",
+      "source": ".github/workflows/synthesis-source-trial-pilot.yml offline-synthetic; tests/test_synthesis_source_trial_view.py and tests/test_synthesis_real_engine.py; scripts/synthesis_paired_model_replay.py. Real engine is checked out from pinned public meta-starter-kit commit, never accepted from an arbitrary user-provided path.",
       "seal": {
-        ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic": "89f0f1f95e6913a30ea3687c975b0a3f8f7a84f15b065ea4fb961c4d9cd6b73f"
+        ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic": "f478a3718b6a3c58baa6152d8610fba66b9fd07f191d64614ab8ab7773d807e0"
       }
     }
   ]
