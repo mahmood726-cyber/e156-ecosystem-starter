@@ -733,6 +733,15 @@ class PairedModelReplayTests(unittest.TestCase):
         self.assertIn("ci_high", out["reason"])
         self.assertEqual(out["corrected_replay"], "NOT_RUN")
 
+    def test_published_or_cannot_bind_suffix_of_larger_decimal(self):
+        pub = self.packet["publication"]
+        text = pub["snapshot"]["quote"].replace("0.80", "10.80")
+        pub["snapshot"] = self._snapshot("meta.txt", text)
+        pub["pooled_or_binding"]["offset"] = text.index("10.80") + 1
+        out = self._replay(False)
+        self.assertEqual(out["status"], "HOLD")
+        self.assertIn("larger", out["reason"])
+
     def test_corrected_rows_unchanged_do_not_claim_changed_effect(self):
         a = self.trials[0]
         a["corrected"] = dict(a["original"])
