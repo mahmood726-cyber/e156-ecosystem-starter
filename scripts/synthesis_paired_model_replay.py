@@ -66,20 +66,25 @@ def _check_original_report(packet, root, viewer, ledger):
     if not isinstance(report.get("method_quote"), str) or not report["method_quote"].strip() or \
             report["method_quote"] not in snapshot["quote"]:
         raise ValueError("published method quote not bound to archived report")
-    text = report.get("pooled_or_text")
-    if not isinstance(text, str) or not re.fullmatch(r"(?:0|[1-9][0-9]*)(?:\.[0-9]{1,6})", text):
-        raise ValueError("published OR must be a positive decimal literal with 1-6 places")
-    try:
-        value = Decimal(text)
-    except InvalidOperation as exc:
-        raise ValueError("published OR invalid") from exc
-    if value <= 0 or value > Decimal("1000000"):
-        raise ValueError("reported OR outside supported comparison range")
-    if not _number_bind(snapshot, report.get("pooled_or_binding"), text, ledger):
-        raise ValueError("printed published OR not bound to the selected manuscript quote")
+    labels = {}
+    for name in ("pooled_or", "ci_low", "ci_high"):
+        text = report.get(name + "_text")
+        if not isinstance(text, str) or not re.fullmatch(r"(?:0|[1-9][0-9]*)(?:\.[0-9]{1,6})", text):
+            raise ValueError("published OR and CI must each be positive decimal literals with 1-6 places")
+        try:
+            value = Decimal(text)
+        except InvalidOperation as exc:
+            raise ValueError("published OR/CI invalid") from exc
+        if value <= 0 or value > Decimal("1000000"):
+            raise ValueError("reported OR or CI outside supported comparison range")
+        if not _number_bind(snapshot, report.get(name + "_binding"), text, ledger):
+            raise ValueError("published OR/CI not bound to selected manuscript quote")
+        labels[name] = text
+    if not (Decimal(labels["ci_low"]) <= Decimal(labels["pooled_or"]) <= Decimal(labels["ci_high"])):
+        raise ValueError("reported pooled OR lies outside its labelled confidence interval")
     if report.get("trial_set_complete_source_checked") is not True:
         raise ValueError("published model trial-set completeness not source-attested")
-    return snapshot, text
+    return snapshot, labels
 
 
 def _bind_rows(packet, root, viewer, ledger):
@@ -223,9 +228,13 @@ def check_replay(packet: dict, source_root: Path, *, engine_path=None, engine_sh
         safe["model_fit"] = "ACTUALLY_EXECUTED"
         safe["published_replay"] = before
         safe["external_engine_sha256"] = engine_sha256
-        if not _precision_overlap(printed, before["pooled"]):
+        mismatched = [name for name in ("pooled_or", "ci_low", "ci_high")
+                      if not _precision_overlap(printed[name],
+                          before["pooled" if name == "pooled_or" else name])]
+        if mismatched:
             return _status("PUBLISHED_REPLAY_MISMATCH",
-                           "original inputs and specified engine do not reproduce printed pooled OR; no corrected model run",
+                           "original inputs and pinned engine do not reproduce printed point/CI at publication precision: " +
+                           ", ".join(mismatched) + "; corrected model not run",
                            **safe)
         if changed == 0:
             return _status("ORIGINAL_REPLAY_MATCHED_NO_INPUT_CHANGE",
@@ -237,7 +246,7 @@ def check_replay(packet: dict, source_root: Path, *, engine_path=None, engine_sh
         return _status("PAIRED_MODEL_REPLAYED_FOR_REVIEW",
                        "original printed OR reproduced; corrected source-declared inputs run under identical method; independent scientific adjudication needed",
                        **safe)
-    except (ValueError, TypeError, KeyError, OSError, OverflowError, AttributeError, RuntimeError) as exc:
+    except (ValueError, TypeError, KeyError, OSError, OverflowError, AttributeError, RuntimeError, SyntaxError, ImportError, ZeroDivisionError) as exc:
         return _status("HOLD", str(exc))
 
 
