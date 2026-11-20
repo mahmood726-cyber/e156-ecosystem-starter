@@ -235,6 +235,129 @@ class SourceTrialViewerTests(unittest.TestCase):
         self.assertEqual(out["status"], "HOLD")
         self.assertIn("current uncorrected", out["reason"])
 
+
+    def _percentage_case(self, printed="1.5%", count=2, denominator=67,
+                         source_count=2, source_denominator=67):
+        case = self.packet["cases"][0]
+        case["published"] = self._snapshot(
+            "percentage-paper.txt",
+            f"Synthetic manuscript: {count} ({printed}) of {denominator} participants."
+        )
+        case["primary"] = self._snapshot(
+            "percentage-source.txt",
+            f"Synthetic source: {source_count} of {source_denominator} participants."
+        )
+        case["contexts"]["published"]["denominator_basis"] = "synthetic treated population"
+        case["contexts"]["primary"]["denominator_basis"] = "synthetic treated population"
+        case["contexts"]["published"]["effect_measure"] = "raw participant percentage"
+        case["contexts"]["primary"]["effect_measure"] = "raw participant percentage"
+        case["contexts"]["published"]["estimand"] = "unweighted participants with event"
+        case["contexts"]["primary"]["estimand"] = "unweighted participants with event"
+        case["comparison"] = {
+            "kind": "count_percentage",
+            "published_count": count,
+            "published_denominator": denominator,
+            "primary_count": source_count,
+            "primary_denominator": source_denominator,
+            "published_percentage": printed,
+            "percentage_method": "RAW_UNWEIGHTED_PERSON_FRACTION",
+            "raw_fraction_source_verified": True,
+            "denominator_basis_source_verified": True,
+        }
+        return case
+
+    def test_raw_fraction_inconsistent_percentage_review_candidate(self):
+        self._percentage_case(printed="1.5%", count=2, denominator=67)
+        case = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(case["status"], "REVIEW_CANDIDATE")
+        self.assertIn("100 * 2 / 67 percent", case["calculation"])
+
+    def test_raw_fraction_matching_percentage_no_scoped_difference(self):
+        self._percentage_case(printed="3.0%", count=2, denominator=67)
+        case = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(case["status"], "NO_SCOPED_DIFFERENCE")
+
+    def test_correct_historical_benralizumab_notice_is_not_reopened(self):
+        # Notice DOI 10.1038/s41591-026-04425-3; transcribed fixture only.
+        case = self._percentage_case(printed="1.5%", count=2, denominator=67)
+        case["claim_version_status"] = "HISTORICAL_CORRECTED"
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+        self.assertIn("historical correction", out["reason"])
+
+    def test_percentage_missing_source_denominator_holds(self):
+        case = self._percentage_case()
+        case["primary"] = self._snapshot("missing-denom.txt", "Synthetic source recorded 2 participants.")
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+        self.assertIn("primary denominator", out["reason"])
+
+    def test_percentage_mismatched_source_denominator_holds(self):
+        self._percentage_case(printed="1.5%", count=2, denominator=67,
+                              source_count=2, source_denominator=70)
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+        self.assertIn("source count or denominator differs", out["reason"])
+
+    def test_percentage_incompatible_denominator_basis_not_comparable(self):
+        case = self._percentage_case()
+        case["contexts"]["primary"]["denominator_basis"] = "synthetic completers"
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "NOT_COMPARABLE")
+
+    def test_percentage_weighted_or_km_basis_holds(self):
+        for method in ("KAPLAN_MEIER", "WEIGHTED", "UNKNOWN"):
+            with self.subTest(method=method):
+                case = self._percentage_case()
+                case["comparison"]["percentage_method"] = method
+                out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+                self.assertEqual(out["status"], "HOLD")
+
+    def test_percentage_missing_raw_source_attestation_holds(self):
+        case = self._percentage_case()
+        case["comparison"]["denominator_basis_source_verified"] = False
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+
+    def test_percentage_exact_rounding_halfway_is_conservative(self):
+        # 1/200 is exactly 0.5%; printed 1% may reflect ties-away rounding.
+        self._percentage_case(printed="1%", count=1, denominator=200)
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "NO_SCOPED_DIFFERENCE")
+
+    def test_percentage_zero_count_and_full_count(self):
+        for count, pct in ((0, "0.0%"), (67, "100.0%")):
+            with self.subTest(pct=pct):
+                self._percentage_case(printed=pct, count=count, denominator=67,
+                                      source_count=count)
+                out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+                self.assertEqual(out["status"], "NO_SCOPED_DIFFERENCE")
+
+    def test_percentage_reported_over_100_holds(self):
+        self._percentage_case(printed="101.0%", count=67, denominator=67)
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+        self.assertIn("outside 0 to 100", out["reason"])
+
+    def test_percentage_wrong_literal_not_bound_holds(self):
+        case = self._percentage_case()
+        case["comparison"]["published_percentage"] = "2.0%"
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+        self.assertIn("not anchored", out["reason"])
+
+    def test_percentage_missing_benign_explanation_holds(self):
+        case = self._percentage_case()
+        case["refutation"]["result"] = "UNTESTED"
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+
+    def test_percentage_negative_population_count_holds(self):
+        case = self._percentage_case()
+        case["comparison"]["primary_count"] = -2
+        out = module.evaluate_packet(self.packet, self.root)["cases"][0]
+        self.assertEqual(out["status"], "HOLD")
+
     def test_cli_writes_offline_review_html(self):
         packet = self.root / "packet.json"
         packet.write_text(json.dumps(self.packet), encoding="utf-8")
