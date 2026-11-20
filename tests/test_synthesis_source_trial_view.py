@@ -653,8 +653,8 @@ class PairedModelReplayTests(unittest.TestCase):
     def _trial(self, key, original_events, corrected_events):
         original = {"tE": original_events, "tN": 50, "cE": 7, "cN": 55}
         corrected = {**original, "tE": corrected_events}
-        published = f"{key} published tE={original['tE']} tN=50 cE=7 cN=55."
-        primary = f"{key} primary tE={corrected['tE']} tN=50 cE=7 cN=55."
+        published = f"{key} published tE={original['tE']} tN=50 cE=7 cN=55 participants."
+        primary = f"{key} primary tE={corrected['tE']} tN=50 cE=7 cN=55 participants."
         def bindings(text, values):
             return {field: {"text": str(values[field]),
                             "offset": text.index(str(values[field]), text.index(field + "="))}
@@ -709,7 +709,7 @@ class PairedModelReplayTests(unittest.TestCase):
         a = self.trials[0]
         a["corrected"] = dict(a["original"])
         a["primary_trial"] = self._snapshot("SYN-T-A-primary.txt",
-                        "SYN-T-A primary tE=5 tN=50 cE=7 cN=55.")
+                        "SYN-T-A primary tE=5 tN=50 cE=7 cN=55 participants.")
         result = self._replay()
         self.assertEqual(result["status"], "ORIGINAL_REPLAY_MATCHED_NO_INPUT_CHANGE")
         self.assertEqual(result["corrected_replay"], "NOT_RUN")
