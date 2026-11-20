@@ -583,5 +583,209 @@ class TrialSourceLedgerTests(unittest.TestCase):
         self.assertNotIn("ARCHIVED TEST", json.dumps(data))
 
 
+
+
+paired_spec = importlib.util.spec_from_file_location(
+    "synthesis_paired_model_replay",
+    Path(__file__).resolve().parents[1] / "scripts" / "synthesis_paired_model_replay.py",
+)
+paired = importlib.util.module_from_spec(paired_spec)
+paired_spec.loader.exec_module(paired)
+
+
+class PairedModelReplayTests(unittest.TestCase):
+    """Invented cells and a deliberately fake pooling adapter test only the gates."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.analysis = {
+            "population": "invented adults",
+            "endpoint": "invented day-30 outcome",
+            "time_window": "day 30",
+            "analysis_set": "ITT",
+            "intervention": "synthetic agent A",
+            "comparator": "synthetic control C",
+            "effect_measure": "OR",
+            "estimand": "UNADJUSTED_TWO_ARM_LOG_OR",
+        }
+        self.trials = [self._trial("SYN-T-A", 5, 6),
+                       self._trial("SYN-T-B", 5, 5)]
+        publication = "Analysis used Paule-Mandel and floored Knapp-Hartung. Reported pooled OR: 0.80."
+        self.packet = {
+            "schema_version": "0.1",
+            "claim_version_status": "CURRENT_UNCORRECTED",
+            "analysis": self.analysis,
+            "publication": {
+                "snapshot": self._snapshot("meta.txt", publication),
+                "model": paired.METHOD, "published_method_source_checked": True,
+                "method_quote": "Paule-Mandel and floored Knapp-Hartung",
+                "pooled_or_text": "0.80",
+                "pooled_or_binding": {"text": "0.80", "offset": publication.index("0.80")},
+                "trial_set_complete_source_checked": True,
+            },
+            "trials": self.trials,
+        }
+        self.fake_engine = self.root / "engine.py"
+        self.fake_engine.write_text(
+            "from types import SimpleNamespace\n"
+            "def binary_effect(name,tE,tN,cE,cN,nct=None):\n"
+            "    return SimpleNamespace(tE=tE, name=name)\n"
+            "def pool_effects(effects, scale):\n"
+            "    if scale != 'OR': raise ValueError('not OR')\n"
+            "    p = 0.8 if sum(e.tE for e in effects)==10 else 0.9\n"
+            "    return SimpleNamespace(k=len(effects), pooled=p, ci_low=0.60,\n"
+            "        ci_high=1.05, tau2=0.01, i2=10.0)\n",
+            encoding="utf-8",
+        )
+        self.engine_digest = hashlib.sha256(self.fake_engine.read_bytes()).hexdigest()
+
+    def _snapshot(self, name, quote):
+        file = self.root / name
+        file.write_text(quote, encoding="utf-8")
+        return {
+            "path": name, "sha256": hashlib.sha256(file.read_bytes()).hexdigest(),
+            "version": "synthetic-v1", "locator": "invented table",
+            "quote": quote,
+        }
+
+    def _trial(self, key, original_events, corrected_events):
+        original = {"tE": original_events, "tN": 50, "cE": 7, "cN": 55}
+        corrected = {**original, "tE": corrected_events}
+        published = f"{key} published tE={original['tE']} tN=50 cE=7 cN=55."
+        primary = f"{key} primary tE={corrected['tE']} tN=50 cE=7 cN=55."
+        def bindings(text, values):
+            return {field: {"text": str(values[field]),
+                            "offset": text.index(str(values[field]), text.index(field + "="))}
+                    for field in paired.CELL_FIELDS}
+        return {
+            "trial_key": key, "trial_family_id": key + "-family",
+            "trial_identity_source_checked": True, "source_tier": "T1",
+            "independent_trial_source_verified": True,
+            "analysis": dict(self.analysis),
+            "published_extraction": self._snapshot(key + "-pub.txt", published),
+            "primary_trial": self._snapshot(key + "-primary.txt", primary),
+            "trial_key_binding": {"text": key, "offset": primary.index(key)},
+            "original": original, "corrected": corrected,
+            "original_bindings": bindings(published, original),
+            "corrected_bindings": bindings(primary, corrected),
+            "correction_source_checked": True, "correction_rationale": "invented count transcription",
+        }
+
+    def _replay(self, run_engine=True):
+        return paired.check_replay(
+            self.packet, self.root,
+            engine_path=self.fake_engine if run_engine else None,
+            engine_sha256=self.engine_digest if run_engine else None,
+        )
+
+    def test_preflight_without_engine_does_not_claim_model_replay(self):
+        result = self._replay(False)
+        self.assertEqual(result["status"], "READY_FOR_PINNED_ENGINE")
+        self.assertEqual(result["model_fit"], "NOT_RUN")
+        self.assertFalse(result["scientific_error_confirmed"])
+
+    def test_published_first_then_corrected_same_engine_interface(self):
+        result = self._replay()
+        self.assertEqual(result["status"], "PAIRED_MODEL_REPLAYED_FOR_REVIEW")
+        self.assertEqual(result["published_replay"]["pooled"], 0.8)
+        self.assertEqual(result["corrected_replay"]["pooled"], 0.9)
+        self.assertAlmostEqual(result["delta_pooled_or"], 0.1)
+        self.assertEqual(result["conclusion_impact"], "NOT_ASSESSED")
+        self.assertEqual(result["external_engine_sha256"], self.engine_digest)
+
+    def test_original_replay_mismatch_stops_before_correction(self):
+        self.packet["publication"]["pooled_or_text"] = "0.79"
+        pub = self.packet["publication"]
+        txt = pub["snapshot"]["quote"].replace("0.80", "0.79")
+        pub["snapshot"] = self._snapshot("meta.txt", txt)
+        pub["pooled_or_binding"]["text"] = "0.79"
+        result = self._replay()
+        self.assertEqual(result["status"], "PUBLISHED_REPLAY_MISMATCH")
+        self.assertEqual(result["corrected_replay"], "NOT_RUN")
+
+    def test_corrected_rows_unchanged_do_not_claim_changed_effect(self):
+        a = self.trials[0]
+        a["corrected"] = dict(a["original"])
+        a["primary_trial"] = self._snapshot("SYN-T-A-primary.txt",
+                        "SYN-T-A primary tE=5 tN=50 cE=7 cN=55.")
+        result = self._replay()
+        self.assertEqual(result["status"], "ORIGINAL_REPLAY_MATCHED_NO_INPUT_CHANGE")
+        self.assertEqual(result["corrected_replay"], "NOT_RUN")
+
+    def test_no_primary_cell_source_blocks(self):
+        self.trials[0]["corrected_bindings"]["tE"]["offset"] += 1
+        result = self._replay()
+        self.assertEqual(result["status"], "HOLD")
+        self.assertIn("counts not bound", result["reason"])
+
+    def test_aliasing_two_arm_cells_blocks(self):
+        self.trials[0]["corrected_bindings"]["cN"] = dict(self.trials[0]["corrected_bindings"]["tN"])
+        result = self._replay()
+        self.assertEqual(result["status"], "HOLD")
+        self.assertIn("distinct physical tokens", result["reason"])
+
+    def test_duplicate_trial_families_block(self):
+        self.trials[1]["trial_family_id"] = self.trials[0]["trial_family_id"]
+        result = self._replay()
+        self.assertEqual(result["status"], "HOLD")
+        self.assertIn("duplicate trial", result["reason"])
+
+    def test_wrong_analysis_definition_blocks(self):
+        self.trials[1]["analysis"]["time_window"] = "day 60"
+        result = self._replay()
+        self.assertEqual(result["status"], "HOLD")
+        self.assertIn("analysis population", result["reason"])
+
+    def test_zero_cell_requires_appropriate_published_correction_method(self):
+        self.trials[0]["original"]["tE"] = 0
+        pub = self.trials[0]["published_extraction"]
+        pub["quote"] = pub["quote"].replace("tE=5", "tE=0")
+        self.trials[0]["published_extraction"] = self._snapshot("SYN-T-A-pub.txt", pub["quote"])
+        self.trials[0]["original_bindings"]["tE"] = {
+            "text": "0", "offset": pub["quote"].index("tE=0") + 3}
+        result = self._replay()
+        self.assertEqual(result["status"], "HOLD")
+        self.assertIn("zero cell", result["reason"])
+
+    def test_mismatched_engine_hash_blocks_without_execution(self):
+        result = paired.check_replay(self.packet, self.root,
+                      engine_path=self.fake_engine, engine_sha256="0" * 64)
+        self.assertEqual(result["status"], "HOLD")
+        self.assertIn("SHA-256", result["reason"])
+
+    def test_model_not_supported_blocks(self):
+        self.packet["publication"]["model"] = "REML"
+        self.assertEqual(self._replay()["status"], "HOLD")
+
+    def test_historical_correction_stays_on_hold(self):
+        self.packet["claim_version_status"] = "HISTORICAL_CORRECTED"
+        self.assertEqual(self._replay()["status"], "HOLD")
+
+    def test_unchecked_trial_set_completeness_blocks(self):
+        self.packet["publication"]["trial_set_complete_source_checked"] = False
+        self.assertEqual(self._replay()["status"], "HOLD")
+
+    def test_missing_correction_source_review_blocks(self):
+        self.trials[0]["correction_source_checked"] = False
+        self.assertEqual(self._replay()["status"], "HOLD")
+
+    def test_prior_meta_not_primary_source_blocks(self):
+        self.trials[0]["source_tier"] = "T4"
+        self.assertEqual(self._replay()["status"], "HOLD")
+
+    def test_published_or_requires_exact_quote_location(self):
+        self.packet["publication"]["pooled_or_binding"]["offset"] += 1
+        self.assertEqual(self._replay()["status"], "HOLD")
+
+    def test_engine_unavailable_does_not_execute(self):
+        result = paired.check_replay(self.packet, self.root,
+                engine_path=self.root / "missing" / "engine.py",
+                engine_sha256=self.engine_digest)
+        self.assertEqual(result["status"], "HOLD")
+        self.assertFalse(result["scientific_error_confirmed"])
+
+
 if __name__ == "__main__":
     unittest.main()
