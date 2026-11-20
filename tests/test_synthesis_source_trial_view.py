@@ -226,7 +226,7 @@ class SourceTrialViewerTests(unittest.TestCase):
         case["claim_version_status"] = "HISTORICAL_CORRECTED"
         out = module.evaluate_packet(self.packet, self.root)["cases"][0]
         self.assertEqual(out["status"], "HOLD")
-        self.assertIn("only integer_count or variance_label supported", out["reason"])
+        self.assertIn("only integer_count, variance_label or count_percentage supported", out["reason"])
 
     def test_unverified_claim_version_never_produces_candidate(self):
         case = self.packet["cases"][0]
@@ -321,7 +321,8 @@ class SourceTrialViewerTests(unittest.TestCase):
 
     def test_percentage_exact_rounding_halfway_is_conservative(self):
         # 1/200 is exactly 0.5%; printed 1% may reflect ties-away rounding.
-        self._percentage_case(printed="1%", count=1, denominator=200)
+        self._percentage_case(printed="1%", count=1, denominator=200,
+                              source_count=1, source_denominator=200)
         out = module.evaluate_packet(self.packet, self.root)["cases"][0]
         self.assertEqual(out["status"], "NO_SCOPED_DIFFERENCE")
 
