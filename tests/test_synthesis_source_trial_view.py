@@ -578,6 +578,8 @@ class TrialSourceLedgerTests(unittest.TestCase):
         data = json.loads(json_out.read_text(encoding="utf-8"))
         self.assertFalse(data["certified"])
         self.assertNotIn("quote", data["rows"][0])
+        self.assertIn("sha256", data["rows"][0]["source_snapshots"]["primary"])
+        self.assertIn("locator", data["rows"][0]["source_snapshots"]["published"])
         self.assertNotIn("ARCHIVED TEST", json.dumps(data))
 
 
