@@ -112,6 +112,10 @@ a real trial record.
 | Full study search coverage, missed papers, model reproduction | Not performed |
 | Independent error recall, false-positive rate or conclusion impact | **Unknown** pending a separately controlled masked study |
 
+## Optional model-replay bridge
+
+The separately documented [published-first paired OR replay](SYNTHESIS-PAIRED-OR-REPLAY.md) can accept an independently source-bound two-arm count table and, **only with a trusted pinned external engine**, execute the publication-matched original method before a corrected-input run. It does not reanalyse NMA/IPD, infer clinical conclusion changes, or authenticate the scientific meaning of a quote. The ledger alone does not authorize model execution.
+
 ## Next scientific work
 
 A source-validated extraction for all arms/outcomes of a defined small NMA,
