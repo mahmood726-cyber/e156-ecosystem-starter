@@ -126,8 +126,14 @@ def _bind_rows(packet, root, viewer, ledger):
                 raise ValueError(f"trial {key}: exact nonnegative integer arm inputs required")
             if vals["tN"] <= 0 or vals["cN"] <= 0 or vals["tE"] > vals["tN"] or vals["cE"] > vals["cN"]:
                 raise ValueError(f"trial {key}: impossible arm/event counts in {phase}")
+            if len({(binds[f].get("offset"), binds[f].get("text"))
+                    for f in CELL_FIELDS if isinstance(binds[f], dict)}) != len(CELL_FIELDS):
+                raise ValueError(f"trial {key}: {phase} values must bind distinct physical tokens")
             if any(not _number_bind(source, binds[f], vals[f], ledger) for f in CELL_FIELDS):
                 raise ValueError(f"trial {key}: {phase} counts not bound to exact source tokens")
+            if min(vals["tE"], vals["tN"] - vals["tE"],
+                   vals["cE"], vals["cN"] - vals["cE"]) == 0:
+                raise ValueError(f"trial {key}: zero cell requires published-method-specific continuity handling; not supported")
         if original != corrected:
             changes += 1
             if row.get("correction_source_checked") is not True or _not_known(row.get("correction_rationale")):
