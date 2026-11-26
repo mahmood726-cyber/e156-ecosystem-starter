@@ -1,5 +1,9 @@
 """Framework-independent controls for the comparative execution apparatus."""
 import copy
+import hashlib
+import json
+import shutil
+import subprocess
 import pytest
 
 from scripts import harness_execution_benchmark as benchmark
@@ -107,3 +111,30 @@ def test_worker_environment_drops_credentials_and_tracing(monkeypatch):
     env = benchmark.environment()
     assert "SYNTHETIC_PROVIDER_API_KEY" not in env and "LANGSMITH_API_KEY" not in env
     assert env["LANGCHAIN_TRACING_V2"] == "false"
+
+
+def test_published_evidence_hashes_survive_windows_git_checkout(tmp_path):
+    """Exercise Git's actual Windows newline policy, including on Linux CI."""
+    root = benchmark.ROOT
+    artifact_dir = "benchmarks/execution"
+    protocol = "benchmarks/harness-execution-protocol.json"
+    shutil.copytree(root / artifact_dir, tmp_path / artifact_dir)
+    shutil.copyfile(root / protocol, tmp_path / protocol)
+    shutil.copyfile(root / ".gitattributes", tmp_path / ".gitattributes")
+    def git(*args):
+        subprocess.run(["git", "-c", "core.autocrlf=true", "-C", str(tmp_path), *args],
+                       check=True, capture_output=True, timeout=30)
+    git("init")
+    git("add", ".gitattributes", artifact_dir, protocol)
+    # Only delete explicit test copies, then force a real smudged checkout.
+    for path in (tmp_path / artifact_dir).iterdir():
+        assert path.resolve().is_relative_to(tmp_path.resolve()) and path.is_file()
+        path.unlink()
+    (tmp_path / protocol).unlink()
+    git("checkout-index", "--all", "--force")
+    published = tmp_path / artifact_dir
+    manifest = json.loads((published / "publication-manifest.json").read_text(encoding="utf-8"))
+    for name, expected in manifest["files"].items():
+        assert hashlib.sha256((published / name).read_bytes()).hexdigest() == expected["sha256"], name
+    frozen = json.loads((published / "public-reviewer-final-pre-execution.json").read_text(encoding="utf-8"))
+    assert hashlib.sha256((tmp_path / protocol).read_bytes()).hexdigest() == frozen["source_sha256"][protocol]
