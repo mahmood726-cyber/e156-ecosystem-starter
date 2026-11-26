@@ -89,6 +89,16 @@ possible ABSTAIN. It never grants scientific Pass. A frozen fallback route is
 used only after ABSTAIN or invalid structured output; it is not calibrated
 confidence or a demonstrated quality improvement.
 
+New execution and recovery require the returned model identity to match the
+frozen snapshot. When `request_policy: {"service_tier": "default"}` is configured,
+the returned tier must also match; an omitted tier policy does not impose one.
+The supported response envelope contains assistant text messages, function calls
+and reasoning items. Malformed or unsupported envelopes retain the complete
+reservation and received response as unresolved evidence, before settlement.
+Invalid final JSON inside an otherwise valid text message still follows the
+ABSTAIN/output-validation policy. Offline accounting of historical artifacts
+keeps its existing contract; it does not substitute for execution validation.
+
 `inspect` writes a new report of an existing valid journal without paid calls.
 The local hash chain detects inconsistent records under controlled storage;
 it is not signed custody against someone able to replace the whole database.

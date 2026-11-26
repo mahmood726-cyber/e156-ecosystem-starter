@@ -887,15 +887,16 @@
       "id": ".github/workflows/full-system-integration.yml#jobs.full-windows-install",
       "kind": "ci-job",
       "name": "Disposable Windows full-chain installation",
-      "stops": "Refuses local/self-hosted execution, reused tool/key state, unsafe roots, installer failure, absent or mismatched installed layers, invalid Windows registry bindings, nonblocking hooks, live-canary failure, source-lock mismatch, dependency conflicts and research-pair activation or failed-upgrade preservation failure.",
+      "stops": "Refuses local/self-hosted execution, reused tool/key state, unsafe roots, installer failure, absent or mismatched installed layers, invalid Windows registry bindings, nonblocking hooks, live-canary failure, source-lock mismatch, dependency conflicts and research-pair activation or failed-upgrade preservation failure. Also exercises the actual PowerShell Sentinel prerequisite helper against supported, unsupported, malformed, failing, absent and Store-alias Python command fixtures before the full install.",
       "would_not_stop": [
         "A spoofed hosted-runner environment on a personal account: the entrypoint is an accidental-use guard, not a security sandbox.",
         "Consumer Windows bootstrap without preinstalled Git/Python, agent login, PDF extras, PostgreSQL or physical power-loss failure.",
-        "Mutable legacy dependency resolution, dishonest source provenance, scientific errors or lack of a project-specific Overmind release verdict."
+        "Mutable legacy dependency resolution, dishonest source provenance, scientific errors or lack of a project-specific Overmind release verdict.",
+        "A full installation under every Python version or consumer machine: prerequisite refusal controls use synthetic version processes; the full installation uses the selected hosted Python 3.13 environment."
       ],
-      "source": ".github/workflows/full-system-integration.yml full-windows-install; scripts/windows_install_smoke.ps1; existing full-install and research-pair canaries. No local full installer test.",
+      "source": ".github/workflows/full-system-integration.yml full-windows-install; scripts/windows_install_smoke.ps1; existing full-install and research-pair canaries. No local full installer test. Prerequisite controls: scripts/install-sentinel.ps1 and tests/test_sentinel_frozen_release.py (synthetic command versions, actual PowerShell processes); AI source review of this added scope.",
       "seal": {
-        ".github/workflows/full-system-integration.yml#jobs.full-windows-install": "e4d4342b24365705a93071d146b2abce96d1ea4988c3e5ff4c1d3dbcc7e49ef1",
+        ".github/workflows/full-system-integration.yml#jobs.full-windows-install": "6945b93ab6f95aea76123f3e9b2c7dcdcf1cb3cd3b081be22d8216583902fabb",
         "scripts/windows_install_smoke.ps1": "81a56fe3c1146227667bccfb2ad762b32d838aedf9ba5e4cf2a30bb13c19af97",
         "tests/test_windows_install_smoke.py": "ab38a959d348ccaa406633f56bc2fe12403da89a8a87830ae6cbbd9dc6fa98d2",
         "scripts/verify-full-install.py": "ad1b1d80d45e9aceea3d585813a28466860831c58c0de2e77ce6ff9f79757758",
@@ -907,7 +908,9 @@
         "scripts/install-extractor.ps1": "4e458344b94e65eb23090253ff53db5f6f139da65920b23bbce4cae5a3d753ab",
         "scripts/bounded_native.py": "6a878aff3ea7029f6dfb3bc7b8c00d27030e6e5b3d4c64cde74b35ec792b0e7c",
         "tests/test_overmind_powershell_transport.py": "1c8e261e333895747eaeb70e11246ddfc3c8686d7e1e065b69c1a151bdbfc1c8",
-        "tests/test_extractor_windows_transport.py": "6c87039d9666e1bf6b26907696b9c843f361802f1a2dbb6bb4138969069c6864"
+        "tests/test_extractor_windows_transport.py": "6c87039d9666e1bf6b26907696b9c843f361802f1a2dbb6bb4138969069c6864",
+        "scripts/install-sentinel.ps1": "3a3439007231f4d218c8e5745e98a7672ff4af940c58ff737cdf400980ec123f",
+        "tests/test_sentinel_frozen_release.py": "8cdf5837f9dfa471642d0ba1754f881c4ce8b346eb2a239524115164db18ad42"
       }
     },
     {

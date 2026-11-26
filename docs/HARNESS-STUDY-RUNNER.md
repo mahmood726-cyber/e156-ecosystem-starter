@@ -26,8 +26,14 @@ Keep these private artifacts outside the repository. The work directory must not
 already exist at preparation and must be disjoint from the input and evidence
 roots. The input/evidence separation and bounded, link-refusing reads follow the
 preflight contract. Commands below run from the repository root; directory and
-file names are operator-supplied arguments, not bundled study material. Create
-the private result directory before requesting CLI output there.
+file names are operator-supplied arguments, not bundled study material. The
+examples use a sibling `../harness-study-private/` directory, outside this
+checkout. Choose another external operator-owned location if that sibling is
+inside a different repository or shared folder. Create its `results/` directory
+before requesting CLI output there. Populate `inputs/` and `evidence/` with the
+frozen operator-owned artifacts; preparation creates `work/`, which must not
+already exist. Git ignores for the former checkout-relative example names are
+only a staging safeguard, not an access-control or privacy boundary.
 
 Use a filesystem supporting exclusive hard-link publication and same-directory
 atomic rename, such as local NTFS or an appropriate local POSIX filesystem.
@@ -90,11 +96,11 @@ Preparation is offline. It validates and stages evidence without launching a
 model, and returns `PREPARED_NOT_RUN` with `scientific_results: null`.
 
 ```text
-python -m scripts.harness_study_runner prepare --manifest private/manifest.json --protocol private/protocol.json --inventory private/evidence-inventory.json --inputs input-artifacts --evidence private --budget private/budget.json --mode LIVE --work study-work --output private-results/prepared.json
+python -m scripts.harness_study_runner prepare --manifest ../harness-study-private/evidence/manifest.json --protocol ../harness-study-private/evidence/protocol.json --inventory ../harness-study-private/evidence/evidence-inventory.json --inputs ../harness-study-private/inputs --evidence ../harness-study-private/evidence --budget ../harness-study-private/evidence/budget.json --mode LIVE --work ../harness-study-private/work --output ../harness-study-private/results/prepared.json
 ```
 
 For an explicitly synthetic rehearsal, use a distinct new work directory and
-`--mode SYNTHETIC_CONTRACT --fixtures private/fixtures.json`. Fixtures map every
+`--mode SYNTHETIC_CONTRACT --fixtures ../harness-study-private/evidence/fixtures.json`. Fixtures map every
 computed case ID to exactly `input_tokens` and a nonempty `responses` list. They
 are scripted test responses, not live predictions or observed scientific data.
 Synthetic mode does not invoke the paid provider. Live mode refuses a fixture
@@ -108,7 +114,7 @@ This transport currently uses the configured OpenAI Responses path; it has no
 automatic provider fallback or retry after an ambiguous outcome.
 
 ```text
-python -m scripts.harness_study_runner run --work study-work --allow-paid --output private-results/dispatch-01.json
+python -m scripts.harness_study_runner run --work ../harness-study-private/work --allow-paid --output ../harness-study-private/results/dispatch-01.json
 ```
 
 One `run` invocation selects at most one new scheduled case. Invoke it again with
@@ -138,10 +144,10 @@ inside the case watchdog too. Remote accepted requests may outlive local cleanup
 Use the exact `case_id` reported by the runner or retained in `plan.json`:
 
 ```text
-python -m scripts.harness_study_runner settle --work study-work --case-id CASE_ID --output private-results/settlement.json
-python -m scripts.harness_study_runner reconcile --work study-work --case-id CASE_ID --receipt private/recovery.json --output private-results/reconciliation.json
-python -m scripts.harness_study_runner resume --work study-work --case-id CASE_ID --allow-paid --output private-results/resumption.json
-python -m scripts.harness_study_runner abort --work study-work --output private-results/abort.json
+python -m scripts.harness_study_runner settle --work ../harness-study-private/work --case-id CASE_ID --output ../harness-study-private/results/settlement.json
+python -m scripts.harness_study_runner reconcile --work ../harness-study-private/work --case-id CASE_ID --receipt ../harness-study-private/evidence/recovery.json --output ../harness-study-private/results/reconciliation.json
+python -m scripts.harness_study_runner resume --work ../harness-study-private/work --case-id CASE_ID --allow-paid --output ../harness-study-private/results/resumption.json
+python -m scripts.harness_study_runner abort --work ../harness-study-private/work --output ../harness-study-private/results/abort.json
 ```
 
 `CASE_ID` in these command templates must be replaced with that recorded value.
@@ -182,7 +188,7 @@ total study time; `wall_seconds` is not total study administration time.
 Once every scheduled slot has execution or abort evidence, export drafts:
 
 ```text
-python -m scripts.harness_study_runner records --work study-work --output private-results/drafts.json
+python -m scripts.harness_study_runner records --work ../harness-study-private/work --output ../harness-study-private/results/drafts.json
 ```
 
 The output maps case IDs to `e156-study-record-draft-v1` objects. A completed
@@ -230,7 +236,7 @@ human costs remain separate, and an observed subtotal is not total study cost.
 ## Freeze before masking
 
 ```text
-python -m scripts.harness_study_runner freeze --work study-work --measurements private/measurements.json --output private-results/freeze-summary.json
+python -m scripts.harness_study_runner freeze --work ../harness-study-private/work --measurements ../harness-study-private/evidence/measurements.json --output ../harness-study-private/results/freeze-summary.json
 ```
 
 Freeze requires all planned slots and measurements, with no unresolved case left

@@ -1,6 +1,6 @@
 # Producing work at the same quality bar — student walkthrough
 
-After running `install.ps1` / `install.sh`, your laptop has the same **enforcement
+After a successful `install.ps1 -Full` / `install.sh --full`, your laptop has the **enforcement
 machinery** Mahmood uses: rules, governance, memory templates, Sentinel, Overmind,
 ProjectIndex. This doc covers what to do **next** so you produce work at the same
 quality bar he does — not just "with the same tools," but using the same
@@ -12,17 +12,70 @@ nudges you toward the right pattern when it matters.
 
 ## TL;DR — 5 steps to your first paper
 
-1. **Install the ecosystem** (this repo) — done if you're reading this.
-2. **Scaffold a paper** with the `student` CLI from
-   [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter):
-   `pip install git+https://github.com/mahmood726-cyber/e156-student-starter.git@main`
-   then `student new my-first-paper`.
+1. **Install the ecosystem** (this repo) with `-Full` / `--full` and check that
+   every requested component succeeded. Sentinel requires Python 3.13+.
+2. **Scaffold a paper and protect its workbook** using the
+   [reviewed student-source commands below](#create-a-first-paper-from-reviewed-student-source).
 3. **Use the brainstorm→spec-lock→plan-lock→TDD→audit method** (below).
-4. **`git push`** — Sentinel runs as a pre-push hook and blocks the 20 most
-   common defects before code leaves your laptop.
+4. **`git push` from the workbook repository** — its installed Sentinel hook
+   blocks configured BLOCK findings before code leaves your laptop.
 5. **`overmind run-once --repo <path>`** before declaring "done". A `PASS` /
    `CERTIFIED` verdict is your ship gate; `UNVERIFIED` and `FAIL` mean keep
    working.
+
+## Create a first paper from reviewed student source
+
+This walkthrough uses [`e156-student-starter` commit
+`997da31ac9382bdb5c059374d1b95c6313e10147`](https://github.com/mahmood726-cyber/e156-student-starter/tree/997da31ac9382bdb5c059374d1b95c6313e10147).
+It runs the bundled CLI directly from a source checkout; there is no pip package.
+The `T0` blank-paper scaffold uses the Python standard library and makes no provider
+calls. The separate Windows desktop installer remains available in that project's
+own instructions.
+
+Use a new source destination. If it already exists, stop and inspect it before
+choosing another directory. Complete the ecosystem's Sentinel installation first;
+the hook installed in `~/code/my-first-repo` does not protect a different repository.
+
+PowerShell:
+
+```powershell
+$studentSource = Join-Path $HOME 'code/e156-student-starter'
+git clone --no-checkout https://github.com/mahmood726-cyber/e156-student-starter.git $studentSource
+if ($LASTEXITCODE -ne 0) { throw 'Student source clone failed; stop here.' }
+git -C $studentSource checkout --detach 997da31ac9382bdb5c059374d1b95c6313e10147
+if ($LASTEXITCODE -ne 0) { throw 'Reviewed student source checkout failed; stop here.' }
+$previousLocalAppData = $env:LOCALAPPDATA
+Push-Location $studentSource
+try {
+    $env:LOCALAPPDATA = Join-Path $HOME 'code/student-state'
+    python -m bin.student new --template T0 --slug my-first-paper
+    if ($LASTEXITCODE -ne 0) { throw 'Paper scaffolding failed; stop here.' }
+} finally {
+    $env:LOCALAPPDATA = $previousLocalAppData
+    Pop-Location
+}
+$studentWorkbook = Join-Path $HOME 'code/student-state/e156/workbook'
+sentinel install-hook --repo $studentWorkbook --mode block
+if ($LASTEXITCODE -ne 0) { throw 'Workbook hook installation failed; stop here.' }
+```
+
+Bash (macOS, Linux, WSL or Codespaces):
+
+```bash
+student_source="$HOME/code/e156-student-starter"
+git clone --no-checkout https://github.com/mahmood726-cyber/e156-student-starter.git "$student_source" &&
+git -C "$student_source" checkout --detach 997da31ac9382bdb5c059374d1b95c6313e10147 &&
+(cd "$student_source" && LOCALAPPDATA="$HOME/code/student-state" python -m bin.student new --template T0 --slug my-first-paper) &&
+sentinel install-hook --repo "$HOME/code/student-state/e156/workbook" --mode block
+```
+
+`LOCALAPPDATA` is scoped to the scaffold invocation and restored in PowerShell;
+no global setting changes. The new paper is
+`~/code/student-state/e156/workbook/my-first-paper/`. It contains `README.md`,
+`e156_body.md` and `preanalysis.md`. The **workbook directory is the Git repository**;
+each paper is a subdirectory. Run project Git commands and Overmind against that
+workbook root. Add your reuse-versus-new-work decisions in the paper's
+`docs/<criterion>.md` before implementation. Choose another `--slug` for another paper.
 
 ## The method — brainstorm → spec-lock → plan-lock → TDD → audit
 
@@ -93,10 +146,10 @@ reviewer can see them, not in code comments.
 
 ### Pre-push: Sentinel
 
-Every `git push` triggers the Sentinel scan. 53 rules (21 BLOCK / 28 WARN / 4 INFO) covering:
+In a repository with the hook installed, every `git push` triggers the Sentinel scan, covering:
 
-- Hardcoded local paths in shipped code (`C:\Users\...`, `/home/...`)
-- Placeholder HMAC keys (`SIG_RSA_SHA256_...`)
+- Hardcoded user-specific local paths in shipped code
+- Placeholder HMAC keys and fabricated signature tokens
 - Silent-failure sentinels (`return "unknown"` on schema mismatch)
 - XSS sinks (`innerHTML = userInput` without escape)
 - localStorage key collisions across HTML variants
@@ -114,7 +167,8 @@ git push` (logged to `~/.sentinel-logs/bypass.log`).
 Before declaring a project "done" (Submission-ready / Shipped):
 
 ```powershell
-overmind run-once --repo C:\Projects\my-paper
+$studentWorkbook = Join-Path $HOME 'code/student-state/e156/workbook'
+overmind run-once --repo $studentWorkbook
 ```
 
 Emits one of: `PASS`, `CERTIFIED`, `FAIL`, `UNVERIFIED`, `REJECT`.
@@ -248,13 +302,14 @@ read the body, then adapt the structure to your question.
 
 ## Adapting the rules to your setup
 
-The shipped rules reference Mahmood-specific paths (`C:\E156\`, `C:\ProjectIndex\`,
-`C:\Sentinel\`, `C:\overmind\`, GitHub user `mahmood726-cyber`). The installer
-templates these to **your** values when you run it. After install, your version
-of `~/.claude/rules/*.md` will reference your paths and your GitHub handle.
+The shipped rules contain path and GitHub-user template variables. The installer
+renders paths from its options, with default project roots under your home
+directory's `code/` folder. Supply `-GitHubUser` / `--github-user` to render your
+own handle, then review the installed `~/.claude/rules/*.md` for your setup.
 
-Re-running `install.ps1` / `install.sh` preserves files you've edited (backed up
-as `*.user`). Use `-Force` if you want to overwrite with the upstream version.
+Re-running `install.ps1` / `install.sh` backs up existing rules as `*.user` (or a
+unique suffixed backup) before replacing them with the rendered templates.
+`-Force` / `--force` skips that backup; existing memory remains preserved.
 
 ## When you hit something the rules don't cover
 
@@ -272,7 +327,7 @@ incident that wasted real time. Yours will too.
 
 - [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter) — narrow submission-pipeline CLI: `student new`, `student validate`, `student publish`.
 - [`e156-binary-mirror`](https://github.com/mahmood726-cyber/e156-binary-mirror) — content-stable mirror of large pinned binaries.
-- [Sentinel](https://github.com/mahmood726-cyber/Sentinel) — pre-push rule engine (this starter pins to `v0.1.0` by default; override with `SENTINEL_REF=<ref>`).
+- [Sentinel](https://github.com/mahmood726-cyber/Sentinel) — pre-push rule engine (default source commit `5808f2bdc024506fa3d49a367c88b42b15fdf164`; `SENTINEL_REF` overrides require a full lowercase commit SHA; default hook mode is `block`).
 - [overmind](https://github.com/mahmood726-cyber/overmind) — nightly portfolio verifier (this starter pins to a known-good SHA by default; override with `OVERMIND_REF=<ref>`).
 
 ## License

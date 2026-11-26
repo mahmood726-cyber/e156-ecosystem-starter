@@ -13,7 +13,7 @@ quelque chose en dehors de mon dossier personnel ou modifier le PATH système.
 
 2. **Diagnostique les prérequis manquants et dis-moi quoi installer.** Exécute
    `python --version`, `Rscript --version`, `node --version`, `gh --version`,
-   `git --version`. Pour chacun absent ou trop ancien (Python <3.11, R <4.5, Node <20),
+   `git --version`. Pour chacun absent ou trop ancien (Python <3.13, R <4.5, Node <20),
    affiche l'URL d'installation exacte et une ligne expliquant pourquoi c'est utile pour
    le travail E156. Ne les installe pas toi-même — laisse-moi voir la liste et décider.
 
@@ -42,10 +42,12 @@ quelque chose en dehors de mon dossier personnel ou modifier le PATH système.
    python /workspaces/e156-ecosystem-starter/scripts/reuse.py find "<ce dont tu as besoin>"
    ```
    (p. ex. « forest plot », « aact loader »). L'outil renvoie la fonction du kit et le
-   fichier exacts à copier. Puis exécute
-   `pip install git+https://github.com/mahmood726-cyber/e156-student-starter.git@main`
-   et `student new <slug>` pour scaffolder sous `~/code/<slug>/`. Dans le `docs/<criterion>.md`
-   du nouveau dépôt, cite les dépôts antérieurs par nom.
+   fichier exacts à copier. Suis le [guide de la source établie](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md#create-a-first-paper-from-reviewed-student-source) :
+   clone la révision exacte, puis lance `python -m bin.student new --template T0 --slug <slug>`
+   depuis ce dossier avec le réglage temporaire `LOCALAPPDATA` indiqué, et installe
+   le hook Sentinel dans le workbook. Le papier se trouve sous
+   `~/code/student-state/e156/workbook/<slug>/` ; le workbook est le dépôt Git.
+   Dans le `docs/<criterion>.md` du papier, cite les dépôts antérieurs par nom.
 
 6. **Lis STUDENT-WORKFLOW.md** à
    https://raw.githubusercontent.com/mahmood726-cyber/e156-ecosystem-starter/main/STUDENT-WORKFLOW.md

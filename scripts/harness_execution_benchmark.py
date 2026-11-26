@@ -232,6 +232,7 @@ def e156(obs, config, protocol, arm):
                         "arguments": json.dumps(step["args"], sort_keys=True)}] if step["kind"] == "tool" else
                       [{"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": answer(step)}]}])
             return {"id": "synthetic-" + str(obs.calls), "status": "completed", "output": output,
+                    "model": payload["model"], "service_tier": payload.get("service_tier", "default"),
                     "usage": {"input_tokens": 20, "output_tokens": 10, "total_tokens": 30}}
     original = runtime.Journal.operation
     def instrument(journal, key, request, reserve, execute):

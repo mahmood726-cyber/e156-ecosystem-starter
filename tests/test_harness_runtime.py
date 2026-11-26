@@ -75,8 +75,8 @@ class Provider:
         return item
 
 
-def answer(text='{"disposition":"NO_FLAG","reason":"Synthetic answer only"}'):
-    return {"id": "synthetic-response", "status": "completed", "output": [
+def answer(text='{"disposition":"NO_FLAG","reason":"Synthetic answer only"}', *, model="synthetic-test-model"):
+    return {"id": "synthetic-response", "model": model, "service_tier": "default", "status": "completed", "output": [
         {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": text}]}],
         "usage": {"input_tokens": 20, "output_tokens": 10, "total_tokens": 30}}
 
@@ -180,7 +180,8 @@ def test_unknown_network_outcome_retains_reservation_and_never_retries(job):
 
 
 def test_abstention_escalates_using_frozen_route_and_keeps_attempts(job):
-    provider = Provider([answer('{"disposition":"ABSTAIN","reason":"Synthetic uncertainty","stop_point":"synthetic"}'), answer()])
+    provider = Provider([answer('{"disposition":"ABSTAIN","reason":"Synthetic uncertainty","stop_point":"synthetic"}'),
+                         answer(model="synthetic-large")])
     result = run(job, provider)
     assert result["status"] == "COMPLETED"
     assert [r["model"] for r in provider.requests] == ["synthetic-test-model", "synthetic-large"]
@@ -319,6 +320,82 @@ def test_nonterminal_provider_response_keeps_full_reservation(job, status):
     assert result["status"] == "UNRESOLVED"
     assert result["usage"]["model_tokens"] == 120
     assert provider.calls == 1
+
+
+def invalid_response(defect):
+    """Malformed/deviating synthetic replies, never real provider evidence."""
+    raw = answer()
+    if defect == "null_content": raw["output"][0]["content"] = None
+    elif defect == "null_part": raw["output"][0]["content"] = [None]
+    elif defect == "invalid_text": raw["output"][0]["content"][0]["text"] = []
+    elif defect == "invalid_arguments":
+        raw["output"] = [{"type": "function_call", "name": "read_evidence", "call_id": "synthetic-call", "arguments": None}]
+    elif defect == "unknown_output": raw["output"] = [{"type": "web_search_call"}]
+    elif defect == "invalid_status": raw["status"] = []
+    elif defect == "wrong_model": raw["model"] = "synthetic-other-model"
+    elif defect == "missing_model": raw.pop("model")
+    elif defect == "wrong_tier": raw["service_tier"] = "flex"
+    elif defect == "missing_tier": raw.pop("service_tier")
+    else: raise AssertionError("unknown synthetic defect")
+    return raw
+
+
+INVALID_RESPONSES = ("null_content", "null_part", "invalid_text", "invalid_arguments", "unknown_output",
+                     "invalid_status", "wrong_model", "missing_model", "wrong_tier", "missing_tier")
+
+
+@pytest.mark.parametrize("defect", INVALID_RESPONSES)
+def test_invalid_response_is_retained_before_settlement_and_never_retried(job, defect):
+    job[0]["request_policy"] = {"service_tier": "default"}
+    raw = invalid_response(defect)
+    provider = Provider([raw])
+    first = run(job, provider)
+    assert first["status"] == "UNRESOLVED" and first["prediction"] is None
+    operation = runtime.Journal.operations(first["events"])["model:0"]
+    assert operation["finish"]["kind"] == "UNRESOLVED"
+    assert operation["finish"]["received"] == raw
+    assert first["accounting"]["unresolved_reserved"]["model_tokens"] == 120
+    resumed = run(job, provider, create=False)
+    assert resumed["status"] == "UNRESOLVED"
+    assert resumed["events"] == first["events"]
+    assert provider.calls == provider.counts == 1
+
+
+@pytest.mark.parametrize("defect", INVALID_RESPONSES)
+def test_recovery_validates_response_before_changing_journal(job, defect):
+    from test_harness_trace import receipt_for, journal_for
+    job[0]["request_policy"] = {"service_tier": "default"}
+    provider = Provider([TimeoutError("SYNTHETIC unknown response")])
+    assert run(job, provider)["status"] == "UNRESOLVED"
+    journal = journal_for(job)
+    before = journal.events()
+    with pytest.raises(context.Refused):
+        journal.reconcile(receipt_for(job, invalid_response(defect)))
+    assert journal.events() == before
+    assert journal.reconcile(receipt_for(job))["status"] == "RECONCILED_NOT_RESUMED"
+    assert run(job, provider, create=False)["status"] == "COMPLETED"
+    assert provider.calls == provider.counts == 1
+
+
+@pytest.mark.parametrize("defect", ("wrong_model", "missing_model"))
+def test_model_identity_is_required_without_explicit_tier_policy(job, defect):
+    assert "request_policy" not in job[0]
+    assert run(job, Provider([invalid_response(defect)]))["status"] == "UNRESOLVED"
+
+
+def test_unconfigured_tier_does_not_invent_a_default_requirement(job):
+    raw = answer()
+    raw["service_tier"] = "flex"
+    assert run(job, Provider([raw]))["status"] == "COMPLETED"
+
+
+def test_valid_envelope_with_invalid_final_json_retains_abstention_policy(job):
+    job[0]["routes"]["extract"] = ["small"]
+    result = run(job, Provider([answer("SYNTHETIC invalid JSON")]))
+    assert result["status"] == "COMPLETED"
+    assert result["prediction"] == {"disposition": "ABSTAIN", "reason": "Invalid structured response",
+                                    "stop_point": "OUTPUT_VALIDATION"}
+    assert runtime.Journal.operations(result["events"])["model:0"]["finish"]["kind"] == "FINISHED"
 
 
 def test_native_recovery_validates_before_irreversible_settlement(job):

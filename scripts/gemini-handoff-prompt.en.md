@@ -21,7 +21,7 @@ safe to type myself.
 
 2. **YOU run** these prereq checks: `python --version`, `Rscript --version`,
    `node --version`, `gh --version`, `git --version`. For each one that's
-   missing or too old (Python <3.11, R <4.5, Node <20), print the exact
+   missing or too old (Python <3.13, R <4.5, Node <20), print the exact
    install URL and a one-line reason it matters for E156 work. Do NOT try
    to install missing ones yourself — surface the list and let me decide.
 
@@ -51,10 +51,12 @@ safe to type myself.
    python /workspaces/e156-ecosystem-starter/scripts/reuse.py find "<what you need>"
    ```
    (e.g. "forest plot", "aact loader"). It returns the exact kit function and file
-   to copy. Then run
-   `pip install git+https://github.com/mahmood726-cyber/e156-student-starter.git@main`
-   and `student new <slug>` to scaffold under `~/code/<slug>/`. In the new
-   repo's `docs/<criterion>.md`, cite the prior repos by name.
+   to copy. Follow the [reviewed student-source walkthrough](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md#create-a-first-paper-from-reviewed-student-source):
+   clone its exact revision, run `python -m bin.student new --template T0 --slug <slug>`
+   from that checkout with its temporary `LOCALAPPDATA` setting, and install the
+   Sentinel hook in the workbook. The paper is under
+   `~/code/student-state/e156/workbook/<slug>/`; the workbook is the Git repository.
+   In the paper's `docs/<criterion>.md`, cite the prior repos by name.
 
 6. **Read STUDENT-WORKFLOW.md** at
    https://raw.githubusercontent.com/mahmood726-cyber/e156-ecosystem-starter/main/STUDENT-WORKFLOW.md

@@ -48,7 +48,7 @@ verifier, and ProjectIndex registry.
 | RCT extractor | **v0.6.0** | `scripts/install-extractor.ps1 -Target <dir>` clones [rct-extractor-v2](https://github.com/mahmood726-cyber/rct-extractor-v2) at a pinned commit and persists `RCT_EXTRACTOR_PATH` so the meta-system bridges auto-find it. Turns trial PDFs / abstract text into a [meta-starter-kit](https://github.com/mahmood726-cyber/meta-starter-kit) config — auto-detecting **all 17 disease specialties** (HIV, malaria, typhoid, schistosomiasis, sickle cell, cholera, maternal/neonatal, TB, hepatitis, meningitis, pneumonia, diarrhoeal, malnutrition, helminths, hypertension, cervical cancer, diabetes). The clone also ships the `rct_extractor` pip package + the `rct-extract` CLI (`rct-extract --specialty diabetes --input abstract.txt`, `--auto`, `--list-specialties`). The student's text→config path is **stdlib-only**; heavy PDF/scientific deps (numpy/scipy/pdfplumber, ~150 MB) are opt-in via `-WithPdfDeps`. Runs under `-Full` (core only). |
 | `push-portfolio.py` | **v0.4.0** | Lightweight clone of Mahmood's `push_all_repos.py`. Scans any directory tree (configurable via `--scan-dir` / `PORTFOLIO_SCAN_DIRS` env) for git repos and either pushes existing ones or creates new GitHub repos via `gh`. Guards against the "parent repo config inheritance" gotcha (bare `.git` subdirs won't falsely inherit the home dir's remote). Flags: `--dry-run`, `--report`, `--new-only`, `--no-recursive`. |
 | `long-term-plan` (optional) | separate repo | `scripts/install-long-term-plan.ps1` clones [`mahmood726-cyber/long-term-plan`](https://github.com/mahmood726-cyber/long-term-plan) (pinned to `v0.7.0`) into `~/code/long-term-plan/` and installs the only runtime dep (`pyyaml`). A weekly-refreshed, deterministic, locally-rendered project backlog with no LLM in the loop. Ships Mahmood's real backlog (43 ideas + 5 OKRs anchored to north stars) as a reference — students are expected to fork or replace `ideas.yaml` with their own. |
-| `student` CLI | separate repo | Narrow submission pipeline: see [`e156-student-starter`](https://github.com/mahmood726-cyber/e156-student-starter). |
+| `student` CLI | separate repo | Use the [reviewed source-checkout walkthrough](STUDENT-WORKFLOW.md#create-a-first-paper-from-reviewed-student-source) for its bundled CLI; the student repository is not a pip package. The separate [Windows desktop starter](https://github.com/mahmood726-cyber/e156-student-starter) has its own installer. |
 | **Dashboard kit** | **source-locked** | Both RapidMeta installers read the shared component lock and verify the exact clean checkout plus deterministic generator output before persisting `RAPIDMETA_KIT_PATH`. The generator is stdlib-only; the HTML still references external resources. See the [installation contract](docs/COMPONENT-INSTALL-CONTRACT.md). |
 | **AACT cockpit** | **v0.6.0** | `scripts/install-aact.ps1` clones [aact-cockpit](https://github.com/mahmood726-cyber/aact-cockpit) at a pinned commit and persists `AACT_COCKPIT_PATH`. A local DuckDB-backed cockpit for large-scale ClinicalTrials.gov/AACT analysis that emits self-auditing e156 capsules. Clone is free; **running** needs `duckdb`+`numpy` (opt-in `-WithDataDeps`/`--with-data-deps`) **and a local AACT snapshot**. Zero-setup path: read the committed `analyses/` + `templates/` examples. |
 | **AACT kit** *(library)* | **source-locked** | Both installers verify the shared lock and package source before setting `AACT_KIT_PATH`. Source-only and runtime receipts are distinct. Opt-in runtime checks exercise synthetic CSV/TSV/ZIP/SQLite fixtures; PostgreSQL is unverified by this adapter. See the [AACT installation contract](docs/AACT-INSTALL-CONTRACT.md). |
@@ -81,7 +81,7 @@ No PowerShell, no terminal experience, no admin rights, no API key required for 
 
 ### Local install — Windows / macOS / Linux / WSL
 
-Prerequisites: Windows 10+, PowerShell 5.1+, at least one of
+Windows prerequisites: Windows 10+, PowerShell 5.1+, Git, and **Python 3.13+ on PATH for the Sentinel/full installation**. Use at least one of
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
 [Gemini CLI](https://github.com/google-gemini/gemini-cli), or
 [Codex](https://github.com/openai/codex) installed.
@@ -109,7 +109,7 @@ Flags:
 
 - `-DryRun` — only verify the SHA gate, exit 0
 - `-Force` — overwrite existing user-edited rules (default: back them up as `*.user`)
-- `-Full` — chain Sentinel (current dir) + Overmind + ProjectIndex (configured root) + RCT extractor (core only) non-interactively
+- `-Full` — chain Sentinel (`~/code/my-first-repo`) + Overmind + ProjectIndex (configured root) + RCT extractor (core only) non-interactively; install a hook separately in each later project repo
 - `-NonInteractive` — skip all chain prompts (base install only)
 - `-InstallSentinel <repo-path>` — chain Sentinel into a specific repo
 - `-InstallOvermind` — chain Overmind + TruthCert HMAC-key setup
@@ -124,21 +124,22 @@ Flags:
 ```
 
 This `pip install`s the [Sentinel](https://github.com/mahmood726-cyber/Sentinel)
-rule engine **pinned to a known-good commit** (the 53-rule build) and writes a
+rule engine **pinned to the reviewed commit `5808f2bdc024506fa3d49a367c88b42b15fdf164`** and writes a
 pre-push hook at `<repo>\.git\hooks\pre-push`. From then on, every `git push`
-runs the 53-rule scan in ~2 seconds and blocks on P0 violations.
+runs the scan and blocks on BLOCK findings by default. The pinned package requires Python 3.13+.
 
-To opt into bleeding-edge or roll back to a known-good ref:
+To select a reviewed upgrade or rollback, supply its full lowercase commit SHA.
+Branches, tags and abbreviated SHAs are refused. This example selects the current default:
 
 ```powershell
-$env:SENTINEL_REF = 'main';   .\scripts\install-sentinel.ps1 -Repo .   # bleeding edge
-$env:SENTINEL_REF = 'v0.0.9'; .\scripts\install-sentinel.ps1 -Repo .   # rollback
-$env:SENTINEL_REF = $null   # restore default (pinned 53-rule commit)
+$env:SENTINEL_REF = '5808f2bdc024506fa3d49a367c88b42b15fdf164'
+.\scripts\install-sentinel.ps1 -Repo .
+$env:SENTINEL_REF = $null   # restore the installer's default selection
 ```
 
 Flags:
-- `-Mode warn` (default) — log findings, allow push
-- `-Mode block` — abort push on any BLOCK
+- `-Mode block` (default) — abort push on any BLOCK
+- `-Mode warn` — explicit opt-in to log findings and allow push
 - `-SkipPipInstall` — assume `sentinel` is already on PATH, skip pip
 - `-Import` — dot-source helpers only (used by Pester tests)
 

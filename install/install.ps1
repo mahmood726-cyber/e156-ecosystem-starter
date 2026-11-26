@@ -972,7 +972,7 @@ if ($chainStatus['extractor'] -ne 'ok') {
 }
 if ($nFailed -gt 0) {
     Write-Host ""
-    Write-Host "If a sub-installer reported a Python error, the most common cause is that 'python' on PATH is the Microsoft Store alias rather than a real Python. Install Python 3.11+ from https://www.python.org/downloads/ (tick 'Add to PATH'), reopen PowerShell, then re-run a sub-installer." -ForegroundColor Yellow
+    Write-Host "If a sub-installer reported a Python error, check 'python --version' and that PATH selects a real Python installation rather than the Microsoft Store alias. The Sentinel layer requires Python 3.13+. Install it from https://www.python.org/downloads/ (tick 'Add to PATH'), reopen PowerShell, then re-run the failed sub-installer." -ForegroundColor Yellow
 }
 Write-Host ""
 

@@ -13,7 +13,7 @@
 
 1. **آپ چلائیں** `cat ~/.claude/rules/rules.md | head -5` تاکہ یہ تصدیق ہو سکے کہ قواعد کا پیک انسٹال ہے۔ اگر فائل غائب یا خالی ہے، مجھے بتائیں کون سی فائل اور رکیں۔ اسے ٹھیک کرنے کی کوشش نہ کریں۔
 
-2. **آپ چلائیں** یہ پیشگی شرائط کی جانچ: `python --version`، `Rscript --version`، `node --version`، `gh --version`، `git --version`۔ ہر اس چیز کے لیے جو غائب یا بہت پرانی ہے (Python <3.11، R <4.5، Node <20)، انسٹال کا صحیح URL پرنٹ کریں اور ایک سطر میں وضاحت کریں کہ یہ E156 کے کام کے لیے کیوں اہم ہے۔ غائب اشیاء کو خود انسٹال نہ کریں — فہرست دکھائیں اور مجھے فیصلہ کرنے دیں۔
+2. **آپ چلائیں** یہ پیشگی شرائط کی جانچ: `python --version`، `Rscript --version`، `node --version`، `gh --version`، `git --version`۔ ہر اس چیز کے لیے جو غائب یا بہت پرانی ہے (Python <3.13، R <4.5، Node <20)، انسٹال کا صحیح URL پرنٹ کریں اور ایک سطر میں وضاحت کریں کہ یہ E156 کے کام کے لیے کیوں اہم ہے۔ غائب اشیاء کو خود انسٹال نہ کریں — فہرست دکھائیں اور مجھے فیصلہ کرنے دیں۔
 
 3. **اگر `gh` انسٹال ہے لیکن authenticated نہیں** (آپ یہ `gh auth status` سے دیکھیں گے)، **مجھے بتائیں کہ میں چلاؤں** `gh auth login` اور میری تصدیق کا انتظار کریں اس سے پہلے کہ آگے بڑھیں۔
 
@@ -27,9 +27,9 @@
    ```
    python /workspaces/e156-ecosystem-starter/scripts/reuse.py find "<جو آپ کو چاہیے>"
    ```
-   (مثلاً "forest plot" اور "aact loader")۔ یہ ٹول کاپی کرنے کے لیے درست kit فنکشن اور فائل واپس دیتا ہے۔ پھر چلائیں
-   `pip install git+https://github.com/mahmood726-cyber/e156-student-starter.git@main`
-   اور `student new <slug>` تاکہ `~/code/<slug>/` کے تحت ڈھانچہ بن جائے۔ نئے repo کے `docs/<criterion>.md` میں سابقہ repos کا نام سے حوالہ دیں۔
+   (مثلاً "forest plot" اور "aact loader")۔ یہ ٹول کاپی کرنے کے لیے درست kit فنکشن اور فائل واپس دیتا ہے۔ [جانچے ہوئے ماخذ کی ہدایات](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md#create-a-first-paper-from-reviewed-student-source) پر عمل کریں:
+   مقررہ revision کلون کریں، اسی فولڈر میں عارضی `LOCALAPPDATA` کے ساتھ `python -m bin.student new --template T0 --slug <slug>` چلائیں، اور workbook میں Sentinel hook نصب کریں۔
+   مقالہ `~/code/student-state/e156/workbook/<slug>/` میں ہوگا؛ workbook ہی Git repository ہے۔ مقالے کے `docs/<criterion>.md` میں سابقہ repos کا نام سے حوالہ دیں۔
 
 6. **STUDENT-WORKFLOW.md پڑھیں**
    https://raw.githubusercontent.com/mahmood726-cyber/e156-ecosystem-starter/main/STUDENT-WORKFLOW.md
