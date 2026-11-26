@@ -6,7 +6,7 @@
       "id": ".github/workflows/harness-execution.yml#jobs.execution",
       "kind": "ci-job",
       "name": "Durable research execution on Windows and Linux",
-      "stops": "Synthetic regressions in frozen context/source binding, budget reservation, SQLite concurrency, interrupted request recovery, unknown outcome retention, scoped tool calls, routing and provider transport gates. Runs actual subprocess crash/race controls on both platforms without paid model calls. Also requires source-access policy tests, with real Windows junction and manifest/log collision controls that may not skip on Windows. Also checks operator-attested terminal-response reconciliation, late-executor fencing, observed/reserved accounting, content-minimized trace export and exact-request offline regression replay including recomputed tool results. Also checks opt-in repeated-result stopping, deterministic multi-turn resume and settled non-success replay. Verifies published evidence and protocol byte identities after an actual Git checkout with Windows newline conversion enabled.",
+      "stops": "Synthetic regressions in frozen context/source binding, budget reservation, SQLite concurrency, interrupted request recovery, unknown outcome retention, scoped tool calls, routing and provider transport gates. Runs actual subprocess crash/race controls on both platforms without paid model calls. Also requires source-access policy tests, with real Windows junction and manifest/log collision controls that may not skip on Windows. Also checks operator-attested terminal-response reconciliation, late-executor fencing, observed/reserved accounting, content-minimized trace export and exact-request offline regression replay including recomputed tool results. Also checks opt-in repeated-result stopping, deterministic multi-turn resume and settled non-success replay. Verifies published evidence and protocol byte identities after an actual Git checkout with Windows newline conversion enabled. Requires derived-node execution receipts, recursive parent lineage and recipe/output consistency; covers stale identical-byte descendants, path collisions and interrupted publication.",
       "would_not_stop": [
         "Provider schema or service changes not represented by the offline transport fixtures; no paid model request is executed.",
         "Incorrect scientific findings, unverified corpus rights, fabricated human attestations or inaccurate operator-supplied price policies.",
@@ -15,11 +15,12 @@
         "Forged recovery attestations or fabricated provider responses: reconciliation binds supplied bytes and recorded identities but does not authenticate provider evidence. Unknown recovered operation time retains its full reservation.",
         "Disclosure through linkable hashes and timing in content-minimized exports; private full reports and replay results retain source, prompt, response and recovery-reviewer content.",
         "Complete-host compromise, cross-version journal migration, or exactly-once effects outside the journal. Offline replay demonstrates recorded behavior, not model or scientific quality.",
-        "Legitimate repeated work stopped by an operator-selected threshold, or nonprogress patterns beyond consecutive identical names, arguments and results."
+        "Legitimate repeated work stopped by an operator-selected threshold, or nonprogress patterns beyond consecutive identical names, arguments and results.",
+        "Wholesale forgery of unsigned derivation records by a trusted filesystem owner, undeclared dependencies, or a recipe that ignores its inputs or computes incorrect results."
       ],
-      "source": ".github/workflows/harness-execution.yml execution job and tests/test_harness_context.py, test_harness_runtime.py, test_harness_provider.py, test_synthesis_access_controls.py. The access helper is not wired into source ingress or transports and does not authenticate operator permission declarations. Recovery and trace contracts: tests/test_harness_trace.py; scripts/harness_trace.py. Progress controls: tests/test_harness_progress.py; shared comparator oracle controls: tests/test_harness_execution_benchmark.py.",
+      "source": ".github/workflows/harness-execution.yml execution job and tests/test_harness_context.py, test_harness_runtime.py, test_harness_provider.py, test_synthesis_access_controls.py. The access helper is not wired into source ingress or transports and does not authenticate operator permission declarations. Recovery and trace contracts: tests/test_harness_trace.py; scripts/harness_trace.py. Progress controls: tests/test_harness_progress.py; shared comparator oracle controls: tests/test_harness_execution_benchmark.py. Derivation contracts: tests/test_harness_derivation.py; scripts/harness_derivation.py.",
       "seal": {
-        ".github/workflows/harness-execution.yml#jobs.execution": "fcedf7af38b43409a96e6bd3d71899c0126c0e30d8f9ee732344643c5f127f3b"
+        ".github/workflows/harness-execution.yml#jobs.execution": "3d171893334c7ade46e0dc363c3884411afbba1e2321f118d96554169dbf515d"
       }
     },
     {
@@ -44,16 +45,16 @@
       "id": ".github/workflows/harness-execution.yml#jobs.worker",
       "kind": "ci-job",
       "name": "Actual isolated Linux Docker research worker",
-      "stops": "Missing Docker or digest-pinned image, skipped required cases, source/root write access, external network connection, forwarded credential or proxy canary, task access to supervisor signals/status, wrong memory/PID limits, output overflow acceptance or a surviving timeout/process-loss container in the tested hosted Linux environment.",
+      "stops": "Missing Docker or digest-pinned image, skipped required cases, source/root write access, external network connection, forwarded credential or proxy canary, task access to supervisor signals/status, wrong memory/PID limits, output overflow acceptance or a surviving timeout/process-loss container in the tested hosted Linux environment. Executes a real derivation, changes its source, requires stale-receipt rejection, then invokes the real CLI to recompute a new admitted revision.",
       "would_not_stop": [
         "Docker daemon, kernel, runtime or image vulnerabilities outside the exercised controls; containers are not a proof against all escape techniques.",
         "Windows Docker Desktop differences; the local Windows path refuses when Docker is unavailable and the real containment job runs Linux.",
         "Incorrect untrusted worker calculations, scientific interpretation, or billing; output remains untrusted and does not grant scientific PASS.",
         "A physical host power failure or broken daemon; the tests exercise controlled timeout and calling-process termination while the Linux Docker daemon remains running."
       ],
-      "source": ".github/workflows/harness-execution.yml worker job and tests/test_harness_worker.py; Python image manifest read from Docker Official Images registry on 2026-11-12.",
+      "source": ".github/workflows/harness-execution.yml worker job and tests/test_harness_worker.py; Python image manifest read from Docker Official Images registry on 2026-11-12. Actual derivation integration: tests/test_harness_derivation.py.",
       "seal": {
-        ".github/workflows/harness-execution.yml#jobs.worker": "220c47146b2990c128de7e0c49de713a2235786fcb4804b1e136b43492c358fe"
+        ".github/workflows/harness-execution.yml#jobs.worker": "48163fe02eebab0341fe5f33225b4a8124bdf2b1246f12cb11b4eaf3eb8e4ece"
       }
     },
     {

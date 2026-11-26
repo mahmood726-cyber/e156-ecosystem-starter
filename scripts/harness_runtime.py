@@ -47,7 +47,7 @@ class ReceivedInvalid(Refused):
 
 def profile():
     directory = Path(__file__).parent
-    names = ("harness_runtime.py", "harness_provider.py", "harness_context.py", "harness_worker.py", "harness_trace.py",
+    names = ("harness_runtime.py", "harness_provider.py", "harness_context.py", "harness_derivation.py", "harness_worker.py", "harness_trace.py",
              "component_source.py", "component_lock.py", "synthesis_replay.py", "synthesis_blind_eval.py", "bounded_native.py")
     return {name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
             for name in names if (directory / name).exists()}

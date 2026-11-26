@@ -35,6 +35,7 @@
   "pytest:tests/test_gate_can_fail.py": 15,
   "pytest:tests/test_gate_gaps.py": 30,
   "pytest:tests/test_harness_context.py": 6,
+  "pytest:tests/test_harness_derivation.py": 9,
   "pytest:tests/test_harness_execution_benchmark.py": 10,
   "pytest:tests/test_harness_progress.py": 12,
   "pytest:tests/test_harness_provider.py": 3,
@@ -794,6 +795,17 @@
    "test_invalid_graph_refused",
    "test_tool_read_is_bounded_and_cannot_read_skill",
    "test_watch_initial_snapshot_then_quiet_then_changed"
+  ],
+  "pytest-names:tests/test_harness_derivation.py": [
+   "test_cli_protects_manifest_and_request_before_worker_execution",
+   "test_failure_and_execution_drift_never_publish",
+   "test_legacy_derived_bytes_are_not_current",
+   "test_output_aliases_refused_before_execution",
+   "test_real_worker_derivation_and_recompute",
+   "test_receipt_and_recipe_are_protected_control_inputs",
+   "test_receipt_publication_failure_never_publishes_manifest",
+   "test_receipts_transitively_bind_identical_outputs_to_source_versions",
+   "test_tampering_and_missing_evidence_refuse_current"
   ],
   "pytest-names:tests/test_harness_execution_benchmark.py": [
    "test_abstention_requires_retained_refusal",
