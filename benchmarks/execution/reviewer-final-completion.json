@@ -1,0 +1,33 @@
+{
+  "schema": "reviewer-final-completion-v1",
+  "timestamp_utc": "2026-11-26T15:04:28.194516+00:00",
+  "commit": "b8507b050136ddce6b90cbb72cebf2e4a1a4f9d9",
+  "execution_count": 1,
+  "outcome": "completed_once_no_retry",
+  "case_count": 16,
+  "scheduled_observations": 192,
+  "retained_observations": 192,
+  "satisfied_observations": 192,
+  "apparatus_errors": 0,
+  "contract_failures": 0,
+  "source_runtime_dependency_case_identities_verified": true,
+  "dependency_manifest_sha256": "39b571a2ac9d5b8eed6c6b02e79ad6ec82eee619f537d60c02d98fce8b677274",
+  "file_sha256": {
+    "reviewer-final-cases.json": "cb9ee757cfa89661c215389d775ff5d09f364f05bd7de342fa0f09579eb25933",
+    "reviewer-final-protocol.json": "a96fa266468f65267db6c081cf9752570aac583c5061723c5cfca5ca9f124413",
+    "reviewer-final-freeze.json": "5ea68466c20e090eb4e20cc7fc362762832df8530907ba7f5ef5d2af6ecc23b5",
+    "reviewer-final-pre-execution.json": "f10fcac09655762c53b5ced4c6e0e117ac87ce6d026d509ceb6c14669322191b",
+    "reviewer-final-execution-state.json": "8db8c6c4db22400e80a006b3e97dc183f6c5c8a86c4bd3359b5706ccc250a505",
+    "reviewer-final-console.log": "95d61bb78ff5a7531d61188d6c49dcfab8cf19f378f08e1b55e3d6607f69791f",
+    "final-1.json": "26d6e82892ce33451395adb15c99e707a04dcf989c006d4053a2c7cf7f5d9c73",
+    "final-1.json.attempts.jsonl": "c03d263e0d17346213fe3a57d2843ea008d9e38a60babfe6d5b8bbe8be62a176",
+    "reviewer-analyze-final.py": "e4df0db1c6eee1b864d09f8f01856c84fec1cfc810f765749482d7aba95a37ab",
+    "reviewer-final-analysis.json": "107790cb3f1ef89327856b676a6bba6d0d4da5cf7415ed44c5fa24b52cd44561"
+  },
+  "notes": [
+    "All 8 families satisfy the common contract in all 4 arms: 6/6 per family/arm.",
+    "Guard versus baseline saves 12 of 120 model calls across 48 paired valid observations; both repeated-result cases account for all savings.",
+    "Guard and Pydantic have identical calls in repeated-result family. Remaining comparator differences arise from native refusal response paths, not stronger loop detection.",
+    "Three repetitions are repeated schedules of 16 tasks, not 48 independent tasks. No scientific accuracy, live-model quality, real-token saving or latency superiority is claimed."
+  ]
+}

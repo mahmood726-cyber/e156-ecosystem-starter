@@ -5,6 +5,9 @@ selected primary-source survey, not an exhaustive literature review or a claim
 that external published scores have been reproduced. New preprints are proposals
 and author-reported experiments. Sources were checked on 26 November 2026.
 
+The implementation and independently withheld execution comparison are complete:
+[final results, ties, limitations and full evidence](HARNESS-EXECUTION-RESULTS-2026-11-26.md).
+
 ## Source review and decisions
 
 | Primary source | Date/version checked | Useful idea and decision |

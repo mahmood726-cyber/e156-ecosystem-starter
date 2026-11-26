@@ -1,6 +1,6 @@
 # Research harness benchmark and comparison
 
-Checked 2026-11-11. This replaces the April capability scorecard: its weighted
+Updated 2026-11-26; the older capability table below retains its 2026-11-11 source snapshot. This replaces the April capability scorecard: its weighted
 rankings and niche-superiority claims were not head-to-head measurements.
 Historical text remains in Git history. There is currently no evidence here
 that the ecosystem is the best research harness worldwide.
@@ -8,6 +8,14 @@ that the ecosystem is the best research harness worldwide.
 The upgrade plan is [RESEARCH-HARNESS-ROADMAP.md](docs/RESEARCH-HARNESS-ROADMAP.md).
 The useful target is a reproducible, source-grounded review with accountable
 human decisions and measurable failures, at a documented cost.
+
+The [native execution comparison](docs/HARNESS-EXECUTION-RESULTS-2026-11-26.md)
+executes E156 baseline/guarded, Deep Agents and Pydantic AI on 16 independently
+withheld synthetic cases, three repetitions each. All 192 observations satisfy
+their contracts. Repeated-result cases use 24 model calls with either guarded
+E156 or Pydantic, versus 36 with baseline E156 or Deep Agents under the common
+six-call ceiling. The report retains every attempt and explains the tie,
+unknown-tool response-policy differences, dependency freeze and limits.
 
 The [November continuation comparison](docs/HARNESS-COMPARISON-2026-11.md)
 adds current OpenAI/Claude/DeepAgents/Copilot developments, research workflow and

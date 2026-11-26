@@ -1,0 +1,21 @@
+{
+  "case_count": 16,
+  "case_file_format": "JSON array of case objects",
+  "cases_sha256": "cb9ee757cfa89661c215389d775ff5d09f364f05bd7de342fa0f09579eb25933",
+  "construction": "Explicitly authored synthetic controls; no development-case inspection and no execution results used.",
+  "execution_count": 0,
+  "family_counts": {
+    "clean": 2,
+    "duplicate_call_ids": 2,
+    "finite_reads": 2,
+    "invalid_arguments": 2,
+    "provider_timeout": 2,
+    "repeated_result": 2,
+    "source_drift": 2,
+    "unknown_tool": 2
+  },
+  "final_execution_gate": "Implementation, evaluator, adapters and dependency identities must be frozen before one complete final campaign. No tuning after final outcomes.",
+  "frozen_at": "2026-11-26T14:31:35.537518+00:00",
+  "protocol_sha256": "a96fa266468f65267db6c081cf9752570aac583c5061723c5cfca5ca9f124413",
+  "schema": "e156-reviewer-final-freeze-v1"
+}

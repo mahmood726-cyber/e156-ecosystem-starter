@@ -1,0 +1,416 @@
+{
+  "schema": "reviewer-final-execution-freeze-v1",
+  "timestamp_utc": "2026-11-26T14:58:38.290631+00:00",
+  "commit": "b8507b050136ddce6b90cbb72cebf2e4a1a4f9d9",
+  "python": "3.13.13 (tags/v3.13.13:01104ce, Apr  7 2026, 19:25:48) [MSC v.1944 64 bit (AMD64)]",
+  "source_sha256": {
+    "scripts/harness_execution_benchmark.py": "d75689ae1ad9517ca13668c460505b516f848520d8e7a9419c1b8cbb171abe37",
+    "benchmarks/harness-execution-protocol.json": "a96fa266468f65267db6c081cf9752570aac583c5061723c5cfca5ca9f124413",
+    "benchmarks/requirements-execution-windows.lock": "b04b749b11baa39c95b8f64aef64ed4b50e638fd0ab73ea28e9d1f99b678b3fd"
+  },
+  "runtime_profile": {
+    "harness_runtime.py": "8653471b66cd078dd5c2907b141dd9f0c80aae20300215abbdcbd2c9c1707aab",
+    "harness_provider.py": "e339841e9391e9c89740d015545474a1080831d4f9e6420911b75b559b999c0f",
+    "harness_context.py": "ad1d84a1ecb6ff003dc2cf939520c91785024bdd1ef721cba4a66aec85fc2c29",
+    "harness_worker.py": "04d0201d2ab0ace6eb88e76a4fd8f1ba5a33feb6bd4cfe49823428961e9301f3",
+    "harness_trace.py": "7e5ab7ada6e0dd7d84e26dc89635180efb59d2d0766eede0baaf0f8205931b6b",
+    "component_source.py": "7b4198ea96951f60dd07acde8f7c93048fbaed1658dad38f9e5bc904dd483b00",
+    "component_lock.py": "78b54475d91f24bad5e1deb35f325fcf03abb7f38ff92d74cdbe3021e838a37f",
+    "synthesis_replay.py": "4116c8be829dacc74db8fef2147781902c3512ea09db3f32175a4aa783572bc8",
+    "synthesis_blind_eval.py": "b3c87af84511b423b6571f357f1c9f82dbaa604f5a997bf04ff7692f0c7f27ae",
+    "bounded_native.py": "2c0db3266dba4522aaa1da4b660c2f1e8b94dbd165e29f0dbdd60ee7c242b024"
+  },
+  "installed_dependencies": {
+    "annotated-types": {
+      "version": "0.8.0",
+      "record_sha256": "fc83f329df66beb1d69876095900a6477f1cae49cc8ffce040e93cb0bb8c274b",
+      "verified_files": 7,
+      "role": "runtime"
+    },
+    "anthropic": {
+      "version": "2.14.0",
+      "record_sha256": "35b1b64aa5d686882e26c59d1e0eac661179c208e03450a6b54d52fb54ad870e",
+      "verified_files": 3212,
+      "role": "runtime"
+    },
+    "anyio": {
+      "version": "4.16.0",
+      "record_sha256": "be20dd08d48c8ffebdaf723b1ff1209629f2f0d498c2cd8e7738d97ec36d46bf",
+      "verified_files": 53,
+      "role": "runtime"
+    },
+    "bracex": {
+      "version": "3.2.4",
+      "record_sha256": "609d005cb64127cf7b982028e7b7f8c07cc3ac22c722d9cdd02e1a571ac3e39c",
+      "verified_files": 8,
+      "role": "runtime"
+    },
+    "certifi": {
+      "version": "2026.11.20",
+      "record_sha256": "947b83af1ab57292149cb7b16ecf072c8a9d8cb5449b19dc758597f54fef6dfb",
+      "verified_files": 12,
+      "role": "runtime"
+    },
+    "cffi": {
+      "version": "2.1.1",
+      "record_sha256": "6d84365af751603675db90fb746b884f89219b452869cbf8d3b949868ef377f9",
+      "verified_files": 32,
+      "role": "runtime"
+    },
+    "charset-normalizer": {
+      "version": "3.5.3",
+      "record_sha256": "0e76ebd4590bd0fc1616465a2c84f983a4a6e64d51841ef102338f836fc320d7",
+      "verified_files": 22,
+      "role": "runtime"
+    },
+    "cryptography": {
+      "version": "50.0.2",
+      "record_sha256": "a1c02bc8630cdf283f19f7bd6b319334b81819100ce14e111eb08f64c0846520",
+      "verified_files": 120,
+      "role": "runtime"
+    },
+    "deepagents": {
+      "version": "0.7.42",
+      "record_sha256": "9e050d93995950bd00c5d44b2d11636cbbb1c4b83dda9a0f17671b5180db358e",
+      "verified_files": 66,
+      "role": "runtime"
+    },
+    "distro": {
+      "version": "1.9.0",
+      "record_sha256": "05449fda8c6f4ee84d363e51271c24fa88fe469a060ce0a52ea46540e4377034",
+      "verified_files": 11,
+      "role": "runtime"
+    },
+    "docstring-parser": {
+      "version": "0.18.0",
+      "record_sha256": "ca6b8cca34eab294e2968bef76019a8fd5f12c1427eea58952712e6829513b39",
+      "verified_files": 14,
+      "role": "runtime"
+    },
+    "filetype": {
+      "version": "1.2.0",
+      "record_sha256": "c5a68ec34cbbdf570bbded68308fdbdcb871a10ecc407a737017595b15e11a60",
+      "verified_files": 24,
+      "role": "runtime"
+    },
+    "genai-prices": {
+      "version": "0.2.5",
+      "record_sha256": "fbf804ccb0987a57307fe072543d6dbd82498b2cb10d9f73fcfdcff73f75ab50",
+      "verified_files": 19,
+      "role": "runtime"
+    },
+    "google-auth": {
+      "version": "2.63.1",
+      "record_sha256": "d3fe6aa827cf3784a8d77fa5b271754fa5cba617c35bb2f8766e25aac7634a35",
+      "verified_files": 85,
+      "role": "runtime"
+    },
+    "google-genai": {
+      "version": "3.6.1",
+      "record_sha256": "c24e0a93ff80e9cb591d7b2284b62aa83438163055fbd05d8d4b924f37a26117",
+      "verified_files": 681,
+      "role": "runtime"
+    },
+    "griffelib": {
+      "version": "2.4.1",
+      "record_sha256": "ab386de09483d81f06b5d492b96834de947bcf737b6a5bc18c98971889ba7ae1",
+      "verified_files": 51,
+      "role": "runtime"
+    },
+    "h11": {
+      "version": "0.16.0",
+      "record_sha256": "f26b208064ae2f75cbe76769bb14c3581f27dff46e0c4d5f592a0cc1c4705bca",
+      "verified_files": 17,
+      "role": "runtime"
+    },
+    "httpcore": {
+      "version": "1.0.9",
+      "record_sha256": "5961d6539155a1a24b0801319d690bd2af8b8f5fe41302b18894395b02ece474",
+      "verified_files": 36,
+      "role": "runtime"
+    },
+    "httpcore2": {
+      "version": "2.16.2",
+      "record_sha256": "287ed6294b8cf1a1f5c01b22ef8a50a49ad821f578d86fe4a7e67eabffd7bbe2",
+      "verified_files": 37,
+      "role": "runtime"
+    },
+    "httpx": {
+      "version": "0.28.1",
+      "record_sha256": "536ebf7c2945e4c90d855357b226b968cd6cf1222ed06ad534957f79361dd042",
+      "verified_files": 30,
+      "role": "runtime"
+    },
+    "httpx2": {
+      "version": "2.16.2",
+      "record_sha256": "cc45622aa63bd9d27123e320d917f83c3a415d2026a8d03d4336fbe0ed36c249",
+      "verified_files": 38,
+      "role": "runtime"
+    },
+    "idna": {
+      "version": "3.20",
+      "record_sha256": "8c269f7f6469df73ce2b482893b0f32008169cb79bee78956011686d141de233",
+      "verified_files": 17,
+      "role": "runtime"
+    },
+    "jiter": {
+      "version": "0.19.0",
+      "record_sha256": "fd3298078a673b63de6fa354fc71459a64f6aecc5f54d2a01936af829bcd0841",
+      "verified_files": 9,
+      "role": "runtime"
+    },
+    "jsonpatch": {
+      "version": "1.48",
+      "record_sha256": "78e32bd56c3de2559df5f025ad44f05314bf2d0aca2c0614781658a5debd948e",
+      "verified_files": 11,
+      "role": "runtime"
+    },
+    "jsonpointer": {
+      "version": "3.12",
+      "record_sha256": "654b8b7babe46ac3b1f01a2359de85a27f6cac8f90cf38d7a361aca50ab50d7f",
+      "verified_files": 9,
+      "role": "runtime"
+    },
+    "langchain": {
+      "version": "1.5.2",
+      "record_sha256": "d84d9a60b056e372d7c36d413c13b09632e352c6d559f7add081706285f75ce3",
+      "verified_files": 48,
+      "role": "runtime"
+    },
+    "langchain-anthropic": {
+      "version": "1.7.13",
+      "record_sha256": "61eec33bd61b171eb56093b8d67261274f91f48335f7c47fb1f2534205fc5c43",
+      "verified_files": 22,
+      "role": "runtime"
+    },
+    "langchain-core": {
+      "version": "1.8.5",
+      "record_sha256": "a0a927a322e80905e708a4428ea8e51d3a9c21ede55f7eec1cb02fef911917e7",
+      "verified_files": 193,
+      "role": "runtime"
+    },
+    "langchain-google-genai": {
+      "version": "4.5.3",
+      "record_sha256": "4c3110ae352f77330393454a586cd7aa7f9f5f9a342b63d512d0b40ab9281f0f",
+      "verified_files": 22,
+      "role": "runtime"
+    },
+    "langchain-protocol": {
+      "version": "0.0.22",
+      "record_sha256": "9d13852ba173cc21b9410eb21dfa94a35f1e07e2ad569704c79bf36aed2a97c9",
+      "verified_files": 7,
+      "role": "runtime"
+    },
+    "langgraph": {
+      "version": "1.2.24",
+      "record_sha256": "bf7a3dfc129322481a47babca46b414d8f8e491ea6bb1acc8a2953f684f2f196",
+      "verified_files": 84,
+      "role": "runtime"
+    },
+    "langgraph-checkpoint": {
+      "version": "4.3.2",
+      "record_sha256": "b0e99a7f521f7f08ce48d24424e6d3509c1671a387f2539e5714356f79b5572e",
+      "verified_files": 27,
+      "role": "runtime"
+    },
+    "langgraph-prebuilt": {
+      "version": "1.1.3",
+      "record_sha256": "bb5d4f5e94b1444948eb27c60e3a72a3bfcd70b4f7bdccdf6b1e526ea0f92108",
+      "verified_files": 12,
+      "role": "runtime"
+    },
+    "langgraph-sdk": {
+      "version": "0.4.14",
+      "record_sha256": "89e32258ddf4de952938d8d44023d7d4299d8b06f17f16fbab7d94d370413f28",
+      "verified_files": 53,
+      "role": "runtime"
+    },
+    "langsmith": {
+      "version": "0.16.2",
+      "record_sha256": "781e5866314f1b574567c90af54b0e2d59723dd0fff6a07b7cebeb6614ec37ad",
+      "verified_files": 480,
+      "role": "runtime"
+    },
+    "logfire-api": {
+      "version": "6.0.1",
+      "record_sha256": "97cebe9fa21ab06305e9d17871549e99faa2b22957a67b3cccf27e0e95d413a9",
+      "verified_files": 132,
+      "role": "runtime"
+    },
+    "opentelemetry-api": {
+      "version": "1.45.2",
+      "record_sha256": "dd865fb5eac764933478c460412dbd3477876fd82204ecdc554b6e279429db09",
+      "verified_files": 47,
+      "role": "runtime"
+    },
+    "orjson": {
+      "version": "3.13.0",
+      "record_sha256": "d13d9f216511a3f8125693b3d940c47692a0cf892086b1af81978fe05febc32d",
+      "verified_files": 11,
+      "role": "runtime"
+    },
+    "ormsgpack": {
+      "version": "1.13.1",
+      "record_sha256": "5061588958acce940695014303f526e6cbddc7ce55356e1565814bca30aff370",
+      "verified_files": 13,
+      "role": "runtime"
+    },
+    "packaging": {
+      "version": "26.4",
+      "record_sha256": "5cf4f6ee266216231490fdb1a0a3ecd04e48031b92878277d67ea6aa6adfe644",
+      "verified_files": 29,
+      "role": "runtime"
+    },
+    "pip": {
+      "version": "26.0.1",
+      "record_sha256": "1f014bd4607a7cd8e941df9bd848ecf7802acf0a147d670b14c920a34d78f42d",
+      "verified_files": 476,
+      "role": "environment_bootstrap"
+    },
+    "pyasn1": {
+      "version": "0.6.5",
+      "record_sha256": "ae0eb21a82e475b52e2f8e31dca5b76cbfdddf75745071a1f5d7181b2ed2ae1b",
+      "verified_files": 38,
+      "role": "runtime"
+    },
+    "pyasn1-modules": {
+      "version": "0.4.2",
+      "record_sha256": "e0a17670c3e48ea42ad96ca7de7b972fdc40485b2395644e8205d5ca13f0f941",
+      "verified_files": 138,
+      "role": "runtime"
+    },
+    "pycparser": {
+      "version": "3.12",
+      "record_sha256": "cc698323c44a402316eb761531650d5e5b993e77d43567781a6fcc5021d885d2",
+      "verified_files": 13,
+      "role": "runtime"
+    },
+    "pydantic": {
+      "version": "2.14.4",
+      "record_sha256": "44f1b794aa4b6ad6c10f681f830f720895685740e6be3ca9f543f9dc220574d5",
+      "verified_files": 112,
+      "role": "runtime"
+    },
+    "pydantic-ai-harness": {
+      "version": "0.75.0",
+      "record_sha256": "7bd366af97710c1fd2d421ea50fa7be9ba20b6786581684da4d2720d92f45594",
+      "verified_files": 561,
+      "role": "runtime"
+    },
+    "pydantic-ai-slim": {
+      "version": "2.75.0",
+      "record_sha256": "8604a58f68eafbcabfc4a79f0eadd0305ad9afc466387b03d2bfec63bfc423c5",
+      "verified_files": 558,
+      "role": "runtime"
+    },
+    "pydantic-core": {
+      "version": "2.50.5",
+      "record_sha256": "8e026b490e3f7bf69cbe68811796170e26713e0b8304cae1d1871b23a2442be3",
+      "verified_files": 11,
+      "role": "runtime"
+    },
+    "pydantic-graph": {
+      "version": "2.75.0",
+      "record_sha256": "9937e89b3655fce7bf8feb67e5f846d090a0181bf20e26be215600c90b9d816c",
+      "verified_files": 19,
+      "role": "runtime"
+    },
+    "pyyaml": {
+      "version": "6.0.4",
+      "record_sha256": "9cc1a9288c34a059854ff40f93aa009e5b425438465818fd207c489e460b5909",
+      "verified_files": 24,
+      "role": "runtime"
+    },
+    "requests": {
+      "version": "2.34.2",
+      "record_sha256": "360474d1e271bd479c52dc911ac3dd7f51937603eca06e4c8e3b565b63f897f0",
+      "verified_files": 26,
+      "role": "runtime"
+    },
+    "requests-toolbelt": {
+      "version": "1.0.0",
+      "record_sha256": "942057e69083619f1c8eb4a129c2de9da02900f686c52cf686c9a922dda2933e",
+      "verified_files": 40,
+      "role": "runtime"
+    },
+    "sniffio": {
+      "version": "1.3.1",
+      "record_sha256": "40c8bb2ee6e50f440020ca178b91fe8fa911f7b798d7850878efbb2fa0c0e3e3",
+      "verified_files": 13,
+      "role": "runtime"
+    },
+    "tenacity": {
+      "version": "9.1.4",
+      "record_sha256": "9e39504a75c317a33d24219b6fa3ba5fd9332055cca17fcf3f69e68c0352ca7d",
+      "verified_files": 18,
+      "role": "runtime"
+    },
+    "truststore": {
+      "version": "0.10.5",
+      "record_sha256": "17d5d63ad5412773a874f4893f2345e1fc201998d19721f201393f30475add6a",
+      "verified_files": 11,
+      "role": "runtime"
+    },
+    "typing-extensions": {
+      "version": "4.16.0",
+      "record_sha256": "e6f5f1a68db8ed6ddd0e4b986a6c316c9f8b1a66e7125dbeb7fd041ffb28e43f",
+      "verified_files": 5,
+      "role": "runtime"
+    },
+    "typing-inspection": {
+      "version": "0.4.5",
+      "record_sha256": "b85afb95863158a73edac4199c2e967f26663bc6ff8e3793ba7d655a7059a376",
+      "verified_files": 9,
+      "role": "runtime"
+    },
+    "urllib3": {
+      "version": "2.8.0",
+      "record_sha256": "d4744cee71be06246489418873fa41bca8d75fe74aaa76698d8f599d02a79aa3",
+      "verified_files": 42,
+      "role": "runtime"
+    },
+    "uuid-utils": {
+      "version": "0.19.0",
+      "record_sha256": "da1dc6931b8368bc914cdf79edd1eb0c3097e985e48543028a5bddb09d4da4eb",
+      "verified_files": 11,
+      "role": "runtime"
+    },
+    "wcmatch": {
+      "version": "12.0.4",
+      "record_sha256": "839f556255d2f6a4f6b6b3d326e3563f5e25ec271ed072b5fa93598ecca30265",
+      "verified_files": 15,
+      "role": "runtime"
+    },
+    "websockets": {
+      "version": "17.4",
+      "record_sha256": "7d98c1b5d4cc519fc2da7413ff7c802379d41f537d76bc0f07506554eb0e0971",
+      "verified_files": 63,
+      "role": "runtime"
+    },
+    "xxhash": {
+      "version": "4.1.0",
+      "record_sha256": "939b03baa77d5558323540609d412a31141c53ba3948ee70a22181f22b68edb0",
+      "verified_files": 10,
+      "role": "runtime"
+    },
+    "zstandard": {
+      "version": "0.25.0",
+      "record_sha256": "df596ff65b1f66499d96a67c98eaafe1cab0df5b16da455c38d114bbb427ae2e",
+      "verified_files": 11,
+      "role": "runtime"
+    }
+  },
+  "dependency_manifest_sha256": "39b571a2ac9d5b8eed6c6b02e79ad6ec82eee619f537d60c02d98fce8b677274",
+  "final_cases_sha256": "cb9ee757cfa89661c215389d775ff5d09f364f05bd7de342fa0f09579eb25933",
+  "case_count": 16,
+  "scheduled_observations": 192,
+  "execution_count": 0,
+  "outcome": "not_started",
+  "publication_redaction": {
+    "omitted_fields": [
+      "python_executable"
+    ],
+    "original_sha256": "f10fcac09655762c53b5ced4c6e0e117ac87ce6d026d509ceb6c14669322191b",
+    "reason": "Omit host-specific local path; original receipt retained outside repository."
+  }
+}
