@@ -5,6 +5,14 @@ PROGRESS.md
 /decision.sqlite
 /decision.sqlite-*
 /review-work/
+# Private study artifacts from older command examples; keep new studies outside
+# the checkout. Ignores protect against accidental staging, not filesystem access.
+/private/
+/input-artifacts/
+/study-work/
+/private-results/
+/harness-study-private/
+/native-env/
 STUCK_FAILURES.*
 sentinel-findings.*
 *.pyc

@@ -15,6 +15,19 @@ The lock includes Pydantic AI Slim 2.75.0 and Pydantic AI Harness 0.75.0. Its ot
 framework dependencies remain included so this work does not silently revise the
 previously archived comparison environment. No final benchmark cases are rerun.
 
+From the repository root in PowerShell, create a new dedicated environment
+outside the checkout and install the exact wheels:
+
+```powershell
+py -3.13 -m venv ../harness-native-env
+../harness-native-env/Scripts/python.exe -m pip install --only-binary=:all: --require-hashes -r benchmarks/requirements-execution-windows.lock
+```
+
+Use a fresh directory name if `../harness-native-env` already exists. Do not
+install extra packages into an environment already frozen for a study; a changed
+dependency inventory invalidates its descriptor. The ecosystem `-Full`
+installer does not create this optional native environment.
+
 Build a descriptor with `harness_native_pydantic.descriptor()` in that environment
 and freeze it as each configuration's `native_runtime`. The arm has
 `runtime: pydantic` and `runtime_version: digest(harness_native_pydantic.profile())`.
@@ -84,12 +97,15 @@ deadline. Report setup work separately when assessing total time.
 ## Development verification and disclosure
 
 Run these in separate clean processes from the repository root using the locked
-native virtual environment's Python. No pytest installation is needed there:
+native virtual environment's Python. No pytest installation is needed there.
+Keep the three invocations separate: native tests install process-wide import
+checks, so a combined unittest invocation is not the supported verification
+sequence. Verbose output identifies the active check:
 
-```text
-python -B -m unittest tests.native_environment_checks -v
-python -B -m unittest tests.native_pydantic_checks -v
-python -B -m unittest tests.native_study_checks -v
+```powershell
+../harness-native-env/Scripts/python.exe -B -m unittest tests.native_environment_checks -v
+../harness-native-env/Scripts/python.exe -B -m unittest tests.native_pydantic_checks -v
+../harness-native-env/Scripts/python.exe -B -m unittest tests.native_study_checks -v
 ```
 
 The study tests launch actual isolated children and exercise preparation,
