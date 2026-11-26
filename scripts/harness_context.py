@@ -75,6 +75,9 @@ def control_path(path, root, manifest, *, sqlite=False, creating=False, extra_in
     candidates = [path] + ([guard(str(path) + suffix) for suffix in ("-journal", "-wal", "-shm")] if sqlite else [])
     nodes, _ = index(manifest)
     inputs = [artifact(root, node["file"]) for node in nodes.values()] + [guard(p) for p in extra_inputs]
+    for node in nodes.values():
+        if "derivation" in node:
+            inputs.extend(artifact(root, node["derivation"][key]) for key in ("recipe_file", "receipt_file"))
     for candidate in candidates:
         for source in inputs:
             require(candidate.resolve() != source.resolve() and not (candidate.exists() and source.exists() and os.path.samefile(candidate, source)),
@@ -128,8 +131,13 @@ def index(manifest):
                 and len(parents) == len(set(parents)), "invalid parents")
         if row["kind"] in {"source", "skill"}:
             require(not parents, "source/skill must be a root")
+            require("derivation" not in row, "root cannot declare derivation")
         else:
             require(parents, "derived node requires source lineage")
+        if "derivation" in row:
+            ref = row["derivation"]
+            require(isinstance(ref, dict) and set(ref) == {"recipe_file", "recipe_sha256", "receipt_file", "receipt_sha256"},
+                    "derivation reference fields mismatch")
         if row["kind"] == "source":
             require(isinstance(row.get("oa_rights_reference"), str) and row["oa_rights_reference"].strip(), "OA rights reference required")
         if row["kind"] == "skill":
@@ -171,7 +179,20 @@ def inspect(root, manifest, *, now=None):
             status = "EXPIRED"
         if status == "CURRENT" and any(result[p]["status"] != "CURRENT" for p in node["parents"]):
             status = "DEPENDENCY_INVALID"
-        result[key] = {"status": status, "observed_sha256": actual, "node_sha256": digest(node)}
+        if status == "CURRENT" and node["parents"]:
+            if "derivation" not in node:
+                status = "DERIVATION_UNVERIFIED"
+            else:
+                if __package__:
+                    from scripts import harness_derivation as derivation
+                else:
+                    import harness_derivation as derivation
+                try:
+                    derivation.validate(root, node, derivation.bindings(nodes, result, node["parents"]))
+                except (Refused, OSError, ValueError, TypeError, KeyError, RecursionError):
+                    status = "DERIVATION_INVALID"
+        lineage = digest({"node": node, "parents": {p: result[p]["lineage_sha256"] for p in sorted(node["parents"])}})
+        result[key] = {"status": status, "observed_sha256": actual, "node_sha256": digest(node), "lineage_sha256": lineage}
     return result
 
 

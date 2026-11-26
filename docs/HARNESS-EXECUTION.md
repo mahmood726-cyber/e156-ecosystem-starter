@@ -126,11 +126,14 @@ missing, expired or invalidated by an ancestor; malformed input exits 2. This
 command can be added to a project's existing Overmind test commands. No scheduler
 or portfolio registry was changed, and it does not poll remote publications.
 
-Invalidation operates against the frozen graph. Updating a source hash in a new
-manifest can make unchanged derived files appear CURRENT: that means byte
-consistency, not that their work was repeated. Recompute/review dependent
-extractions, analyses, claims and checklist judgments before adopting that graph.
-Human Pass remains an independent gate.
+Derived nodes require [execution-bound derivation receipts](HARNESS-DERIVATIONS.md).
+Updating a source hash in a new manifest invalidates old descendant receipts,
+including descendants whose immediate parent recomputes to identical bytes.
+Legacy derived nodes without receipts are DERIVATION_UNVERIFIED and cannot be
+read, packed or used by a worker. Source-only contexts remain compatible.
+Recompute in dependency order and start a new source-bound journal when adopting
+the new graph. CURRENT means byte/receipt consistency under a trusted local
+producer; Human Pass and scientific review remain independent gates.
 
 ## Recovering an ambiguous model response
 

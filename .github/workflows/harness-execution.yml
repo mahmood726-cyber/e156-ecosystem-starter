@@ -8,7 +8,11 @@ on:
       - 'scripts/bounded_native.py'
       - 'scripts/component_source.py'
       - 'scripts/synthesis_access_controls.py'
+      - 'scripts/synthesis_matched_eval.py'
+      - 'scripts/synthesis_study_preflight.py'
       - 'tests/test_synthesis_access_controls.py'
+      - 'tests/test_synthesis_study_preflight.py'
+      - 'tests/test_synthesis_matched_eval.py'
       - 'tests/test_harness_*.py'
       - 'benchmarks/harness-execution-*.json'
       - 'benchmarks/requirements-execution-windows.lock'
@@ -36,7 +40,7 @@ jobs:
       - name: Install locked test dependencies
         run: python -m pip install --require-hashes -r requirements-ci.lock
       - name: Exercise synthetic execution, recovery and context contracts
-        run: python -m pytest tests/test_harness_context.py tests/test_harness_runtime.py tests/test_harness_trace.py tests/test_harness_progress.py tests/test_harness_execution_benchmark.py tests/test_harness_provider.py tests/test_synthesis_access_controls.py -q --junitxml=execution-results.xml
+        run: python -m pytest tests/test_harness_context.py tests/test_harness_derivation.py tests/test_harness_runtime.py tests/test_harness_trace.py tests/test_harness_progress.py tests/test_harness_execution_benchmark.py tests/test_harness_provider.py tests/test_synthesis_access_controls.py tests/test_synthesis_study_preflight.py tests/test_synthesis_matched_eval.py -q --junitxml=execution-results.xml
       - name: Require actual Windows rights boundary controls
         if: matrix.os == 'windows-2022'
         shell: python
@@ -44,6 +48,7 @@ jobs:
           import xml.etree.ElementTree as ET
           root = ET.parse('execution-results.xml').getroot()
           required = {'test_manifest_cannot_be_its_own_decision_log',
+                      'test_windows_junction_evidence_root_refused',
                       'test_windows_junction_manifest_and_log_are_refused'}
           cases = [case for case in root.findall('.//testcase') if case.get('name') in required]
           if {case.get('name') for case in cases} != required or any(list(case) for case in cases):
@@ -96,7 +101,7 @@ jobs:
       - name: Pull exact reviewed worker image
         run: docker pull "$HARNESS_DOCKER_IMAGE"
       - name: Exercise actual container boundaries and cleanup
-        run: python -m pytest tests/test_harness_worker.py -q --junitxml=worker-results.xml
+        run: python -m pytest tests/test_harness_worker.py tests/test_harness_derivation.py -q --junitxml=worker-results.xml
       - name: Require actual containment tests without skips
         run: |
           python - <<'PY'
@@ -104,6 +109,7 @@ jobs:
           root = ET.parse('worker-results.xml').getroot()
           cases = root.findall('.//testcase')
           required = {'test_real_worker_readonly_network_credentials_and_limits',
+                      'test_real_worker_derivation_and_recompute',
                       'test_real_worker_supervisor_status_and_proxy_boundary',
                       'test_real_worker_host_process_loss_expires_container',
                       'test_real_worker_output_overflow_refuses',
