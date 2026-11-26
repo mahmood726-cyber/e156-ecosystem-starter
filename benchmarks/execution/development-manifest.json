@@ -1,0 +1,84 @@
+{
+  "schema": "e156-execution-publication-v1",
+  "scope": "Complete synthetic development iterations; earlier oracles are historical, not final-comparison scores. Gzip decompresses to exact recorded JSON bytes.",
+  "development": [
+    {
+      "iteration": 1,
+      "artifact": "development-1-windows.json.gz",
+      "uncompressed_sha256": "1fff94cb3b9aca7551ed4c1d30b2eaf5b7d7d1710f866e1bbe8234719806d1f5",
+      "gzip_sha256": "91090f20ae2f968464fa6d90bd8e6b608af6e57aff495715fed1b87673ec0692",
+      "attempted": 96,
+      "satisfied_under_that_iteration_oracle": 96,
+      "apparatus_errors": 0,
+      "implementation_sha256": {
+        "benchmarks/harness-execution-protocol.json": "a96fa266468f65267db6c081cf9752570aac583c5061723c5cfca5ca9f124413",
+        "benchmarks/requirements-execution-windows.lock": "b04b749b11baa39c95b8f64aef64ed4b50e638fd0ab73ea28e9d1f99b678b3fd",
+        "scripts/harness_execution_benchmark.py": "1a2f04e6047ef127c687f57017ed180b923fcdc75193bb9983bef35d3ae38ce4"
+      },
+      "runtime_profile": {
+        "bounded_native.py": "2c0db3266dba4522aaa1da4b660c2f1e8b94dbd165e29f0dbdd60ee7c242b024",
+        "component_lock.py": "78b54475d91f24bad5e1deb35f325fcf03abb7f38ff92d74cdbe3021e838a37f",
+        "component_source.py": "7b4198ea96951f60dd07acde8f7c93048fbaed1658dad38f9e5bc904dd483b00",
+        "harness_context.py": "ad1d84a1ecb6ff003dc2cf939520c91785024bdd1ef721cba4a66aec85fc2c29",
+        "harness_provider.py": "e339841e9391e9c89740d015545474a1080831d4f9e6420911b75b559b999c0f",
+        "harness_runtime.py": "fade3f8a85fc7cae5f51d7d7d92c5b432d5144267d0281952c3104dcd5c85f21",
+        "harness_trace.py": "bb5324a6081d47c5cb4020bee8f0963d3188e3b7264528e3eec9dce8e5f43fa0",
+        "harness_worker.py": "04d0201d2ab0ace6eb88e76a4fd8f1ba5a33feb6bd4cfe49823428961e9301f3",
+        "synthesis_blind_eval.py": "b3c87af84511b423b6571f357f1c9f82dbaa604f5a997bf04ff7692f0c7f27ae",
+        "synthesis_replay.py": "4116c8be829dacc74db8fef2147781902c3512ea09db3f32175a4aa783572bc8"
+      }
+    },
+    {
+      "iteration": 2,
+      "artifact": "development-2-windows.json.gz",
+      "uncompressed_sha256": "c51ab499a1b42c729442a9241427803722f81efd8c583759b70e37ebd7f5d9a2",
+      "gzip_sha256": "b3523d72f9ce44e07ecae37fc2990bdd1f5b3df37659a97dcfbfc5c7ad2dbacd",
+      "attempted": 96,
+      "satisfied_under_that_iteration_oracle": 96,
+      "apparatus_errors": 0,
+      "implementation_sha256": {
+        "benchmarks/harness-execution-protocol.json": "a96fa266468f65267db6c081cf9752570aac583c5061723c5cfca5ca9f124413",
+        "benchmarks/requirements-execution-windows.lock": "b04b749b11baa39c95b8f64aef64ed4b50e638fd0ab73ea28e9d1f99b678b3fd",
+        "scripts/harness_execution_benchmark.py": "df80ec996ae9f092ab57e37df5ce94e66cf90edbe1178dbe90f98a3e4654a657"
+      },
+      "runtime_profile": {
+        "bounded_native.py": "2c0db3266dba4522aaa1da4b660c2f1e8b94dbd165e29f0dbdd60ee7c242b024",
+        "component_lock.py": "78b54475d91f24bad5e1deb35f325fcf03abb7f38ff92d74cdbe3021e838a37f",
+        "component_source.py": "7b4198ea96951f60dd07acde8f7c93048fbaed1658dad38f9e5bc904dd483b00",
+        "harness_context.py": "ad1d84a1ecb6ff003dc2cf939520c91785024bdd1ef721cba4a66aec85fc2c29",
+        "harness_provider.py": "e339841e9391e9c89740d015545474a1080831d4f9e6420911b75b559b999c0f",
+        "harness_runtime.py": "e196eee778337e0ca1da828735e25645f186bee3a57e1f5acae6c8af789b9f05",
+        "harness_trace.py": "7e5ab7ada6e0dd7d84e26dc89635180efb59d2d0766eede0baaf0f8205931b6b",
+        "harness_worker.py": "04d0201d2ab0ace6eb88e76a4fd8f1ba5a33feb6bd4cfe49823428961e9301f3",
+        "synthesis_blind_eval.py": "b3c87af84511b423b6571f357f1c9f82dbaa604f5a997bf04ff7692f0c7f27ae",
+        "synthesis_replay.py": "4116c8be829dacc74db8fef2147781902c3512ea09db3f32175a4aa783572bc8"
+      }
+    },
+    {
+      "iteration": 3,
+      "artifact": "development-3-windows.json.gz",
+      "uncompressed_sha256": "d79382f2155458ebf46bcadaf39a1517640f1300fcd6e04928f0d5662030723e",
+      "gzip_sha256": "067664ec8dff4febabb1a87659fda8bafe9f1c188d072b741e7da344a7b3a47c",
+      "attempted": 96,
+      "satisfied_under_that_iteration_oracle": 96,
+      "apparatus_errors": 0,
+      "implementation_sha256": {
+        "benchmarks/harness-execution-protocol.json": "a96fa266468f65267db6c081cf9752570aac583c5061723c5cfca5ca9f124413",
+        "benchmarks/requirements-execution-windows.lock": "b04b749b11baa39c95b8f64aef64ed4b50e638fd0ab73ea28e9d1f99b678b3fd",
+        "scripts/harness_execution_benchmark.py": "d75689ae1ad9517ca13668c460505b516f848520d8e7a9419c1b8cbb171abe37"
+      },
+      "runtime_profile": {
+        "bounded_native.py": "2c0db3266dba4522aaa1da4b660c2f1e8b94dbd165e29f0dbdd60ee7c242b024",
+        "component_lock.py": "78b54475d91f24bad5e1deb35f325fcf03abb7f38ff92d74cdbe3021e838a37f",
+        "component_source.py": "7b4198ea96951f60dd07acde8f7c93048fbaed1658dad38f9e5bc904dd483b00",
+        "harness_context.py": "ad1d84a1ecb6ff003dc2cf939520c91785024bdd1ef721cba4a66aec85fc2c29",
+        "harness_provider.py": "e339841e9391e9c89740d015545474a1080831d4f9e6420911b75b559b999c0f",
+        "harness_runtime.py": "8653471b66cd078dd5c2907b141dd9f0c80aae20300215abbdcbd2c9c1707aab",
+        "harness_trace.py": "7e5ab7ada6e0dd7d84e26dc89635180efb59d2d0766eede0baaf0f8205931b6b",
+        "harness_worker.py": "04d0201d2ab0ace6eb88e76a4fd8f1ba5a33feb6bd4cfe49823428961e9301f3",
+        "synthesis_blind_eval.py": "b3c87af84511b423b6571f357f1c9f82dbaa604f5a997bf04ff7692f0c7f27ae",
+        "synthesis_replay.py": "4116c8be829dacc74db8fef2147781902c3512ea09db3f32175a4aa783572bc8"
+      }
+    }
+  ]
+}

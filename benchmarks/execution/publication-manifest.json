@@ -1,0 +1,66 @@
+{
+  "schema": "e156-execution-publication-v1",
+  "frozen_implementation_commit": "b8507b050136ddce6b90cbb72cebf2e4a1a4f9d9",
+  "reviewer_type": "Separate AI-agent reviewer; not human clinical review",
+  "final_execution_count": 1,
+  "final_uncompressed_sha256": "26d6e82892ce33451395adb15c99e707a04dcf989c006d4053a2c7cf7f5d9c73",
+  "final_case_sha256": "cb9ee757cfa89661c215389d775ff5d09f364f05bd7de342fa0f09579eb25933",
+  "files": {
+    "development-1-windows.json.gz": {
+      "sha256": "91090f20ae2f968464fa6d90bd8e6b608af6e57aff495715fed1b87673ec0692",
+      "bytes": 101332
+    },
+    "development-2-windows.json.gz": {
+      "sha256": "b3523d72f9ce44e07ecae37fc2990bdd1f5b3df37659a97dcfbfc5c7ad2dbacd",
+      "bytes": 102166
+    },
+    "development-3-windows.json.gz": {
+      "sha256": "067664ec8dff4febabb1a87659fda8bafe9f1c188d072b741e7da344a7b3a47c",
+      "bytes": 106526
+    },
+    "development-manifest.json": {
+      "sha256": "03be1d550029844fb2890edb6e453987f331c901fdccc53e98d43c9c781379ad",
+      "bytes": 5634
+    },
+    "final-cases.json": {
+      "sha256": "cb9ee757cfa89661c215389d775ff5d09f364f05bd7de342fa0f09579eb25933",
+      "bytes": 17401
+    },
+    "final-ledger.json": {
+      "sha256": "e2941bec296ae289a51f8130ae1169402883b85ee79caddb556ccfb6b6490f64",
+      "bytes": 419618
+    },
+    "final-windows.json.gz": {
+      "sha256": "15800422f0f5ead1f8df5561710bc086e0d28b03d0180eb21be1f71987143fa7",
+      "bytes": 296208
+    },
+    "public-reviewer-final-execution-state.json": {
+      "sha256": "f0de243d71dabb048d4fd8b2c16741e6f401953b2ae420d4063dfacc37ed369c",
+      "bytes": 14797
+    },
+    "public-reviewer-final-pre-execution.json": {
+      "sha256": "ea2e6a1862c740e5a65496137b1de408536106f143c99bb168ff65b29046690d",
+      "bytes": 14648
+    },
+    "reviewer-development-coercion-recheck.json.gz": {
+      "sha256": "6e6a74ccf197bb976853ed0e1dc0ed4dc03c24138a673fe58266803e5fdc0ab3",
+      "bytes": 10712
+    },
+    "reviewer-final-analysis.json": {
+      "sha256": "107790cb3f1ef89327856b676a6bba6d0d4da5cf7415ed44c5fa24b52cd44561",
+      "bytes": 47195
+    },
+    "reviewer-final-case-freeze.json": {
+      "sha256": "5ea68466c20e090eb4e20cc7fc362762832df8530907ba7f5ef5d2af6ecc23b5",
+      "bytes": 887
+    },
+    "reviewer-final-completion.json": {
+      "sha256": "f195a3f471a8708bf87d113c051dbef0a45ef0064502e2bae2fd00ef9f172b0f",
+      "bytes": 2210
+    },
+    "reviewer-pre-final-acceptance.json": {
+      "sha256": "bbb07b9f9d9906bcb2abd9251218742dcbb3406f8d95059ab194bfd6cfa33916",
+      "bytes": 1448
+    }
+  }
+}

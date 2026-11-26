@@ -6,6 +6,7 @@ import argparse
 from contextlib import closing
 from datetime import datetime, timezone
 import hashlib
+import hmac
 import json
 import math
 from pathlib import Path
@@ -55,6 +56,11 @@ def profile():
 def configuration(config, manifest):
     require(isinstance(config, dict) and config.get("schema") == "e156-harness-runtime-v1", "runtime schema mismatch")
     require(config.get("context_sha256") == digest(manifest), "context binding mismatch")
+    if "progress_policy" in config:
+        policy = config["progress_policy"]
+        require(isinstance(policy, dict) and set(policy) == {"repeated_result_limit"}, "invalid progress policy")
+        integer(policy["repeated_result_limit"], "repeated result limit", minimum=2)
+        require(policy["repeated_result_limit"] <= 100, "repeated result limit too large")
     for field in ("project_id", "task", "task_kind"):
         require(isinstance(config.get(field), str) and config[field].strip(), f"{field} required")
     limits = config.get("limits")
@@ -118,6 +124,8 @@ class Journal:
         self.path = context.control_path(path, root, manifest, sqlite=True, creating=create)
         self.config, self.manifest, self.root = config, manifest, root
         self.anchor = {"config_sha256": digest(config), "context_sha256": digest(manifest), "code": profile()}
+        if "progress_policy" in config:
+            self.anchor["progress_policy"] = dict(config["progress_policy"])
         self.revalidate()
         if create:
             self.path.touch(exist_ok=False)
@@ -313,7 +321,7 @@ class Journal:
         used = self.totals(self.operations(self.events()))
         return min(self.config["limits"]["request_ms"], self.config["limits"]["wall_ms"] - used["wall_ms"])
 
-    def report(self, status, prediction=None):
+    def report(self, status, prediction=None, *, stop=None):
         events = self.events()
         return {"schema": "e156-harness-run-v1", "status": status, "prediction": prediction,
                 "run_id": digest(events[0]), "journal_sha256": digest(events[-1]),
@@ -322,7 +330,24 @@ class Journal:
                 "usage": self.totals(self.operations(events)), "actual_billed_usd": None,
                 "resource_accounting": "VALIDATED_USAGE_OR_UNRESOLVED_RESERVATION",
                 "cost_basis": "CONSERVATIVE_FROZEN_PRICE_POLICY_NOT_INVOICE",
-                "scientific_disposition": "HOLD", "events": events}
+                "scientific_disposition": "HOLD", "events": events,
+                **({"stop": stop} if stop is not None else {})}
+
+
+class Progress:
+    """Opt-in exact consecutive-result guard; IDs do not constitute progress."""
+    def __init__(self, limit):
+        self.limit, self.previous, self.repetitions = limit, None, 0
+
+    def observe(self, request, result):
+        signature = (digest(request), digest(result))
+        same = self.previous is not None and all(hmac.compare_digest(a, b) for a, b in zip(signature, self.previous))
+        self.repetitions = self.repetitions + 1 if same else 1
+        self.previous = signature
+        if self.limit is not None and self.repetitions >= self.limit:
+            return {"reason": "REPEATED_TOOL_RESULT", "tool_request_sha256": signature[0],
+                    "result_sha256": signature[1], "repetitions": self.repetitions, "limit": self.limit}
+        return None
 
 
 def price(model, inputs, outputs):
@@ -360,6 +385,8 @@ def run(config, manifest, root, state, *, provider=None, allow_paid=False, creat
     base = [{"role": "user", "content": config["task"]}, {"role": "user", "content": json.dumps(
         {"trust": packed["trust"], "catalog": packed["catalog"], "evidence": packed["evidence_text"], "truncated": packed["truncated"]})}]
     transcript, route_index, last_prediction = list(base), 0, None
+    progress_limit = config.get("progress_policy", {}).get("repeated_result_limit")
+    progress = Progress(progress_limit)
     route = config["routes"][config["task_kind"]]
     tools = tool_schemas(packed["tools"])
     try:
@@ -415,7 +442,11 @@ def run(config, manifest, root, state, *, provider=None, allow_paid=False, creat
                         return result, units(tool_calls=1)
                     result = journal.operation("tool:" + call_id, {"name": name, "arguments": args},
                                                units(tool_calls=1, wall_ms=journal.allowance()), execute)
-                    transcript.append({"type": "function_call_output", "call_id": call_id, "output": json.dumps(result, ensure_ascii=False)})
+                    transcript.append({"type": "function_call_output", "call_id": call_id,
+                                       "output": json.dumps(result, ensure_ascii=False, sort_keys=True)})
+                    stop = progress.observe({"name": name, "arguments": args}, result)
+                    if stop:
+                        return journal.report("STALLED", stop=stop)
                 continue
             try:
                 last_prediction = prediction(response)
@@ -423,6 +454,7 @@ def run(config, manifest, root, state, *, provider=None, allow_paid=False, creat
                 last_prediction = {"disposition": "ABSTAIN", "reason": "Invalid structured response", "stop_point": "OUTPUT_VALIDATION"}
             if last_prediction["disposition"] == "ABSTAIN" and route_index + 1 < len(route):
                 route_index += 1
+                progress = Progress(progress_limit)
                 transcript = list(base) + [{"role": "user", "content": "A previous attempt abstained or failed output validation. Recheck the source; abstain if unresolved."}]
                 continue
             return journal.report("COMPLETED", last_prediction)
