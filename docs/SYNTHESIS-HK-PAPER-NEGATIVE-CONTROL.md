@@ -57,7 +57,7 @@ Paule–Mandel tau-squared therefore equals zero. The inverse-variance
 pooled log OR is 0.00502175; the pooled OR is approximately **1.00503**.
 
 The ordinary HK scale is Q/2 = approximately **0.53864**. With
-Student-t critical value t_(.975,2)=4.30265, this yields
+Student-t critical value t_(.975,2) approximately 4.30265272974946, this yields
 **OR 1.005 (95% CI 0.312–3.238)**, consistent with the primary paper's
 reported 1.01 (0.31–3.24).
 
@@ -75,7 +75,7 @@ when the paper transparently reports both variants.
 
 The separate test `tests/test_synthesis_real_engine.py` checks the actual
 trusted upstream `meta-starter-kit/metakit/engine.py` at commit
-`464fd88eb50825985b46b60cda248516d4b495ab`,
+`4156930cf2d1404870766fb821b045b671a7eff6`,
 by verified SHA-256 and pinned Git blob, against:
 
 - the printed review-table numbers (not primary trial files);
