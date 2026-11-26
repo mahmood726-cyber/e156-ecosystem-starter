@@ -82,3 +82,56 @@ remain unchanged.
 | Model and tool calls, terminal status, source/result hashes, elapsed time | Not authored scores | Recorded from actual framework execution |
 | Token counts supplied by scripted models | Synthetic accounting fixtures | Not real token efficiency or invoices |
 | Scientific quality, live-model gains and global ranking | Unmeasured | Require separate matched live evaluation |
+
+## Adapter and reproduction details
+
+The common suite gives each runtime the same synthetic source facts, scripted
+responses, read-only excerpt implementation and six-call ceilings. Native prompt
+formatting, validation, execution and persistence remain different. E156 also
+counts input tokens and persists every operation; these count requests are
+retained in its trace but are not model generation calls. Deep Agents retains its
+default planning/filesystem/subagent middleware and virtual backend; the common
+cases do not exercise those extra capabilities. Its native model/tool limit
+middleware is active. Pydantic uses `FunctionModel`, native `UsageLimits`, and
+`DetectLoops(window=3, repeated_result_threshold=3, action="error")`, with the
+other detectors disabled. Neither comparator is replaced by a handwritten loop.
+
+Tool attempts count actual calls into the shared evidence function. Native
+validation refusals can happen before that function, and are retained separately
+in structured native messages. Repeated identical read-only call IDs may be
+cached by E156 and re-executed by another framework; both are permitted, with
+actual counts reported. The grader checks the original typed request, expected
+excerpt bytes and source hash; an invented successful result cannot pass.
+
+Each observation runs in a fresh subprocess and directory. Environment variables
+are allowlisted to remove provider credentials and tracing, and socket
+connections are denied in Python. Windows asyncio's local wake-up socket pair is
+created before that denial. This is a testing guard, not OS containment. Native
+imports and source fixture creation precede the measured interval; agent setup,
+execution, persistence and revalidation are included. Timing is descriptive only.
+
+On Windows x64 with CPython 3.13, create a fresh environment and run:
+
+```powershell
+python -m venv .venv-benchmark
+.venv-benchmark/Scripts/python -m pip install --only-binary=:all: --require-hashes -r benchmarks/requirements-execution-windows.lock
+.venv-benchmark/Scripts/python -m scripts.harness_execution_benchmark --cases benchmarks/harness-execution-development.json --split development --output development-local.json
+```
+
+Use new output names: the runner refuses to overwrite results and flushes an
+`.attempts.jsonl` record after every observation. Dependency wheels are specific
+to this Python/platform combination. Code/protocol/case byte hashes are checked
+before and after a suite; line-ending changes can change those hashes. CI reruns
+only development cases. Once published, final cases are ordinary regression
+inputs for future work and cannot be claimed as unseen again.
+
+Before and after execution, the runner verifies every locked distribution version
+and every installed file covered by its wheel RECORD hash. It records the full
+inventory and RECORD digests, including explicitly identified environment
+bootstrap tools. Unlocked runtime distributions, altered covered files or
+mid-run identity changes refuse the aggregate; partial attempts remain retained.
+Tool successes are tied to the specific triggering model call, so native argument
+coercion cannot borrow a later valid request. Provider-failure cases require that
+no model execution occurs after the first scripted timeout. These are the common
+suite's strict contracts, not claims that all frameworks promise identical typing
+or retry defaults.

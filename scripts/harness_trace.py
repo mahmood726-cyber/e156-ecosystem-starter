@@ -57,6 +57,8 @@ def validate(report):
         require(isinstance(stop, dict) and stop.get("reason") == "REPEATED_TOOL_RESULT", "stall summary required")
         context.integer(stop.get("limit"), "stall limit", minimum=2)
         require(stop["limit"] <= 100 and report.get("prediction") is None, "invalid stall policy/prediction")
+        require(anchor.get("progress_policy") == {"repeated_result_limit": stop["limit"]},
+                "stall policy does not match journal anchor")
         progress, observed = runtime.Progress(stop["limit"]), None
         for key, op in operations.items():
             if not key.startswith("model:"):
@@ -103,7 +105,7 @@ def export(report):
     return {"schema": "e156-harness-trace-v1", "run_id": run_id, "journal_sha256": digest(events[-1]),
             "config_sha256": report["config_sha256"], "context_sha256": report["context_sha256"],
             "code_sha256": digest(events[0]["anchor"]["code"]), "status": report["status"],
-            "stop_reason": report.get("stop", {}).get("reason"),
+            "stop_reason": (report.get("stop") or {}).get("reason"),
             "attempts": attempts, "accounting": runtime.accounting(operations), "usage": report["usage"],
             "actual_billed_usd": None, "scientific_disposition": "HOLD",
             "disclosure": "CONTENT_OMITTED_HASHES_AND_TIMING_REMAIN_LINKABLE",
@@ -123,7 +125,7 @@ class RecordedProvider:
             require(op["finish"] and op["finish"]["kind"] in {"FINISHED", "RECONCILED"}, "unresolved trace cannot be replayed")
             if category != "tool":
                 self.records.append((category, op["reservation"]["request_sha256"], copy.deepcopy(op["finish"]["data"])))
-        require(self.records, "provider transcript is empty")
+        require(self.records or (report["status"] == "BUDGET_STOP" and not operations), "provider transcript is empty")
         self.position = 0
 
     def _take(self, kind, payload):
@@ -143,6 +145,9 @@ class RecordedProvider:
 def replay(report, config, manifest, root, state):
     provider = RecordedProvider(report)
     require(digest(config) == report["config_sha256"] and digest(manifest) == report["context_sha256"], "replay input binding mismatch")
+    require(not (report["status"] == "BUDGET_STOP" and report["usage"]["wall_ms"] >= config["limits"]["wall_ms"]
+                 and report["usage"]["model_calls"] < config["limits"]["model_calls"]),
+            "wall-time budget stop is incomparable for deterministic replay")
     result = runtime.run(config, manifest, root, state, provider=provider, create=True)
     original = validate(report)
     repeated = validate(result)

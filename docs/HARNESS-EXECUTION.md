@@ -207,6 +207,36 @@ can differ between replays; other resource accounting must match. Replay output 
 run report. Synthetic transcripts test execution behavior, not scientific
 accuracy, model quality or comparative performance.
 
+## Optional repeated-result stopping
+
+Set `"progress_policy": {"repeated_result_limit": 3}` in the frozen runtime
+configuration to stop after three consecutive identical tool names, arguments
+and results. The policy is absent by default. Thresholds must be integers from
+2 through 100. Changing a provider call ID does not count as progress; changing
+arguments or results does. A route escalation resets the counter so the next
+model can review the evidence afresh.
+
+The terminal status is `STALLED`, with no prediction and a hash-bound stop
+summary. Resume reconstructs the counter from recorded responses and cached
+tool results, without another provider call. Canonical JSON serialization of
+tool results keeps subsequent request identities stable after journal reload.
+Existing journals remain bound to their original code profile; there is no
+automatic migration across this serialization change.
+
+Settled `STALLED`, `BUDGET_STOP`, `REFUSED` and `CANCELLED` runs can also seed
+offline regressions. Every recorded operation must be settled; an unresolved
+provider or tool outcome is still refused. Empty zero-model-call budget stops
+replay without inventing a provider transcript. A wall-time-exhausted budget
+stop before the model-call ceiling is refused as incomparable: replay timing
+can change even when the code does not. Replay compares the stop summary as
+well as status, prediction, tool results and resource accounting. Export validates
+stall evidence and exposes only the allowlisted stop reason. This exact-result
+heuristic can stop legitimate repeated reads and cannot recognize every kind of
+nonprogress; it is an operator-selected policy, not an accuracy guarantee.
+
+See the [source survey and comparison protocol](HARNESS-RESEARCH-2026-11-26.md)
+for the native framework comparison and its limited synthetic scope.
+
 ## Matched evaluation boundary
 
 The [matched evaluator](MATCHED-HARNESS-EVALUATION.md) accepts independently

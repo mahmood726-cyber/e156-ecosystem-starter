@@ -6,6 +6,7 @@ import argparse
 from contextlib import closing
 from datetime import datetime, timezone
 import hashlib
+import hmac
 import json
 import math
 from pathlib import Path
@@ -123,6 +124,8 @@ class Journal:
         self.path = context.control_path(path, root, manifest, sqlite=True, creating=create)
         self.config, self.manifest, self.root = config, manifest, root
         self.anchor = {"config_sha256": digest(config), "context_sha256": digest(manifest), "code": profile()}
+        if "progress_policy" in config:
+            self.anchor["progress_policy"] = dict(config["progress_policy"])
         self.revalidate()
         if create:
             self.path.touch(exist_ok=False)
@@ -338,7 +341,8 @@ class Progress:
 
     def observe(self, request, result):
         signature = (digest(request), digest(result))
-        self.repetitions = self.repetitions + 1 if signature == self.previous else 1
+        same = self.previous is not None and all(hmac.compare_digest(a, b) for a, b in zip(signature, self.previous))
+        self.repetitions = self.repetitions + 1 if same else 1
         self.previous = signature
         if self.limit is not None and self.repetitions >= self.limit:
             return {"reason": "REPEATED_TOOL_RESULT", "tool_request_sha256": signature[0],

@@ -6,7 +6,7 @@
       "id": ".github/workflows/harness-execution.yml#jobs.execution",
       "kind": "ci-job",
       "name": "Durable research execution on Windows and Linux",
-      "stops": "Synthetic regressions in frozen context/source binding, budget reservation, SQLite concurrency, interrupted request recovery, unknown outcome retention, scoped tool calls, routing and provider transport gates. Runs actual subprocess crash/race controls on both platforms without paid model calls. Also requires source-access policy tests, with real Windows junction and manifest/log collision controls that may not skip on Windows. Also checks operator-attested terminal-response reconciliation, late-executor fencing, observed/reserved accounting, content-minimized trace export and exact-request offline regression replay including recomputed tool results.",
+      "stops": "Synthetic regressions in frozen context/source binding, budget reservation, SQLite concurrency, interrupted request recovery, unknown outcome retention, scoped tool calls, routing and provider transport gates. Runs actual subprocess crash/race controls on both platforms without paid model calls. Also requires source-access policy tests, with real Windows junction and manifest/log collision controls that may not skip on Windows. Also checks operator-attested terminal-response reconciliation, late-executor fencing, observed/reserved accounting, content-minimized trace export and exact-request offline regression replay including recomputed tool results. Also checks opt-in repeated-result stopping, deterministic multi-turn resume and settled non-success replay.",
       "would_not_stop": [
         "Provider schema or service changes not represented by the offline transport fixtures; no paid model request is executed.",
         "Incorrect scientific findings, unverified corpus rights, fabricated human attestations or inaccurate operator-supplied price policies.",
@@ -14,11 +14,30 @@
         "Malicious rewriting or rollback of the complete trusted host journal and its anchors; local hash chains are not external authentication.",
         "Forged recovery attestations or fabricated provider responses: reconciliation binds supplied bytes and recorded identities but does not authenticate provider evidence. Unknown recovered operation time retains its full reservation.",
         "Disclosure through linkable hashes and timing in content-minimized exports; private full reports and replay results retain source, prompt, response and recovery-reviewer content.",
-        "Complete-host compromise, cross-version journal migration, or exactly-once effects outside the journal. Offline replay demonstrates recorded behavior, not model or scientific quality."
+        "Complete-host compromise, cross-version journal migration, or exactly-once effects outside the journal. Offline replay demonstrates recorded behavior, not model or scientific quality.",
+        "Legitimate repeated work stopped by an operator-selected threshold, or nonprogress patterns beyond consecutive identical names, arguments and results."
       ],
-      "source": ".github/workflows/harness-execution.yml execution job and tests/test_harness_context.py, test_harness_runtime.py, test_harness_provider.py, test_synthesis_access_controls.py. The access helper is not wired into source ingress or transports and does not authenticate operator permission declarations. Recovery and trace contracts: tests/test_harness_trace.py; scripts/harness_trace.py.",
+      "source": ".github/workflows/harness-execution.yml execution job and tests/test_harness_context.py, test_harness_runtime.py, test_harness_provider.py, test_synthesis_access_controls.py. The access helper is not wired into source ingress or transports and does not authenticate operator permission declarations. Recovery and trace contracts: tests/test_harness_trace.py; scripts/harness_trace.py. Progress controls: tests/test_harness_progress.py; shared comparator oracle controls: tests/test_harness_execution_benchmark.py.",
       "seal": {
-        ".github/workflows/harness-execution.yml#jobs.execution": "90471cf064aca39f927b282fa64e2bcb0104b172d4158dce88addbdd2becc154"
+        ".github/workflows/harness-execution.yml#jobs.execution": "fcedf7af38b43409a96e6bd3d71899c0126c0e30d8f9ee732344643c5f127f3b"
+      }
+    },
+    {
+      "id": ".github/workflows/harness-execution.yml#jobs.comparison",
+      "kind": "ci-job",
+      "name": "Native harness controlled execution comparison on Windows",
+      "stops": "Missing or failing development observations across E156 baseline/guarded, native Deep Agents, and native Pydantic AI with its repeated-result detector. Installs exact Windows CPython3.13 wheels and retains all attempted rows. Shared outcome oracle requires positive completions, bounded loops and retained failure evidence.",
+      "would_not_stop": [
+        "Poor live-model reasoning or scientific accuracy: every response and source is explicitly synthetic.",
+        "Generalization beyond the eight prespecified mechanism families, or performance on other dependency versions/platforms.",
+        "OS-level network/sandbox escape: connection denial is a Python test-apparatus guard, not containment.",
+        "Malicious manipulation of the test host or a coordinated change to code, fixtures and oracle.",
+        "Latency differences attributable to persistence, validation or native defaults; no speed ranking is inferred.",
+        "Failures on the separately frozen final set: CI reruns development cases only, and final failures must remain reported."
+      ],
+      "source": "scripts/harness_execution_benchmark.py; benchmarks/harness-execution-protocol.json; benchmarks/harness-execution-development.json; benchmarks/requirements-execution-windows.lock",
+      "seal": {
+        ".github/workflows/harness-execution.yml#jobs.comparison": "743df04cce501810cad69b54d3983f862105d2b4ce4cf812e12e8db05cb38c47"
       }
     },
     {

@@ -35,6 +35,8 @@
   "pytest:tests/test_gate_can_fail.py": 15,
   "pytest:tests/test_gate_gaps.py": 30,
   "pytest:tests/test_harness_context.py": 6,
+  "pytest:tests/test_harness_execution_benchmark.py": 9,
+  "pytest:tests/test_harness_progress.py": 12,
   "pytest:tests/test_harness_provider.py": 3,
   "pytest:tests/test_harness_runtime.py": 14,
   "pytest:tests/test_harness_trace.py": 15,
@@ -792,6 +794,31 @@
    "test_invalid_graph_refused",
    "test_tool_read_is_bounded_and_cannot_read_skill",
    "test_watch_initial_snapshot_then_quiet_then_changed"
+  ],
+  "pytest-names:tests/test_harness_execution_benchmark.py": [
+   "test_abstention_requires_retained_refusal",
+   "test_all_error_rows_remain_in_summary",
+   "test_case_inventory_and_duplicate_ids_fail_closed",
+   "test_coercion_cannot_borrow_a_future_valid_request",
+   "test_native_feedback_uses_structure_not_source_text",
+   "test_oracle_detects_invented_excerpt_or_unauthorized_execution",
+   "test_positive_control_requires_completion_evidence_and_unchanged_source",
+   "test_stops_and_provider_failures_cannot_fabricate_predictions",
+   "test_worker_environment_drops_credentials_and_tracing"
+  ],
+  "pytest-names:tests/test_harness_progress.py": [
+   "test_empty_budget_stop_replays_and_null_stop_exports",
+   "test_forged_stop_summary_refused",
+   "test_invalid_progress_threshold_refuses_before_provider",
+   "test_new_arguments_break_repetition_and_allow_normal_completion",
+   "test_new_result_breaks_repetition",
+   "test_progress_policy_is_opt_in",
+   "test_repeated_results_stop_before_fourth_model_call_and_resume_is_stable",
+   "test_reused_call_ids_cannot_evade_guard_or_repeat_cached_tool",
+   "test_settled_refusal_is_replayable_but_unknown_provider_outcome_is_not",
+   "test_stalled_trace_replays_with_identical_stop_and_accounting",
+   "test_stop_threshold_cannot_be_rewritten_outside_journal_anchor",
+   "test_timing_exhausted_budget_stop_is_refused_as_incomparable"
   ],
   "pytest-names:tests/test_harness_provider.py": [
    "test_count_payload_and_child_transport_never_include_key",
