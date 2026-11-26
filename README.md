@@ -1,6 +1,6 @@
 # e156-ecosystem-starter
 
-Research automation: [durable harness setup, budgets, recovery and isolated workers](docs/HARNESS-EXECUTION.md).
+Research automation: [durable harness setup, budgets, response recovery, portable traces, offline regression replay and isolated workers](docs/HARNESS-EXECUTION.md).
 Model outputs remain unreviewed candidates; offline preparation makes no paid calls.
 
 ## Synthesis — start here (human checklist)

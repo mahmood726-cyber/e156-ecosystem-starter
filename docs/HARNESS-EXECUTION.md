@@ -132,6 +132,81 @@ consistency, not that their work was repeated. Recompute/review dependent
 extractions, analyses, claims and checklist judgments before adopting that graph.
 Human Pass remains an independent gate.
 
+## Recovering an ambiguous model response
+
+An interrupted call keeps its complete reservation until an operator supplies a
+terminal response with valid usage. `reconcile` is offline and never retries a
+provider call. Its receipt binds the current journal tip, original reservation,
+exact request, configuration, context and recovered response. The count and
+frozen model/price policy are rechecked; any recorded provider identifiers must
+match. A reviewer, reason, evidence reference and explicit attestation are required.
+This is an **operator attestation**, not provider authentication. A hash cannot
+prove that a response is genuine. No unsupported "not sent" or zero-cost release
+is available. Missing tool/count results remain unresolved.
+
+```text
+python scripts/harness_runtime.py reconcile --config private/runtime.json --manifest private/context.json --root private --state private/run.sqlite --receipt private/recovery.json --output private/recovered.json
+```
+
+The receipt uses schema `e156-harness-recovery-v1` with fields `operation_id`
+(`model:N`), `journal_sha256`, `reservation_sha256`, `request_sha256`,
+`config_sha256`, `context_sha256`, `response_sha256`, `response` (the complete
+archived terminal object), `reviewer`, `reason`, `evidence_reference` and
+`attestation` exactly `I verified this terminal response belongs to this exact request`.
+Hashes use the existing canonical JSON `harness_context.digest` function; obtain
+the reservation and current tip from a fresh private `inspect` report. Review the
+external response evidence before signing that statement. A stale receipt is
+refused. Keep the receipt and full reports private.
+
+Recovery appends a `RECONCILED` event and retains the interrupted history. A late
+executor is fenced from adding another terminal result or continuing with its
+uncommitted response. Resume uses the recorded result; it may execute subsequent
+calls only under the existing explicit paid-run controls. Stop the old worker
+before recovery when possible. This prevents duplicate journal settlement, not
+external exactly-once delivery or a second process already running elsewhere.
+Configuration, source, skill and code drift still refuse recovery; there is no
+automatic migration of journals created by older runtime code.
+
+SQLite lock waits are bounded by the smaller of one second and the configured
+request timeout. This allows a short concurrent reader to finish before a
+reservation commit; prolonged contention refuses the operation. External calls
+are never retried by this mechanism. Journal overhead is not included in the
+operation-only wall accounting or claimed as whole-task elapsed time.
+
+`usage` remains conservative budget accounting. `accounting.observed` separates
+validated provider tokens/calls, measured operation time and price-policy cost
+from `unresolved_reserved`. Recovered model elapsed time is unknown and retains
+its full ceiling in `recovered_wall_reserved`. The three components sum to
+`usage`; none is an invoice. Recovery does not invent observed elapsed time.
+
+## Portable traces and offline regression replay
+
+```text
+python scripts/harness_trace.py export --input private/run.json --output trace.json
+python scripts/harness_trace.py replay --input private/run.json --config private/runtime.json --manifest private/context.json --root private --state private/replay.sqlite --output private/regression.json
+```
+
+Export validates the complete event chain, bindings, transitions and redundant
+accounting summaries. Its `e156-harness-trace-v1` output contains stable run and
+attempt IDs, request/result hashes, attempt histories, status, timing and separate
+observed/reserved resources. An allowlist excludes prompts, source text, model
+responses, provider identifiers and reviewer names. **Hashes and timing remain
+linkable**; review an export before publishing it. This is a local trace format,
+not an Inspect log, a signed attestation or a scientific scoring ledger.
+
+Replay requires the private complete report, matching configuration and current
+source manifest, plus a new journal path. It returns recorded provider responses
+only for the exact ordered request hashes, recomputes tools through the existing
+bounded tool path, and compares all operation results, non-wall reservations and
+usage, aggregate non-wall accounting and the final prediction.
+Unrecorded requests and incomplete transcripts are refused; there is no network
+fallback or provider credential requirement. A changed output produces `FAIL`
+and CLI exit 1. Both original and replay code profiles are recorded so a code
+upgrade can be tested deliberately. Wall timing and wall-time reservation sizes
+can differ between replays; other resource accounting must match. Replay output is private and contains a full
+run report. Synthetic transcripts test execution behavior, not scientific
+accuracy, model quality or comparative performance.
+
 ## Matched evaluation boundary
 
 The [matched evaluator](MATCHED-HARNESS-EVALUATION.md) accepts independently
