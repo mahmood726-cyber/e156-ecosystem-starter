@@ -35,7 +35,7 @@
   "pytest:tests/test_gate_can_fail.py": 15,
   "pytest:tests/test_gate_gaps.py": 30,
   "pytest:tests/test_harness_context.py": 6,
-  "pytest:tests/test_harness_execution_benchmark.py": 9,
+  "pytest:tests/test_harness_execution_benchmark.py": 10,
   "pytest:tests/test_harness_progress.py": 12,
   "pytest:tests/test_harness_provider.py": 3,
   "pytest:tests/test_harness_runtime.py": 14,
@@ -803,6 +803,7 @@
    "test_native_feedback_uses_structure_not_source_text",
    "test_oracle_detects_invented_excerpt_or_unauthorized_execution",
    "test_positive_control_requires_completion_evidence_and_unchanged_source",
+   "test_published_evidence_hashes_survive_windows_git_checkout",
    "test_stops_and_provider_failures_cannot_fabricate_predictions",
    "test_worker_environment_drops_credentials_and_tracing"
   ],
