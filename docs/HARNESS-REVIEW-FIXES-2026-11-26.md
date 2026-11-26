@@ -46,11 +46,11 @@ accuracy, live-model quality, cost, speed, or worldwide ranking is established.
 
 Preserved reports and their exact SHA-256 identities:
 
-- [Failed run](../benchmarks/recovery/development-stale-anchors-2026-11-26.json):
+- [Failed run](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/benchmarks/recovery/development-stale-anchors-2026-11-26.json):
   `90ecdb9c9463e94090efa4a8c9ce5bb8ef29a5d327047d51a97a1a9164aafc7a`.
-- [Repaired run](../benchmarks/recovery/development-repaired-2026-11-26.json):
+- [Repaired run](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/benchmarks/recovery/development-repaired-2026-11-26.json):
   `ef31794183f376b5fb5cd79fd8b68d7227b0f4607846a0c5fb5511789a720edb`.
-- [Per-case attempt log](../benchmarks/recovery/development-repaired-2026-11-26.json.attempts.jsonl):
+- [Per-case attempt log](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/benchmarks/recovery/development-repaired-2026-11-26.json.attempts.jsonl):
   `bff7b6d482b7be8c67bd417847b26c4b2f61870a8d4760c43bb1c54cd9190848`.
 
 The original November 11 measurement and consumed final execution campaign are
