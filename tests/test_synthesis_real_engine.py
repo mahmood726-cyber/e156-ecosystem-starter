@@ -1,7 +1,7 @@
 """Real pinned-engine integration: source-publication table, NOT original-trial audit.
 
 Run with SYNTHESIS_PINNED_ENGINE_FILE pointing to the reviewed upstream
-meta-starter-kit/metakit/engine.py checked out at commit 464fd88... .
+meta-starter-kit/metakit/engine.py checked out at commit 4156930... .
 Without this environment variable, broad local pytest skips the integration.
 No network, author contact, model substitution, or research accuracy claim.
 """
@@ -91,8 +91,8 @@ class PinnedEngineIntegration(unittest.TestCase):
         q = sum(w * (y - mu) ** 2 for w, y in zip(weights, estimates))
         self.assertLessEqual(q, 2)  # PM tau²=0 for three trials.
         se_floor = math.sqrt(1 / sum(weights))
-        # Student t .975 quantile for 2 df, reference from standard t table.
-        tcrit = 4.302652729749462
+        # Independent closed-form inverse of F(t)=1/2+t/(2*sqrt(t*t+2)).
+        tcrit = math.sqrt(2) * .95 / math.sqrt(1 - .95**2)
         expected = {
             "pooled": math.exp(mu),
             "ci_low": math.exp(mu - tcrit * se_floor),
@@ -101,7 +101,7 @@ class PinnedEngineIntegration(unittest.TestCase):
         pool = self._run_published_table()
         for key, value in expected.items():
             with self.subTest(key=key):
-                self.assertAlmostEqual(getattr(pool, key), value, delta=2e-5)
+                self.assertAlmostEqual(getattr(pool, key), value, delta=1e-6)
         # Unmodified HK uses the residual q/(k-1), legitimately narrower.
         se_unmodified = math.sqrt((q / 2) / sum(weights))
         self.assertTrue(paired._precision_overlap(
@@ -213,7 +213,7 @@ class PinnedEngineIntegration(unittest.TestCase):
     def test_real_engine_source_pin_is_not_a_user_supplied_sha_only(self):
         # _engine_at checks source Git blob as well as caller SHA.
         self.assertEqual(paired.SUPPORTED_ENGINE_GIT_BLOB_SHA1,
-                         "9b25f4a98bb882c2d09c18288f93028de5bcf83b")
+                         "768aeb1e8dd892f388dffe6c636293be92a74107")
         self.assertEqual(len(self.digest), 64)
 
 

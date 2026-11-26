@@ -925,7 +925,7 @@ class PairedModelReplayTests(unittest.TestCase):
     def test_exact_engine_source_pin_is_checked(self):
         self.assertEqual(
             paired.SUPPORTED_ENGINE_GIT_BLOB_SHA1,
-            "9b25f4a98bb882c2d09c18288f93028de5bcf83b",
+            "768aeb1e8dd892f388dffe6c636293be92a74107",
         )
         # User-selected SHA-256 alone is insufficient to substitute a fake file.
         result = paired.check_replay(self.packet, self.root,

@@ -900,17 +900,16 @@
       "id": ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic",
       "kind": "ci-job",
       "name": "Experimental Synthesis source-trial verification and pinned-engine integration CI",
-      "stops": "Runs fail-closed synthetic source/trial binding and paired OR replay regression tests, checks for Python syntax errors, and separately checks the actual pinned meta-starter-kit source engine against an independently calculated low-heterogeneity identity and a published paper-table Hartung-Knapp negative control.",
+      "stops": "Runs fail-closed synthetic source/trial binding and paired OR replay regression tests, checks for Python syntax errors, and separately checks the actual pinned meta-starter-kit source engine against an independently calculated low-heterogeneity identity and a published paper-table Hartung-Knapp negative control. The independently derived low-heterogeneity interval must match the precision-repaired pinned engine within 1e-6.",
       "would_not_stop": [
         "Incorrect source-to-trial assignment, omitted original trials, study-population overlap, wrong method labels supplied by a reviewer, or clinically unsound pooling despite green synthetic tests.",
         "Numerical differences for complex estimators, zero-cell models, network and IPD meta-analyses, alternative confidence-interval adjustments, or software versions outside the exact pinned engine.",
-        "The deterministic 1e-6 precision requirement: the current pinned engine's rounded t critical value yields about 5.00347e-6 upper-limit error in the independent closed-form case, which the existing 2e-5 diagnostic tolerance does not reject. Upstream precision review and repinning remain required.",
         "Original trial data not independently retrieved: the published paper-table example checks only printed study rows and does not adjudicate an error or establish clinical effect.",
         "Reproducibility of all research software or prospective accuracy of Synthesis; the external code identity is pinned but independent R-based statistical evaluation and blinded adjudication remain separate."
       ],
       "source": ".github/workflows/synthesis-source-trial-pilot.yml offline-synthetic; tests/test_synthesis_source_trial_view.py and tests/test_synthesis_real_engine.py; scripts/synthesis_paired_model_replay.py. Real engine is checked out from pinned public meta-starter-kit commit, never accepted from an arbitrary user-provided path.",
       "seal": {
-        ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic": "f478a3718b6a3c58baa6152d8610fba66b9fd07f191d64614ab8ab7773d807e0"
+        ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic": "9c767ea07138ce8826f371129ee25c4a99d9014fd9e4efe9cc7884ffafcb221c"
       }
     }
   ]

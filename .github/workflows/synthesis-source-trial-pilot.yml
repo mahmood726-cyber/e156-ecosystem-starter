@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: mahmood726-cyber/meta-starter-kit
-          ref: 464fd88eb50825985b46b60cda248516d4b495ab
+          ref: 4156930cf2d1404870766fb821b045b671a7eff6
           path: .external/meta-starter-kit
           persist-credentials: false
       - name: Real pinned meta-starter-kit engine; public paper-table negative control

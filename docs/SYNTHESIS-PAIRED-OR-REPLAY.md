@@ -21,9 +21,9 @@ attempted fit is never reported as `NOT_RUN`.
 
 ## Existing implementation reused
 
-The external numerical implementation is the user's public [meta-starter-kit engine at commit 464fd88e](https://github.com/mahmood726-cyber/meta-starter-kit/blob/464fd88eb50825985b46b60cda248516d4b495ab/metakit/engine.py), with canonical Git blob SHA-1:
+The external numerical implementation is the user's public [meta-starter-kit engine at commit 4156930c](https://github.com/mahmood726-cyber/meta-starter-kit/blob/4156930cf2d1404870766fb821b045b671a7eff6/metakit/engine.py), with canonical Git blob SHA-1:
 
-9b25f4a98bb882c2d09c18288f93028de5bcf83b
+768aeb1e8dd892f388dffe6c636293be92a74107
 
 This source actually calls the Paule–Mandel tau-squared routine and HKSJ-floor CI. Some upstream prose mentions REML; **the code is not an interchangeable REML implementation**. A future engine version must be separately re-reviewed and pinned. No third-party statistical engine code is copied into this repository.
 
@@ -71,13 +71,13 @@ The synthetic unit tests use a **toy/mock pooling interface** to validate execut
 
 Keep the pull request in draft pending methods review and proper validation. No source-confirmed findings may be emailed based on this module alone.
 
-### Unmet numerical precision gate (26 November 2026)
+### Numerical precision repair (26 November 2026)
 
-An independent closed-form check of the existing three-row negative control
-found that the pinned engine uses `4.30265` for the two-degree-of-freedom
-Student t critical value, versus `4.302652729749463`. The resulting upper-limit
-absolute difference is approximately `5.00347e-6`. The current integration
-test's `2e-5` tolerance is a bounded development diagnostic; it does **not**
-satisfy this repository's deterministic `1e-6` requirement. This release gate
-remains unmet pending an independently reviewed upstream precision fix and a
-new source pin. No tolerance relaxation or clinical implication is claimed.
+The reviewed [upstream repair](https://github.com/mahmood726-cyber/meta-starter-kit/pull/1)
+replaces rounded Student-t critical values and is pinned above. The independent
+closed-form pooled interval is now required to agree within `1e-6`; the earlier
+`2e-5` diagnostic tolerance has been removed. The upstream suite also compares
+106 base-R quantile references and analytic small-degree values. These checks
+cover the specified distribution grid and low-heterogeneity identity, not every
+estimator or dataset. Original-trial source adjudication, clinical review and
+held-out scientific evaluation remain separate unmet requirements.

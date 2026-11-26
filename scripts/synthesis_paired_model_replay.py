@@ -22,9 +22,9 @@ import sys
 MAX_TRIALS = 40
 METHOD = "META_STARTER_KIT_PM_HKSJ_FLOORED_LOG_OR"
 # Exact Git blob identity verified against the user's meta-starter-kit repository.
-# Commit 464fd88eb50825985b46b60cda248516d4b495ab, metakit/engine.py.
+# Commit 4156930cf2d1404870766fb821b045b671a7eff6, metakit/engine.py.
 # A caller-selected SHA-256 alone cannot establish software identity.
-SUPPORTED_ENGINE_GIT_BLOB_SHA1 = "9b25f4a98bb882c2d09c18288f93028de5bcf83b"
+SUPPORTED_ENGINE_GIT_BLOB_SHA1 = "768aeb1e8dd892f388dffe6c636293be92a74107"
 CELL_FIELDS = ("tE", "tN", "cE", "cN")
 ANALYSIS_FIELDS = ("population", "endpoint", "time_window", "analysis_set",
                    "intervention", "comparator", "effect_measure", "estimand")
