@@ -65,6 +65,7 @@
   "pytest:tests/test_sentinel_hook_backup_collision.py": 5,
   "pytest:tests/test_sentinel_hook_postinstall.py": 2,
   "pytest:tests/test_setup_python_action_pin.py": 8,
+  "pytest:tests/test_smd_covariance_audit.py": 8,
   "pytest:tests/test_synthesis_access_controls.py": 0,
   "pytest:tests/test_synthesis_adjudication.py": 16,
   "pytest:tests/test_synthesis_capture_evidence.py": 0,
@@ -1183,6 +1184,16 @@
    "test_refuses_missing_action",
    "test_refuses_mutable_or_substituted_action",
    "test_refuses_no_or_removed_job_inventory"
+  ],
+  "pytest-names:tests/test_smd_covariance_audit.py": [
+   "test_asymptotic_size_against_independent_tail_identity",
+   "test_full_overlap_and_disjoint_limits",
+   "test_invalid_inputs_fail_explicitly",
+   "test_j_direction_against_exact_gamma_ratio",
+   "test_original_example_all_34_fingerprints",
+   "test_overlap_trace_against_independent_centering_matrix_sum",
+   "test_published_equation_sign_reversal",
+   "test_zero_effect_calibration_control"
   ],
   "pytest-names:tests/test_synthesis_access_controls.py": [],
   "pytest-names:tests/test_synthesis_adjudication.py": [
