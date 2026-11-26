@@ -247,6 +247,12 @@ assembled run ledgers. This runner's report is supporting evidence, **not a
 ready-to-score ledger**. There is deliberately no conversion that invents human
 review time, whole-task duration or billed cost.
 
+The separate [E156 development study runner](HARNESS-STUDY-RUNNER.md) now
+supplies observed lifecycle boundaries, trace-derived record conversion and
+explicit measurement receipts. It preserves unknown human time and billing;
+this runtime report alone is still insufficient. That path supports read-only
+development execution, not the prospective scientific study.
+
 | Evaluation field | Required evidence |
 |---|---|
 | Arm and input bindings | Frozen protocol, full model/route policy and verified common task inventory |

@@ -37,6 +37,13 @@ evidence. Its accounting is not automatically converted into observed human
 review time, end-to-end duration or billed USD; see the guide's matched-evaluation
 boundary before assembling a run ledger. The scientific study remains unstarted.
 
+The [development study runner](HARNESS-STUDY-RUNNER.md) now provides the E156
+read-only orchestration and trace-to-ledger bridge. Its explicit `development`
+purpose admits exposed source material without inventing unseen/custody receipts.
+It requires supplied human-time measurements before freezing a ledger and keeps
+missing billing unknown. Live native comparator adapters and the independent
+scientific study remain pending.
+
 ## Prospective comparison
 
 The custodian must approve and freeze the following before any test run:

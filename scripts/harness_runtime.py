@@ -56,6 +56,8 @@ def profile():
 def configuration(config, manifest):
     require(isinstance(config, dict) and config.get("schema") == "e156-harness-runtime-v1", "runtime schema mismatch")
     require(config.get("context_sha256") == digest(manifest), "context binding mismatch")
+    if "request_policy" in config:
+        require(config["request_policy"] == {"service_tier": "default"}, "unsupported request policy")
     if "progress_policy" in config:
         policy = config["progress_policy"]
         require(isinstance(policy, dict) and set(policy) == {"repeated_result_limit"}, "invalid progress policy")
@@ -397,6 +399,7 @@ def run(config, manifest, root, state, *, provider=None, allow_paid=False, creat
             payload = {"model": model["model"], "input": transcript, "instructions": SYSTEM + "\n" + "\n".join(packed["instructions"]),
                        "tools": tools, "parallel_tool_calls": False, "max_output_tokens": model["max_output_tokens"],
                        "store": False, "include": ["reasoning.encrypted_content"]}
+            payload.update(config.get("request_policy", {}))
             payload_sha = digest(payload)
             def count(timeout):
                 require(context.timestamp(model["price_expires_at"]) > datetime.now(timezone.utc), "price policy expired")

@@ -116,7 +116,8 @@ def preflight(manifest, protocol, inventory, inputs, evidence):
         raise Refused(str(exc)) from exc
 
     references = _entries(inventory["references"], "role", {"role", "reference", "file", "sha256"}, "reference mapping")
-    require(set(references) == REFERENCE_ROLES, "required study references missing or extra")
+    roles = {"analysis_plan_reference"} if protocol["purpose"] == "development" else REFERENCE_ROLES
+    require(set(references) == roles, "required study references missing or extra")
     reference_results = {}
     for role, row in references.items():
         require(row["reference"] == _text(protocol.get(role), role), "reference differs from protocol")

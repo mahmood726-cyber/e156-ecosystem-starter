@@ -4,6 +4,8 @@ Research automation: [durable harness setup, budgets, response recovery, portabl
 
 Evidence lineage: [required execution-bound derivation receipts](docs/HARNESS-DERIVATIONS.md). Next scientific comparison: [prospective study decisions and remaining inputs](docs/HARNESS-PROSPECTIVE-STUDY.md).
 
+The [development study runner](docs/HARNESS-STUDY-RUNNER.md) connects frozen E156 preparation, isolated read-only execution, recovery, measured-review records and immutable ledger publication. Scientific validation and live native comparator adapters remain pending.
+
 Measured execution: [native Deep Agents/Pydantic comparison, independently withheld cases and complete traces](docs/HARNESS-EXECUTION-RESULTS-2026-11-26.md). All four configurations passed the synthetic contracts; guarded E156 tied Pydantic's repetition guard. [Research sources and design choices](docs/HARNESS-RESEARCH-2026-11-26.md).
 Model outputs remain unreviewed candidates; offline preparation makes no paid calls.
 

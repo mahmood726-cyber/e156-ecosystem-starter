@@ -40,7 +40,21 @@ jobs:
       - name: Install locked test dependencies
         run: python -m pip install --require-hashes -r requirements-ci.lock
       - name: Exercise synthetic execution, recovery and context contracts
-        run: python -m pytest tests/test_harness_context.py tests/test_harness_derivation.py tests/test_harness_runtime.py tests/test_harness_trace.py tests/test_harness_progress.py tests/test_harness_execution_benchmark.py tests/test_harness_provider.py tests/test_synthesis_access_controls.py tests/test_synthesis_study_preflight.py tests/test_synthesis_matched_eval.py -q --junitxml=execution-results.xml
+        run: python -m pytest tests/test_harness_context.py tests/test_harness_derivation.py tests/test_harness_runtime.py tests/test_harness_trace.py tests/test_harness_progress.py tests/test_harness_execution_benchmark.py tests/test_harness_provider.py tests/test_harness_study_runner.py tests/test_harness_study_records.py tests/test_synthesis_access_controls.py tests/test_synthesis_study_preflight.py tests/test_synthesis_matched_eval.py -q --junitxml=execution-results.xml
+      - name: Require actual study process controls
+        shell: python
+        run: |
+          import xml.etree.ElementTree as ET
+          root = ET.parse('execution-results.xml').getroot()
+          required = {'test_actual_child_watchdog_expires_without_parent_supervisor',
+                      'test_actual_child_watchdog_covers_snapshot_validation',
+                      'test_provider_child_owns_total_deadline_without_parent_supervisor',
+                      'test_child_case_lock_fences_parent_and_stale_dispatch',
+                      'test_finished_child_settled_after_parent_loss_without_dispatch',
+                      'test_complete_prepare_execute_measure_freeze_mask_compare'}
+          cases = [case for case in root.findall('.//testcase') if case.get('name') in required]
+          if {case.get('name') for case in cases} != required or any(list(case) for case in cases):
+              raise SystemExit('Required real-process study controls missing, skipped, or failed')
       - name: Require actual Windows rights boundary controls
         if: matrix.os == 'windows-2022'
         shell: python

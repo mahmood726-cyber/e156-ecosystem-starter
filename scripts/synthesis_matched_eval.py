@@ -129,7 +129,7 @@ def prepare(manifest, protocol, inputs):
     _labels(protocol)
     _labels(manifest)
     _need(protocol.get("manifest_sha256") == digest(manifest), "manifest binding mismatch")
-    _need(protocol.get("purpose") in {"synthetic_contract", "prospective"}, "explicit purpose required")
+    _need(protocol.get("purpose") in {"synthetic_contract", "development", "prospective"}, "explicit purpose required")
     _need(protocol.get("comparison_kind") in {"harness_only", "system"}, "comparison_kind required")
     _need(protocol.get("retry_policy") == "one_record_all_internal_attempts", "unsupported retry policy")
     _number(protocol.get("order_seed"), "order_seed", integer=True)
