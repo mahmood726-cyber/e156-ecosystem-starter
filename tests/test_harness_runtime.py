@@ -204,7 +204,7 @@ def test_two_processes_cannot_spend_last_allocation_twice(job):
     runtime.Journal(state, config, graph, root, create=True)
     for name, value in (("config", config), ("graph", graph)):
         (root / f"{name}.json").write_text(json.dumps(value), encoding="utf-8")
-    script = '''import json,sys,time
+    script = '''import json,sys,time,traceback
 from pathlib import Path
 from scripts import harness_runtime as r
 root=Path(sys.argv[1])
@@ -216,14 +216,15 @@ try:
         return {},r.units(model_calls=1)
     j.operation(sys.argv[2],{},r.units(model_calls=1,wall_ms=1000),action)
 except Exception:
+    traceback.print_exc()
     raise SystemExit(2)
 '''
     children = [subprocess.Popen([sys.executable, "-c", script, str(root), name],
                                  cwd=Path(runtime.__file__).parents[1], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 for name in ("one", "two")]
     try:
-        for child in children: child.communicate(timeout=30)
-        assert sorted(c.returncode for c in children) == [0, 2]
+        output = [child.communicate(timeout=30) for child in children]
+        assert sorted(c.returncode for c in children) == [0, 2], output
         assert len(list(root.glob("*.called"))) == 1
     finally:
         for child in children:

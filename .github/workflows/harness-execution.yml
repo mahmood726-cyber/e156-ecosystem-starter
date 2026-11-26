@@ -34,7 +34,7 @@ jobs:
       - name: Install locked test dependencies
         run: python -m pip install --require-hashes -r requirements-ci.lock
       - name: Exercise synthetic execution, recovery and context contracts
-        run: python -m pytest tests/test_harness_context.py tests/test_harness_runtime.py tests/test_harness_provider.py tests/test_synthesis_access_controls.py -q --junitxml=execution-results.xml
+        run: python -m pytest tests/test_harness_context.py tests/test_harness_runtime.py tests/test_harness_trace.py tests/test_harness_provider.py tests/test_synthesis_access_controls.py -q --junitxml=execution-results.xml
       - name: Require actual Windows rights boundary controls
         if: matrix.os == 'windows-2022'
         shell: python
