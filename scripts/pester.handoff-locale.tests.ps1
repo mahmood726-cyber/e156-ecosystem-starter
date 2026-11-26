@@ -107,6 +107,15 @@ Describe "Get-HandoffPromptPath returns the right localised file" {
     }
 }
 
+Describe "Handoff prompt text preserves UTF-8" {
+    It "reads a BOM-free non-ASCII prompt without Windows default-encoding corruption" {
+        $path = Join-Path $TestDrive 'prompt[sw].md'
+        $expected = 'Kiswahili ' + [char]0x2014 + ' ' + [char]0x00e9 + ' ' + [char]0x0639
+        [System.IO.File]::WriteAllText($path, $expected, (New-Object System.Text.UTF8Encoding $false))
+        Get-HandoffPromptText -Path $path | Should -BeExactly $expected
+    }
+}
+
 Describe "End-to-end -ResolveOnly hook returns same path" {
     BeforeEach {
         Remove-Item Env:E156_LANG -ErrorAction SilentlyContinue

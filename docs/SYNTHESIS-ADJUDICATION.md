@@ -97,10 +97,10 @@ eligibility remain separate work.
 existing archived baseline/eligibility passages. Population and timepoint scopes
 remain null; no reviewer, outcome decision or clinical finding is invented.
 Its reviewed dossier SHA-256 is
-`184552927c4defaa8741a5c792ffa508522b05d63c3987eea66abde64811e114`.
+`463ad965a725b508ebd2f6a54d0289dfe416ecc8c68a83a80067c7cd280552a0`.
 
 ```console
-python scripts/synthesis_adjudication.py --dossier examples/synthesis-adjudication-stepwise.json --project stepwise-development --expected-sha256 184552927c4defaa8741a5c792ffa508522b05d63c3987eea66abde64811e114 --bundle stepwise=examples/synthesis-replay-stepwise
+python scripts/synthesis_adjudication.py --dossier examples/synthesis-adjudication-stepwise.json --project stepwise-development --expected-sha256 463ad965a725b508ebd2f6a54d0289dfe416ecc8c68a83a80067c7cd280552a0 --bundle stepwise=examples/synthesis-replay-stepwise
 ```
 
 The result is `RECORDS_REVALIDATED` with `INCOMPLETE_SCOPE` and HOLD. Exit 0 means

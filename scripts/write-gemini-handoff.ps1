@@ -55,6 +55,12 @@ function Get-HandoffPromptPath {
     return (Join-Path $StarterRoot 'scripts\gemini-handoff-prompt.en.md')
 }
 
+function Get-HandoffPromptText {
+    [CmdletBinding()]
+    param([string]$Path)
+    Get-Content -Raw -LiteralPath $Path -Encoding UTF8
+}
+
 if ($Import) { return }   # dot-sourced by Pester; no execution
 
 $promptFile = Get-HandoffPromptPath -StarterRoot $StarterRoot
@@ -71,7 +77,7 @@ if (-not (Test-Path $promptFile)) {
     return
 }
 
-$body = Get-Content -Raw -Path $promptFile
+$body = Get-HandoffPromptText -Path $promptFile
 
 # Try Desktop file first -- works even when clipboard is locked (RDP, sandbox).
 $desktop = [Environment]::GetFolderPath('Desktop')
