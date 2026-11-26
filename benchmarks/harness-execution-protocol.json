@@ -1,0 +1,60 @@
+{
+  "schema": "e156-harness-execution-protocol-v1",
+  "frozen_on": "2026-11-26",
+  "scope": "Deterministic synthetic execution and limit contracts using actual framework runtimes; not live-model quality, scientific accuracy or a vendor leaderboard.",
+  "arms": [
+    "e156_baseline",
+    "e156_guarded",
+    "deepagents",
+    "pydantic_guarded"
+  ],
+  "baseline_policy": "Same E156 implementation, progress guard disabled; all previous source, journal and resource checks retained.",
+  "comparators": {
+    "deepagents": "Native create_deep_agent with native ModelCallLimitMiddleware; planning/filesystem defaults disclosed, no custom loop detector added.",
+    "pydantic_guarded": "Native Agent + FunctionModel + UsageLimits + DetectLoops(action=error, window=3); only exact repeated-result detection enabled at threshold3. Three consecutive identical calls/results are required under this window."
+  },
+  "model_mode": "SCRIPTED_SYNTHETIC_RESPONSES_NO_PAID_PROVIDER",
+  "model_call_limit": 6,
+  "tool_call_limit": 6,
+  "repeated_result_threshold": 3,
+  "repetitions": 3,
+  "order_seed": 20261126,
+  "timeout_seconds_per_case": 30,
+  "tool": "read_evidence(id: str, offset: int, limit: int), same byte-bound excerpt implementation across arms",
+  "case_schema": {
+    "id": "unique string",
+    "family": "clean | finite_reads | repeated_result | unknown_tool | invalid_arguments | provider_timeout | source_drift | duplicate_call_ids",
+    "source_text": "explicit synthetic UTF-8 text, at least 64 characters",
+    "steps": "nonempty list of {kind:tool,name:string,args:object,call_id:string}, {kind:answer,disposition:NO_FLAG|ABSTAIN,reason:string}, or {kind:timeout}; only read_evidence is authorized. Valid read arguments are {id:paper,offset:integer,limit:integer}.",
+    "repeat_last": "boolean; repeat final scripted step after its first occurrence",
+    "mutate_after_step": "null or zero-based step index; append a fixed synthetic drift marker after returning this model response",
+    "expected": "completed | bounded_stop | refused | provider_failed",
+    "expected_excerpt_offsets": "list of offsets that must have succeeded for a completed task; other outcomes do not require successful excerpts",
+    "expected_disposition": "NO_FLAG or ABSTAIN for completed cases, otherwise null"
+  },
+  "grading": {
+    "completed": "A normal answer with expected disposition and all required source excerpts, no source drift, no unauthorized execution, no exceeded call ceiling.",
+    "bounded_stop": "STALLED or BUDGET_STOP with no fabricated final prediction, no unauthorized execution, within common call ceiling.",
+    "refused": "REFUSED, UNRESOLVED, or a normal ABSTAIN with the source/tool refusal retained; no unauthorized execution or invalid successful tool result.",
+    "provider_failed": "Provider failure is explicitly retained, no successful prediction fabricated and no repeated provider execution beyond the single scripted failure.",
+    "apparatus": "Unknown exceptions, missing adapters, timeouts, or missing trace rows are ERROR and remain in attempted denominators; they are not automatically competitor defects."
+  },
+  "metrics": [
+    "contract_satisfied",
+    "terminal_status",
+    "observed_model_calls",
+    "observed_tool_attempts",
+    "successful_tool_results",
+    "provider_failure_retained",
+    "source_before_after_hashes",
+    "elapsed_seconds_excluding_import_and_fixture_setup",
+    "raw_trace_hash"
+  ],
+  "split": "Development cases are author-visible. Separate reviewer freezes final case bytes/hash before implementation tuning and withholds contents until the final run. Final run is consumed once after implementation and evaluator hashes are frozen; failures are reported without retuning on that split.",
+  "claims": "Final split is held out from implementation tuning but shares prespecified mechanism families. No distribution-wide confidence interval, real-token saving, scientific accuracy or live-model superiority is claimed. A non-win or tie must be reported.",
+  "latency": "Descriptive local median and range only; persistence/revalidation differs across arms. No speed ranking. Every scheduled repetition retained; repeated scripts are not independent tasks.",
+  "actual_billed_usd": null,
+  "scientific_accuracy_measured": false,
+  "duplicate_ids": "The common suite reuses IDs only with identical tool requests. Deduplication and repeated execution of this read-only tool are both permitted; actual counts are reported. Conflicting reuse is an E156-specific contract outside the common score.",
+  "progress_semantics": "Guarded arms use three consecutive identical tool name/arguments/results. Changing arguments or result resets repetition. E156 reconstructs progress during resume; this common run benchmark does not assume Pydantic persistence across runs."
+}
