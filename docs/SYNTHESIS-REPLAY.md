@@ -35,7 +35,7 @@ The checked-in [OA development example](../examples/synthesis-replay-stepwise)
 can be replayed without a network connection or third-party Python dependencies:
 
 ```console
-python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise --expected-sha256 d81086aaf3cee56b8936af0ef617085844718cdb1a200b88870fcfef7812b0d6
+python scripts/synthesis_replay.py verify examples/synthesis-replay-stepwise --expected-sha256 fc7e071298fc1fed636ed16dda1252358c026552d0d8209896607d72d23013f9
 ```
 
 Record your own supported packet and already licensed source snapshot:
@@ -202,10 +202,28 @@ unchanged. Its manifest and payload have new digests; the
 available. Neither migration changes the selection or claims scientific accuracy.
 
 ```console
-python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk --expected-sha256 5a2d948a673a0c5ea67b9671a97bb43f0affbb00ec521e5940bf6dfe66cbe2ad
+python scripts/synthesis_replay.py verify examples/synthesis-replay-strokewalk --expected-sha256 3440da5463da48b023d7e85789a58035ba950e7c4a806a581b262490bf0e77f3
 ```
 
-Local validation: **88 synthetic replay controls** passed. Both real examples
+On 12 November 2026, the scalar, source-bound scale, rounding and reply-inventory
+upgrade changed two fingerprinted modules. Both bundles were sealed afresh and
+verified with the new code. Every archived input and the complete analytical
+result bytes remain unchanged. Only the manifests' verifier fingerprints and
+their trusted digest references changed. The preceding
+[StepWise receipt](../benchmarks/replay/history/stepwise-fb511d8.json) and
+[STROKEWALK receipt](../benchmarks/replay/history/strokewalk-fb511d8.json) remain
+available; their original bundles are retained at Git revision `fb511d8`.
+Historical profile-validation measurements remain historical. The new bundles
+require a fresh export/profile check, rather than relabelling earlier validation.
+
+The concurrent trusted-review/checklist integration at public revision `34359562`
+also consumes these bundles. Its current example protocol and unreviewed dossier,
+CLI commands and test trust-anchor data were rebound to the regenerated manifests.
+The source excerpts, report/entity selections and empty reviewer-ballot lists
+remain unchanged. The original configurations remain at that public revision;
+the rebuilt checklist and dossier still retain scientific `HOLD`.
+
+At the preceding revision, local validation reported **88 synthetic replay controls** passed. Both real examples
 were sealed and successfully replayed locally. CI separately replays both fixed
 digests on Windows and Linux. The control suite covers changed source/config/
 output, malformed records, forged internal hashes, broken locations, licence

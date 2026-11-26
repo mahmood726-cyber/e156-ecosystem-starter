@@ -51,7 +51,7 @@ source identity/licence. Retain this manifest anchor independently; do not recom
 a convenient anchor after changes.
 
 ```console
-python scripts/synthesis_checklist.py init --bundle examples/synthesis-replay-stepwise --expected-sha256 d81086aaf3cee56b8936af0ef617085844718cdb1a200b88870fcfef7812b0d6 --project stepwise-operator-development --out review-work/review-001.json
+python scripts/synthesis_checklist.py init --bundle examples/synthesis-replay-stepwise --expected-sha256 fc7e071298fc1fed636ed16dda1252358c026552d0d8209896607d72d23013f9 --project stepwise-operator-development --out review-work/review-001.json
 python scripts/synthesis_checklist.py render --bundle examples/synthesis-replay-stepwise --record review-work/review-001.json
 python scripts/synthesis_checklist.py verify --bundle examples/synthesis-replay-stepwise --record review-work/review-001.json
 ```
