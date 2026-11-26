@@ -406,3 +406,32 @@ def test_actual_child_watchdog_covers_snapshot_validation(tmp_path):
     code = "from scripts import harness_study_runner as r; import sys,time; from pathlib import Path; r._load=lambda *a: time.sleep(10); r.child(Path(sys.argv[1]),'SYNTHETIC_CONTRACT',sys.argv[2],Path(sys.argv[1])/'attempt-1.json')"
     result = subprocess.run([sys.executable, "-c", code, str(directory), deadline], capture_output=True, timeout=8)
     assert result.returncode == 124, result.stderr.decode(errors="replace")
+
+
+@pytest.mark.parametrize("phase", ["staging", "published"])
+@pytest.mark.parametrize("entry_kind", ["file", "empty_directory"])
+def test_freeze_refuses_unmanifested_files_before_publication_or_adoption(study, monkeypatch, phase, entry_kind):
+    plan = runner.prepare(**study); runner.abort(study["work"])
+    measurements = measurements_for(study["work"])
+    state = runner.read(study["work"] / "state.json")
+    generation = context.digest({"plan_sha256": context.digest(plan), "measurements": measurements,
+        "records": {key: row["record_sha256"] for key, row in state["cases"].items()}})
+    destination = study["work"] / "exports" / generation / "bundle"
+    if phase == "published":
+        original = context.atomic_json
+        def fail_state(path, value, **kwargs):
+            if Path(path).name == "state.json" and value.get("frozen"): raise OSError("synthetic state commit interruption")
+            return original(path, value, **kwargs)
+        monkeypatch.setattr(context, "atomic_json", fail_state)
+        with pytest.raises(OSError): runner.freeze(study["work"], measurements)
+        monkeypatch.setattr(context, "atomic_json", original)
+        destination = study["work"] / "frozen"
+    destination.mkdir(parents=True, exist_ok=True)
+    if entry_kind == "file":
+        (destination / "UNMANIFESTED-CANARY.txt").write_text("SYNTHETIC private canary", encoding="utf-8")
+    else:
+        (destination / "UNMANIFESTED-DIRECTORY").mkdir()
+    with pytest.raises(context.Refused, match="unexpected export entry"):
+        runner.freeze(study["work"], measurements)
+    assert not runner.read(study["work"] / "state.json")["frozen"]
+    if phase == "staging": assert not (study["work"] / "frozen").exists()

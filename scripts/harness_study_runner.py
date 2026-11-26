@@ -1,7 +1,7 @@
-"""Serial, durable E156 development runner; no scientific validation or invoices.
+"""Serial, durable development runner; no scientific validation or invoices.
 
 Reservations are conservative configured ceilings, retained in full for the study.
-The first path supports E156 arms only. Model-visible files are task-scoped.
+E156 and the constrained native Pydantic path share task-scoped evidence tools.
 """
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import sqlite3
 import sys
+import sysconfig
 import tempfile
 import threading
 import time
@@ -49,13 +50,13 @@ def sha(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
-def atomic_new(path, raw):
+def atomic_new(path, raw, *, temporary_dir=None):
     """Publish complete bytes without replacing an existing artifact."""
     path = c.guard(path)
     require(len(raw) <= c.MAX_FILE, "artifact exceeds bounded read size")
     temporary = None
     try:
-        with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as handle:
+        with tempfile.NamedTemporaryFile(dir=c.guard(temporary_dir) if temporary_dir is not None else path.parent, delete=False) as handle:
             temporary = Path(handle.name)
             handle.write(raw); handle.flush(); os.fsync(handle.fileno())
         os.link(temporary, path)  # Atomic, exclusive publication on supported filesystems.
@@ -72,10 +73,48 @@ def case_id(protocol_sha256, arm_id, claim_id):
 
 
 def profile():
-    extra = ("harness_study_runner.py", "harness_study_records.py", "synthesis_study_preflight.py", "synthesis_matched_eval.py")
+    extra = ("harness_study_runner.py", "harness_study_records.py", "harness_native_pydantic.py", "harness_native_environment.py", "synthesis_study_preflight.py", "synthesis_matched_eval.py")
     return {**runtime.profile(), **{n: sha((Path(__file__).parent / n).read_bytes()) for n in extra},
             "interpreter": {"implementation": sys.implementation.name, "version": list(sys.version_info),
                             "cache_tag": sys.implementation.cache_tag, "platform": sys.platform}}
+
+
+def native_adapter():
+    if __package__: from scripts import harness_native_pydantic
+    else: import harness_native_pydantic
+    return harness_native_pydantic
+
+
+def native_loader(configs):
+    """Private, explicit local loader binding; no site/.pth execution in children."""
+    adapter = native_adapter()
+    environment = adapter.environment()
+    environment_sha256 = digest(environment)
+    require(all(cfg["native_runtime"]["environment_sha256"] == environment_sha256 for cfg in configs), "native environment differs from frozen descriptor")
+    executable = c.guard(sys.executable).resolve()
+    prefix = c.guard(sys.prefix).resolve()
+    purelib = c.guard(sysconfig.get_path("purelib")).resolve()
+    require(sys.prefix != sys.base_prefix and executable.parent == prefix / "Scripts"
+            and purelib == prefix / "Lib" / "site-packages" and purelib.is_dir(), "native runtime requires the supported Windows virtualenv layout")
+    return {"schema": "e156-native-loader-v1", "python": str(executable), "prefix": str(prefix),
+            "purelib": str(purelib), "environment_sha256": environment_sha256, "environment": environment}
+
+
+def verify_native_loader(plan, *, child=False):
+    loader = plan.get("native_loader")
+    require(isinstance(loader, dict) and set(loader) == {"schema", "python", "prefix", "purelib", "environment_sha256", "environment"}
+            and loader["schema"] == "e156-native-loader-v1", "native loader binding missing")
+    require(digest(loader["environment"]) == loader["environment_sha256"], "native environment evidence changed")
+    executable, prefix, purelib = (c.guard(loader[k]).resolve() for k in ("python", "prefix", "purelib"))
+    require(executable == c.guard(sys.executable).resolve() and executable.parent == prefix / "Scripts"
+            and (prefix / "pyvenv.cfg").is_file() and purelib == prefix / "Lib" / "site-packages" and purelib.is_dir(), "native loader path/interpreter changed")
+    if child:
+        require(sys.flags.isolated and sys.flags.no_site, "native child must retain isolated/no-site startup")
+        require(str(purelib) not in sys.path, "native package path was loaded before verification")
+        # Append after trusted scripts and stdlib; do not run site.addsitedir,
+        # .pth files, user site packages or sitecustomize.
+        sys.path.append(str(purelib))
+    require(digest(native_adapter().environment()) == loader["environment_sha256"], "native installed environment changed")
 
 
 @contextmanager
@@ -123,7 +162,9 @@ def tools_contract(configs, graphs, inputs):
 
 
 def _config(cfg, graph, task, arm, protocol):
-    require(isinstance(cfg, dict) and CONFIG_FIELDS <= set(cfg) <= CONFIG_FIELDS | {"progress_policy"}, "unsupported concrete config fields")
+    require(isinstance(cfg, dict) and CONFIG_FIELDS <= set(cfg) <= CONFIG_FIELDS | {"progress_policy", "native_runtime"}, "unsupported concrete config fields")
+    if arm["runtime"] == "pydantic": native_adapter().validate_config(cfg)
+    else: require("native_runtime" not in cfg, "E156 arm cannot claim a native runtime")
     runtime.configuration(cfg, graph)
     require(cfg["worker"] is None, "first study runner supports read-only tools; worker must be null")
     require(cfg["request_policy"] == {"service_tier": "default"}, "explicit default service tier required")
@@ -142,6 +183,9 @@ def _config(cfg, graph, task, arm, protocol):
     nodes, _ = c.index(graph)
     require(all(set(nodes[key].get("tools", [])) <= {"read_evidence"} for key in cfg["skills"] if key in nodes),
             "first study runner supports read_evidence only")
+    if arm["runtime"] == "pydantic":
+        require({tool for key in cfg["skills"] if key in nodes for tool in nodes[key].get("tools", [])} == {"read_evidence"},
+                "native comparator requires exactly read_evidence access")
     needed, pending = set(cfg["skills"]), list(cfg["selected"])
     while pending:
         key = pending.pop()
@@ -174,9 +218,11 @@ def prepare(manifest, protocol, inventory, inputs, evidence, work, budget, mode,
         require(sha(raw) == task["context_sha256"], "context changed after preflight")
         graphs[task["claim_id"]] = c.strict_json(raw)
     tasks = {t["claim_id"]: t for t in inventory["tasks"]}
-    configs, cases = {}, {}
+    configs, cases, native_configs = {}, {}, []
     for arm in protocol["arms"]:
-        require(arm["runtime"] == "e156" and arm["runtime_version"] == digest(runtime.profile()), "unsupported runtime/version")
+        require(arm["runtime"] in {"e156", "pydantic"}, "unsupported runtime")
+        expected_profile = runtime.profile() if arm["runtime"] == "e156" else native_adapter().profile()
+        require(arm["runtime_version"] == digest(expected_profile), "unsupported runtime/version")
         mapping = next(a for a in inventory["arms"] if a["arm_id"] == arm["arm_id"])
         artifact = read(c.artifact(evidence, mapping["config_file"]))
         require(digest(artifact) == arm["config_sha256"], "arm config changed after preflight")
@@ -188,9 +234,11 @@ def prepare(manifest, protocol, inventory, inputs, evidence, work, budget, mode,
         require(digest(model_contract(cfgs)) == arm["model_config_sha256"], "actual model contract mismatch")
         require(digest(tools_contract(cfgs, graphs, inputs)) == arm["tools_sha256"], "actual tools/instruction/cap contract mismatch")
         configs[arm["arm_id"]] = cfgs
+        if arm["runtime"] == "pydantic": native_configs.extend(cfgs.values())
         for cid, cfg in cfgs.items():
             key = case_id(digest(protocol), arm["arm_id"], cid)
-            cases[key] = {"arm_id": arm["arm_id"], "claim_id": cid, "config": cfg, "context": graphs[cid]}
+            cases[key] = {"arm_id": arm["arm_id"], "claim_id": cid, "runtime": arm["runtime"], "config": cfg, "context": graphs[cid]}
+    loader = native_loader(native_configs) if native_configs else None
     schedule = [case_id(digest(protocol), r["arm_id"], r["claim_id"]) for r in matched.prepare(manifest, protocol, inputs)["schedule"]]
     require(0 < len(schedule) <= 1000, "study case bound exceeded")
     if fixtures is not None:
@@ -203,6 +251,7 @@ def prepare(manifest, protocol, inventory, inputs, evidence, work, budget, mode,
         "preflight_sha256": digest(ready), "inventory_sha256": digest(inventory), "budget": budget, "mode": mode,
         "profile": profile(), "cases": cases, "schedule": schedule, "created_at": now(),
         "budget_basis": "FULL_CASE_CEILINGS_NEVER_REFUNDED_NOT_INVOICES", "scientific_results": None}
+    if loader is not None: plan["native_loader"] = loader
     work.mkdir()
     for key, case in cases.items():
         directory = work / "cases" / key; (directory / "inputs").mkdir(parents=True)
@@ -291,6 +340,7 @@ def _settle(work, plan, state, key, item, directory):
     require(set(value) == {"report", "ended_at"}, "child result mismatch")
     report = value["report"]; trace.validate(report)
     cfg, graph = plan["cases"][key]["config"], plan["cases"][key]["context"]
+    if "native_runtime" in cfg: native_adapter().validate_report(report, cfg)
     journal = runtime.Journal(directory / "run.sqlite", cfg, graph, directory / "inputs")
     require(report["events"] == journal.events(), "child result is not the current journal")
     ended = c.timestamp(value["ended_at"])
@@ -324,6 +374,7 @@ def execute(work, *, allow_paid=False, resume=None):
             key = next((k for k in plan["schedule"] if k not in state["cases"]), None)
             if key is None: return {"status": "EXECUTION_COMPLETE"}
         case = plan["cases"][key]; directory = _case_files(work, key, case)
+        if case["runtime"] == "pydantic": verify_native_loader(plan)
         with lease(directory / "case.lock"):
             if resume is not None:
                 item = state["cases"][key]
@@ -345,8 +396,8 @@ def execute(work, *, allow_paid=False, resume=None):
             c.atomic_json(work / "state.json", state)
             output = directory / f"attempt-{item['dispatches']}.json"
         # The child obtains the same case lock and holds it for its actual life.
-        launcher = "import sys; sys.path.insert(0,sys.argv.pop(1)); import harness_study_runner; harness_study_runner.main()"
-        command = [sys.executable, "-I", "-S", "-c", launcher, str(Path(__file__).absolute().parent), "_child", "--work", str(directory),
+        launcher = "import sys; sys.path.insert(0,sys.argv.pop(1)); from scripts import harness_study_runner; harness_study_runner.main()"
+        command = [sys.executable, "-I", "-S", "-c", launcher, str(Path(__file__).absolute().parent.parent), "_child", "--work", str(directory),
                    "--mode", plan["mode"], "--deadline", item["deadline_at"], "--output", str(output)]
         if plan["mode"] == "LIVE": command.append("--allow-paid")
         env_keys = {"SYSTEMROOT", "WINDIR", "PATH", "PATHEXT", "TEMP", "TMP", "COMSPEC", "LOCALAPPDATA", "APPDATA"}
@@ -425,7 +476,11 @@ def _child_checked(directory, mode, deadline, output, *, allow_paid=False):
             position = sum(k.startswith("model:") and op["finish"] is not None and op["finish"]["kind"] in {"FINISHED", "RECONCILED"}
                            for k, op in journal.operations(journal.events()).items())
         provider = runtime.Responses(allow_paid=allow_paid) if mode == "LIVE" else _Script(read(directory / "fixture.json"), position)
-        report = runtime.run(cfg, graph, directory / "inputs", db, provider=_Deadline(provider, deadline), create=not db.exists())
+        executor = runtime.run
+        if case["runtime"] == "pydantic":
+            verify_native_loader(plan, child=True)
+            executor = native_adapter().run
+        report = executor(cfg, graph, directory / "inputs", db, provider=_Deadline(provider, deadline), create=not db.exists())
         new_json(output, {"report": report, "ended_at": now()})
 
 
@@ -466,6 +521,8 @@ def abort(work):
                 if (directory / "run.sqlite").exists():
                     case = plan["cases"][key]
                     report = runtime.Journal(directory / "run.sqlite", case["config"], case["context"], directory / "inputs").report("UNRESOLVED")
+                    if case["runtime"] == "pydantic":
+                        report = native_adapter().describe_report(report, case["config"], termination="INTERRUPTED")
                 outcome = "NOT_ATTEMPTED" if item["dispatches"] == 0 else (
                     "DEADLINE" if datetime.now(timezone.utc) >= c.timestamp(item["deadline_at"]) else "INTERRUPTED")
                 _retain(work, plan, state, key, item, report, outcome)
@@ -500,6 +557,28 @@ def records(work):
     with lease(c.guard(work) / "study.lock"):
         work, plan, state = _load(work)
         return {k: d for k, (_, d) in _records(work, plan, state).items()}
+
+
+def exact_export_inventory(bundle, file_hashes):
+    """Reject every unmanifested entry, including empty directories and links."""
+    bundle = c.guard(bundle)
+    expected_directories = set()
+    for name in file_hashes:
+        expected_directories.update(p.as_posix() for p in Path(name).parents if p != Path("."))
+    seen_files, seen_directories = set(), set()
+    pending = [bundle]
+    while pending:
+        for candidate in pending.pop().iterdir():
+            entry = c.guard(candidate)
+            name = entry.relative_to(bundle).as_posix()
+            if entry.is_dir():
+                require(name in expected_directories, "unexpected export entry")
+                seen_directories.add(name); pending.append(entry)
+            else:
+                require(entry.is_file() and name in file_hashes, "unexpected export entry")
+                require(sha(c.read_bytes(entry)) == file_hashes[name], "export bytes changed")
+                seen_files.add(name)
+    require(seen_files == set(file_hashes) and seen_directories == expected_directories, "export inventory incomplete")
 
 
 def freeze(work, measurements):
@@ -539,9 +618,8 @@ def freeze(work, measurements):
             else:
                 require(not adopting, "published export file missing")
                 path.parent.mkdir(parents=True, exist_ok=True)
-                # Complete file replacement is atomic; interruption leaves a
-                # private temporary sibling, never a partially published value.
-                atomic_new(path, raw)
+                # Interrupted temporary writes remain outside the publication.
+                atomic_new(path, raw, temporary_dir=staging)
             file_hashes[name] = sha(raw)
         # Matched validation reads only already checked per-case snapshots.
         for key, case in plan["cases"].items():
@@ -561,9 +639,14 @@ def freeze(work, measurements):
         for name, value in (("runs.json", runs), ("masked.json", masked), ("comparison.json", comparison),
                             ("manifest.json", plan["manifest"]), ("protocol.json", plan["protocol"])):
             retain(name, bridge.canonical_bytes(value))
+        if "native_loader" in plan:
+            environment = plan["native_loader"]["environment"]
+            require(digest(environment) == plan["native_loader"]["environment_sha256"], "native environment evidence changed")
+            retain("native-environment.json", bridge.canonical_bytes(environment))
         receipt = {"schema": "e156-study-export-v1", "generation": generation, "plan_sha256": digest(plan),
                    "measurements_sha256": digest(measurements), "files": dict(file_hashes), "scientific_results": None}
         retain("receipt.json", bridge.canonical_bytes(receipt))
+        exact_export_inventory(bundle, file_hashes)
         if not adopting:
             # Both resolved targets are inside this work directory. Rename only
             # this completed private generation; never replace a publication.

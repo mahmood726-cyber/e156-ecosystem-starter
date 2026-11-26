@@ -26,7 +26,8 @@ def no_network(monkeypatch):
 def inputs(job, report, *, outcome="RETURNED", dispatches=1):
     config, manifest, _, _ = job
     source = manifest["nodes"][0]
-    arm = {"arm_id": "SYNTHETIC-A", "description": "Synthetic adapter fixture"}
+    arm = {"arm_id": "SYNTHETIC-A", "description": "Synthetic adapter fixture",
+           "runtime": "e156", "runtime_version": context.digest(runtime.profile())}
     task = {"claim_id": "SYNTHETIC-T1", "input_file": source["file"], "input_sha256": source["sha256"],
             "source_files": [{"file": source["file"], "sha256": source["sha256"]}]}
     protocol_hash = context.digest({"fixture": "SYNTHETIC adapter contract, no study"})
@@ -90,6 +91,14 @@ def test_completed_record_and_complete_package_use_observations_not_prices(job):
     assert package["case"] == args[0] and package["report"] == args[1] and package["draft"] == draft
     assert package["measurement"]["evidence_reference"].startswith("SYNTHETIC")
     assert draft["scientific_validation"] == "NOT_ESTABLISHED"
+
+
+@pytest.mark.parametrize("field,value", [("runtime", "pydantic"), ("runtime_version", "f" * 64)])
+def test_records_cannot_relabel_actual_runtime_or_version(job, field, value):
+    args = inputs(job, run(job, Provider()))
+    args[4][field] = value
+    with pytest.raises(context.Refused, match="runtime"):
+        records.finalize(*args, measurement(args))
 
 
 @pytest.mark.parametrize("prediction", [

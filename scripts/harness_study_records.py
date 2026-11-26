@@ -104,6 +104,12 @@ def _model_policy(config, request):
 
 def _operations(report, config, manifest, began, ended):
     operations = trace.validate(report)
+    if "native_runtime" in config:
+        if __package__: from scripts import harness_native_pydantic as native
+        else: import harness_native_pydantic as native
+        native.validate_report(report, config)
+    else:
+        require("native_runtime" not in report and "native_execution" not in report, "unbound native report metadata")
     _hash(digest(config), report["config_sha256"], "trace configuration")
     _hash(digest(manifest), report["context_sha256"], "trace context")
     _same(report["events"][0]["anchor"]["code"], runtime.profile(), "trace runtime profile")
@@ -180,6 +186,15 @@ def draft(case, report, config, manifest, arm, task, protocol_sha256):
     _hash(digest({"protocol_sha256": protocol_sha256, "arm_id": case["arm_id"], "claim_id": case["claim_id"]}),
           case["case_id"], "case identity")
     runtime.configuration(config, manifest)
+    if "native_runtime" in config:
+        if __package__: from scripts import harness_native_pydantic as native
+        else: import harness_native_pydantic as native
+        native.validate_config(config)
+        expected_runtime, expected_version = "pydantic", digest(native.profile())
+    else:
+        expected_runtime, expected_version = "e156", digest(runtime.profile())
+    require(arm.get("runtime") == expected_runtime and arm.get("runtime_version") == expected_version,
+            "arm runtime identity/version differs from executed configuration")
     _hash(digest(config), case["config_sha256"], "case configuration")
     _hash(digest(manifest), case["context_sha256"], "case context")
     _task_binding(config, manifest, task)

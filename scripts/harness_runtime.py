@@ -192,6 +192,10 @@ class Journal:
                 require(key not in operations, "duplicate reservation")
                 _numbers(event["reserved"])
                 require(event.get("request_sha256") == digest(event["request"]), "request digest mismatch")
+                witness_fields = {"execution_witness", "execution_witness_sha256"} & set(event)
+                require(not witness_fields or witness_fields == {"execution_witness", "execution_witness_sha256"}, "incomplete execution witness")
+                if witness_fields:
+                    require(isinstance(event["execution_witness"], dict) and event["execution_witness_sha256"] == digest(event["execution_witness"]), "execution witness digest mismatch")
                 operations[key] = {"reservation": event, "finish": None}
             elif kind in {"FINISHED", "UNRESOLVED"}:
                 require(key in operations and operations[key]["finish"] is None, "invalid operation transition")
@@ -222,8 +226,11 @@ class Journal:
             for key in total: total[key] += used[key]
         return total
 
-    def operation(self, key, request, reserve, execute):
+    def operation(self, key, request, reserve, execute, *, witness=None):
         _numbers(reserve)
+        require(witness is None or isinstance(witness, dict), "execution witness must be an object")
+        if "native_runtime" in self.config and key.split(":", 1)[0] in {"count", "model"}:
+            require(witness is not None, "native model/count requires execution witness")
         with closing(self._connect()) as con:
             con.execute("BEGIN IMMEDIATE")
             events = self._read(con)
@@ -231,17 +238,28 @@ class Journal:
             if key in operations:
                 op = operations[key]
                 require(op["reservation"]["request_sha256"] == digest(request), "request bytes changed")
+                prior = op["reservation"]
+                require(("execution_witness" in prior) == (witness is not None), "execution witness presence changed")
+                if witness is not None:
+                    require(prior["execution_witness_sha256"] == digest(witness), "execution witness changed")
                 final = op["finish"]
                 if final is None or final["kind"] == "UNRESOLVED":
                     raise Unresolved("in-flight or interrupted operation needs reconciliation")
                 return final["data"]
             if any(op["finish"] is None or op["finish"]["kind"] == "UNRESOLVED" for op in operations.values()):
                 raise Unresolved("unresolved operation prevents further execution")
+            if "native_runtime" in self.config and key.startswith("model:"):
+                count = operations.get("count:" + key[6:])
+                require(count and count["finish"] and count["finish"]["kind"] == "FINISHED"
+                        and count["reservation"]["request_sha256"] == digest(request)
+                        and count["reservation"].get("execution_witness_sha256") == digest(witness),
+                        "native model/count witness or request mismatch")
             used = self.totals(operations)
             if reserve["wall_ms"] <= 0 or any(used[field] + reserve[field] > self.config["limits"][field] for field in RESOURCES):
                 raise BudgetStop("reservation exceeds remaining budget")
             self._append(con, events, {"kind": "RESERVED", "id": key, "request": request,
-                                      "request_sha256": digest(request), "reserved": reserve})
+                                      "request_sha256": digest(request), "reserved": reserve,
+                                      **({"execution_witness": witness, "execution_witness_sha256": digest(witness)} if witness is not None else {})})
             con.commit()
         started = time.monotonic()
         try:
@@ -293,6 +311,10 @@ class Journal:
             count = operations.get("count:" + key[6:])
             require(count and count["finish"] and count["finish"]["kind"] == "FINISHED"
                     and count["reservation"]["request_sha256"] == digest(request), "matching completed count required")
+            if "native_runtime" in self.config:
+                require(isinstance(reservation.get("execution_witness"), dict)
+                        and count["reservation"].get("execution_witness_sha256") == reservation.get("execution_witness_sha256"),
+                        "matching native count/model execution witness required for recovery")
             quote = count["finish"]["data"]
             integer(quote.get("input_tokens"), "input count")
             models = {digest(m): m for m in self.config["models"].values()
@@ -305,6 +327,10 @@ class Journal:
             require(reservation["reserved"] == expected, "recovery reservation policy mismatch")
             raw = receipt.get("response")
             require(receipt.get("response_sha256") == digest(raw), "recovered response digest mismatch")
+            if "native_runtime" in self.config:
+                if __package__: from scripts import harness_native_pydantic as native
+                else: import harness_native_pydantic as native
+                native.validate_recovery_response(raw, self.config, quote)
             usage = model_usage(raw, model, quote)
             require(isinstance(raw.get("id"), str) and raw["id"], "recovered response id required")
             received = op["finish"].get("received") if op["finish"] else None

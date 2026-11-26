@@ -110,6 +110,42 @@ def test_explicit_default_tier_is_sent_and_unsupported_policy_refused(job):
     with pytest.raises(context.Refused, match="request policy"): runtime.configuration(config, graph)
 
 
+def test_native_execution_witness_is_mandatory_and_replay_bound(job):
+    config, graph, root, db = job
+    config["native_runtime"] = {"fixture": "SYNTHETIC journal contract, not a native adapter"}
+    journal = runtime.Journal(db, config, graph, root, create=True)
+    request = {"SYNTHETIC": "wire request"}
+    witness = {"SYNTHETIC": "native request"}
+    reserve = runtime.units(wall_ms=1000)
+    executed = []
+    def count(timeout):
+        executed.append(True)
+        return {"input_tokens": 1}, runtime.units()
+    with pytest.raises(context.Refused, match="requires execution witness"):
+        journal.operation("count:0", request, reserve, count)
+    assert not executed and len(journal.events()) == 1
+    journal.operation("count:0", request, reserve, count, witness=witness)
+    assert journal.operation("count:0", request, reserve, count, witness=witness) == {"input_tokens": 1}
+    assert len(executed) == 1
+    with pytest.raises(context.Refused, match="witness changed"):
+        journal.operation("count:0", request, reserve, count, witness={"SYNTHETIC": "changed native request"})
+    with pytest.raises(context.Refused, match="witness or request mismatch"):
+        journal.operation("model:0", request, reserve, count, witness={"SYNTHETIC": "other native request"})
+    assert len(executed) == 1
+
+
+def test_execution_witness_hash_cannot_be_dropped_or_forged(job):
+    config, graph, root, db = job
+    journal = runtime.Journal(db, config, graph, root, create=True)
+    journal.operation("count:0", {}, runtime.units(wall_ms=1000), lambda t: ({}, runtime.units()), witness={"SYNTHETIC": True})
+    for defect in ("missing", "changed"):
+        events = copy.deepcopy(journal.events())
+        if defect == "missing": events[1].pop("execution_witness_sha256")
+        else: events[1]["execution_witness"]["SYNTHETIC"] = False
+        with pytest.raises(context.Refused, match="execution witness"):
+            runtime.Journal.operations(events)
+
+
 def test_tool_round_is_recorded_and_replayed(job):
     tool = answer()
     tool["output"] = [{"type": "function_call", "call_id": "synthetic-call", "name": "read_evidence",
@@ -283,3 +319,39 @@ def test_nonterminal_provider_response_keeps_full_reservation(job, status):
     assert result["status"] == "UNRESOLVED"
     assert result["usage"]["model_tokens"] == 120
     assert provider.calls == 1
+
+
+def test_native_recovery_validates_before_irreversible_settlement(job):
+    """Synthetic transaction contract; no SDK, environment claim or provider call."""
+    from scripts import harness_native_pydantic as native
+    config, graph, root, state = job
+    config["routes"]["extract"] = ["small"]
+    del config["models"]["large"]
+    config["request_policy"] = {"service_tier": "default"}
+    config["native_runtime"] = {"schema": native.SCHEMA, "profile": native.profile(),
+                                "environment_sha256": "0" * 64, "policy": copy.deepcopy(native.POLICY)}
+    journal = runtime.Journal(state, config, graph, root, create=True)
+    model = config["models"]["small"]
+    request = {"model": model["model"], "max_output_tokens": model["max_output_tokens"], "service_tier": "default"}
+    witness = {"synthetic_transaction_fixture": True}
+    journal.operation("count:0", request, runtime.units(wall_ms=1000), lambda _: ({"input_tokens": 20}, runtime.units()), witness=witness)
+    def interrupted(_): raise TimeoutError("SYNTHETIC unknown response")
+    with pytest.raises(runtime.Unresolved):
+        journal.operation("model:0", request, runtime.units(model_calls=1, model_tokens=120,
+            cost_microusd=runtime.price(model, 20, 100), wall_ms=1000), interrupted, witness=witness)
+    events = journal.events(); reservation = journal.operations(events)["model:0"]["reservation"]
+    raw = {**answer(), "model": model["model"], "service_tier": "default"}
+    receipt = {"schema": "e156-harness-recovery-v1", "reviewer": "SYNTHETIC reviewer", "reason": "SYNTHETIC recovery",
+        "evidence_reference": "SYNTHETIC transaction test", "attestation": "I verified this terminal response belongs to this exact request",
+        "config_sha256": context.digest(config), "context_sha256": context.digest(graph), "journal_sha256": context.digest(events[-1]),
+        "operation_id": "model:0", "reservation_sha256": context.digest(reservation), "request_sha256": context.digest(request),
+        "response": raw, "response_sha256": context.digest(raw)}
+    bad = copy.deepcopy(receipt)
+    bad["response"]["output"] = [{"type": "web_search_call"}]
+    bad["response_sha256"] = context.digest(bad["response"])
+    with pytest.raises(context.Refused, match="native recovered response"):
+        journal.reconcile(bad)
+    assert journal.events() == events
+    assert journal.operations(events)["model:0"]["finish"]["kind"] == "UNRESOLVED"
+    assert journal.reconcile(receipt)["status"] == "RECONCILED_NOT_RESUMED"
+    assert journal.operations(journal.events())["model:0"]["finish"]["kind"] == "RECONCILED"
