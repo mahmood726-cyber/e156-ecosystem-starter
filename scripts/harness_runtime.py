@@ -105,6 +105,49 @@ def model_usage(raw, model, quote):
                  cost_microusd=price(model, usage["input_tokens"], usage["output_tokens"]))
 
 
+def response_usage(raw, model, quote, request_policy=None):
+    """Validate the supported envelope and request identity before settlement.
+
+    Keep model_usage's historical accounting contract for offline artifacts;
+    newly received and recovered responses must also satisfy this boundary.
+    Final message text is parsed separately, retaining the ABSTAIN policy.
+    """
+    require(isinstance(raw, dict), "malformed provider response")
+    require(raw.get("model") == model["model"], "provider model identity mismatch")
+    if request_policy is not None:
+        require(raw.get("service_tier") == request_policy["service_tier"], "provider service tier mismatch")
+    require(isinstance(raw.get("id"), str) and bool(raw["id"]), "provider response id required")
+    require(isinstance(raw.get("status"), str), "malformed provider status")
+    require(isinstance(raw.get("output"), list), "malformed provider output")
+    calls = []
+    for item in raw["output"]:
+        require(isinstance(item, dict), "malformed provider output item")
+        kind = item.get("type")
+        if kind == "message":
+            require(item.get("role") == "assistant" and isinstance(item.get("content"), list)
+                    and bool(item["content"]), "malformed provider message")
+            require(all(isinstance(part, dict) and part.get("type") == "output_text"
+                        and isinstance(part.get("text"), str) for part in item["content"]),
+                    "unsupported provider message content")
+        elif kind == "function_call":
+            require(all(isinstance(item.get(key), str) and bool(item[key]) for key in ("name", "call_id"))
+                    and isinstance(item.get("arguments"), str), "malformed provider function call")
+            calls.append(item)
+        elif kind == "reasoning":
+            require(isinstance(item.get("id"), str) and bool(item["id"])
+                    and isinstance(item.get("summary"), list), "malformed provider reasoning item")
+            require(all(isinstance(part, dict) and part.get("type") == "summary_text"
+                        and isinstance(part.get("text"), str) for part in item["summary"]),
+                    "malformed provider reasoning summary")
+            require(item.get("encrypted_content") is None or isinstance(item["encrypted_content"], str),
+                    "malformed provider reasoning state")
+        else:
+            raise Refused("unsupported provider output item")
+        require(item.get("id") is None or isinstance(item["id"], str), "malformed provider item id")
+    require(len(calls) <= 1 and (not calls or raw["status"] == "completed"), "unsupported parallel/incomplete tool call")
+    return model_usage(raw, model, quote)
+
+
 def accounting(operations):
     """Keep observations separate from unresolved and recovered-time ceilings."""
     observed, unresolved, recovered_wall = units(), units(), units()
@@ -331,7 +374,7 @@ class Journal:
                 if __package__: from scripts import harness_native_pydantic as native
                 else: import harness_native_pydantic as native
                 native.validate_recovery_response(raw, self.config, quote)
-            usage = model_usage(raw, model, quote)
+            usage = response_usage(raw, model, quote, self.config.get("request_policy"))
             require(isinstance(raw.get("id"), str) and raw["id"], "recovered response id required")
             received = op["finish"].get("received") if op["finish"] else None
             if isinstance(received, dict):
@@ -441,11 +484,12 @@ def run(config, manifest, root, state, *, provider=None, allow_paid=False, creat
                 require(context.timestamp(model["price_expires_at"]) > datetime.now(timezone.utc), "price policy expired")
                 raw = provider.respond(payload, timeout)
                 try:
-                    usage = model_usage(raw, model, quote)
+                    usage = response_usage(raw, model, quote, config.get("request_policy"))
                 except Refused:
                     raise ReceivedInvalid(raw) from None
                 return raw, usage
             response = journal.operation(f"model:{turn}", payload, reserve, respond)
+            response_usage(response, model, quote, config.get("request_policy"))
             if response["status"] == "cancelled":
                 return journal.report("CANCELLED")
             calls = [item for item in response["output"] if item.get("type") == "function_call"]

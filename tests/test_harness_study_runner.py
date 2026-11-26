@@ -200,6 +200,28 @@ def test_bad_response_identity_is_retained_for_reconciliation(study):
     assert op["finish"]["received"]["usage"]["total_tokens"] == 30
 
 
+def test_malformed_response_is_recorded_and_recoverable_without_crashing_resume(study):
+    for fixture in study["fixtures"].values(): fixture["responses"][0]["output"][0]["content"] = None
+    plan = runner.prepare(**study); key = plan["schedule"][0]
+    first = runner.execute(study["work"])
+    assert first == {"status": "CASE_RECORDED", "case_id": key, "runtime_status": "UNRESOLVED"}
+    item = runner.read(study["work"] / "state.json")["cases"][key]
+    report = runner.read(study["work"] / item["record_file"])["report"]
+    operation = runtime.Journal.operations(report["events"])["model:0"]
+    assert operation["finish"]["kind"] == "UNRESOLVED"
+    assert operation["finish"]["received"]["output"][0]["content"] is None
+    assert runner.execute(study["work"], resume=key)["runtime_status"] == "UNRESOLVED"
+    after = runner.read(study["work"] / "state.json")["cases"][key]
+    assert runner.read(study["work"] / after["record_file"])["report"]["events"] == report["events"]
+    assert (after["started_at"], after["deadline_at"], after["reserved"]) == (item["started_at"], item["deadline_at"], item["reserved"])
+    assert runner.reconcile(study["work"], key, recovery_receipt(study, plan, key))["status"] == "RECONCILED_NOT_RESUMED"
+    assert runner.execute(study["work"], resume=key)["runtime_status"] == "COMPLETED"
+    runner.abort(study["work"])
+    row = runner.records(study["work"])[key]
+    assert row["matched_record"]["usage"]["model_tokens"] == 30
+    assert row["operation_counts"]["model"] == {"allocated": 1, "finished": 0, "reconciled": 1, "unresolved": 0}
+
+
 def test_post_preflight_guard_change_refused(study, monkeypatch):
     original = runner.preflight.preflight
     def changed(*args):
