@@ -9,8 +9,10 @@ import hashlib
 import hmac
 import json
 import math
+import os
 from pathlib import Path
 import sqlite3
+import tempfile
 import time
 
 if __package__:
@@ -173,13 +175,34 @@ class Journal:
             self.anchor["progress_policy"] = dict(config["progress_policy"])
         self.revalidate()
         if create:
-            self.path.touch(exist_ok=False)
-            with closing(sqlite3.connect(self.path)) as con:
-                con.execute(TABLE)
-                self._append(con, [], {"kind": "READY", "anchor": self.anchor})
-                con.commit()
+            self._initialize()
         require(self.path.is_file(), "journal missing; explicit initialization required")
         self.events()
+
+    def _initialize(self):
+        """Publish only a closed, committed journal; retain interrupted staging."""
+        if self.path.exists():
+            raise FileExistsError(self.path)
+        # Keep the staging basename as short as run.sqlite: SQLite also needs
+        # room for its rollback suffix under Windows' native path limit.
+        descriptor, name = tempfile.mkstemp(prefix=".j", dir=self.path.parent)
+        os.close(descriptor)
+        candidate = context.control_path(name, self.root, self.manifest, sqlite=True, creating=True)
+        with closing(sqlite3.connect(candidate)) as con:
+            con.execute("PRAGMA synchronous=FULL")
+            require(con.execute("PRAGMA journal_mode").fetchone() == ("delete",), "unsupported journal mode")
+            con.execute("BEGIN IMMEDIATE")
+            con.execute(TABLE)
+            self._append(con, [], {"kind": "READY", "anchor": self.anchor})
+            con.commit()
+            self._read(con)
+        self.revalidate()
+        # Recheck sidecars immediately before exclusive publication. Neither a
+        # racing creator nor an existing target is ever replaced. A process
+        # interruption leaves private staging evidence, never a partial target.
+        context.control_path(self.path, self.root, self.manifest, sqlite=True, creating=True)
+        os.link(context.guard(candidate), self.path)
+        candidate.unlink()
 
     def revalidate(self):
         require(digest(self.config) == self.anchor["config_sha256"] and digest(self.manifest) == self.anchor["context_sha256"],

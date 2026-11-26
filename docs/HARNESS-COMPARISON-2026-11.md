@@ -64,6 +64,16 @@ benchmark became our own result.
 
 ## Measured recovery experiment
 
+**2026-11-26 repair:** the comparison had retained anchors from before the
+reviewed fixture update. A fresh run refused all 18 starts and attempted no
+resumes; that [failed report](../benchmarks/recovery/development-stale-anchors-2026-11-26.json)
+is preserved. After full source-backed replay against the current reviewed
+anchors, the [new measurement](../benchmarks/recovery/development-repaired-2026-11-26.json)
+completed all 18 scenarios: direct replay and revalidated LangGraph satisfy 6/6
+each; deliberately cached LangGraph satisfies 2/6 and exposes four expected
+mutation failures. CI now repeats the comparison and retains per-case attempts
+even if a later case interrupts the run. See the [repair record](HARNESS-REVIEW-FIXES-2026-11-26.md).
+
 The [protocol](../benchmarks/harness-recovery-protocol.json) was written before
 execution and is hash-bound in the [measurement](../benchmarks/recovery/development-windows.json).
 The [runner](../benchmarks/harness_recovery.py) uses the SAME existing E156 replay

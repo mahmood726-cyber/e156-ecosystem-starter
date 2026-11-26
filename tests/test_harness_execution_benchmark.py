@@ -21,6 +21,7 @@ def example():
     row = {"terminal_status": "COMPLETED", "prediction": {"disposition": "NO_FLAG"},
            "observed_model_calls": 3, "observed_tool_attempts": 2, "successful_tool_results": successes,
            "source_before_sha256": sha, "source_after_sha256": sha, "refusal_retained": False,
+           "refusal_evidence": [], "apparatus_errors": [], "trace": [],
            "provider_failure_retained": False, "provider_failures": 0}
     return case, row, protocol
 
@@ -60,12 +61,164 @@ def test_stops_and_provider_failures_cannot_fabricate_predictions(example):
         assert not all(benchmark.grade(case, {**row, **changes}, protocol).values())
 
 
-def test_abstention_requires_retained_refusal(example):
-    case, row, protocol = example
-    case = {**case, "expected": "refused"}
+def development_case(family):
+    cases = benchmark.load(benchmark.ROOT / "benchmarks/harness-execution-development.json")
+    return next(case for case in cases if case["family"] == family)
+
+
+def test_abstention_requires_retained_refusal():
+    case = development_case("unknown_tool")
+    protocol = benchmark.load(benchmark.PROTOCOL)
+    row = benchmark.worker(case, "e156_baseline", protocol)
     row = {**row, "prediction": {"disposition": "ABSTAIN"}}
-    assert not all(benchmark.grade(case, row, protocol).values())
-    assert all(benchmark.grade(case, {**row, "refusal_retained": True}, protocol).values())
+    assert not all(benchmark.grade(case, row, protocol).values())  # Contradicts terminal REFUSED.
+    row["terminal_status"] = "COMPLETED"
+    assert all(benchmark.grade(case, row, protocol).values())
+    for changes in ({"refusal_evidence": [], "refusal_retained": False}, {"trace": []},
+                    {"refusal_retained": False}, {"prediction": {"disposition": "NO_FLAG"}}):
+        assert not all(benchmark.grade(case, {**row, **changes}, protocol).values())
+
+
+@pytest.mark.parametrize("arm", ["e156_baseline", "e156_guarded"])
+@pytest.mark.parametrize("family,cause", [("unknown_tool", "unauthorized_tool"),
+                                        ("invalid_arguments", "invalid_arguments"),
+                                        ("source_drift", "source_drift")])
+def test_legitimate_e156_refusals_have_explicit_bound_causes(arm, family, cause):
+    case = development_case(family)
+    protocol = benchmark.load(benchmark.PROTOCOL)
+    row = benchmark.worker(case, arm, protocol)
+    assert row["contract_satisfied"] and row["refusal_retained"]
+    assert row["prediction"] is None and not row["apparatus_errors"]
+    assert row["refusal_evidence"]
+    assert {event["cause"] for event in row["refusal_evidence"]} == {cause}
+    assert all(event in row["trace"] and event["reason"] for event in row["refusal_evidence"])
+    changed = copy.deepcopy(row)
+    changed["refusal_evidence"][0]["request"] = {"name": "unrelated", "arguments": {}}
+    assert not all(benchmark.grade(case, changed, protocol).values())
+
+
+@pytest.mark.parametrize("arm", ["e156_baseline", "e156_guarded"])
+@pytest.mark.parametrize("fault", [RuntimeError, ValueError])
+@pytest.mark.parametrize("boundary", ["tool", "provider"])
+def test_swallowed_callback_faults_are_apparatus_errors(monkeypatch, arm, fault, boundary):
+    case = development_case("invalid_arguments")
+    protocol = benchmark.load(benchmark.PROTOCOL)
+    operation, require = benchmark.runtime.Journal.operation, benchmark.runtime.require
+    def broken(*args, **kwargs):
+        raise fault("deliberately injected unexpected callback failure")
+    if boundary == "tool":
+        # This is the review's original reproducer: fail before Observer.invoke
+        # can record a legitimate tool-validation refusal.
+        monkeypatch.setattr(benchmark.Observer, "invoke", broken)
+    else:
+        monkeypatch.setattr(benchmark.runtime, "response_usage", broken)
+    row = benchmark.worker(case, arm, protocol)
+    assert row["terminal_status"] == "ERROR" and not row["contract_satisfied"]
+    assert row["error"]["type"] == "builtins." + fault.__name__
+    assert row["apparatus_errors"] and not row["refusal_evidence"]
+    assert benchmark.runtime.Journal.operation is operation and benchmark.runtime.require is require
+    native = next(event["report"] for event in row["trace"] if event["kind"] == "native_run")
+    assert native["status"] == "UNRESOLVED"  # Production fail-closed behavior is preserved.
+    summary = benchmark.summarize([row])[0]
+    assert summary["attempted"] == summary["apparatus_errors"] == 1
+    assert summary["satisfied"] == 0
+
+
+@pytest.mark.parametrize("fault", [RuntimeError, benchmark.context.Refused])
+def test_unexpected_fault_cannot_hide_behind_an_earlier_refusal(monkeypatch, fault):
+    case = development_case("invalid_arguments")
+    protocol = benchmark.load(benchmark.PROTOCOL)
+    original = benchmark.Observer.invoke
+    def broken(self, *args, **kwargs):
+        try:
+            return original(self, *args, **kwargs)
+        except benchmark.context.Refused:
+            raise fault("unexpected failure after the expected refusal") from None
+    monkeypatch.setattr(benchmark.Observer, "invoke", broken)
+    row = benchmark.worker(case, "e156_baseline", protocol)
+    assert row["refusal_evidence"] and row["apparatus_errors"]
+    assert row["terminal_status"] == "ERROR" and not row["contract_satisfied"]
+
+
+@pytest.mark.parametrize("exception", [RuntimeError("unexpected adapter fault"),
+                                      benchmark.context.Refused("unrecognized refusal cause")])
+def test_unrecognized_adapter_failures_cannot_pass_refusal(monkeypatch, exception):
+    def broken(*args, **kwargs):
+        raise exception
+    monkeypatch.setattr(benchmark, "e156", broken)
+    row = benchmark.worker(development_case("unknown_tool"), "e156_baseline", benchmark.load(benchmark.PROTOCOL))
+    assert row["terminal_status"] == "ERROR" and not row["contract_satisfied"]
+    assert row["apparatus_errors"] and not row["refusal_retained"]
+
+
+def test_refusal_oracle_rejects_contradictions_and_unsupported_causes():
+    case = development_case("invalid_arguments")
+    protocol = benchmark.load(benchmark.PROTOCOL)
+    row = benchmark.worker(case, "e156_baseline", protocol)
+    assert row["terminal_status"] == "UNRESOLVED" and row["contract_satisfied"]
+    for changes in ({"prediction": {"disposition": "NO_FLAG"}},
+                    {"prediction": {"disposition": "ABSTAIN"}},
+                    {"refusal_evidence": [], "refusal_retained": False},
+                    {"apparatus_errors": [{"type": "builtins.RuntimeError"}]},
+                    {"trace": []}):
+        assert not all(benchmark.grade(case, {**row, **changes}, protocol).values())
+    changed = copy.deepcopy(row)
+    changed["refusal_evidence"][0]["cause"] = "source_drift"
+    assert not all(benchmark.grade(case, changed, protocol).values())
+    changed = copy.deepcopy(row)
+    changed["refusal_evidence"][0]["reason"] = "unrecognized guard failure"
+    assert not all(benchmark.grade(case, changed, protocol).values())
+
+
+@pytest.mark.parametrize("changes", [
+    {"observed_model_calls": -1}, {"observed_model_calls": 0}, {"observed_model_calls": True},
+    {"observed_tool_attempts": -1}, {"observed_tool_attempts": False},
+    {"successful_tool_results": None}, {"successful_tool_results": [{}]},
+    {"prediction": "NO_FLAG"}, {"refusal_evidence": None}, {"apparatus_errors": None},
+    {"refusal_retained": "false"}, {"unauthorized_success": "false"},
+    {"source_before_sha256": "not a digest"}, {"terminal_status": []},
+])
+def test_malformed_observations_fail_closed_without_crashing(example, changes):
+    case, row, protocol = example
+    assert not all(benchmark.grade(case, {**row, **changes}, protocol).values())
+    assert not all(benchmark.grade(case, {}, protocol).values())
+
+
+def test_native_refusal_feedback_is_bound_to_the_original_model_call(tmp_path):
+    case = development_case("unknown_tool")
+    obs = benchmark.Observer(case, tmp_path, {})
+    obs.step([])
+    obs.step([])  # Final answer; history still contains feedback for the first call.
+    message = {"type": "tool", "status": "error", "name": "not_authorized",
+               "tool_call_id": "bad", "content": "Unknown tool"}
+    obs.feedback([message], "langchain")
+    obs.feedback([message], "langchain")
+    assert len(obs.refusal_evidence) == 1
+    assert obs.refusal_evidence[0]["model_call"] == 1
+    assert obs.refusal_evidence[0]["cause"] == "unauthorized_tool"
+
+
+@pytest.mark.parametrize("dialect,message", [
+    ("langchain", {"type": "tool", "status": "error", "name": "not_authorized",
+                   "tool_call_id": "bad", "content": "Unknown tool"}),
+    ("pydantic", {"parts": [{"part_kind": "tool-return", "outcome": "retried",
+                             "tool_name": "not_authorized", "tool_call_id": "bad",
+                             "retry": {"cause": "unknown_tool"}}]}),
+])
+def test_native_refusal_cause_requires_matching_feedback(tmp_path, dialect, message):
+    case = development_case("unknown_tool")
+    protocol = benchmark.load(benchmark.PROTOCOL)
+    row = benchmark.worker(case, "e156_baseline", protocol)
+    obs = benchmark.Observer(case, tmp_path, {})
+    obs.step([])
+    obs.feedback([message], dialect)
+    row.update(terminal_status="COMPLETED", prediction={"disposition": "ABSTAIN"},
+               refusal_evidence=obs.refusal_evidence, trace=obs.events)
+    assert all(benchmark.grade(case, row, protocol).values())
+    for bad_reason in ('not JSON', '{}', json.dumps({"tool_call_id": "other"})):
+        changed = copy.deepcopy(row)
+        changed["refusal_evidence"][0]["reason"] = bad_reason
+        assert not all(benchmark.grade(case, changed, protocol).values())
 
 
 def test_coercion_cannot_borrow_a_future_valid_request(example):

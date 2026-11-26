@@ -56,6 +56,149 @@ def job(tmp_path):
     return config, graph, tmp_path, tmp_path / "run.sqlite"
 
 
+INITIALIZATION_CRASH_PHASES = ("before_ready", "before_commit", "after_commit", "before_publish", "after_publish")
+
+
+def crash_initialization(config, graph, root, state, phase):
+    """Real process loss around SQLite commit/publication, using synthetic input."""
+    config_path = state.with_name(state.name + ".test-config.json")
+    graph_path = state.with_name(state.name + ".test-context.json")
+    for path, value in ((config_path, config), (graph_path, graph)):
+        path.write_text(json.dumps(value), encoding="utf-8")
+    script = '''import json,os,sqlite3,sys
+from pathlib import Path
+sys.path.insert(0,sys.argv[1])
+from scripts import harness_runtime as r
+root,state,config,graph=map(Path,sys.argv[2:6])
+phase=sys.argv[6]
+if phase=="before_ready":
+    r.Journal._append=lambda *a,**k: os._exit(91)
+elif phase in {"before_commit","after_commit"}:
+    original_connect=sqlite3.connect
+    class Interrupted(sqlite3.Connection):
+        def commit(self):
+            if phase=="before_commit": os._exit(91)
+            super().commit()
+            os._exit(91)
+    def connect(*a,**k):
+        return original_connect(*a,**k,factory=Interrupted)
+    sqlite3.connect=connect
+else:
+    original_link=os.link
+    def link(*a,**k):
+        if phase=="before_publish": os._exit(91)
+        original_link(*a,**k)
+        os._exit(91)
+    os.link=link
+r.Journal(state,json.loads(config.read_text()),json.loads(graph.read_text()),root,create=True)
+'''
+    result = subprocess.run([sys.executable, "-I", "-S", "-B", "-c", script,
+                             str(Path(runtime.__file__).parents[1]), str(root), str(state),
+                             str(config_path), str(graph_path), phase], capture_output=True, timeout=15)
+    assert result.returncode == 91, result.stderr
+
+
+@pytest.mark.parametrize("phase", INITIALIZATION_CRASH_PHASES)
+def test_journal_initialization_process_loss_publishes_only_complete_state(job, phase):
+    config, graph, root, state = job
+    crash_initialization(config, graph, root, state, phase)
+    assert state.exists() == (phase == "after_publish")
+    staging = [p for p in root.glob(".j*") if not p.name.endswith("-journal")]
+    assert len(staging) == 1 and staging[0].is_file()
+    before = {p.name: p.read_bytes() for p in root.glob(".j*")}
+    if state.exists():
+        assert [e["kind"] for e in runtime.Journal(state, config, graph, root).events()] == ["READY"]
+        with pytest.raises(FileExistsError): runtime.Journal(state, config, graph, root, create=True)
+    else:
+        with pytest.raises(context.Refused, match="missing"):
+            runtime.Journal(state, config, graph, root)
+    assert {p.name: p.read_bytes() for p in root.glob(".j*")} == before
+
+
+def test_initialization_preserves_existing_corrupt_target(job):
+    config, graph, root, state = job
+    before = b"SYNTHETIC corrupt journal evidence"
+    state.write_bytes(before)
+    with pytest.raises(FileExistsError): runtime.Journal(state, config, graph, root, create=True)
+    assert state.read_bytes() == before
+    assert not list(root.glob(".j*"))
+
+
+def test_initialization_exclusive_publication_preserves_racing_target(job, monkeypatch):
+    config, graph, root, state = job
+    original = runtime.os.link
+    before = b"SYNTHETIC competing creator evidence"
+    def racing_link(source, destination):
+        state.write_bytes(before)
+        return original(source, destination)
+    monkeypatch.setattr(runtime.os, "link", racing_link)
+    with pytest.raises(FileExistsError): runtime.Journal(state, config, graph, root, create=True)
+    assert state.read_bytes() == before
+    candidate, = root.glob(".j*")
+    assert [e["kind"] for e in runtime.Journal(candidate, config, graph, root).events()] == ["READY"]
+
+
+def test_initialization_rechecks_sidecar_before_publication(job, monkeypatch):
+    config, graph, root, state = job
+    sidecar = Path(str(state) + "-journal")
+    original = runtime.Journal._read
+    before = b"SYNTHETIC newly appearing sidecar"
+    def appeared(journal, connection):
+        events = original(journal, connection)
+        sidecar.write_bytes(before)
+        return events
+    monkeypatch.setattr(runtime.Journal, "_read", appeared)
+    with pytest.raises(context.Refused): runtime.Journal(state, config, graph, root, create=True)
+    assert not state.exists() and sidecar.read_bytes() == before
+    assert len(list(root.glob(".j*"))) == 1
+
+
+def test_initialization_refuses_symlink_target_without_touching_destination(job):
+    config, graph, root, state = job
+    destination = root / "existing-evidence"
+    before = b"SYNTHETIC linked target evidence"
+    destination.write_bytes(before)
+    try:
+        state.symlink_to(destination)
+    except OSError as exc:
+        pytest.skip("symlink creation unavailable: " + type(exc).__name__)
+    with pytest.raises(context.Refused, match="linked"):
+        runtime.Journal(state, config, graph, root, create=True)
+    assert destination.read_bytes() == before and state.is_symlink()
+    assert not list(root.glob(".j*"))
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows SQLite rollback path boundary")
+def test_initialization_preserves_windows_rollback_path_budget(job, monkeypatch):
+    config, graph, root, _ = job
+    padding = 239 - len(str(root)) - 1
+    assert padding > 0, "use a shorter pytest base directory for the Windows path-boundary probe"
+    parent = root / ("p" * padding)
+    parent.mkdir()
+    control, state = parent / "old.sqlite", parent / "run.sqlite"
+    assert len(str(control)) == len(str(state)) == 250
+    assert len(str(state) + "-journal") == 258
+    # Establish that the former direct-initialization path supports this exact
+    # native SQLite rollback-path budget before checking staged publication.
+    with sqlite3.connect(control) as con:
+        con.execute("BEGIN IMMEDIATE")
+        con.execute("CREATE TABLE evidence (value TEXT)")
+        con.execute("INSERT INTO evidence VALUES ('SYNTHETIC boundary control')")
+        con.commit()
+    original = runtime.os.link
+    published = []
+    def record_publication(source, destination):
+        assert len(str(source)) <= len(str(destination))
+        published.append(str(source))
+        return original(source, destination)
+    monkeypatch.setattr(runtime.os, "link", record_publication)
+    journal = runtime.Journal(state, config, graph, root, create=True)
+    assert published and [e["kind"] for e in journal.events()] == ["READY"]
+    assert not list(parent.glob(".j*"))
+    with sqlite3.connect(control) as con:
+        assert con.execute("SELECT value FROM evidence").fetchone() == ("SYNTHETIC boundary control",)
+
+
 class Provider:
     def __init__(self, responses=None):
         self.counts = 0

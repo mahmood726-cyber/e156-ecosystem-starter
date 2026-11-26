@@ -65,6 +65,17 @@ python scripts/harness_runtime.py prepare --root private --manifest private/cont
 without an API key or network call. Output files must be new. Zero call limits
 remain valid for preparation and prevent model execution.
 
+Initialization commits and validates `READY` in a private sibling staging
+file, closes SQLite, then publishes the journal with an exclusive hard
+link. An interrupted initialization therefore leaves either no published journal
+or a complete initial journal. Existing targets and sidecars are never replaced.
+This requires a filesystem supporting hard links, such as local NTFS. Failed or
+interrupted staging is retained as a short `.j*` file and any SQLite sidecars;
+preserve these for inspection, and do not adopt them as a run journal. A crash just after
+publication can leave a staging alias of the published journal, not an
+independent backup. This is a process-interruption contract, not a power-loss
+durability claim.
+
 ## Execute and recover
 
 Only after setting a budget, provide `OPENAI_API_KEY` through the process

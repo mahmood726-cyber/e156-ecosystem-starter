@@ -178,6 +178,14 @@ a local process does not prove that an already accepted remote request incurred
 no charge. The read-only tool restriction avoids introducing an unbounded worker
 process into this initial deadline contract.
 
+Journal initialization publishes only a complete `READY` journal. If the child
+exits before publication, `abort` retains the dispatched slot with unknown
+usage and preserves the private `.j*` staging file and any SQLite sidecars;
+the missing journal still does not authorize a retry. If publication completed,
+abort reads the valid journal. Staging left by an interruption is never adopted
+automatically. Existing corrupt journals remain evidence requiring investigation;
+this initialization fix does not overwrite or reinterpret them.
+
 Native preparation and pre-dispatch environment verification are setup work
 outside the case lifecycle timer. Child startup, native imports, execution and
 recovery gaps are inside it. Record setup overhead separately when reporting

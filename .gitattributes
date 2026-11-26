@@ -38,5 +38,6 @@ benchmarks/harness-recovery-protocol.json text eol=lf
 benchmarks/harness-execution-protocol.json text eol=lf
 # Published execution evidence binds exact bytes, including JSON line endings.
 benchmarks/execution/** -text
+benchmarks/recovery/** -text
 examples/synthesis-review-stepwise.json text eol=lf
 examples/synthesis-adjudication-stepwise.json text eol=lf
