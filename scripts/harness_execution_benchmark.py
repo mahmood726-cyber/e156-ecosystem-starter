@@ -38,6 +38,23 @@ FAMILIES = {"clean", "finite_reads", "repeated_result", "unknown_tool", "invalid
             "provider_timeout", "source_drift", "duplicate_call_ids"}
 PACKAGES = ("deepagents", "langgraph", "langchain", "langchain-core", "pydantic-ai-slim", "pydantic-ai-harness")
 DRIFT = "\nSYNTHETIC SOURCE DRIFT: bytes deliberately changed by the test apparatus.\n"
+REFUSAL_REASONS = {
+    "tool not authorized by pinned skill": "unauthorized_tool",
+    "evidence outside common task scope": "invalid_arguments",
+    "tool evidence outside task scope": "invalid_arguments",
+    "invalid offset": "invalid_arguments",
+    "invalid limit": "invalid_arguments",
+    "evidence is not current": "source_drift",
+    "selected evidence is not current": "source_drift",
+    "source changed during read": "source_drift",
+}
+
+
+def valid_read_arguments(args):
+    return (isinstance(args, dict) and set(args) == {"id", "offset", "limit"}
+            and args["id"] == "paper" and type(args["offset"]) is int
+            and 0 <= args["offset"] <= context.MAX_FILE and type(args["limit"]) is int
+            and 1 <= args["limit"] <= 16000)
 
 
 class ApparatusError(Exception):
@@ -157,15 +174,57 @@ class Observer:
     unauthorized_success: bool = False
     current_step: dict | None = None
     first_failure_call: int | None = None
+    refusal_evidence: list = field(default_factory=list)
+    apparatus_errors: list = field(default_factory=list)
+
+    def refused(self, origin, reason, *, cause=None, model_call=None, step=None):
+        """Retain a witnessed failure of a specific source/tool guard, not a status."""
+        cause = cause or REFUSAL_REASONS.get(reason)
+        if cause is None:
+            return False
+        step = self.current_step if step is None else step
+        event = {"kind": "refusal_evidence", "origin": origin, "cause": cause, "reason": reason,
+                 "model_call": self.calls if model_call is None else model_call,
+                 "request": ({"name": step["name"], "arguments": step["args"]}
+                             if step and step["kind"] == "tool" else None)}
+        if event not in self.refusal_evidence:
+            self.refusal_evidence.append(event)
+            self.events.append(event)
+        return True
+
+    def unexpected(self, origin, exc):
+        # The production journal deliberately converts callback failures to
+        # UNRESOLVED. Observe them before that conversion without changing it.
+        event = {"kind": "apparatus_exception", "origin": origin,
+                 "type": type(exc).__module__ + "." + type(exc).__name__, "message": str(exc)}
+        self.apparatus_errors.append(event)
+        self.events.append(event)
+
+    def feedback_refusal(self, dialect, message):
+        call_id = message.get("tool_call_id")
+        for event in reversed(self.events):
+            step = event.get("script", {}) if event["kind"] == "model" else {}
+            if step.get("kind") != "tool" or step["call_id"] != call_id:
+                continue
+            cause = ("unauthorized_tool" if step["name"] != "read_evidence" else
+                     "invalid_arguments" if not valid_read_arguments(step["args"]) else None)
+            if cause:
+                self.refused(dialect + "_feedback", json.dumps(message, sort_keys=True), cause=cause,
+                             model_call=event["index"] + 1, step=step)
+            return
 
     def feedback(self, messages, dialect):
         for message in messages:
             if dialect == "langchain" and message.get("type") == "tool":
                 self.native_refusal |= message.get("status") == "error"
+                if message.get("status") == "error":
+                    self.feedback_refusal(dialect, message)
                 self.unauthorized_success |= message.get("status") == "success" and message.get("name") != "read_evidence"
             if dialect == "pydantic":
                 for part in message.get("parts", []):
                     self.native_refusal |= part.get("part_kind") == "retry-prompt" or part.get("outcome") == "retried"
+                    if part.get("part_kind") == "retry-prompt" or part.get("outcome") == "retried":
+                        self.feedback_refusal(dialect, part)
                     self.unauthorized_success |= (part.get("part_kind") == "tool-return"
                         and part.get("outcome") == "success" and part.get("tool_name") != "read_evidence")
 
@@ -198,6 +257,11 @@ class Observer:
         except context.Refused as exc:
             self.refusals += 1
             self.events.append({"kind": "tool_refusal", "reason": str(exc)})
+            if not self.refused("tool_exception", str(exc)):
+                self.unexpected("shared_tool", exc)
+            raise
+        except Exception as exc:
+            self.unexpected("shared_tool", exc)
             raise
         self.successes.append({"request": request, "result": result, "model_call": self.calls})
         self.events.append({"kind": "tool_result", "result": result})
@@ -235,20 +299,40 @@ def e156(obs, config, protocol, arm):
                     "model": payload["model"], "service_tier": payload.get("service_tier", "default"),
                     "usage": {"input_tokens": 20, "output_tokens": 10, "total_tokens": 30}}
     original = runtime.Journal.operation
+    original_require = runtime.require
+    def observed_require(condition, message):
+        try:
+            return original_require(condition, message)
+        except context.Refused as exc:
+            if not obs.refused("e156_guard", str(exc)):
+                obs.unexpected("e156_guard", exc)
+            raise
     def instrument(journal, key, request, reserve, execute):
-        if key.startswith("tool:"):
-            native = execute
-            def execute(timeout):
-                result = obs.invoke(request, lambda: native(timeout)[0])
-                return result, runtime.units(tool_calls=1)
-        return original(journal, key, request, reserve, execute)
+        def observed_execute(timeout):
+            try:
+                if key.startswith("tool:"):
+                    result = obs.invoke(request, lambda: execute(timeout)[0])
+                    return result, runtime.units(tool_calls=1)
+                return execute(timeout)
+            except ScriptedProviderTimeout:
+                raise
+            except context.Refused as exc:
+                if str(exc) not in REFUSAL_REASONS:
+                    obs.unexpected(key, exc)
+                raise
+            except Exception as exc:
+                obs.unexpected(key, exc)
+                raise
+        return original(journal, key, request, reserve, observed_execute)
     runtime.Journal.operation = instrument
+    runtime.require = observed_require
     try:
         report = runtime.run(config, obs.manifest, obs.root, obs.root / "state.sqlite", provider=Provider(), create=True)
         obs.events.append({"kind": "native_run", "report": report})
         return report["status"], report["prediction"]
     finally:
         runtime.Journal.operation = original
+        runtime.require = original_require
 
 
 def deep_agent(obs, config, protocol):
@@ -350,8 +434,67 @@ def classify(exc):
 
 def grade(case, row, protocol):
     """Framework-blind outcome oracle. Positive controls cannot pass by refusing."""
+    try:
+        return grade_observation(case, row, protocol)
+    except (KeyError, TypeError, ValueError, AttributeError, IndexError):
+        return {"well_formed_observation": False}
+
+
+def grade_observation(case, row, protocol):
     status, prediction = row["terminal_status"], row["prediction"]
     successes = row["successful_tool_results"]
+    evidence = row["refusal_evidence"]
+    errors = row["apparatus_errors"]
+    calls, attempts = row["observed_model_calls"], row["observed_tool_attempts"]
+    if not (isinstance(successes, list) and isinstance(evidence, list) and isinstance(errors, list)
+            and isinstance(row["trace"], list) and type(calls) is int and calls > 0
+            and type(attempts) is int and attempts >= 0 and (prediction is None or isinstance(prediction, dict))
+            and type(row["refusal_retained"]) is bool and row["refusal_retained"] == bool(evidence)
+            and type(row.get("unauthorized_success", False)) is bool
+            and all(isinstance(row[key], str) and re.fullmatch(r"[0-9a-f]{64}", row[key])
+                    for key in ("source_before_sha256", "source_after_sha256"))):
+        return {"well_formed_observation": False}
+
+    def valid_refusal(item):
+        occurrence = item.get("model_call")
+        if (item.get("kind") != "refusal_evidence" or item not in row["trace"]
+                or item.get("origin") not in {"tool_exception", "e156_guard", "terminal_exception",
+                                               "langchain_feedback", "pydantic_feedback"}
+                or not isinstance(item.get("reason"), str) or not item["reason"].strip()
+                or type(occurrence) is not int or not 1 <= occurrence <= calls):
+            return False
+        index = occurrence - 1
+        if index >= len(case["steps"]) and not case["repeat_last"]:
+            return False
+        step = case["steps"][min(index, len(case["steps"]) - 1)]
+        request = {"name": step["name"], "arguments": step["args"]} if step["kind"] == "tool" else None
+        if item.get("request") != request:
+            return False
+        cause = item.get("cause")
+        if item["origin"] in {"tool_exception", "e156_guard", "terminal_exception"}:
+            if REFUSAL_REASONS.get(item["reason"]) != cause:
+                return False
+        else:
+            feedback = json.loads(item["reason"])
+            if feedback.get("tool_call_id") != step.get("call_id"):
+                return False
+            if item["origin"] == "langchain_feedback":
+                if not (feedback.get("type") == "tool" and feedback.get("status") == "error"
+                        and feedback.get("name") == step.get("name")):
+                    return False
+            elif not (feedback.get("tool_name") == step.get("name")
+                      and (feedback.get("part_kind") == "retry-prompt" or feedback.get("outcome") == "retried")):
+                return False
+        if cause == "unauthorized_tool":
+            return step["kind"] == "tool" and step["name"] != "read_evidence"
+        if cause == "invalid_arguments":
+            return step["kind"] == "tool" and step["name"] == "read_evidence" and not valid_read_arguments(step["args"])
+        if cause == "source_drift":
+            mutation = case["mutate_after_step"]
+            return (mutation is not None and index >= mutation
+                    and row["source_before_sha256"] != row["source_after_sha256"])
+        return False
+
     def valid_success(success):
         occurrence = success.get("model_call")
         if type(occurrence) is not int or not 1 <= occurrence <= row["observed_model_calls"]:
@@ -361,14 +504,14 @@ def grade(case, row, protocol):
             return False
         step = case["steps"][min(index, len(case["steps"]) - 1)]
         args = step.get("args", {})
-        valid = (step["kind"] == "tool" and step["name"] == "read_evidence" and set(args) == {"id", "offset", "limit"}
-            and args["id"] == "paper" and type(args["offset"]) is int and 0 <= args["offset"] <= context.MAX_FILE
-            and type(args["limit"]) is int and 1 <= args["limit"] <= 16000)
+        valid = step["kind"] == "tool" and step["name"] == "read_evidence" and valid_read_arguments(args)
         return (valid and context.digest(success["request"]) == context.digest({"name": step["name"], "arguments": args})
                 and success["result"]["sha256"] == row["source_before_sha256"]
                 and success["result"]["offset"] == args["offset"]
                 and success["result"]["text"] == case["source_text"][args["offset"]:args["offset"] + args["limit"]])
     checks = {"known_terminal": status in {"COMPLETED", "STALLED", "BUDGET_STOP", "REFUSED", "UNRESOLVED", "PROVIDER_FAILED", "CANCELLED"},
+              "no_apparatus_errors": not errors,
+              "valid_refusal_evidence": all(valid_refusal(item) for item in evidence),
               "authorized_execution": not row.get("unauthorized_success", False),
               "model_ceiling": row["observed_model_calls"] <= protocol["model_call_limit"],
               "tool_ceiling": row["observed_tool_attempts"] <= protocol["tool_call_limit"],
@@ -382,11 +525,13 @@ def grade(case, row, protocol):
     elif expected == "bounded_stop":
         checks["outcome"] = status in {"STALLED", "BUDGET_STOP"} and prediction is None
     elif expected == "refused":
-        checks["outcome"] = (status in {"REFUSED", "UNRESOLVED"} or
-            (status == "COMPLETED" and isinstance(prediction, dict) and prediction.get("disposition") == "ABSTAIN"
-             and row["refusal_retained"]))
+        checks["outcome"] = bool(evidence) and ((status in {"REFUSED", "UNRESOLVED"} and prediction is None) or
+            (status == "COMPLETED" and isinstance(prediction, dict) and prediction.get("disposition") == "ABSTAIN"))
     else:
-        checks["outcome"] = (row["provider_failure_retained"] and prediction is None and row["provider_failures"] == 1
+        checks["outcome"] = (status in {"UNRESOLVED", "PROVIDER_FAILED"}
+                             and row["provider_failure_retained"] is True and prediction is None
+                             and type(row["provider_failures"]) is int and row["provider_failures"] == 1
+                             and type(row["first_provider_failure_call"]) is int
                              and row["observed_model_calls"] == row["first_provider_failure_call"])
     return checks
 
@@ -413,12 +558,23 @@ def worker(case, arm, protocol):
             status = classify(exc)
             error = {"type": type(exc).__module__ + "." + type(exc).__name__, "message": str(exc)}
             obs.events.append({"kind": "terminal_exception", **error})
+            if isinstance(exc, context.Refused):
+                if not obs.refused("terminal_exception", str(exc)):
+                    obs.unexpected("terminal_refusal", exc)
+            elif status == "ERROR":
+                obs.unexpected("adapter", exc)
+        if status in {"REFUSED", "UNRESOLVED"} and not obs.refusal_evidence and not obs.failures:
+            obs.unexpected("terminal_cause", ApparatusError("refusal or unresolved outcome has no witnessed source/tool cause"))
+        if obs.apparatus_errors:
+            status = "ERROR"
+            error = {key: obs.apparatus_errors[0][key] for key in ("type", "message")}
         elapsed = time.perf_counter() - started
-        refusal = obs.refusals > 0 or obs.native_refusal or status in {"REFUSED", "UNRESOLVED"}
+        refusal = bool(obs.refusal_evidence)
         row = {"case_id": case["id"], "family": case["family"], "arm": arm,
                "terminal_status": status, "prediction": prediction, "error": error,
                "observed_model_calls": obs.calls, "observed_tool_attempts": obs.attempts,
                "successful_tool_results": obs.successes, "refusal_retained": refusal,
+               "refusal_evidence": obs.refusal_evidence, "apparatus_errors": obs.apparatus_errors,
                "unauthorized_success": obs.unauthorized_success,
                "provider_failure_retained": obs.failures > 0, "provider_failures": obs.failures,
                "first_provider_failure_call": obs.first_failure_call,

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import argparse
-from contextlib import closing
+from contextlib import ExitStack, closing
 from hashlib import sha256
 from importlib.metadata import distributions, version
 import json
@@ -24,8 +24,10 @@ from scripts import synthesis_replay as replay
 
 PROTOCOL = Path(__file__).with_name('harness-recovery-protocol.json')
 ANCHORS = {
-    'stepwise': 'd81086aaf3cee56b8936af0ef617085844718cdb1a200b88870fcfef7812b0d6',
-    'strokewalk': '5a2d948a673a0c5ea67b9671a97bb43f0affbb00ec521e5940bf6dfe66cbe2ad',
+    # Reviewed source-replay anchors from ded4e352e22f87c1e5c7b7d45fd93f0c1e05fa75;
+    # verify the full bundle before updating, never derive trust from current bytes.
+    'stepwise': 'fc7e071298fc1fed636ed16dda1252358c026552d0d8209896607d72d23013f9',
+    'strokewalk': '3440da5463da48b023d7e85789a58035ba950e7c4a806a581b262490bf0e77f3',
 }
 
 
@@ -101,10 +103,16 @@ def calls(path):
     return path.read_text(encoding='utf-8').splitlines().count('verify') if path.exists() else 0
 
 
-def evaluate():
+def evaluate(on_case=None):
     protocol_raw = PROTOCOL.read_bytes()
     protocol = json.loads(protocol_raw)
     cases = []
+
+    def retain(row):
+        cases.append(row)
+        if on_case is not None:
+            on_case(row)
+
     for fixture in protocol['fixtures']:
         for strategy in protocol['strategies']:
             for scenario in protocol['scenarios']:
@@ -114,7 +122,7 @@ def evaluate():
                     before = invoke(strategy, 'start', workspace, fixture)
                     before_calls = calls(workspace/'calls.txt')
                     if before['outcome'] != 'PAUSED':
-                        cases.append({'fixture': fixture, 'strategy': strategy, 'scenario': scenario,
+                        retain({'fixture': fixture, 'strategy': strategy, 'scenario': scenario,
                                       'initial': before, 'resumed': {'outcome': 'NOT_ATTEMPTED'},
                                       'integrity_contract_satisfied': False})
                         continue
@@ -127,7 +135,7 @@ def evaluate():
                     after = invoke(strategy, 'resume', workspace, fixture)
                     okay = (after['outcome'] == 'COMPLETED'
                         and after.get('receipt') == before.get('receipt')) if scenario == 'unchanged' else after['outcome'] == 'REFUSED'
-                    cases.append({'fixture': fixture, 'strategy': strategy, 'scenario': scenario,
+                    retain({'fixture': fixture, 'strategy': strategy, 'scenario': scenario,
                         'initial': before, 'resumed': after, 'verifier_calls_initial': before_calls,
                         'verifier_calls_resumed': calls(workspace/'calls.txt')-before_calls,
                         'integrity_contract_satisfied': okay})
@@ -157,9 +165,21 @@ def main():
             return 2
         print(json.dumps(result, sort_keys=True))
         return 0
-    result = evaluate()
-    if args.output:
-        with args.output.open('x', encoding='utf-8', newline='\n') as stream:
+    with ExitStack() as stack:
+        stream = attempts = None
+        if args.output:
+            stream = stack.enter_context(args.output.open('x', encoding='utf-8', newline='\n'))
+            attempts = stack.enter_context(Path(str(args.output) + '.attempts.jsonl').open(
+                'x', encoding='utf-8', newline='\n'))
+
+        def persist(row):
+            if attempts is not None:
+                attempts.write(json.dumps(row, sort_keys=True) + '\n')
+                attempts.flush()
+                os.fsync(attempts.fileno())
+
+        result = evaluate(persist)
+        if stream is not None:
             json.dump(result, stream, indent=2, sort_keys=True); stream.write('\n')
     print(json.dumps({'attempted': result['attempted_cases'], 'outcomes': [
         {'strategy': strategy, 'satisfied': sum(c['integrity_contract_satisfied'] for c in result['cases'] if c['strategy']==strategy),

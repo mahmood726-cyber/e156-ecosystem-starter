@@ -13,6 +13,7 @@ import pytest
 from scripts import harness_context as context, harness_runtime as runtime
 from scripts import harness_study_runner as runner
 from tests.test_synthesis_study_preflight import bundle, write_json, reseal
+from tests.test_harness_runtime import INITIALIZATION_CRASH_PHASES, crash_initialization
 
 
 def response(text='{"disposition":"NO_FLAG","reason":"SYNTHETIC result"}'):
@@ -87,6 +88,40 @@ def test_budget_and_unknown_execution_are_never_silently_retried(study, monkeypa
     monkeypatch.setattr(runner.bounded_native, "run", original)
     assert runner.execute(study["work"])["status"] == "EXECUTION_UNKNOWN"
     assert not list(study["work"].glob("cases/*/run.sqlite"))
+
+
+@pytest.mark.parametrize("phase", INITIALIZATION_CRASH_PHASES)
+def test_initialization_process_loss_can_abort_and_freeze_every_planned_slot(study, monkeypatch, phase):
+    plan = runner.prepare(**study)
+    key = plan["schedule"][0]
+    case = plan["cases"][key]
+    directory = study["work"] / "cases" / key
+    def interrupted_dispatch(*args, **kwargs):
+        crash_initialization(case["config"], case["context"], directory / "inputs", directory / "run.sqlite", phase)
+        raise runner.bounded_native.Refused("SYNTHETIC initialization process loss")
+    monkeypatch.setattr(runner.bounded_native, "run", interrupted_dispatch)
+    assert runner.execute(study["work"])["status"] == "EXECUTION_UNKNOWN"
+    before = runner.read(study["work"] / "state.json")["cases"][key]
+    assert list(directory.glob(".j*"))
+    orphan_bytes = {p.name: p.read_bytes() for p in directory.glob(".j*")}
+    monkeypatch.setattr(runner.bounded_native, "run", lambda *a, **k: pytest.fail("unknown dispatch must not repeat"))
+    assert runner.execute(study["work"])["status"] == "EXECUTION_UNKNOWN"
+    if phase != "after_publish":
+        with pytest.raises(context.Refused, match="without journal"):
+            runner.execute(study["work"], resume=key)
+    assert runner.abort(study["work"])["status"] == "STUDY_ABORT_RECORDED"
+    after = runner.read(study["work"] / "state.json")["cases"][key]
+    for field in ("started_at", "deadline_at", "reserved", "dispatches"):
+        assert after[field] == before[field]
+    drafts = runner.records(study["work"])
+    assert len(drafts) == len(plan["schedule"])
+    assert drafts[key]["matched_record"]["status"] == "FAILED"
+    assert sum(d["matched_record"]["status"] == "NOT_ATTEMPTED" for d in drafts.values()) == len(plan["schedule"]) - 1
+    assert drafts[key]["matched_record"]["usage"]["model_tokens"] == (0 if phase == "after_publish" else None)
+    frozen = runner.freeze(study["work"], measurements_for(study["work"]))
+    assert frozen["status"] == "DEVELOPMENT_LEDGER_FROZEN"
+    assert len(frozen["runs"]["records"]) == len(plan["schedule"])
+    assert {p.name: p.read_bytes() for p in directory.glob(".j*")} == orphan_bytes
 
 
 def test_cap_stops_dispatch_and_retains_all_planned_rows(study):
