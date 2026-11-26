@@ -196,8 +196,8 @@ usage, aggregate non-wall accounting and the final prediction.
 Unrecorded requests and incomplete transcripts are refused; there is no network
 fallback or provider credential requirement. A changed output produces `FAIL`
 and CLI exit 1. Both original and replay code profiles are recorded so a code
-upgrade can be tested deliberately. Timing and reservation sizes are not expected
-to be identical between replays. Replay output is private and contains a full
+upgrade can be tested deliberately. Wall timing and wall-time reservation sizes
+can differ between replays; other resource accounting must match. Replay output is private and contains a full
 run report. Synthetic transcripts test execution behavior, not scientific
 accuracy, model quality or comparative performance.
 
