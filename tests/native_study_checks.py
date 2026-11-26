@@ -96,6 +96,28 @@ class NativeStudyChecks(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.data = bundle(Path(self.directory.name), self.descriptor)
+        self.child_diagnostics = []
+        original_run = runner.bounded_native.run
+        def diagnostic_run(command, *args, **kwargs):
+            # These children consume only the explicit synthetic fixture above.
+            # Keep production CLI errors sanitized, but expose chained failures
+            # here instead of losing the cause behind EXECUTION_UNKNOWN.
+            command = list(command)
+            index = command.index("-c") + 1
+            command[index] = ("import argparse,traceback\n"
+                "_original_error=argparse.ArgumentParser.error\n"
+                "def _synthetic_error(parser,message):\n"
+                "    traceback.print_exc()\n"
+                "    _original_error(parser,message)\n"
+                "argparse.ArgumentParser.error=_synthetic_error\n" + command[index])
+            kwargs["stderr_sink"] = lambda raw: self.child_diagnostics.append(raw.decode("utf-8", errors="replace"))
+            try:
+                return original_run(command, *args, **kwargs)
+            except runner.bounded_native.Refused as exc:
+                self.child_diagnostics.append(str(exc))
+                raise
+        patched = mock.patch.object(runner.bounded_native, "run", side_effect=diagnostic_run)
+        patched.start(); self.addCleanup(patched.stop)
 
     def measurements(self):
         return {key: {"schema": "e156-study-measurement-v1", "case_sha256": d["case_sha256"],
@@ -106,6 +128,13 @@ class NativeStudyChecks(unittest.TestCase):
     def dispatch_native(self, plan):
         for key in plan["schedule"]:
             result = runner.execute(self.data["work"])
+            directory = self.data["work"] / "cases" / key
+            diagnostic = {"scheduled_case": key, "scheduled_runtime": plan["cases"][key]["runtime"],
+                          "journal_exists": (directory / "run.sqlite").exists(),
+                          "attempt_files": [p.name for p in directory.glob("attempt-*.json")],
+                          "result": result, "child_diagnostics": self.child_diagnostics}
+            self.assertEqual(result.get("status"), "CASE_RECORDED", diagnostic)
+            self.assertEqual(result.get("case_id"), key, (result, self.child_diagnostics))
             if plan["cases"][key]["runtime"] == "pydantic": return key, result
         self.fail("native case missing")
 
@@ -117,7 +146,7 @@ class NativeStudyChecks(unittest.TestCase):
         plan = runner.prepare(**self.data)
         for key in plan["schedule"]:
             result = runner.execute(self.data["work"])
-            self.assertEqual(result["status"], "CASE_RECORDED", result)
+            self.assertEqual(result["status"], "CASE_RECORDED", (result, self.child_diagnostics))
             self.assertEqual(result["runtime_status"], "COMPLETED", result)
         drafts = runner.records(self.data["work"])
         measurements = {key: {"schema": "e156-study-measurement-v1", "case_sha256": d["case_sha256"],
