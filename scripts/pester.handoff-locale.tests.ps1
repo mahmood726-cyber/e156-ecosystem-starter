@@ -49,10 +49,14 @@ Describe "Get-HandoffPromptLocale precedence" {
         $env:E156_LANG = 'ar'
         Get-HandoffPromptLocale | Should -Be 'ar'
     }
-    It "falls back to 'en' for unsupported locales (de, ja, sw)" {
+    It "picks 'sw' from LANG=sw_KE.UTF-8" {
+        $env:LANG = 'sw_KE.UTF-8'
+        Get-HandoffPromptLocale | Should -Be 'sw'
+    }
+    It "falls back to 'en' for unsupported locales (de, ja, etc.)" {
         $env:LANG = 'de_DE.UTF-8'
         Get-HandoffPromptLocale | Should -Be 'en'
-        $env:LANG = 'sw_KE.UTF-8'
+        $env:LANG = 'ja_JP.UTF-8'
         Get-HandoffPromptLocale | Should -Be 'en'
     }
     It "is case-insensitive (LANG=FR_FR.UTF-8 -> fr)" {
@@ -89,11 +93,26 @@ Describe "Get-HandoffPromptPath returns the right localised file" {
         $p | Should -Match 'gemini-handoff-prompt\.ur\.md$'
         Test-Path $p | Should -BeTrue
     }
+    It "returns .sw.md when locale=sw and file exists" {
+        $env:LANG = 'sw_KE.UTF-8'
+        $p = Get-HandoffPromptPath -StarterRoot $script:starterRoot
+        $p | Should -Match 'gemini-handoff-prompt\.sw\.md$'
+        Test-Path $p | Should -BeTrue
+    }
     It "falls back to .en.md when localised file is missing" {
         # Force a locale whose file does NOT exist by passing it directly
         $p = Get-HandoffPromptPath -StarterRoot $script:starterRoot -Locale 'de'
         $p | Should -Match 'gemini-handoff-prompt\.en\.md$'
         Test-Path $p | Should -BeTrue
+    }
+}
+
+Describe "Handoff prompt text preserves UTF-8" {
+    It "reads a BOM-free non-ASCII prompt without Windows default-encoding corruption" {
+        $path = Join-Path $TestDrive 'prompt[sw].md'
+        $expected = 'Kiswahili ' + [char]0x2014 + ' ' + [char]0x00e9 + ' ' + [char]0x0639
+        [System.IO.File]::WriteAllText($path, $expected, (New-Object System.Text.UTF8Encoding $false))
+        Get-HandoffPromptText -Path $path | Should -BeExactly $expected
     }
 }
 

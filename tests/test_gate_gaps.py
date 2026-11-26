@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -368,8 +369,11 @@ def test_real_workflow_new_job_is_refused(rgg, real_copy):
 
 def test_real_gate_change_is_refused(rgg, real_copy):
     p = real_copy / "scripts/check-i18n-parity.sh"
-    p.write_text(p.read_text(encoding="utf-8").replace("langs=(fr pt ar ur)", "langs=(fr)"),
-                 encoding="utf-8")
+    original = p.read_text(encoding="utf-8")
+    narrowed, replacements = re.subn(
+        r"(?m)^declare -a langs=\([^\n]*\)$", "declare -a langs=(fr)", original)
+    assert replacements == 1 and narrowed != original, "negative control must narrow the language list"
+    p.write_text(narrowed, encoding="utf-8")
     reasons = _assert_refused(rgg, real_copy, "scripts/check-i18n-parity.sh: STALE SEAL")
     assert any("#jobs.i18n-parity: STALE SEAL" in r for r in reasons), \
         "the CI job sealed the script it runs, so narrowing the script re-opens the job too"

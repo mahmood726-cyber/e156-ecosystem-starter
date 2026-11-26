@@ -40,7 +40,7 @@ function Get-HandoffPromptLocale {
            elseif ($Lang)  { $Lang }
            else            { 'en' }
     $code = $raw.Substring(0, [Math]::Min(2, $raw.Length)).ToLower()
-    if ($code -in @('en','fr','pt','ar','ur')) { return $code }
+    if ($code -in @('en','fr','pt','ar','ur','sw')) { return $code }
     return 'en'
 }
 
@@ -53,6 +53,12 @@ function Get-HandoffPromptPath {
     $localised = Join-Path $StarterRoot ("scripts\gemini-handoff-prompt.$Locale.md")
     if (Test-Path $localised) { return $localised }
     return (Join-Path $StarterRoot 'scripts\gemini-handoff-prompt.en.md')
+}
+
+function Get-HandoffPromptText {
+    [CmdletBinding()]
+    param([string]$Path)
+    Get-Content -Raw -LiteralPath $Path -Encoding UTF8
 }
 
 if ($Import) { return }   # dot-sourced by Pester; no execution
@@ -71,7 +77,7 @@ if (-not (Test-Path $promptFile)) {
     return
 }
 
-$body = Get-Content -Raw -Path $promptFile
+$body = Get-HandoffPromptText -Path $promptFile
 
 # Try Desktop file first -- works even when clipboard is locked (RDP, sandbox).
 $desktop = [Environment]::GetFolderPath('Desktop')
