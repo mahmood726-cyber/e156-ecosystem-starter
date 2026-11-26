@@ -37,7 +37,7 @@
       ],
       "source": "scripts/harness_execution_benchmark.py; benchmarks/harness-execution-protocol.json; benchmarks/harness-execution-development.json; benchmarks/requirements-execution-windows.lock",
       "seal": {
-        ".github/workflows/harness-execution.yml#jobs.comparison": "743df04cce501810cad69b54d3983f862105d2b4ce4cf812e12e8db05cb38c47"
+        ".github/workflows/harness-execution.yml#jobs.comparison": "834e8ed1ce40aa959e9cb0391b2b26d225dc41d3f1e373a7bcd937695bdb4a73"
       }
     },
     {
