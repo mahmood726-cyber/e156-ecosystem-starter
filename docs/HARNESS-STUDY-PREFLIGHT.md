@@ -48,6 +48,10 @@ byte SHA-256 unless the table below says canonical JSON.
 | Each `tasks` entry | Exactly `claim_id`, `context_file`, `context_sha256`, `node_id`. One per protocol task. Context manifest lives under the private root; its exact bytes must match the declared hash. Its artifacts resolve under the input-artifact root. |
 
 All mapping sets must match exactly; unknown, duplicate or missing rows fail.
+For the explicitly exposed `development` purpose, the only required reference
+role is `analysis_plan_reference`. The four-reference contract above remains
+required for `prospective` and `synthetic_contract`; development does not invent
+custody, independence or unseen-corpus receipts.
 There are no supplied human approvals, scientific labels or model configurations.
 Operators construct these files from genuine, privately retained evidence.
 
@@ -84,7 +88,9 @@ rights, unseen status, budget authorization, reviewer independence and semantic
 fidelity. It grants no launch authorization, runtime enforcement, scientific
 PASS or superiority claim. Actual run evidence, usage/invoices and adjudications
 remain outside this preparation-only increment. The [prospective study plan](HARNESS-PROSPECTIVE-STUDY.md)
-lists the remaining scientific and integration work.
+lists the remaining scientific and integration work. The separate
+[development runner](HARNESS-STUDY-RUNNER.md) consumes these bindings for an E156
+read-only execution/recovery/ledger path; it does not authorize a scientific study.
 
 | Item | Static implementation | Dynamic evidence |
 |---|---|---|

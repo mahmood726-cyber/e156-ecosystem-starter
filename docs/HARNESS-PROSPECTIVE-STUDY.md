@@ -21,7 +21,10 @@ expert labels, paid-call budget or final sample size has been supplied here.
 The [file-backed preflight](HARNESS-STUDY-PREFLIGHT.md) now verifies actual
 configuration/reference files and task lineage before preparation. It reports
 `EVIDENCE_BOUND_NOT_RUN`, leaves human and scientific requirements unverified,
-and does not supply the missing live adapters or expert review.
+and does not supply live native comparator adapters or expert review. The
+[development runner](HARNESS-STUDY-RUNNER.md) now connects one E156 read-only
+execution path to recovery and measured ledger export; it refuses prospective
+protocols and has not run this scientific study.
 
 ## Inputs that must exist before a prospective freeze
 
@@ -31,7 +34,7 @@ and does not supply the missing live adapters or expert review.
 | Independent scientific custodian | Named responsibility, conflicts and access separation; source/rights verification; sampling frame; family definitions; exclusions and exposure register; private receipt custody | Not supplied |
 | Two qualified source reviewers and a separate adjudicator | Domain/methods competence, conflicts/familiarity declarations, available time, masked allocation and dispute process | Not supplied; AI code reviewers cannot fill these roles |
 | Analysis lead | Target population and estimand; family-level size/precision justification; missingness and UNKNOWN treatment; comparison multiplicity; decision margins and analysis code freeze | Not supplied |
-| Execution lead | Verified live adapters; complete tool/model contracts; isolated sessions; cap enforcement; outcome parser; accounting bridge and failure policy | Existing components below; integration incomplete |
+| Execution lead | Verified live adapters; complete tool/model contracts; isolated sessions; cap enforcement; outcome parser; accounting bridge and failure policy | E156 read-only development bridge implemented; live comparator/scientific integration incomplete |
 | Sponsor and execution lead | Exact model snapshot/access, decoding and routing policy; cap values; approved provider project and billing evidence; reviewer payment basis | Not supplied; do not substitute current prices or invented zero costs |
 
 These are substantive inputs, not fields to fill with approval-like strings.
@@ -202,19 +205,20 @@ and do not select a successful retry as if earlier attempts never occurred.
 
 The existing execution guide's [matched evaluation boundary](HARNESS-EXECUTION.md#matched-evaluation-boundary)
 is binding. `scripts/harness_execution_benchmark.py` uses scripted model fixtures;
-it is not the live scientific runner. Reuse the following components without
-claiming that the missing bridges already exist:
+it is not the live scientific runner. The E156 development runner and record
+adapter now supply the bounded first path below. Remaining cross-framework and
+scientific work must be completed before prospective execution:
 
 | Existing ingredient | Work still required | Development acceptance evidence |
 |---|---|---|
-| `synthesis_matched_eval.py` and `synthesis_blind_eval.py` | An orchestrator consuming the frozen schedule, invoking each live arm and writing complete bound run records | Known synthetic input through prepare, execution, mask and compare; missing/changed records fail closed |
-| E156 runtime/provider/context/trace | Adapter from real traces to prediction/status and observed ledger fields; reviewed derivation integration | Parse/refusal/timeout/unknown-outcome cases retained; source mutation and stale descendants refused; legitimate recalculation accepted |
+| Matched/blind evaluators and `harness_study_runner.py` | E156 read-only development schedule, case isolation and immutable ledger are implemented; extend to reviewed native live arms and scientific protocol | Synthetic prepare, execution, recovery, mask and compare; real process locks/watchdog; missing/changed records fail closed |
+| E156 runtime/provider/context/trace and `harness_study_records.py` | Trace-derived predictions/accounting and explicit measured-review receipts are implemented; real development provider rehearsal and broader tool integration remain pending | Parse/refusal/timeout/unknown-outcome cases retained; current source/receipt bindings required; missing measurements remain unknown |
 | Native Deep Agents and Pydantic integrations in the execution benchmark | Live provider adapters, matched tools and permissions, native configuration freeze and output normalization | Same bytes and capabilities verified; native features/settings disclosed; no fabricated model output |
-| Existing runtime reservations and native limits | Common external aggregate budget supervisor covering all requests, tools, retries and child agents | Development probes show cap behavior and no escape through parallel calls, retries or restarts |
-| Trace and billing records | Custodian-verifiable evidence files and a ledger bridge; whole-task clock; operator time log; invoice reconciliation | Evidence hashes actually opened/checked; unknown measurements stay null; no substitution of reservations for observations |
+| E156 development aggregate supervisor and native limits | Full case ceilings are reserved without refund for serial E156 read-only cases; extend and verify equivalent controls for native tools, retries and child agents | Development probes retain allocations through unknown launches, recovery and deadlines; ceilings are not invoices |
+| Trace-derived evidence packages and measurement receipts | Implemented byte-bound ledger bridge and whole-case clock; supply real operator time logs, actual invoice reconciliation and independent custody | Evidence packages checked; unknown measurements stay null; no substitution of reservations for observations |
 | Masked exporter and scorer | Reviewer allocation/receipt store; family-level analysis; prespecified decision report | Full masked handoff rehearsed on development data; root matching and analysis verified independently |
 
-Define the common measurement dictionary before implementing the bridge: count
+Extend the bridge's measurement dictionary explicitly for native arms: count
 successful, failed and refused tool attempts separately; declare which count
 populates the cap field; distinguish model-loop turns from transport retries;
 include billed ancillary requests and nested usage. Reconcile provider usage

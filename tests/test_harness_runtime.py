@@ -100,6 +100,16 @@ def test_run_trace_usage_and_resume_without_repeated_call(job):
     assert len(result["events"]) >= 5
 
 
+def test_explicit_default_tier_is_sent_and_unsupported_policy_refused(job):
+    config, graph, _, _ = job
+    config["request_policy"] = {"service_tier": "default"}
+    provider = Provider()
+    assert run(job, provider)["status"] == "COMPLETED"
+    assert provider.requests[0]["service_tier"] == "default"
+    config["request_policy"] = {"service_tier": "auto"}
+    with pytest.raises(context.Refused, match="request policy"): runtime.configuration(config, graph)
+
+
 def test_tool_round_is_recorded_and_replayed(job):
     tool = answer()
     tool["output"] = [{"type": "function_call", "call_id": "synthetic-call", "name": "read_evidence",
