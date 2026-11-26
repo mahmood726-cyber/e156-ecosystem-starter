@@ -37,7 +37,7 @@
   "pytest:tests/test_harness_context.py": 6,
   "pytest:tests/test_harness_provider.py": 3,
   "pytest:tests/test_harness_runtime.py": 14,
-  "pytest:tests/test_harness_trace.py": 13,
+  "pytest:tests/test_harness_trace.py": 15,
   "pytest:tests/test_harness_worker.py": 8,
   "pytest:tests/test_honest_ratchet.py": 21,
   "pytest:tests/test_install_e156_capsules_canary.py": 7,
@@ -817,6 +817,7 @@
   "pytest-names:tests/test_harness_trace.py": [
    "test_cli_recovery_export_and_replay_need_no_credentials",
    "test_export_omits_prompt_response_source_and_operator_content",
+   "test_long_reader_lock_refuses_before_side_effect",
    "test_offline_provider_refuses_request_drift_or_extra_calls",
    "test_offline_replay_recomputes_tool_and_consumes_complete_transcript",
    "test_recovered_pending_call_fences_late_executor",
@@ -826,6 +827,7 @@
    "test_replay_detects_non_wall_accounting_regression",
    "test_replay_input_or_source_drift_refused_before_execution",
    "test_replay_reports_output_regression",
+   "test_reservation_waits_for_short_reader_lock_without_repeating_action",
    "test_trace_rejects_tampered_chain_or_summaries",
    "test_unresolved_trace_cannot_seed_successful_regression"
   ],

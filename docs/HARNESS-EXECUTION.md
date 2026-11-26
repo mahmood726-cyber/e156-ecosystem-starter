@@ -167,6 +167,12 @@ external exactly-once delivery or a second process already running elsewhere.
 Configuration, source, skill and code drift still refuse recovery; there is no
 automatic migration of journals created by older runtime code.
 
+SQLite lock waits are bounded by the smaller of one second and the configured
+request timeout. This allows a short concurrent reader to finish before a
+reservation commit; prolonged contention refuses the operation. External calls
+are never retried by this mechanism. Journal overhead is not included in the
+operation-only wall accounting or claimed as whole-task elapsed time.
+
 `usage` remains conservative budget accounting. `accounting.observed` separates
 validated provider tokens/calls, measured operation time and price-policy cost
 from `unresolved_reserved`. Recovered model elapsed time is unknown and retains

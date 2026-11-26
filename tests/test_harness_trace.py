@@ -2,8 +2,10 @@
 import copy
 import json
 import os
+import sqlite3
 import subprocess
 import sys
+import threading
 
 import pytest
 
@@ -31,6 +33,56 @@ def receipt_for(job, response=None):
 def journal_for(job):
     config, manifest, root, state = job
     return runtime.Journal(state, config, manifest, root)
+
+
+def test_reservation_waits_for_short_reader_lock_without_repeating_action(job, monkeypatch):
+    config, manifest, root, state = job
+    journal = runtime.Journal(state, config, manifest, root, create=True)
+    reader = sqlite3.connect(state, check_same_thread=False)
+    reader.execute("BEGIN")
+    reader.execute("SELECT * FROM events").fetchall()
+    appended = threading.Event()
+    original_append = journal._append
+    def append(con, events, event):
+        original_append(con, events, event)
+        if event["kind"] == "RESERVED": appended.set()
+    monkeypatch.setattr(journal, "_append", append)
+    def release_reader():
+        appended.wait(2)
+        # Force COMMIT to encounter the shared reader before releasing it.
+        threading.Event().wait(.1)
+        reader.rollback()
+        reader.close()
+    releaser = threading.Thread(target=release_reader)
+    releaser.start()
+    calls = []
+    try:
+        journal.operation("synthetic-lock", {}, runtime.units(tool_calls=1, wall_ms=1000),
+                          lambda timeout: (calls.append("once") or {}, runtime.units(tool_calls=1)))
+    finally:
+        releaser.join(3)
+    assert not releaser.is_alive()
+    assert calls == ["once"]
+    assert journal.events()[-1]["kind"] == "FINISHED"
+
+
+def test_long_reader_lock_refuses_before_side_effect(job):
+    config, manifest, root, state = job
+    config["limits"]["request_ms"] = 20
+    journal = runtime.Journal(state, config, manifest, root, create=True)
+    reader = sqlite3.connect(state)
+    reader.execute("BEGIN")
+    reader.execute("SELECT * FROM events").fetchall()
+    calls = []
+    try:
+        with pytest.raises(sqlite3.OperationalError, match="locked"):
+            journal.operation("synthetic-lock", {}, runtime.units(tool_calls=1, wall_ms=20),
+                              lambda timeout: (calls.append("unexpected") or {}, runtime.units(tool_calls=1)))
+    finally:
+        reader.rollback()
+        reader.close()
+    assert calls == []
+    assert len(journal.events()) == 1
 
 
 def test_recovery_resumes_without_repeating_accepted_call_and_retains_history(job):
