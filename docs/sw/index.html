@@ -22,6 +22,8 @@
   code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; font-family: "SF Mono", "Consolas", monospace; }
   pre { background: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.9em; }
   pre code { background: none; padding: 0; }
+  details { margin: 12px 0; padding: 12px 16px; background: #f6f8fa; border-radius: 6px; }
+  summary { cursor: pointer; font-weight: 600; }
   @media (max-width: 480px) { pre { white-space: pre-wrap; word-break: break-all; } }
   .lang-picker { text-align: center; margin: 16px 0 24px; font-size: 0.95em; }
   .lang-picker a { display: inline-block; padding: 12px 14px; margin: 2px; color: #0366d6; text-decoration: none; min-width: 44px; min-height: 44px; line-height: 1.3; }
@@ -72,6 +74,21 @@
   <p style="margin-top:14px; font-size:0.85em; opacity:0.9;">Ujenzi ~dakika 2-3. <strong>Bora kwenye kompyuta</strong> &mdash; Codespaces kwenye kivinjari cha simu hufanya kazi lakini terminal si thabiti.</p>
 </section>
 
+<details id="github-account">
+  <summary>Huna akaunti ya GitHub?</summary>
+  <p>Fungua akaunti kwenye <a href="https://github.com/signup">github.com/signup</a>. Wanafunzi wanaweza kuangalia <a href="https://education.github.com">GitHub Education</a>. Angalia masharti na vikomo vya sasa vya akaunti yako kabla ya kuanza; usichapishe nywila au funguo za API kwenye hazina.</p>
+</details>
+
+<details id="what-is-codespace">
+  <summary>Codespace ni nini, na kazi yangu inahifadhiwa wapi?</summary>
+  <p>Ni mazingira ya kazi yanayoendeshwa kwenye seva ya GitHub na kufunguliwa kupitia kivinjari. Faili zake si faili za kompyuta yako. Hifadhi mabadiliko yako kwenye hazina au pakua nakala kabla ya kufuta codespace. Kompyuta yenye kibodi inarahisisha kuanza kuliko simu.</p>
+</details>
+
+<details id="upgrade-help">
+  <summary>Unasasisha usakinishaji uliopo?</summary>
+  <p>Hifadhi kazi na mipangilio yako kwanza. Soma <a href="../#local-install">mwongozo wa sasa wa usakinishaji</a>, kisha tumia kisakinishi kinacholingana na mfumo wako. Usitumie chaguo la kulazimisha kubadilisha faili bila kuelewa athari zake. Hitilafu au ukaguzi ulioshindwa lazima uchunguzwe kabla ya kuendelea.</p>
+</details>
+
 <div class="notice" role="note" style="background:#e7f6ec; border-left:4px solid #2da44e;">
   <strong>Ukitumia Codespaces, umemaliza kusakinisha</strong> &mdash; ruka sehemu ya "Mahitaji ya awali". Python, R na Node vimesakinishwa tayari kwa ajili yako kwenye wingu.
 </div>
@@ -83,20 +100,29 @@
 <h2>Nini kipya</h2>
 <p>Zana zimeongezeka na bado ni za <strong>nje ya mtandao na rafiki kwa mpango wa bure</strong>: wasaidizi wa nje ya mtandao (<code>reuse.py</code>, <code>recall.py</code>) wanaozuia kutumia tokeni kutengeneza upya kile kilichopo tayari; kifaa cha kutoa data cha RCT sasa kinatambua <strong>maeneo 17 ya magonjwa</strong> (VVU, malaria, homa ya matumbo, sickle cell, kifua kikuu…); tabaka tano za zana za meta-uchambuzi za nje ya mtandao; na kikagua-hesabu cha Overmind (v1.0.0). Maelezo kamili katika <a href="../#whats-new">sehemu ya "What's new" ya ukurasa wa Kiingereza</a>.</p>
 
-<h2>Usakinishaji &mdash; Windows</h2>
-<p>Fungua <strong>PowerShell</strong> (si Command Prompt). Bonyeza Win+R, andika <code>powershell</code>, kisha Enter. Bandika:</p>
-<pre><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex</code></pre>
+<h2>Usakinishaji kwenye kompyuta yako</h2>
+<p>Nakili hazina, soma kisakinishi, kisha endesha amri ya mfumo wako. Kwa Windows tumia <strong>PowerShell</strong>; kwa macOS / Linux / WSL tumia terminal. Mwongozo kamili uko katika <a href="../#local-install">ukurasa wa Kiingereza</a>.</p>
+<pre><code>git clone https://github.com/mahmood726-cyber/e156-ecosystem-starter
+cd e156-ecosystem-starter</code></pre>
+<p>Windows PowerShell:</p>
+<pre><code>.\install\install.ps1</code></pre>
+<p>macOS / Linux / WSL:</p>
+<pre><code>bash install/install.sh</code></pre>
 
-<h2>Usakinishaji &mdash; macOS / Linux / WSL</h2>
-<pre><code>curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash</code></pre>
-<p style="font-size:0.95em; color:#555;">Njia salama zaidi (inayopendekezwa kwa wanaoanza): nakili hazina kwanza, soma msimbo, kisha uendeshe &mdash; ona <a href="../#local-install">Kiingereza: Install on your own machine</a>.</p>
+<details id="one-line-install">
+  <summary>Usakinishaji wa amri moja: huendesha msimbo kutoka wavuti</summary>
+  <p>Tumia njia hii tu ukielewa kwamba msimbo unapakuliwa na kuendeshwa moja kwa moja. Njia ya kunakili na kusoma hazina hapo juu inapendekezwa kwa anayeanza.</p>
+  <p>Windows PowerShell:</p>
+  <pre><code>irm https://mahmood726-cyber.github.io/e156-ecosystem-starter/bootstrap.ps1 | iex</code></pre>
+  <p>macOS / Linux / WSL:</p>
+  <pre><code>curl -fsSL https://mahmood726-cyber.github.io/e156-ecosystem-starter/e156-setup.sh | bash</code></pre>
+</details>
 
 <h2>Thibitisha usakinishaji</h2>
-<pre><code># Windows PowerShell
-ls $env:USERPROFILE\.claude\rules
-
-# macOS / Linux / WSL
-ls ~/.claude/rules</code></pre>
+<p>Windows PowerShell:</p>
+<pre><code>ls $env:USERPROFILE\.claude\rules</code></pre>
+<p>macOS / Linux / WSL:</p>
+<pre><code>ls ~/.claude/rules</code></pre>
 <p>Unapaswa kuona faili nne za <code>.md</code>: <code>e156</code>, <code>lessons</code>, <code>advanced-stats</code>, <code>rules</code>.</p>
 
 <h2>Mahitaji ya awali (kwa usakinishaji wa kompyuta yako tu)</h2>
@@ -106,6 +132,11 @@ ls ~/.claude/rules</code></pre>
   <li><strong>R 4.5+</strong> &mdash; <em>si lazima</em>; kinahitajika tu kwa ukaguzi wa ziada wa R (metafor). Karatasi yako ya kwanza ya maneno 156 haihitaji R.</li>
   <li>CLI ya wakala wa AI: <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a> (bure), <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>, au <a href="https://github.com/openai/codex">OpenAI Codex</a>.</li>
 </ul>
+
+<details id="prereq-r">
+  <summary>R 4.5+ ni ya hiari: ulinganisho wa hesabu kwa metafor</summary>
+  <p>Unaweza kuanza bila R. Inahitajika ukitaka kulinganisha hesabu za meta-uchambuzi na kifurushi cha <code>metafor</code>. Pakua R kutoka <a href="https://cran.r-project.org/">CRAN</a>; hatua za PATH na usakinishaji wa kifurushi ziko katika <a href="../#advanced">mwongozo wa kina</a>. Ukaguzi huu hauchukui nafasi ya kuthibitisha chanzo na mbinu ya utafiti.</p>
+</details>
 
 </main>
 
