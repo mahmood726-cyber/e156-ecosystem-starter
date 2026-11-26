@@ -9,11 +9,12 @@ evidence before masking. The [record adapter](../scripts/harness_study_records.p
 derives predictions and usage from retained operations; an editable summary is
 not accepted as the prediction's authority.
 
-**Scope: E156-only development. Scientific study status: NOT_STARTED.**
+**Scope: E156 and constrained native Pydantic development. Scientific study status: NOT_STARTED.**
 Protocol purposes are `development` and `synthetic_contract`; this runner does
-not admit a prospective scientific protocol. Live native-comparator adapters,
-an unseen OA corpus, authenticated human custody and independent scientific
-adjudication are not supplied here. Software contracts, preflight receipts and
+not admit a prospective scientific protocol. The [native Pydantic adapter](HARNESS-NATIVE-PYDANTIC.md)
+adds actual Agent execution through a custom guarded Responses bridge. Live
+provider validation, an unseen OA corpus, authenticated human custody and independent
+scientific adjudication are not supplied here. Software contracts, preflight receipts and
 completed development records establish no scientific superiority. The
 [prospective plan](HARNESS-PROSPECTIVE-STUDY.md) owns those remaining decisions.
 Previously consumed benchmark final cases must not be reused as unseen material.
@@ -36,8 +37,11 @@ network-filesystem behavior.
 
 In addition to the preflight's manifest, protocol and evidence inventory:
 
-- Every arm has `runtime: e156` and `runtime_version` equal to the canonical JSON
-  digest of `harness_runtime.profile()` for the executing code.
+- E156 arms have `runtime: e156` and `runtime_version` equal to the canonical JSON
+  digest of `harness_runtime.profile()` for the executing code. Pydantic arms use
+  `runtime: pydantic`, the digest of `harness_native_pydantic.profile()`, and a
+  frozen `native_runtime` descriptor in every configuration. Records refuse a
+  runtime label or version inconsistent with their execution configuration.
 - Its config artifact has exactly `schema: e156-study-arm-configs-v1`,
   `runtime_profile` and `configurations`. The latter maps every claim ID to its
   complete concrete runtime configuration. There is no implicit template
@@ -168,6 +172,11 @@ a local process does not prove that an already accepted remote request incurred
 no charge. The read-only tool restriction avoids introducing an unbounded worker
 process into this initial deadline contract.
 
+Native preparation and pre-dispatch environment verification are setup work
+outside the case lifecycle timer. Child startup, native imports, execution and
+recovery gaps are inside it. Record setup overhead separately when reporting
+total study time; `wall_seconds` is not total study administration time.
+
 ## Draft records and explicit measurements
 
 Once every scheduled slot has execution or abort evidence, export drafts:
@@ -246,7 +255,10 @@ It includes `runs.json`, `masked.json`, `comparison.json`, `manifest.json`,
 with content hashes. State then records the receipt and ledger identities. If a
 process dies after publication but before the state update, repeat the same
 freeze command: the runner verifies and re-adopts the matching bundle. It refuses
-a different generation or changed/missing published bytes. A fully committed
+a different generation, changed/missing published bytes, or any unmanifested
+file or directory. Temporary writes stay outside the bundle. Native runs also
+retain `native-environment.json`, containing path-free dependency and executable
+hashes; private interpreter/package loader paths are not exported. A fully committed
 freeze closes the study to further execution and export; do not delete artifacts
 to force a replacement. CLI `--output` files are exclusive, so use a fresh result
 filename if an earlier summary already exists.
@@ -268,7 +280,7 @@ accuracy results or superiority decision. `scientific_results` remains null.
 
 | Item | Static or frozen contract | Dynamic evidence and limitation |
 |---|---|---|
-| Schedule, schemas, tools, source scope, route and caps | Checked before dispatch; E156 development only | Supplied actual configurations and file identities; no invented corpus or approved budget |
+| Schedule, schemas, tools, source scope, route and caps | Checked before dispatch; E156 or constrained native Pydantic development | Supplied actual configurations and file identities; no invented corpus or approved budget |
 | Synthetic mode | Explicit scripted responses and counts | Software rehearsal only; never live scientific observations |
 | Live predictions and usage | Frozen provider request contract and trace parser | Actual retained responses; unknown outcomes remain unknown; local consistency is not provider authentication |
 | Budget | Full case ceilings reserved before dispatch and never refunded | Configured price policy, not an invoice or a guarantee of remote billing |

@@ -14,6 +14,7 @@ on:
       - 'tests/test_synthesis_study_preflight.py'
       - 'tests/test_synthesis_matched_eval.py'
       - 'tests/test_harness_*.py'
+      - 'tests/native_*checks.py'
       - 'benchmarks/harness-execution-*.json'
       - 'benchmarks/requirements-execution-windows.lock'
       - 'requirements-ci.lock'
@@ -97,6 +98,26 @@ jobs:
           name: native-harness-comparison
           path: comparison.json*
           if-no-files-found: error
+
+  native-study:
+    name: Native Pydantic development study (Windows)
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+      - name: Create isolated native environment
+        run: python -m venv native-env
+      - name: Install exact Windows native wheels
+        run: 'native-env/Scripts/python.exe -m pip install --only-binary=:all: --require-hashes -r benchmarks/requirements-execution-windows.lock'
+      - name: Verify source-only native loader contracts
+        run: native-env/Scripts/python.exe -B -c "import sys, unittest; suite = unittest.defaultTestLoader.loadTestsFromName('tests.native_environment_checks'); result = unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(not (result.wasSuccessful() and result.testsRun >= 17 and not result.skipped))"
+      - name: Exercise actual Pydantic Agent and recovery contracts
+        run: native-env/Scripts/python.exe -B -c "import sys, unittest; suite = unittest.defaultTestLoader.loadTestsFromName('tests.native_pydantic_checks'); result = unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(not (result.wasSuccessful() and result.testsRun >= 18 and not result.skipped))"
+      - name: Exercise isolated native study execution and immutable export
+        run: native-env/Scripts/python.exe -B -c "import sys, unittest; suite = unittest.defaultTestLoader.loadTestsFromName('tests.native_study_checks'); result = unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(not (result.wasSuccessful() and result.testsRun >= 5 and not result.skipped))"
 
   worker:
     name: Actual Linux Docker containment

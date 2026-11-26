@@ -21,10 +21,11 @@ expert labels, paid-call budget or final sample size has been supplied here.
 The [file-backed preflight](HARNESS-STUDY-PREFLIGHT.md) now verifies actual
 configuration/reference files and task lineage before preparation. It reports
 `EVIDENCE_BOUND_NOT_RUN`, leaves human and scientific requirements unverified,
-and does not supply live native comparator adapters or expert review. The
-[development runner](HARNESS-STUDY-RUNNER.md) now connects one E156 read-only
-execution path to recovery and measured ledger export; it refuses prospective
-protocols and has not run this scientific study.
+and does not supply expert review. The [development runner](HARNESS-STUDY-RUNNER.md)
+connects E156 and a constrained [native Pydantic Agent](HARNESS-NATIVE-PYDANTIC.md)
+to read-only execution, recovery and measured ledger export. Its custom Responses
+bridge has offline development controls; live provider validation remains pending.
+The runner refuses prospective protocols and has not run this scientific study.
 
 ## Inputs that must exist before a prospective freeze
 
@@ -34,7 +35,7 @@ protocols and has not run this scientific study.
 | Independent scientific custodian | Named responsibility, conflicts and access separation; source/rights verification; sampling frame; family definitions; exclusions and exposure register; private receipt custody | Not supplied |
 | Two qualified source reviewers and a separate adjudicator | Domain/methods competence, conflicts/familiarity declarations, available time, masked allocation and dispute process | Not supplied; AI code reviewers cannot fill these roles |
 | Analysis lead | Target population and estimand; family-level size/precision justification; missingness and UNKNOWN treatment; comparison multiplicity; decision margins and analysis code freeze | Not supplied |
-| Execution lead | Verified live adapters; complete tool/model contracts; isolated sessions; cap enforcement; outcome parser; accounting bridge and failure policy | E156 read-only development bridge implemented; live comparator/scientific integration incomplete |
+| Execution lead | Verified live adapters; complete tool/model contracts; isolated sessions; cap enforcement; outcome parser; accounting bridge and failure policy | E156 and constrained native Pydantic development bridges implemented; live provider validation, Deep Agents adapter and scientific integration incomplete |
 | Sponsor and execution lead | Exact model snapshot/access, decoding and routing policy; cap values; approved provider project and billing evidence; reviewer payment basis | Not supplied; do not substitute current prices or invented zero costs |
 
 These are substantive inputs, not fields to fill with approval-like strings.
