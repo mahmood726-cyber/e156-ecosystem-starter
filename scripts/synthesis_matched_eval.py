@@ -16,9 +16,11 @@ from pathlib import Path, PurePosixPath
 
 if __package__:
     from scripts import synthesis_blind_eval as blind
+    from scripts import harness_context as context
     from scripts.component_source import linked
 else:
     import synthesis_blind_eval as blind
+    import harness_context as context
     from component_source import linked
 
 Refused = blind.EvaluationError
@@ -112,7 +114,11 @@ def _file(root, name, expected):
         _need(target.exists(), f"input file missing: {raw}")
         _need(not linked(target), "linked input refused")
     _need(target.is_file(), f"input file missing: {raw}")
-    _need(hashlib.sha256(target.read_bytes()).hexdigest() == expected, f"input bytes changed: {raw}")
+    try:
+        data = context.read_bytes(target)
+    except context.Refused as exc:
+        raise Refused(str(exc)) from exc
+    _need(hashlib.sha256(data).hexdigest() == expected, f"input bytes changed: {raw}")
 
 
 def prepare(manifest, protocol, inputs):
