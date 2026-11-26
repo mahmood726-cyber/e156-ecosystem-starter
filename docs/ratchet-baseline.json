@@ -37,6 +37,7 @@
   "pytest:tests/test_harness_context.py": 6,
   "pytest:tests/test_harness_provider.py": 3,
   "pytest:tests/test_harness_runtime.py": 14,
+  "pytest:tests/test_harness_trace.py": 13,
   "pytest:tests/test_harness_worker.py": 8,
   "pytest:tests/test_honest_ratchet.py": 21,
   "pytest:tests/test_install_e156_capsules_canary.py": 7,
@@ -812,6 +813,21 @@
    "test_tool_round_is_recorded_and_replayed",
    "test_two_processes_cannot_spend_last_allocation_twice",
    "test_unknown_network_outcome_retains_reservation_and_never_retries"
+  ],
+  "pytest-names:tests/test_harness_trace.py": [
+   "test_cli_recovery_export_and_replay_need_no_credentials",
+   "test_export_omits_prompt_response_source_and_operator_content",
+   "test_offline_provider_refuses_request_drift_or_extra_calls",
+   "test_offline_replay_recomputes_tool_and_consumes_complete_transcript",
+   "test_recovered_pending_call_fences_late_executor",
+   "test_recovery_rejects_unbound_or_invalid_evidence_without_journal_change",
+   "test_recovery_resumes_without_repeating_accepted_call_and_retains_history",
+   "test_recovery_revalidates_sources",
+   "test_replay_detects_non_wall_accounting_regression",
+   "test_replay_input_or_source_drift_refused_before_execution",
+   "test_replay_reports_output_regression",
+   "test_trace_rejects_tampered_chain_or_summaries",
+   "test_unresolved_trace_cannot_seed_successful_regression"
   ],
   "pytest-names:tests/test_harness_worker.py": [
    "test_digest_pin_required",
