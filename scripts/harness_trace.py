@@ -20,7 +20,7 @@ else:
 context = runtime.context
 require, digest = context.require, context.digest
 STATUSES = {"PREPARED_NOT_RUN", "INSPECTED", "COMPLETED", "CANCELLED", "BUDGET_STOP",
-            "UNRESOLVED", "REFUSED", "RECONCILED_NOT_RESUMED"}
+            "UNRESOLVED", "REFUSED", "RECONCILED_NOT_RESUMED", "STALLED"}
 
 
 def validate(report):
@@ -49,9 +49,32 @@ def validate(report):
                           ("accounting", runtime.accounting(operations))):
         if key in report:
             require(report[key] == expected, "trace identity/accounting summary mismatch")
-    if report["status"] in {"COMPLETED", "CANCELLED"}:
+    if report["status"] in {"COMPLETED", "CANCELLED", "STALLED"}:
         require(all(op["finish"] and op["finish"]["kind"] != "UNRESOLVED" for op in operations.values()),
                 "completed trace contains unresolved attempts")
+    if report["status"] == "STALLED":
+        stop = report.get("stop")
+        require(isinstance(stop, dict) and stop.get("reason") == "REPEATED_TOOL_RESULT", "stall summary required")
+        context.integer(stop.get("limit"), "stall limit", minimum=2)
+        require(stop["limit"] <= 100 and report.get("prediction") is None, "invalid stall policy/prediction")
+        progress, observed = runtime.Progress(stop["limit"]), None
+        for key, op in operations.items():
+            if not key.startswith("model:"):
+                continue
+            require(observed is None, "model executed after declared stall")
+            calls = [c for c in op["finish"]["data"].get("output", []) if c.get("type") == "function_call"]
+            if not calls:
+                progress = runtime.Progress(stop["limit"])
+                continue
+            require(len(calls) == 1, "unsupported stall calls")
+            call = calls[0]
+            request = {"name": call.get("name"), "arguments": context.strict_json(call.get("arguments", "").encode("utf-8"))}
+            tool = operations.get("tool:" + call.get("call_id", ""))
+            require(tool and tool["reservation"]["request"] == request, "stall tool binding mismatch")
+            observed = progress.observe(request, tool["finish"]["data"])
+        require(observed == stop, "stall summary does not match recorded results")
+    else:
+        require(report.get("stop") is None, "unexpected stall summary")
     return operations
 
 
@@ -80,6 +103,7 @@ def export(report):
     return {"schema": "e156-harness-trace-v1", "run_id": run_id, "journal_sha256": digest(events[-1]),
             "config_sha256": report["config_sha256"], "context_sha256": report["context_sha256"],
             "code_sha256": digest(events[0]["anchor"]["code"]), "status": report["status"],
+            "stop_reason": report.get("stop", {}).get("reason"),
             "attempts": attempts, "accounting": runtime.accounting(operations), "usage": report["usage"],
             "actual_billed_usd": None, "scientific_disposition": "HOLD",
             "disclosure": "CONTENT_OMITTED_HASHES_AND_TIMING_REMAIN_LINKABLE",
@@ -90,7 +114,8 @@ class RecordedProvider:
     """No network adapter, fallback, or invented response for unmatched requests."""
     def __init__(self, report):
         operations = validate(report)
-        require(report["status"] == "COMPLETED", "only completed runs can seed offline regressions")
+        require(report["status"] in {"COMPLETED", "STALLED", "BUDGET_STOP", "REFUSED", "CANCELLED"},
+                "run status cannot seed offline regressions")
         self.records = []
         for key, op in operations.items():
             category = key.split(":", 1)[0]
@@ -137,6 +162,7 @@ def replay(report, config, manifest, root, state):
     checks = {"provider_transcript_consumed": provider.position == len(provider.records),
               "status_matches": result["status"] == report["status"],
               "prediction_matches": result["prediction"] == report["prediction"],
+              "stop_matches": result.get("stop") == report.get("stop"),
               "operation_results_match": signatures(original) == signatures(repeated),
               "resource_accounting_matches": resources(original) == resources(repeated)
                   and non_wall(result["usage"]) == non_wall(report["usage"])}
