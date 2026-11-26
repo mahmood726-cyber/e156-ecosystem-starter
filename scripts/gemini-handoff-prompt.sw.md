@@ -13,7 +13,7 @@ Hili ni muhimu kwa sababu mimi ni mwanzilishi na huenda nisijue ni amri zipi amb
 
 1. **WEWE endesha** `cat ~/.claude/rules/rules.md | head -5` ili kudhibitisha kuwa kifurushi cha sheria kimesakinishwa. Ikiwa faili hiyo haipo au ni tupu, niambie ni faili gani na usimame. Usijaribu kuitengeneza.
 
-2. **WEWE endesha** ukaguzi huu wa mahitaji ya awali: `python --version`, `Rscript --version`, `node --version`, `gh --version`, `git --version`. Kwa kila moja inayokosekana au ya zamani sana (Python <3.11, R <4.5, Node <20), chapisha URL halisi ya usakinishaji na sababu ya mstari mmoja kwa nini ni muhimu kwa kazi ya E156. Usijaribu kusakinisha zilizokosekana wewe mwenyewe — weka wazi orodha hiyo na uniache niamue.
+2. **WEWE endesha** ukaguzi huu wa mahitaji ya awali: `python --version`, `Rscript --version`, `node --version`, `gh --version`, `git --version`. Kwa kila moja inayokosekana au ya zamani sana (Python <3.13, R <4.5, Node <20), chapisha URL halisi ya usakinishaji na sababu ya mstari mmoja kwa nini ni muhimu kwa kazi ya E156. Usijaribu kusakinisha zilizokosekana wewe mwenyewe — weka wazi orodha hiyo na uniache niamue.
 
 3. **Ikiwa `gh` imesakinishwa lakini haijathibitishwa** (utaona hili kupitia `gh auth status`), **NIAMBIE niendeshe** `gh auth login` na usubiri nithibitishe kabla ya kuendelea.
 
@@ -23,7 +23,7 @@ Hili ni muhimu kwa sababu mimi ni mwanzilishi na huenda nisijue ni amri zipi amb
    ```
    python /workspaces/e156-ecosystem-starter/scripts/find-related-repos.py "<my topic>" --top 5
    ```
-   (Kwa usakinishaji wa ndani ya kompyuta, badilisha njia ya faili na mahali uliponakili `e156-ecosystem-starter/`.) Soma matokeo 5 ya kwanza — jina, dondoo ya README, na matokeo ya code-grep. Niambie kwa mistari 3 nini kinaweza kutumika tena kutoka kwenye hazina zilizopo dhidi ya kile kipya. Pia tafuta vipengele vya kutumia tena kwa `python /workspaces/e156-ecosystem-starter/scripts/reuse.py find "<what you need>"`, ukibadilisha njia kwa usakinishaji wa ndani. Kisha endesha `pip install git+https://github.com/mahmood726-cyber/e156-student-starter.git@main` na `student new <slug>` ili kuandaa muundo chini ya `~/code/<slug>/`. Katika faili mpya ya `docs/<criterion>.md` ya hazina hiyo, taja hazina zilizopita kwa majina.
+   (Kwa usakinishaji wa ndani ya kompyuta, badilisha njia ya faili na mahali uliponakili `e156-ecosystem-starter/`.) Soma matokeo 5 ya kwanza — jina, dondoo ya README, na matokeo ya code-grep. Niambie kwa mistari 3 nini kinaweza kutumika tena kutoka kwenye hazina zilizopo dhidi ya kile kipya. Pia tafuta vipengele vya kutumia tena kwa `python /workspaces/e156-ecosystem-starter/scripts/reuse.py find "<what you need>"`, ukibadilisha njia kwa usakinishaji wa ndani. Fuata [mwongozo wa chanzo kilichokaguliwa](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md#create-a-first-paper-from-reviewed-student-source): nakili revision iliyowekwa, endesha `python -m bin.student new --template T0 --slug <slug>` katika folda hiyo kwa `LOCALAPPDATA` ya muda iliyoelezwa, kisha sakinisha hook ya Sentinel kwenye workbook. Karatasi itakuwa katika `~/code/student-state/e156/workbook/<slug>/`; workbook ndiyo hazina ya Git. Katika `docs/<criterion>.md` ya karatasi, taja hazina zilizopita kwa majina.
 
 6. **Soma STUDENT-WORKFLOW.md** kwenye https://raw.githubusercontent.com/mahmood726-cyber/e156-ecosystem-starter/main/STUDENT-WORKFLOW.md kuona mbinu ya brainstorm → spec-lock → plan-lock → TDD → audit kabla ya kuandika mstari wowote wa nambari (code) kwenye mradi mpya.
 
