@@ -71,6 +71,17 @@ class SourceTrialViewerTests(unittest.TestCase):
         self.assertEqual(case["status"], "REVIEW_CANDIDATE")
         self.assertIn("14 - source 12 = 2", case["calculation"])
 
+    def test_signed_and_embedded_counts_hold_without_candidate(self):
+        for prefix, suffix in (("-", ""), ("−", ""), ("+", ""),
+                               ("", "e1"), ("", "_000"), ("arm", "")):
+            with self.subTest(prefix=prefix, suffix=suffix):
+                case = self._case()
+                case["published"] = self._snapshot(
+                    "published.txt", f"Synthetic count {prefix}14{suffix} events")
+                case["primary"] = self._snapshot(
+                    "source.txt", f"Synthetic count {prefix}12{suffix} events")
+                self.assertEqual(module.evaluate_case(case, self.root)["status"], "HOLD")
+
     def test_html_displays_both_sources_and_escapes_untrusted_text(self):
         html = module.render_html(module.evaluate_packet(self.packet, self.root))
         self.assertIn("Published claim", html)
@@ -388,6 +399,17 @@ class TrialSourceLedgerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
 
+    def test_complete_integer_tokens_and_grouping(self):
+        for text, value in (("5", 5), ("1,000", 1000)):
+            quote = f"Count ({text}) participants"
+            self.assertTrue(ledger._exact_binding(
+                quote, {"text": text, "offset": quote.index(text)}, value))
+        for token in ("5e1", "5_000", "5arms", "arm5", "-5", "−5", "+5", "5.0", "15"):
+            quote = f"Count={token} participants"
+            with self.subTest(token=token):
+                self.assertFalse(ledger._exact_binding(
+                    quote, {"text": "5", "offset": quote.index("5")}, 5))
+
     def _snapshot(self, filename, quote):
         path = self.root / filename
         path.write_text("ARCHIVED TEST\n" + quote + "\nEND\n", encoding="utf-8")
@@ -704,6 +726,75 @@ class PairedModelReplayTests(unittest.TestCase):
         self.assertEqual(result["status"], "READY_FOR_PINNED_ENGINE")
         self.assertEqual(result["model_fit"], "NOT_RUN")
         self.assertFalse(result["scientific_error_confirmed"])
+
+    def test_exponent_count_blocks_before_engine_loading(self):
+        row = self.trials[0]
+        text = row["published_extraction"]["quote"].replace("tE=5", "tE=5e1")
+        row["published_extraction"] = self._snapshot("exponent.txt", text)
+        for field, value in row["original"].items():
+            row["original_bindings"][field]["offset"] = text.index(field + "=") + len(field) + 1
+        with patch.object(paired, "_engine_at") as load:
+            result = paired.check_replay(self.packet, self.root,
+                engine_path=self.fake_engine, engine_sha256=self.engine_digest)
+        self.assertEqual(result["status"], "HOLD")
+        self.assertEqual(result["model_fit"], "NOT_RUN")
+        load.assert_not_called()
+
+    def test_unicode_signed_publication_value_holds(self):
+        pub = self.packet["publication"]
+        text = pub["snapshot"]["quote"].replace("0.80", "−0.80")
+        pub["snapshot"] = self._snapshot("signed.txt", text)
+        for field in ("pooled_or", "ci_low", "ci_high"):
+            pub[field + "_binding"]["offset"] = text.index(pub[field + "_text"])
+        self.assertEqual(self._replay(False)["status"], "HOLD")
+
+    def test_failed_correction_preserves_original_and_execution_receipt(self):
+        import types
+        calls = []
+        def pool(effects, scale):
+            calls.append(scale)
+            if len(calls) == 2:
+                raise ValueError("synthetic corrected fit failed")
+            return types.SimpleNamespace(k=len(effects), pooled=.8, ci_low=.60,
+                                         ci_high=1.05, tau2=.01, i2=10.0)
+        toy = types.SimpleNamespace(binary_effect=lambda *args, **kwargs: object(), pool_effects=pool)
+        with patch.object(paired, "_engine_at", return_value=toy):
+            result = paired.check_replay(self.packet, self.root,
+                engine_path=self.fake_engine, engine_sha256=self.engine_digest)
+        self.assertEqual(calls, ["OR", "OR"])
+        self.assertEqual(result["status"], "HOLD")
+        self.assertEqual(result["model_fit"], "ACTUALLY_EXECUTED")
+        self.assertEqual(result["published_replay"]["pooled"], .8)
+        self.assertEqual(result["corrected_replay"], "FAILED")
+        self.assertEqual(result["replay_stages"], {"published": "COMPLETED", "corrected": "FAILED"})
+        self.assertEqual(result["external_engine_sha256"], self.engine_digest)
+        self.assertNotIn("delta_pooled_or", result)
+
+    def test_failed_original_records_attempt_and_never_corrects(self):
+        import types
+        toy = types.SimpleNamespace(binary_effect=lambda *args, **kwargs: None)
+        with patch.object(paired, "_engine_at", return_value=toy):
+            result = paired.check_replay(self.packet, self.root,
+                engine_path=self.fake_engine, engine_sha256=self.engine_digest)
+        self.assertEqual(result["status"], "HOLD")
+        self.assertEqual(result["model_fit"], "EXECUTION_ATTEMPTED")
+        self.assertEqual(result["replay_stages"], {"published": "FAILED", "corrected": "NOT_RUN"})
+        self.assertEqual(result["corrected_replay"], "NOT_RUN")
+
+    def test_verified_source_executes_instead_of_timestamp_valid_bytecode(self):
+        import os
+        import py_compile
+        source = b"probe='SOURCE'\ndef binary_effect(): pass\ndef pool_effects(): pass\n"
+        cached = source.replace(b"SOURCE", b"CACHED")
+        self.fake_engine.write_bytes(cached)
+        timestamp = self.fake_engine.stat().st_mtime
+        py_compile.compile(str(self.fake_engine), doraise=True)
+        self.fake_engine.write_bytes(source)
+        os.utime(self.fake_engine, (timestamp, timestamp))
+        blob = hashlib.sha1(b"blob " + str(len(source)).encode() + b"\0" + source).hexdigest()
+        with patch.object(paired, "SUPPORTED_ENGINE_GIT_BLOB_SHA1", blob):
+            actual = paired._engine_at(self.fake_engine, hashlib.sha256(source).hexdigest())
+        self.assertEqual(actual.probe, "SOURCE")
 
     def test_published_first_then_corrected_same_engine_interface(self):
         result = self._replay()

@@ -8,6 +8,7 @@ NOT authenticate trial identities, interpret table labels, or declare errors.
 from __future__ import annotations
 
 import argparse
+from functools import lru_cache
 import importlib.util
 import json
 import re
@@ -17,6 +18,7 @@ MAX_ROWS = 200
 SUPPORTED_TIERS = {"T1", "T2", "T3"}  # T4 = another synthesis; not a primary source
 
 
+@lru_cache(maxsize=1)
 def _viewer():
     spec = importlib.util.spec_from_file_location(
         "synthesis_source_trial_view", Path(__file__).with_name("synthesis_source_trial_view.py")
@@ -40,10 +42,7 @@ def _exact_binding(quote: str, binding: dict, expected) -> bool:
     if type(expected) is int:
         if expected < 0 or text not in {str(expected), format(expected, ",")}:
             return False
-        # Avoid binding a decimal, signed number, large integer or neighbouring token.
-        before = quote[offset - 1] if offset else ""
-        after = quote[offset + len(text):offset + len(text) + 1]
-        return (not before or before not in "0123456789.,−-") and (not after or after not in "0123456789.,")
+        return _viewer()._complete_number_at(quote, offset, text)
     if isinstance(expected, str):
         if text != expected:
             return False

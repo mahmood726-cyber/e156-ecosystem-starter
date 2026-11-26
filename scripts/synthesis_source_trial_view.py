@@ -82,12 +82,22 @@ def _capture(snapshot: dict, root: Path) -> dict:
     return result
 
 
+def _complete_number_at(quote: str, offset: int, text: str) -> bool:
+    """Refuse fragments of signed, decimal, exponent or identifier tokens."""
+    if quote[offset:offset + len(text)] != text:
+        return False
+    before = quote[offset - 1] if offset else ""
+    after = quote[offset + len(text):offset + len(text) + 1]
+    return not any(char and (char.isalnum() or char in ".,_+-−±﹣－⁺⁻")
+                   for char in (before, after))
+
+
 def _verbatim_value_in_quote(quote: str, value) -> bool:
     """Minimal literal tie to source bytes; still not semantic cell authentication."""
     if type(value) is int:
         literals = (str(value), format(value, ","))
-        return any(re.search(r"(?<![0-9A-Za-z.,])" + re.escape(literal) +
-                             r"(?![0-9A-Za-z.,])", quote) for literal in literals)
+        return any(_complete_number_at(quote, match.start(), literal)
+                   for literal in literals for match in re.finditer(re.escape(literal), quote))
     if value in ("SD", "SE"):
         # A trailing full stop in "SD." is punctuation, not a numeric decimal.
         return bool(re.search(r"(?<![A-Za-z])" + value + r"(?![A-Za-z])", quote))
@@ -142,8 +152,9 @@ def _count_percentage(check: dict, evidence: dict, contexts: dict) -> dict:
     for name, quote, value in expected_literals:
         if not _verbatim_value_in_quote(quote, value):
             return {"status": "HOLD", "reason": name + " not anchored in its verbatim source quote"}
-    if not re.search(r"(?<![0-9A-Za-z.+-])" + re.escape(printed) +
-                     r"(?![0-9A-Za-z.%])", pub_quote):
+    if not any(_complete_number_at(pub_quote, match.start(), printed)
+               and pub_quote[match.end():match.end() + 1] != "%"
+               for match in re.finditer(re.escape(printed), pub_quote)):
         return {"status": "HOLD", "reason": "published percentage not anchored in verbatim published quote"}
     if count != source_count or denominator != source_denominator:
         return {"status": "HOLD", "reason": "source count or denominator differs; resolve extraction before percentage check"}
@@ -300,9 +311,9 @@ def render_html(report: dict) -> str:
                      "</p><p>Only checks caller-attested trial identities, not raw source meaning.</p></article>")
     css = (
         "body{font:16px/1.5 system-ui,sans-serif;max-width:1200px;margin:auto;padding:24px;"
-        "background:#fafafa;color:#18212d}article,section{border:1px solid #cbd5e1;"
+        "background:#fafafa;color:#18212d;overflow-wrap:anywhere}article,section{border:1px solid #cbd5e1;"
         "background:white;border-radius:10px;padding:16px;margin:12px 0;min-width:0}"
-        ".cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}"
+        ".cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px}"
         "blockquote{margin:12px 0;padding:12px;border-left:4px solid #64748b;white-space:pre-wrap}"
         "mark{background:#fff1b3}img{max-width:100%;height:auto;border:1px solid #ddd}"
         ".muted{color:#475569;overflow-wrap:anywhere}p{overflow-wrap:anywhere}"

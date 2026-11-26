@@ -89,9 +89,7 @@ def _check_original_report(packet, root, viewer, ledger):
         # inside 10.80), or prefixes of a higher-precision printed value.
         offset = binding["offset"]
         quote = snapshot["quote"]
-        left = quote[offset - 1] if offset else ""
-        right = quote[offset + len(text):offset + len(text) + 1]
-        if (left and left in "0123456789.+-") or (right and right in "0123456789."):
+        if not viewer._complete_number_at(quote, offset, text):
             raise ValueError("reported OR/CI binding is part of a larger or signed numeric token")
         labels[name] = text
     if not (Decimal(labels["ci_low"]) <= Decimal(labels["pooled_or"]) <= Decimal(labels["ci_high"])):
@@ -196,7 +194,9 @@ def _engine_at(path: Path, digest: str):
     # Explicit code execution: only use a trusted, already installed checkout.
     engine = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = engine
-    spec.loader.exec_module(engine)
+    # Execute the bytes whose hashes were checked, never a cached .pyc or a
+    # second disk read that could differ from that verified buffer.
+    exec(compile(raw, str(path), "exec"), engine.__dict__)
     if not callable(getattr(engine, "binary_effect", None)) or not callable(getattr(engine, "pool_effects", None)):
         raise ValueError("pinned engine does not export required methods")
     return engine
@@ -224,24 +224,28 @@ def _run_engine(engine, trials):
 
 def check_replay(packet: dict, source_root: Path, *, engine_path=None, engine_sha256=None):
     """No run or correction output before all preflight and engine identity gates."""
+    safe = {"model_fit": "NOT_RUN", "published_replay": "NOT_RUN",
+            "corrected_replay": "NOT_RUN",
+            "replay_stages": {"published": "NOT_RUN", "corrected": "NOT_RUN"}}
     if not isinstance(packet, dict) or packet.get("schema_version") != "0.1":
-        return _status("HOLD", "unsupported paired-replay schema")
+        return _status("HOLD", "unsupported paired-replay schema", **safe)
     try:
         viewer = _load_companion("synthesis_source_trial_view.py", "_paired_viewer")
         ledger = _load_companion("synthesis_trial_source_ledger.py", "_paired_ledger")
         _, printed = _check_original_report(packet, source_root, viewer, ledger)
         original, corrected, refs, changed = _bind_rows(packet, source_root, viewer, ledger)
-        safe = {"method": METHOD, "scale": "OR", "source_refs": refs,
-                "changed_trials": changed, "k": len(original),
-                "model_fit": "NOT_RUN", "published_replay": "NOT_RUN",
-                "corrected_replay": "NOT_RUN"}
+        safe.update(method=METHOD, scale="OR", source_refs=refs,
+                    changed_trials=changed, k=len(original))
         if engine_path is None or engine_sha256 is None:
             return _status("READY_FOR_PINNED_ENGINE", "source-cell receipts prepared; no model fitted", **safe)
         engine = _engine_at(Path(engine_path), engine_sha256)
+        safe["external_engine_sha256"] = engine_sha256
+        safe["model_fit"] = "EXECUTION_ATTEMPTED"
+        safe["replay_stages"]["published"] = "STARTED"
         before = _run_engine(engine, original)
         safe["model_fit"] = "ACTUALLY_EXECUTED"
+        safe["replay_stages"]["published"] = "COMPLETED"
         safe["published_replay"] = before
-        safe["external_engine_sha256"] = engine_sha256
         mismatched = [name for name in ("pooled_or", "ci_low", "ci_high")
                       if not _precision_overlap(printed[name],
                           before["pooled" if name == "pooled_or" else name])]
@@ -254,14 +258,20 @@ def check_replay(packet: dict, source_root: Path, *, engine_path=None, engine_sh
             return _status("ORIGINAL_REPLAY_MATCHED_NO_INPUT_CHANGE",
                            "printed OR reproduced under declared method but no corrected inputs differ",
                            **safe)
+        safe["replay_stages"]["corrected"] = "STARTED"
         after = _run_engine(engine, corrected)
+        safe["replay_stages"]["corrected"] = "COMPLETED"
         safe["corrected_replay"] = after
         safe["delta_pooled_or"] = after["pooled"] - before["pooled"]
         return _status("PAIRED_MODEL_REPLAYED_FOR_REVIEW",
                        "original printed OR reproduced; corrected source-declared inputs run under identical method; independent scientific adjudication needed",
                        **safe)
     except (ValueError, TypeError, KeyError, OSError, OverflowError, AttributeError, RuntimeError, SyntaxError, ImportError, ZeroDivisionError) as exc:
-        return _status("HOLD", str(exc))
+        for stage, state in safe["replay_stages"].items():
+            if state == "STARTED":
+                safe["replay_stages"][stage] = "FAILED"
+                safe[stage + "_replay"] = "FAILED"
+        return _status("HOLD", str(exc), **safe)
 
 
 def main(argv=None):

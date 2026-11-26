@@ -12,6 +12,13 @@ This is a supervised **development interface**, not an independently validated c
 
 All outcomes preserve **scientific_error_confirmed = false** and **conclusion_impact = NOT_ASSESSED**. Changed statistical significance or treatment superiority is not inferred.
 
+Numeric bindings must cover complete unsigned tokens: signed values, exponent
+fragments and neighbouring identifier characters are refused. The engine executes
+the already hash-verified source buffer, rather than a cached Python bytecode file.
+Every receipt retains `replay_stages` for the published and corrected fits. If a
+fit fails, HOLD preserves any completed original result and engine hash; an
+attempted fit is never reported as `NOT_RUN`.
+
 ## Existing implementation reused
 
 The external numerical implementation is the user's public [meta-starter-kit engine at commit 464fd88e](https://github.com/mahmood726-cyber/meta-starter-kit/blob/464fd88eb50825985b46b60cda248516d4b495ab/metakit/engine.py), with canonical Git blob SHA-1:
@@ -63,3 +70,14 @@ These are **reviewer-supplied assertions**. Source hashing and exact token match
 The synthetic unit tests use a **toy/mock pooling interface** to validate execution order, early refusal, bookkeeping and SHA/source gates. Separately, the real-engine integration test executes the entire source-bound original-before-corrected branch on **invented archived quotations and a deliberately invented correction**. It also demonstrates that changing the printed original CI blocks the corrected fit. This is real computation on synthetic data, not verification of a historical scientific error. The separate `test_synthesis_real_engine.py` integration suite requires an **actual checked-out, pinned upstream engine**. It tests real engine output against an independent low-heterogeneity closed-form calculation and a **published paper-table negative control** from [Zhang et al., Frontiers in Medicine, 2026](SYNTHESIS-HK-PAPER-NEGATIVE-CONTROL.md): ordinary and variance-floored Knapp–Hartung correctly produce different confidence limits from identical trial rows. The published table is not independent primary-trial source verification, and no corrected original clinical study result has been demonstrated. Broader validation against R `metafor` on independently checked primary-trial data remains necessary.
 
 Keep the pull request in draft pending methods review and proper validation. No source-confirmed findings may be emailed based on this module alone.
+
+### Unmet numerical precision gate (26 November 2026)
+
+An independent closed-form check of the existing three-row negative control
+found that the pinned engine uses `4.30265` for the two-degree-of-freedom
+Student t critical value, versus `4.302652729749463`. The resulting upper-limit
+absolute difference is approximately `5.00347e-6`. The current integration
+test's `2e-5` tolerance is a bounded development diagnostic; it does **not**
+satisfy this repository's deterministic `1e-6` requirement. This release gate
+remains unmet pending an independently reviewed upstream precision fix and a
+new source pin. No tolerance relaxation or clinical implication is claimed.
