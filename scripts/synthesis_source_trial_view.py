@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import hmac
 import html
 import importlib.util
 import json
@@ -53,7 +54,7 @@ def _capture(snapshot: dict, root: Path) -> dict:
             raise ValueError("source snapshot lacks " + field)
     data = _safe_file(root, snapshot["path"], MAX_TEXT_BYTES)
     digest = hashlib.sha256(data).hexdigest()
-    if digest != snapshot["sha256"]:
+    if not re.fullmatch(r"[a-f0-9]{64}", snapshot["sha256"]) or not hmac.compare_digest(digest, snapshot["sha256"]):
         raise ValueError("source snapshot SHA-256 mismatch")
     try:
         decoded = data.decode("utf-8")
@@ -69,7 +70,7 @@ def _capture(snapshot: dict, root: Path) -> dict:
             raise ValueError("page image needs a path and SHA-256")
         filename = image["path"]
         raw = _safe_file(root, filename, MAX_IMAGE_BYTES)
-        if hashlib.sha256(raw).hexdigest() != image["sha256"]:
+        if not re.fullmatch(r"[a-f0-9]{64}", image["sha256"]) or not hmac.compare_digest(hashlib.sha256(raw).hexdigest(), image["sha256"]):
             raise ValueError("page image SHA-256 mismatch")
         suffix = Path(filename).suffix.lower()
         if suffix == ".png" and raw.startswith(b"\x89PNG\r\n\x1a\n"):

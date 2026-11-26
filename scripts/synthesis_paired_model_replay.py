@@ -10,6 +10,8 @@ from __future__ import annotations
 import argparse
 from decimal import Decimal, InvalidOperation
 import hashlib
+import hmac
+import importlib.machinery
 import importlib.util
 import json
 import math
@@ -183,20 +185,25 @@ def _engine_at(path: Path, digest: str):
     if not path.is_file() or path.name != "engine.py":
         raise ValueError("explicit trusted meta-starter-kit/metakit/engine.py required")
     raw = path.read_bytes()
-    if hashlib.sha256(raw).hexdigest() != digest:
+    if not hmac.compare_digest(hashlib.sha256(raw).hexdigest(), digest):
         raise ValueError("external engine bytes differ from expected SHA-256")
     git_blob = hashlib.sha1(b"blob " + str(len(raw)).encode("ascii") + b"\0" + raw).hexdigest()
-    if git_blob != SUPPORTED_ENGINE_GIT_BLOB_SHA1:
+    if not hmac.compare_digest(git_blob, SUPPORTED_ENGINE_GIT_BLOB_SHA1):
         raise ValueError("engine is not the reviewed meta-starter-kit pinned Git blob")
-    spec = importlib.util.spec_from_file_location("_synthesis_pinned_metakit_engine", path)
+    class VerifiedSourceLoader(importlib.machinery.SourceFileLoader):
+        def get_code(self, fullname):
+            # Compile only the verified buffer: no .pyc or second disk read.
+            return compile(raw, str(path), "exec")
+
+    name = "_synthesis_pinned_metakit_engine"
+    loader = VerifiedSourceLoader(name, str(path))
+    spec = importlib.util.spec_from_file_location(name, path, loader=loader)
     if spec is None or spec.loader is None:
         raise ValueError("unable to load pinned engine")
     # Explicit code execution: only use a trusted, already installed checkout.
     engine = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = engine
-    # Execute the bytes whose hashes were checked, never a cached .pyc or a
-    # second disk read that could differ from that verified buffer.
-    exec(compile(raw, str(path), "exec"), engine.__dict__)
+    spec.loader.exec_module(engine)
     if not callable(getattr(engine, "binary_effect", None)) or not callable(getattr(engine, "pool_effects", None)):
         raise ValueError("pinned engine does not export required methods")
     return engine

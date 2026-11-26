@@ -65,6 +65,7 @@
   "pytest:tests/test_sentinel_hook_backup_collision.py": 5,
   "pytest:tests/test_sentinel_hook_postinstall.py": 2,
   "pytest:tests/test_setup_python_action_pin.py": 8,
+  "pytest:tests/test_smd_covariance_audit.py": 8,
   "pytest:tests/test_synthesis_access_controls.py": 0,
   "pytest:tests/test_synthesis_adjudication.py": 16,
   "pytest:tests/test_synthesis_capture_evidence.py": 0,
@@ -76,6 +77,7 @@
   "pytest:tests/test_synthesis_preflight.py": 0,
   "pytest:tests/test_synthesis_preflight_count_identity.py": 0,
   "pytest:tests/test_synthesis_preflight_root_dedup.py": 0,
+  "pytest:tests/test_synthesis_real_engine.py": 0,
   "pytest:tests/test_synthesis_replay.py": 40,
   "pytest:tests/test_synthesis_reply_driven_intake.py": 0,
   "pytest:tests/test_synthesis_reporting.py": 14,
@@ -83,6 +85,7 @@
   "pytest:tests/test_synthesis_reviewer_workflow.py": 18,
   "pytest:tests/test_synthesis_rocrate.py": 11,
   "pytest:tests/test_synthesis_signing.py": 13,
+  "pytest:tests/test_synthesis_source_trial_view.py": 0,
   "pytest:tests/test_synthesis_v13_checks.py": 0,
   "pytest:tests/test_synthesis_v13_evidence.py": 0,
   "pytest:tests/test_synthesis_v13_feedback.py": 0,
@@ -1184,6 +1187,16 @@
    "test_refuses_mutable_or_substituted_action",
    "test_refuses_no_or_removed_job_inventory"
   ],
+  "pytest-names:tests/test_smd_covariance_audit.py": [
+   "test_asymptotic_size_against_independent_tail_identity",
+   "test_full_overlap_and_disjoint_limits",
+   "test_invalid_inputs_fail_explicitly",
+   "test_j_direction_against_exact_gamma_ratio",
+   "test_original_example_all_34_fingerprints",
+   "test_overlap_trace_against_independent_centering_matrix_sum",
+   "test_published_equation_sign_reversal",
+   "test_zero_effect_calibration_control"
+  ],
   "pytest-names:tests/test_synthesis_access_controls.py": [],
   "pytest-names:tests/test_synthesis_adjudication.py": [
    "test_bad_decisions_refused",
@@ -1246,6 +1259,7 @@
   "pytest-names:tests/test_synthesis_preflight.py": [],
   "pytest-names:tests/test_synthesis_preflight_count_identity.py": [],
   "pytest-names:tests/test_synthesis_preflight_root_dedup.py": [],
+  "pytest-names:tests/test_synthesis_real_engine.py": [],
   "pytest-names:tests/test_synthesis_replay.py": [
    "test_all_local_import_dependencies_are_bound_in_profile",
    "test_ambiguous_registration_quote_refuses",
@@ -1369,6 +1383,7 @@
    "test_signature_never_substitutes_for_replay",
    "test_signing_refuses_wrong_private_key_overwrite_and_nested_output"
   ],
+  "pytest-names:tests/test_synthesis_source_trial_view.py": [],
   "pytest-names:tests/test_synthesis_v13_checks.py": [],
   "pytest-names:tests/test_synthesis_v13_evidence.py": [],
   "pytest-names:tests/test_synthesis_v13_feedback.py": [],

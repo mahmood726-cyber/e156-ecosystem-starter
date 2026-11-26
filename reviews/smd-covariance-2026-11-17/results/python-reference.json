@@ -1,0 +1,455 @@
+{
+  "status": "COMPUTATIONALLY_REPRODUCED_CANDIDATES",
+  "novelty": "NOT_ENOUGH_INFO",
+  "author_adjudication": "NOT_ESTABLISHED",
+  "eq11": {
+    "printed": 0.03,
+    "printed_after_reversal": -0.01,
+    "squared": 0.025,
+    "squared_after_reversal": -0.025
+  },
+  "J_direction": {
+    "raw_d": 1,
+    "df": 18,
+    "source_d_over_J": 1.0441176470588234,
+    "usual_J_times_d": 0.9577464788732395,
+    "exact_J_times_d": 0.9576464270237166
+  },
+  "k12": {
+    "printed_complete_n10": 0.052631578947368425,
+    "exact_complete_n10": 0.1111111111111111,
+    "exact_no_overlap_n10": 0.0
+  },
+  "example_scale": {
+    "supplied_rows": 17,
+    "values": 34,
+    "maximum_fingerprint_residual": 4.996003610813204e-16,
+    "maximum_stated_definition_discrepancy": 0.3095066775067131,
+    "checks": [
+      {
+        "row": "Barer 1988 atenolol",
+        "outcome": "SBP",
+        "stored": -0.0728174817150896,
+        "stated_raw_d": -0.10206096507373522,
+        "fingerprint": -0.07281748171508964,
+        "fingerprint_residual": 4.163336342344337e-17
+      },
+      {
+        "row": "Barer 1988 atenolol",
+        "outcome": "DBP",
+        "stored": -0.187760254898717,
+        "stated_raw_d": -0.2756320513476519,
+        "fingerprint": -0.18776025489871728,
+        "fingerprint_residual": 2.7755575615628914e-16
+      },
+      {
+        "row": "Barer 1988 propanolol",
+        "outcome": "SBP",
+        "stored": 0.0415955715504673,
+        "stated_raw_d": 0.05697538787902858,
+        "fingerprint": 0.04159557155046727,
+        "fingerprint_residual": 3.469446951953614e-17
+      },
+      {
+        "row": "Barer 1988 propanolol",
+        "outcome": "DBP",
+        "stored": -0.0155244311872294,
+        "stated_raw_d": -0.02160637756063185,
+        "fingerprint": -0.015524431187229425,
+        "fingerprint_residual": 2.42861286636753e-17
+      },
+      {
+        "row": "Barer 1988/50 mg",
+        "outcome": "SBP",
+        "stored": -0.241479732582222,
+        "stated_raw_d": -0.33540785539449874,
+        "fingerprint": -0.2414797325822219,
+        "fingerprint_residual": -8.326672684688674e-17
+      },
+      {
+        "row": "Barer 1988/50 mg",
+        "outcome": "DBP",
+        "stored": -0.315195375832122,
+        "stated_raw_d": -0.4545071609638653,
+        "fingerprint": -0.31519537583212187,
+        "fingerprint_residual": -1.1102230246251565e-16
+      },
+      {
+        "row": "Barer 1988/80 mg",
+        "outcome": "SBP",
+        "stored": -0.0965190792818258,
+        "stated_raw_d": -0.13523786993261447,
+        "fingerprint": -0.09651907928182576,
+        "fingerprint_residual": -4.163336342344337e-17
+      },
+      {
+        "row": "Barer 1988/80 mg",
+        "outcome": "DBP",
+        "stored": -0.165215466454282,
+        "stated_raw_d": -0.23729575172293108,
+        "fingerprint": -0.16521546645428226,
+        "fingerprint_residual": 2.498001805406602e-16
+      },
+      {
+        "row": "ASCLEPIOS 1990",
+        "outcome": "SBP",
+        "stored": -0.0044443820162521,
+        "stated_raw_d": -0.0062865442877655265,
+        "fingerprint": -0.004444382016252104,
+        "fingerprint_residual": 4.336808689942018e-18
+      },
+      {
+        "row": "ASCLEPIOS 1990",
+        "outcome": "DBP",
+        "stored": -0.133148376153961,
+        "stated_raw_d": -0.18891516196059976,
+        "fingerprint": -0.13314837615396075,
+        "fingerprint_residual": -2.498001805406602e-16
+      },
+      {
+        "row": "Limburg 1990",
+        "outcome": "SBP",
+        "stored": -0.27113771038705,
+        "stated_raw_d": -0.37910208309306415,
+        "fingerprint": -0.27113771038704976,
+        "fingerprint_residual": -2.220446049250313e-16
+      },
+      {
+        "row": "Limburg 1990",
+        "outcome": "DBP",
+        "stored": 0.0840318044530057,
+        "stated_raw_d": 0.1140240543766391,
+        "fingerprint": 0.08403180445300575,
+        "fingerprint_residual": -4.163336342344337e-17
+      },
+      {
+        "row": "Norris 1994",
+        "outcome": "SBP",
+        "stored": -0.542965303453837,
+        "stated_raw_d": -0.7760047440789909,
+        "fingerprint": -0.5429653034538366,
+        "fingerprint_residual": -3.3306690738754696e-16
+      },
+      {
+        "row": "Norris 1994",
+        "outcome": "DBP",
+        "stored": -0.735402426752842,
+        "stated_raw_d": -1.044909104259555,
+        "fingerprint": -0.7354024267528417,
+        "fingerprint_residual": -2.220446049250313e-16
+      },
+      {
+        "row": "Kaste 1994/120 mg",
+        "outcome": "SBP",
+        "stored": -0.0520535793976924,
+        "stated_raw_d": -0.0736148779542813,
+        "fingerprint": -0.05205357939769238,
+        "fingerprint_residual": -2.0816681711721685e-17
+      },
+      {
+        "row": "Kaste 1994/120 mg",
+        "outcome": "DBP",
+        "stored": -0.238245251617526,
+        "stated_raw_d": -0.33695145126571147,
+        "fingerprint": -0.2382452516175265,
+        "fingerprint_residual": 4.996003610813204e-16
+      },
+      {
+        "row": "Lowe 1993",
+        "outcome": "SBP",
+        "stored": 0.125222706996827,
+        "stated_raw_d": 0.17709165055198556,
+        "fingerprint": 0.12522270699682742,
+        "fingerprint_residual": -4.163336342344337e-16
+      },
+      {
+        "row": "Lowe 1993",
+        "outcome": "DBP",
+        "stored": 0.21816246889169,
+        "stated_raw_d": 0.30852832230742605,
+        "fingerprint": 0.2181624688916897,
+        "fingerprint_residual": 3.0531133177191805e-16
+      },
+      {
+        "row": "Squire 1996",
+        "outcome": "SBP",
+        "stored": -0.0677254408484894,
+        "stated_raw_d": -0.09558681971912991,
+        "fingerprint": -0.06772544084848936,
+        "fingerprint_residual": -4.163336342344337e-17
+      },
+      {
+        "row": "Squire 1996",
+        "outcome": "DBP",
+        "stored": -0.069645529793725,
+        "stated_raw_d": -0.0978821635963405,
+        "fingerprint": -0.06964552979372503,
+        "fingerprint_residual": 2.7755575615628914e-17
+      },
+      {
+        "row": "VENUS 1995",
+        "outcome": "SBP",
+        "stored": 0.0144631452753776,
+        "stated_raw_d": 0.020456181020656317,
+        "fingerprint": 0.014463145275377568,
+        "fingerprint_residual": 3.122502256758253e-17
+      },
+      {
+        "row": "VENUS 1995",
+        "outcome": "DBP",
+        "stored": -0.0885221031548294,
+        "stated_raw_d": -0.1252054323463941,
+        "fingerprint": -0.08852210315482939,
+        "fingerprint_residual": -1.3877787807814457e-17
+      },
+      {
+        "row": "IMAGES Pilot",
+        "outcome": "SBP",
+        "stored": -0.264653979775799,
+        "stated_raw_d": -0.37587596085436553,
+        "fingerprint": -0.26465397977579946,
+        "fingerprint_residual": 4.440892098500626e-16
+      },
+      {
+        "row": "IMAGES Pilot",
+        "outcome": "DBP",
+        "stored": -0.617200356517101,
+        "stated_raw_d": -0.8735139641004024,
+        "fingerprint": -0.6172003565171013,
+        "fingerprint_residual": 2.220446049250313e-16
+      },
+      {
+        "row": "Lees 1995",
+        "outcome": "SBP",
+        "stored": 0.215325118715147,
+        "stated_raw_d": 0.3034878899817626,
+        "fingerprint": 0.21532511871514687,
+        "fingerprint_residual": 1.3877787807814457e-16
+      },
+      {
+        "row": "Lees 1995",
+        "outcome": "DBP",
+        "stored": 0.115919804284656,
+        "stated_raw_d": 0.16364879907074173,
+        "fingerprint": 0.11591980428465595,
+        "fingerprint_residual": 4.163336342344337e-17
+      },
+      {
+        "row": "Strand 1984",
+        "outcome": "SBP",
+        "stored": 0.448873880258523,
+        "stated_raw_d": 0.6269373743271889,
+        "fingerprint": 0.44887388025852254,
+        "fingerprint_residual": 4.440892098500626e-16
+      },
+      {
+        "row": "Strand 1984",
+        "outcome": "DBP",
+        "stored": 0.200956265227038,
+        "stated_raw_d": 0.2816584226645232,
+        "fingerprint": 0.20095626522703847,
+        "fingerprint_residual": -4.718447854656915e-16
+      },
+      {
+        "row": "PRISTINE",
+        "outcome": "SBP",
+        "stored": 0.0392180839463597,
+        "stated_raw_d": 0.05546548448964203,
+        "fingerprint": 0.03921808394635967,
+        "fingerprint_residual": 2.7755575615628914e-17
+      },
+      {
+        "row": "PRISTINE",
+        "outcome": "DBP",
+        "stored": 0.103300371035471,
+        "stated_raw_d": 0.1460913318617547,
+        "fingerprint": 0.10330037103547055,
+        "fingerprint_residual": 4.579669976578771e-16
+      },
+      {
+        "row": "Steiner 1986",
+        "outcome": "SBP",
+        "stored": -0.224714290991933,
+        "stated_raw_d": -0.32157078070400164,
+        "fingerprint": -0.22471429099193313,
+        "fingerprint_residual": 1.3877787807814457e-16
+      },
+      {
+        "row": "Steiner 1986",
+        "outcome": "DBP",
+        "stored": -0.222472458334919,
+        "stated_raw_d": -0.32012979145300147,
+        "fingerprint": -0.22247245833491902,
+        "fingerprint_residual": 2.7755575615628914e-17
+      },
+      {
+        "row": "Huczynski 1988",
+        "outcome": "SBP",
+        "stored": -0.153069639017254,
+        "stated_raw_d": -0.21647315948575468,
+        "fingerprint": -0.15306963901725418,
+        "fingerprint_residual": 1.6653345369377348e-16
+      },
+      {
+        "row": "Huczynski 1988",
+        "outcome": "DBP",
+        "stored": 0.0257132477226556,
+        "stated_raw_d": 0.0363640236620387,
+        "fingerprint": 0.02571324772265564,
+        "fingerprint_residual": -3.8163916471489756e-17
+      }
+    ]
+  },
+  "large_sample": [
+    {
+      "delta": 0.0,
+      "rho": 0.5,
+      "nominal_alpha": 0.05,
+      "true_n_variance": 2.0,
+      "reported_n_variance": 2.0,
+      "variance_ratio": 1.0,
+      "limiting_rejection_rate": 0.05000000000000007,
+      "limiting_interval_coverage": 0.95
+    },
+    {
+      "delta": 1.0,
+      "rho": 0.5,
+      "nominal_alpha": 0.05,
+      "true_n_variance": 2.375,
+      "reported_n_variance": 2.1875,
+      "variance_ratio": 0.9210526315789473,
+      "limiting_rejection_rate": 0.05997102369486721,
+      "limiting_interval_coverage": 0.9400289763051328
+    },
+    {
+      "delta": 2.0,
+      "rho": 0.5,
+      "nominal_alpha": 0.05,
+      "true_n_variance": 3.5,
+      "reported_n_variance": 2.75,
+      "variance_ratio": 0.7857142857142857,
+      "limiting_rejection_rate": 0.08233028231439302,
+      "limiting_interval_coverage": 0.917669717685607
+    },
+    {
+      "delta": 1.5,
+      "rho": 0.8,
+      "nominal_alpha": 0.05,
+      "true_n_variance": 1.2049999999999996,
+      "reported_n_variance": 1.0024999999999997,
+      "variance_ratio": 0.8319502074688797,
+      "limiting_rejection_rate": 0.07382301435975176,
+      "limiting_interval_coverage": 0.9261769856402482
+    }
+  ],
+  "additional_grid": [
+    {
+      "n_each": 50000,
+      "delta": 0.75,
+      "rho": -0.6,
+      "repetitions": 200000,
+      "seed": 2026111761,
+      "source_rejection_rate": 0.05171,
+      "mcse": 0.0004951569241159816,
+      "J_and_k_diagnostic_rejection_rate": 0.050165,
+      "empirical_n_variance": 6.603292044806288,
+      "mean_n_reported_variance": 6.490017613908684,
+      "nominal_alpha": 0.05,
+      "true_n_variance": 6.58,
+      "reported_n_variance": 6.49,
+      "variance_ratio": 0.9863221884498481,
+      "limiting_rejection_rate": 0.05159304889809417,
+      "limiting_interval_coverage": 0.9484069511019059
+    },
+    {
+      "n_each": 50000,
+      "delta": 1.25,
+      "rho": -0.6,
+      "repetitions": 200000,
+      "seed": 2026111762,
+      "source_rejection_rate": 0.0547,
+      "mcse": 0.0005084678455910462,
+      "J_and_k_diagnostic_rejection_rate": 0.050145,
+      "empirical_n_variance": 6.893991709868077,
+      "mean_n_reported_variance": 6.650026101133817,
+      "nominal_alpha": 0.05,
+      "true_n_variance": 6.9,
+      "reported_n_variance": 6.65,
+      "variance_ratio": 0.9637681159420289,
+      "limiting_rejection_rate": 0.05433831422595559,
+      "limiting_interval_coverage": 0.9456616857740444
+    },
+    {
+      "n_each": 50000,
+      "delta": 0.75,
+      "rho": 0.2,
+      "repetitions": 200000,
+      "seed": 2026111763,
+      "source_rejection_rate": 0.054385,
+      "mcse": 0.0005070861454181133,
+      "J_and_k_diagnostic_rejection_rate": 0.049875,
+      "empirical_n_variance": 3.476424016719842,
+      "mean_n_reported_variance": 3.3350182770053394,
+      "nominal_alpha": 0.05,
+      "true_n_variance": 3.47,
+      "reported_n_variance": 3.335,
+      "variance_ratio": 0.9610951008645533,
+      "limiting_rejection_rate": 0.05467378246854846,
+      "limiting_interval_coverage": 0.9453262175314515
+    },
+    {
+      "n_each": 50000,
+      "delta": 1.25,
+      "rho": 0.2,
+      "repetitions": 200000,
+      "seed": 2026111764,
+      "source_rejection_rate": 0.06246,
+      "mcse": 0.0005411041877494574,
+      "J_and_k_diagnostic_rejection_rate": 0.049975,
+      "empirical_n_variance": 3.9482239890765456,
+      "mean_n_reported_variance": 3.5750341330264,
+      "nominal_alpha": 0.05,
+      "true_n_variance": 3.95,
+      "reported_n_variance": 3.575,
+      "variance_ratio": 0.9050632911392406,
+      "limiting_rejection_rate": 0.062236356793964394,
+      "limiting_interval_coverage": 0.9377636432060356
+    },
+    {
+      "n_each": 50000,
+      "delta": 0.75,
+      "rho": 0.8,
+      "repetitions": 200000,
+      "seed": 2026111765,
+      "source_rejection_rate": 0.056995,
+      "mcse": 0.0005183944925199341,
+      "J_and_k_diagnostic_rejection_rate": 0.05026,
+      "empirical_n_variance": 0.9031187748640765,
+      "mean_n_reported_variance": 0.8506349004764611,
+      "nominal_alpha": 0.05,
+      "true_n_variance": 0.9012499999999998,
+      "reported_n_variance": 0.8506249999999999,
+      "variance_ratio": 0.9438280166435506,
+      "limiting_rejection_rate": 0.05689443835975573,
+      "limiting_interval_coverage": 0.9431055616402443
+    },
+    {
+      "n_each": 50000,
+      "delta": 1.25,
+      "rho": 0.8,
+      "repetitions": 200000,
+      "seed": 2026111766,
+      "source_rejection_rate": 0.06726,
+      "mcse": 0.0005600718364638593,
+      "J_and_k_diagnostic_rejection_rate": 0.05025,
+      "empirical_n_variance": 1.0835704385311575,
+      "mean_n_reported_variance": 0.9406348147023732,
+      "nominal_alpha": 0.05,
+      "true_n_variance": 1.0812499999999998,
+      "reported_n_variance": 0.9406249999999998,
+      "variance_ratio": 0.8699421965317918,
+      "limiting_rejection_rate": 0.06753875119081516,
+      "limiting_interval_coverage": 0.9324612488091848
+    }
+  ]
+}

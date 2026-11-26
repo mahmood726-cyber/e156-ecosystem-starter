@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-17",
+  "status": "COMPUTATIONALLY_REPRODUCED_CANDIDATES",
+  "author_adjudication": "NOT_ESTABLISHED",
+  "worldwide_novelty": "NOT_ENOUGH_INFO",
+  "package": {
+    "name": "metavcov",
+    "version": "2.1.5",
+    "commit": "f8a7db2485638a570102afc09d44c0ced7a76f9d",
+    "licence": "GPL (>= 2)"
+  },
+  "original_sources": [
+    {
+      "local": "third_party/metavcov/smd.vcov.R",
+      "upstream_path": "R/smd.vcov.R",
+      "url": "https://github.com/cran/metavcov/blob/f8a7db2485638a570102afc09d44c0ced7a76f9d/R/smd.vcov.R",
+      "git_blob_sha": "3289d2c1bfe7dbb3363d09ea11fe47be920d89c9",
+      "sha256": "6b0013b2eb1dfffdad03448e31a7f1c62bac43eb56c8f9c26b35987b6ba270f5",
+      "bytes": 3766
+    },
+    {
+      "local": "third_party/metavcov/r.vcov.R",
+      "upstream_path": "R/r.vcov.R",
+      "url": "https://github.com/cran/metavcov/blob/f8a7db2485638a570102afc09d44c0ced7a76f9d/R/r.vcov.R",
+      "git_blob_sha": "8eb12c709307c936c9685958b25b9d43f69ede0f",
+      "sha256": "a329edb9f7fbad6aa0f94ed56e939c3d8ed465c0dd524c77c6127d028123ba3a",
+      "bytes": 5526
+    },
+    {
+      "local": "third_party/metavcov/metafixed.R",
+      "upstream_path": "R/metafixed.R",
+      "url": "https://github.com/cran/metavcov/blob/f8a7db2485638a570102afc09d44c0ced7a76f9d/R/metafixed.R",
+      "git_blob_sha": "b43626a3bae4d2e7ab7eedbad10d3a5b5bcc2caa",
+      "sha256": "864c75fb1050c40287c9d0b488704f15decc853955192887fd89e5aded4466f3",
+      "bytes": 2945
+    },
+    {
+      "local": "third_party/metavcov/Geeganage2010.rda",
+      "upstream_path": "data/Geeganage2010.rda",
+      "url": "https://github.com/cran/metavcov/blob/f8a7db2485638a570102afc09d44c0ced7a76f9d/data/Geeganage2010.rda",
+      "git_blob_sha": "d2548a2296a84f6e703aff5d6d7da98ec5331927",
+      "sha256": "0e57890e4e78ef61b97058c7c236f605b5e4fcb3ecca137c84ef6f4b8582396a",
+      "bytes": 1795
+    }
+  ],
+  "csv_export": {
+    "path": "data/Geeganage2010.csv",
+    "origin": "Base R write.csv of retained original RDA",
+    "supplied_rows": 17,
+    "outcomes_per_row": 2,
+    "distinct_independent_trials": "NOT_ESTABLISHED"
+  },
+  "papers": [
+    {
+      "doi": "10.1111/bmsp.12345",
+      "year": 2024,
+      "equation": "11",
+      "section": "5.1.1",
+      "url": "https://bpspsychub.onlinelibrary.wiley.com/doi/full/10.1111/bmsp.12345"
+    },
+    {
+      "doi": "10.3389/fpsyg.2023.1185012",
+      "year": 2023,
+      "url": "https://www.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2023.1185012/full"
+    },
+    {
+      "doi": "10.1002/sim.5679",
+      "year": 2013,
+      "equation": "12",
+      "table": "I",
+      "url": "https://onlinelibrary.wiley.com/doi/full/10.1002/sim.5679"
+    }
+  ],
+  "supplement": {
+    "doi": "10.1002/sim.5679",
+    "name": "sim_5679_supplementary_materials.pdf",
+    "inspected": "Appendix A3, PDF pages 3\u20136",
+    "pages": 31,
+    "sha256": "ac310ca88017acd6fe2c1e1eb4db578537c69f2e07ae89265245c017ebd02c50",
+    "redistributed": false
+  },
+  "runtime": {
+    "python": "3.13.13",
+    "numpy": "2.4.6",
+    "R": "4.6.0"
+  },
+  "review": {
+    "type": "separate AI computational review",
+    "human_adjudication": false,
+    "original_equation_images_reinspected_by_separate_reviewer": false,
+    "seed": 409173,
+    "scope": "Quoted coefficient, unmodified retained source, independent derivation and fresh synthetic cases"
+  }
+}
