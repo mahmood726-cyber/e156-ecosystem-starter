@@ -97,7 +97,9 @@
   "pytest:tests/test_synthesis_v13_nma_preflight.py": 0,
   "pytest:tests/test_trial_identity_screen.py": 28,
   "pytest:tests/test_verify_local.py": 37,
-  "pytest:tests/test_windows_install_smoke.py": 6
+  "pytest:tests/test_windows_install_smoke.py": 6,
+  "pytest:tests/test_synthesis_real_engine.py": 0,
+  "pytest:tests/test_synthesis_source_trial_view.py": 0
  },
  "sets": {
   "bash-names:tests/test-handoff-locale.bash": [
@@ -1613,6 +1615,8 @@
    "rules/e156.md",
    "rules/lessons.md",
    "rules/rules.md"
-  ]
+  ],
+  "pytest-names:tests/test_synthesis_real_engine.py": [],
+  "pytest-names:tests/test_synthesis_source_trial_view.py": []
  }
 }
