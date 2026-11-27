@@ -45,6 +45,16 @@ jobs:
           ref: 4156930cf2d1404870766fb821b045b671a7eff6
           path: .external/meta-starter-kit
           persist-credentials: false
+      - name: Materialize canonical pinned engine bytes
+        shell: python
+        run: |
+          from pathlib import Path
+          import subprocess
+          root = Path('.external/meta-starter-kit')
+          # Windows checkout may convert LF to CRLF. Preserve the reviewed
+          # Git object bytes; the integration still checks the exact blob hash.
+          raw = subprocess.check_output(['git', '-C', str(root), 'cat-file', 'blob', 'HEAD:metakit/engine.py'])
+          (root / 'metakit/engine.py').write_bytes(raw)
       - name: Real pinned meta-starter-kit engine; public paper-table negative control
         env:
           SYNTHESIS_PINNED_ENGINE_FILE: .external/meta-starter-kit/metakit/engine.py

@@ -970,7 +970,7 @@
       ],
       "source": ".github/workflows/synthesis-source-trial-pilot.yml offline-synthetic; tests/test_synthesis_source_trial_view.py and tests/test_synthesis_real_engine.py; scripts/synthesis_paired_model_replay.py. Real engine is checked out from pinned public meta-starter-kit commit, never accepted from an arbitrary user-provided path.",
       "seal": {
-        ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic": "b880738944414113496c5589d7a89d947d57850c5e05deb994c2b8968e0ec96a"
+        ".github/workflows/synthesis-source-trial-pilot.yml#jobs.offline-synthetic": "43bc19651aa944edbf318b37f694f16073ffeb630c5631e570bc74895ae555ec"
       }
     }
   ]
