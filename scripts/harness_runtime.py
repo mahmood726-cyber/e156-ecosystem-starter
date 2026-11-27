@@ -464,9 +464,11 @@ def prediction(response):
     text = "".join(c.get("text", "") for item in response["output"] if item.get("type") == "message"
                    for c in item.get("content", []) if c.get("type") == "output_text")
     result = context.strict_json(text.encode("utf-8"))
-    require(isinstance(result, dict) and result.get("disposition") in {"FLAG", "NO_FLAG", "ABSTAIN"}, "invalid prediction")
-    fields = ["reason"] + (["flag_root_id", "evidence_locator"] if result["disposition"] == "FLAG" else
-                           ["stop_point"] if result["disposition"] == "ABSTAIN" else [])
+    require(isinstance(result, dict), "prediction must be an object")
+    disposition = result.get("disposition")
+    require(isinstance(disposition, str) and disposition in {"FLAG", "NO_FLAG", "ABSTAIN"}, "invalid prediction")
+    fields = ["reason"] + (["flag_root_id", "evidence_locator"] if disposition == "FLAG" else
+                           ["stop_point"] if disposition == "ABSTAIN" else [])
     for key in fields: require(isinstance(result.get(key), str) and result[key].strip(), "prediction evidence/reason required")
     return {key: result[key] for key in ["disposition", *fields]}
 
