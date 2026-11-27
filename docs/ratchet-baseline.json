@@ -36,12 +36,13 @@
   "pytest:tests/test_gate_gaps.py": 30,
   "pytest:tests/test_harness_context.py": 6,
   "pytest:tests/test_harness_derivation.py": 9,
-  "pytest:tests/test_harness_execution_benchmark.py": 10,
+  "pytest:tests/test_harness_execution_benchmark.py": 26,
   "pytest:tests/test_harness_progress.py": 12,
   "pytest:tests/test_harness_provider.py": 6,
-  "pytest:tests/test_harness_runtime.py": 18,
+  "pytest:tests/test_harness_recovery.py": 5,
+  "pytest:tests/test_harness_runtime.py": 35,
   "pytest:tests/test_harness_study_records.py": 25,
-  "pytest:tests/test_harness_study_runner.py": 24,
+  "pytest:tests/test_harness_study_runner.py": 28,
   "pytest:tests/test_harness_trace.py": 15,
   "pytest:tests/test_harness_worker.py": 8,
   "pytest:tests/test_honest_ratchet.py": 21,
@@ -67,7 +68,7 @@
   "pytest:tests/test_scicoqa_paired_benchmark.py": 0,
   "pytest:tests/test_scicoqa_paired_inference.py": 0,
   "pytest:tests/test_scicoqa_retrieve_sources.py": 0,
-  "pytest:tests/test_sentinel_frozen_release.py": 8,
+  "pytest:tests/test_sentinel_frozen_release.py": 13,
   "pytest:tests/test_sentinel_hook_backup_collision.py": 5,
   "pytest:tests/test_sentinel_hook_postinstall.py": 2,
   "pytest:tests/test_setup_python_action_pin.py": 8,
@@ -83,6 +84,7 @@
   "pytest:tests/test_synthesis_preflight.py": 0,
   "pytest:tests/test_synthesis_preflight_count_identity.py": 0,
   "pytest:tests/test_synthesis_preflight_root_dedup.py": 0,
+  "pytest:tests/test_synthesis_real_engine.py": 0,
   "pytest:tests/test_synthesis_replay.py": 40,
   "pytest:tests/test_synthesis_reply_driven_intake.py": 0,
   "pytest:tests/test_synthesis_reporting.py": 14,
@@ -90,16 +92,16 @@
   "pytest:tests/test_synthesis_reviewer_workflow.py": 18,
   "pytest:tests/test_synthesis_rocrate.py": 11,
   "pytest:tests/test_synthesis_signing.py": 13,
+  "pytest:tests/test_synthesis_source_trial_view.py": 0,
   "pytest:tests/test_synthesis_study_preflight.py": 23,
   "pytest:tests/test_synthesis_v13_checks.py": 0,
   "pytest:tests/test_synthesis_v13_evidence.py": 0,
   "pytest:tests/test_synthesis_v13_feedback.py": 0,
   "pytest:tests/test_synthesis_v13_nma_preflight.py": 0,
   "pytest:tests/test_trial_identity_screen.py": 28,
-  "pytest:tests/test_verify_local.py": 37,
-  "pytest:tests/test_windows_install_smoke.py": 6,
-  "pytest:tests/test_synthesis_real_engine.py": 0,
-  "pytest:tests/test_synthesis_source_trial_view.py": 0
+  "pytest:tests/test_update_ecosystem.py": 1,
+  "pytest:tests/test_verify_local.py": 39,
+  "pytest:tests/test_windows_install_smoke.py": 6
  },
  "sets": {
   "bash-names:tests/test-handoff-locale.bash": [
@@ -815,13 +817,29 @@
   "pytest-names:tests/test_harness_execution_benchmark.py": [
    "test_abstention_requires_retained_refusal",
    "test_all_error_rows_remain_in_summary",
+   "test_bad_elapsed_values_are_serializable_apparatus_errors",
+   "test_cached_reads_cannot_hide_a_dropped_model_from_native_journal",
    "test_case_inventory_and_duplicate_ids_fail_closed",
    "test_coercion_cannot_borrow_a_future_valid_request",
+   "test_dropped_live_adapter_trace_is_an_error_in_attempted_denominator",
+   "test_legitimate_e156_refusals_have_explicit_bound_causes",
+   "test_malformed_observations_fail_closed_without_crashing",
    "test_native_feedback_uses_structure_not_source_text",
+   "test_native_refusal_cause_requires_matching_feedback",
+   "test_native_refusal_feedback_is_bound_to_the_original_model_call",
    "test_oracle_detects_invented_excerpt_or_unauthorized_execution",
+   "test_parent_normalizes_retained_apparatus_failure_even_with_consistent_trace",
+   "test_parent_regrades_untrusted_child_results_and_retains_every_attempt",
    "test_positive_control_requires_completion_evidence_and_unchanged_source",
    "test_published_evidence_hashes_survive_windows_git_checkout",
+   "test_refusal_oracle_rejects_contradictions_and_unsupported_causes",
+   "test_reproduced_empty_trace_false_counts_and_hash_cannot_pass",
+   "test_required_failure_and_refusal_events_cannot_be_omitted",
    "test_stops_and_provider_failures_cannot_fabricate_predictions",
+   "test_swallowed_callback_faults_are_apparatus_errors",
+   "test_trace_event_and_counter_disagreements_fail_after_rehash",
+   "test_unexpected_fault_cannot_hide_behind_an_earlier_refusal",
+   "test_unrecognized_adapter_failures_cannot_pass_refusal",
    "test_worker_environment_drops_credentials_and_tracing"
   ],
   "pytest-names:tests/test_harness_progress.py": [
@@ -846,25 +864,49 @@
    "test_provider_child_refuses_invalid_or_expired_request_before_transport",
    "test_redirect_and_arbitrary_endpoint_refused"
   ],
+  "pytest-names:tests/test_harness_recovery.py": [
+   "test_failed_initialization_retains_every_recovery_denominator",
+   "test_process_loss_retains_completed_attempts",
+   "test_recovery_anchor_refuses_changed_bundle",
+   "test_reviewed_recovery_anchor_recomputes_current_bundle",
+   "test_worker_apparatus_failures_are_not_refusals"
+  ],
   "pytest-names:tests/test_harness_runtime.py": [
    "test_abstention_escalates_using_frozen_route_and_keeps_attempts",
    "test_budget_prevents_model_request",
    "test_execution_witness_hash_cannot_be_dropped_or_forged",
    "test_explicit_default_tier_is_sent_and_unsupported_policy_refused",
    "test_fail_closed_boundaries",
+   "test_initialization_exclusive_publication_preserves_racing_target",
+   "test_initialization_preserves_existing_corrupt_target",
+   "test_initialization_preserves_windows_rollback_path_budget",
+   "test_initialization_rechecks_sidecar_before_publication",
+   "test_initialization_refuses_symlink_target_without_touching_destination",
+   "test_invalid_disposition_abstains_with_settled_usage_and_cached_resume",
+   "test_invalid_disposition_uses_frozen_fallback_and_replays_all_attempts",
    "test_invalid_received_usage_is_retained_as_evidence",
+   "test_invalid_response_is_retained_before_settlement_and_never_retried",
+   "test_journal_initialization_process_loss_publishes_only_complete_state",
+   "test_model_identity_is_required_without_explicit_tier_policy",
    "test_native_execution_witness_is_mandatory_and_replay_bound",
    "test_native_recovery_validates_before_irreversible_settlement",
    "test_nonterminal_provider_response_keeps_full_reservation",
    "test_offline_prepare_creates_empty_source_bound_journal",
    "test_paid_adapter_requires_explicit_enable_before_any_network",
+   "test_prediction_rejects_unencodable_returned_fields",
    "test_process_loss_after_acceptance_is_not_replayed",
+   "test_recovery_validates_response_before_changing_journal",
    "test_request_mutation_after_count_refused",
    "test_run_trace_usage_and_resume_without_repeated_call",
    "test_state_sidecar_cannot_overlap_source",
    "test_tool_round_is_recorded_and_replayed",
    "test_two_processes_cannot_spend_last_allocation_twice",
-   "test_unknown_network_outcome_retains_reservation_and_never_retries"
+   "test_unconfigured_tier_does_not_invent_a_default_requirement",
+   "test_unencodable_prediction_uses_frozen_fallback_and_cached_replay",
+   "test_unknown_network_outcome_retains_reservation_and_never_retries",
+   "test_valid_envelope_with_invalid_final_json_retains_abstention_policy",
+   "test_valid_prediction_dispositions_retain_their_fields",
+   "test_valid_unicode_prediction_fields_are_preserved"
   ],
   "pytest-names:tests/test_harness_study_records.py": [
    "test_ambiguous_model_failure_keeps_reservation_separate_and_usage_unknown",
@@ -908,10 +950,14 @@
    "test_freeze_refuses_unmanifested_files_before_publication_or_adoption",
    "test_future_measurement_refused_before_publication",
    "test_future_protocol_refused_before_work_or_dispatch",
+   "test_initialization_process_loss_can_abort_and_freeze_every_planned_slot",
    "test_interrupted_freeze_resumes_without_reexecuting",
+   "test_invalid_disposition_is_recorded_as_abstention_and_replays_without_calls",
    "test_live_gate_never_uses_synthetic_fixture_or_missing_credentials",
+   "test_malformed_response_is_recorded_and_recoverable_without_crashing_resume",
    "test_missing_review_measurements_never_freeze_or_default_to_zero",
    "test_post_preflight_guard_change_refused",
+   "test_prediction_unicode_is_recorded_and_replays_without_calls",
    "test_private_files_not_staged_or_sent_to_model",
    "test_reconcile_settles_pending_result_before_changing_journal",
    "test_resume_without_case_id_cli_refuses",
@@ -1285,7 +1331,12 @@
    "test_mutable_override_preflight_runs_before_existing_cli_check",
    "test_real_bash_and_windows_installer_defaults_are_exact_commit",
    "test_real_bash_runtime_uses_commit_not_movable_tag",
-   "test_unsafe_or_divergent_pin_refuses_apply_without_network"
+   "test_unsafe_or_divergent_pin_refuses_apply_without_network",
+   "test_windows_python_preflight_accepts_supported_versions",
+   "test_windows_python_preflight_explains_missing_python",
+   "test_windows_python_preflight_refuses_store_alias_without_executing",
+   "test_windows_python_preflight_refuses_unsupported_versions",
+   "test_windows_python_preflight_refuses_unverifiable_process"
   ],
   "pytest-names:tests/test_sentinel_hook_backup_collision.py": [
    "test_backup_copy_failure_does_not_publish_partial_backup",
@@ -1380,6 +1431,7 @@
   "pytest-names:tests/test_synthesis_preflight.py": [],
   "pytest-names:tests/test_synthesis_preflight_count_identity.py": [],
   "pytest-names:tests/test_synthesis_preflight_root_dedup.py": [],
+  "pytest-names:tests/test_synthesis_real_engine.py": [],
   "pytest-names:tests/test_synthesis_replay.py": [
    "test_all_local_import_dependencies_are_bound_in_profile",
    "test_ambiguous_registration_quote_refuses",
@@ -1503,6 +1555,7 @@
    "test_signature_never_substitutes_for_replay",
    "test_signing_refuses_wrong_private_key_overwrite_and_nested_output"
   ],
+  "pytest-names:tests/test_synthesis_source_trial_view.py": [],
   "pytest-names:tests/test_synthesis_study_preflight.py": [
    "test_arm_configuration_hashes_are_canonical_json_and_files_required",
    "test_bound_files_never_claim_external_approval_or_export_private_data",
@@ -1562,6 +1615,9 @@
    "test_totals_only_table_uses_s2",
    "test_unreadable_header_is_inconclusive"
   ],
+  "pytest-names:tests/test_update_ecosystem.py": [
+   "test_updater_preserves_each_local_edit_and_memory_across_updates"
+  ],
   "pytest-names:tests/test_verify_local.py": [
    "test_all_pass_exits_zero",
    "test_allow_missing_cannot_hide_a_failure",
@@ -1599,6 +1655,8 @@
    "test_sentinel_limb_refuses_missing_clone",
    "test_sentinel_limb_refuses_wrong_commit",
    "test_unknown_allow_missing_name_is_a_usage_error",
+   "test_updater_limb_missing_windows_shell_is_visible",
+   "test_updater_limb_refuses_false_green_reports",
    "test_version_constant"
   ],
   "pytest-names:tests/test_windows_install_smoke.py": [
@@ -1615,8 +1673,6 @@
    "rules/e156.md",
    "rules/lessons.md",
    "rules/rules.md"
-  ],
-  "pytest-names:tests/test_synthesis_real_engine.py": [],
-  "pytest-names:tests/test_synthesis_source_trial_view.py": []
+  ]
  }
 }

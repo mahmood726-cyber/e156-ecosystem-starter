@@ -3,7 +3,7 @@
 #
 # Scoop has `scoop update`; Chocolatey has `choco upgrade`; this is the
 # ecosystem equivalent. Downloads the current main.zip to %TEMP%, extracts,
-# runs install.ps1 with -Force -NonInteractive. Existing memory is preserved
+# runs install.ps1 with -NonInteractive. Existing memory is preserved
 # by design (Copy-MemoryScaffold short-circuits on non-empty dirs); rules and
 # context files are re-copied with .user backups of any local edits.
 #
@@ -78,6 +78,12 @@ Write-Ok "downloaded to $zip"
 
 Write-Step "Extracting..."
 try {
+    # A parent PowerShell 7 process can leave its incompatible Archive module
+    # ahead of Windows PowerShell's modules in inherited PSModulePath.
+    if ($PSVersionTable.PSEdition -eq 'Desktop') {
+        $archiveManifest = Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Archive\Microsoft.PowerShell.Archive.psd1'
+        Import-Module -Name $archiveManifest -Force -ErrorAction Stop
+    }
     Expand-Archive -Path $zip -DestinationPath $workspace -Force -ErrorAction Stop
 } catch {
     Write-Host "ERROR: extract failed ($($_.Exception.Message))" -ForegroundColor Red
@@ -93,10 +99,10 @@ if (-not (Test-Path (Join-Path $extractRoot 'install\install.ps1'))) {
 }
 Write-Ok "extracted to $extractRoot"
 
-Write-Step "Re-running install.ps1 -Force -NonInteractive"
+Write-Step "Re-running install.ps1 -NonInteractive (preserving local edits in backups)"
 $installArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass',
                  '-File', (Join-Path $extractRoot 'install\install.ps1'),
-                 '-Force', '-NonInteractive')
+                 '-NonInteractive')
 if ($Full) { $installArgs += '-Full' }
 
 & powershell @installArgs

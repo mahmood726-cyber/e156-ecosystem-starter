@@ -290,11 +290,16 @@ def main(argv=None):
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args(argv)
     try:
+        viewer = _load_companion("synthesis_source_trial_view.py", "_paired_output_viewer")
+        protected = [args.packet] + ([args.engine_file] if args.engine_file is not None else [])
+        viewer._prepare_outputs([args.out], protected=protected)
         packet = json.loads(args.packet.read_text(encoding="utf-8"))
+        protected.extend(viewer._source_paths(packet, args.source_root))
+        output, = viewer._prepare_outputs([args.out], protected=protected)
         result = check_replay(packet, args.source_root,
                               engine_path=args.engine_file, engine_sha256=args.engine_sha256)
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        viewer._publish_outputs([(output, json.dumps(result, indent=2, sort_keys=True) + "\n")],
+                                protected=protected)
     except (ValueError, OSError, TypeError, json.JSONDecodeError) as exc:
         ap.exit(2, "paired replay failed to load or write: " + str(exc) + "\n")
     print(json.dumps({"status": result["status"],

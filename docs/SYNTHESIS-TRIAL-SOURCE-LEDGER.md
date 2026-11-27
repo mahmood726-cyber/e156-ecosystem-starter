@@ -25,6 +25,12 @@ improvement**, not an entirely new meta-analysis algorithm.
 Python 3.10+, standard library only. Keep sources and results in a private
 working directory unless every excerpt is licensed for public redistribution.
 
+Use distinct, new HTML and JSON output filenames; existing files and input/source
+aliases are refused. See the shared [publication and retry requirements](SYNTHESIS-SOURCE-TRIAL-PILOT.md#run-offline).
+Malformed source tiers or trial-key types retain a per-row HOLD so later rows are
+still reported. Percentage bindings must match a complete numeric token at the
+selected offset, even when the same percentage occurs elsewhere in a quotation.
+
 ~~~sh
 python scripts/synthesis_trial_source_ledger.py \
   --packet /private/ledger.json \

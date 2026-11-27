@@ -1,7 +1,10 @@
 """Synthetic-only tests of the supervised source/trial viewer; not accuracy evidence."""
 import hashlib
 import importlib.util
+import contextlib
+import io
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -380,6 +383,40 @@ class SourceTrialViewerTests(unittest.TestCase):
         self.assertTrue(output.is_file())
         self.assertIn("Experimental reviewer aid", output.read_text(encoding="utf-8"))
 
+    def test_cli_refuses_output_aliases_before_evaluation_and_preserves_inputs(self):
+        packet = self.root / "packet.json"
+        packet.write_text(json.dumps(self.packet), encoding="utf-8")
+        source = self.root / self.packet["cases"][0]["primary"]["path"]
+        previous = self.root / "previous.html"
+        previous.write_text("previous private report", encoding="utf-8")
+        linked = self.root / "linked-source.txt"
+        os.link(source, linked)
+        targets = [packet, source, previous, linked]
+        if os.name == "nt":
+            targets.append(source.with_name(source.name.upper()))
+        for target in targets:
+            before = target.read_bytes()
+            with self.subTest(target=target.name), contextlib.redirect_stderr(io.StringIO()), \
+                    patch.object(module, "evaluate_packet", side_effect=AssertionError("must preflight first")):
+                with self.assertRaises(SystemExit) as error:
+                    module.main(["--packet", str(packet), "--source-root", str(self.root),
+                                 "--html-out", str(target)])
+                self.assertEqual(error.exception.code, 2)
+            self.assertEqual(target.read_bytes(), before)
+
+    def test_cli_does_not_create_a_missing_declared_source_as_output(self):
+        missing = self.root / "missing-source.txt"
+        self.packet["cases"][0]["primary"]["path"] = missing.name
+        packet = self.root / "packet.json"
+        packet.write_text(json.dumps(self.packet), encoding="utf-8")
+        with contextlib.redirect_stderr(io.StringIO()), \
+                patch.object(module, "evaluate_packet", side_effect=AssertionError("must preflight first")):
+            with self.assertRaises(SystemExit) as error:
+                module.main(["--packet", str(packet), "--source-root", str(self.root),
+                             "--html-out", str(missing)])
+        self.assertEqual(error.exception.code, 2)
+        self.assertFalse(missing.exists())
+
 
 
 
@@ -583,6 +620,80 @@ class TrialSourceLedgerTests(unittest.TestCase):
         self.assertEqual(report["rows"][0]["status"], "REVIEW_CANDIDATE")
         row["bindings"]["published_denominator"]["offset"] += 1
         self.assertEqual(self._review(row)["rows"][0]["status"], "HOLD")
+
+    def test_selected_percentage_cannot_borrow_a_valid_occurrence_elsewhere(self):
+        for invalid in ("-1.5%", "−1.5%", "+1.5%", "±1.5%", "11.5%", "1.5%%"):
+            with self.subTest(invalid=invalid):
+                row = self._row()
+                key = row["trial_key"]
+                pub = f"Review {key}: 2/67 ({invalid}) participants; other endpoint 1.5% of people."
+                pri = f"{key} source reports 2 of 67 participants."
+                row["case"]["published"] = self._snapshot("percentage-review.txt", pub)
+                row["case"]["primary"] = self._snapshot("percentage-source.txt", pri)
+                for context in row["case"]["contexts"].values():
+                    context.update(denominator_basis="observed people",
+                                   effect_measure="raw participant percentage",
+                                   estimand="unweighted participants with outcome")
+                row["case"]["comparison"] = {
+                    "kind": "count_percentage", "published_count": 2,
+                    "published_denominator": 67, "published_percentage": "1.5%",
+                    "primary_count": 2, "primary_denominator": 67,
+                    "percentage_method": "RAW_UNWEIGHTED_PERSON_FRACTION",
+                    "raw_fraction_source_verified": True,
+                    "denominator_basis_source_verified": True,
+                }
+                row["trial_key_binding"] = {"text": key, "offset": pri.index(key)}
+                row["bindings"] = {
+                    "published_count": {"text": "2", "offset": pub.index("2/67")},
+                    "published_denominator": {"text": "67", "offset": pub.index("67")},
+                    "published_percentage": {"text": "1.5%", "offset": pub.index("1.5%")},
+                    "primary_count": {"text": "2", "offset": pri.index("2 of")},
+                    "primary_denominator": {"text": "67", "offset": pri.index("67")},
+                }
+                self.assertEqual(self._review(row)["rows"][0]["status"], "HOLD")
+                row["bindings"]["published_percentage"]["offset"] = pub.rindex("1.5%")
+                self.assertEqual(self._review(row)["rows"][0]["status"], "REVIEW_CANDIDATE")
+
+    def test_malformed_row_membership_fields_hold_and_retain_following_row(self):
+        for field in ("source_tier", "trial_key_type"):
+            for invalid in ([], {}, None, 42):
+                with self.subTest(field=field, invalid=invalid):
+                    bad, good = self._row("bad"), self._row("good")
+                    bad[field] = invalid
+                    report = self._review(bad, good)
+                    self.assertEqual([r["case_id"] for r in report["rows"]], ["bad", "good"])
+                    self.assertEqual([r["status"] for r in report["rows"]], ["HOLD", "REVIEW_CANDIDATE"])
+                    self.assertEqual(report["counts"]["HOLD"], 1)
+
+    def test_malformed_comparison_kind_holds_and_retains_following_row(self):
+        malformed = [{"kind": value} for value in ([], {}, None, 42)] + [[], None, 42]
+        for comparison in malformed:
+            with self.subTest(comparison=comparison):
+                bad, good = self._row("bad"), self._row("good")
+                bad["case"]["comparison"] = comparison
+                report = self._review(bad, good)
+                self.assertEqual([r["case_id"] for r in report["rows"]], ["bad", "good"])
+                self.assertEqual([r["status"] for r in report["rows"]], ["HOLD", "REVIEW_CANDIDATE"])
+                self.assertEqual(report["counts"]["HOLD"], 1)
+
+    def test_cli_preflights_all_outputs_and_preserves_existing_sources(self):
+        row = self._row()
+        packet = self.root / "packet.json"
+        packet.write_text(json.dumps({"ledger_version": "0.1", "synthesis_id": "invented",
+                                      "rows": [row]}), encoding="utf-8")
+        source = self.root / row["case"]["primary"]["path"]
+        html_out = self.root / "review.html"
+        for second in (packet, source, html_out, self.root / "unused" / ".." / html_out.name):
+            before = {p: p.read_bytes() for p in (packet, source)}
+            with self.subTest(second=str(second)), contextlib.redirect_stderr(io.StringIO()), \
+                    patch.object(ledger, "review_ledger", side_effect=AssertionError("preflight first")):
+                with self.assertRaises(SystemExit) as error:
+                    ledger.main(["--packet", str(packet), "--source-root", str(self.root),
+                                 "--html-out", str(html_out), "--json-out", str(second)])
+            self.assertEqual(error.exception.code, 2)
+            self.assertFalse(html_out.exists())
+            for path, data in before.items():
+                self.assertEqual(path.read_bytes(), data)
 
     def test_cli_writes_private_html_and_sanitised_json(self):
         packet = self.root / "ledger.json"
@@ -939,6 +1050,98 @@ class PairedModelReplayTests(unittest.TestCase):
                 engine_sha256=self.engine_digest)
         self.assertEqual(result["status"], "HOLD")
         self.assertFalse(result["scientific_error_confirmed"])
+
+
+class OutputPublicationTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+
+    def test_complete_utf8_outputs_are_published_without_temporary_files(self):
+        first, second = self.root / "view.html", self.root / "receipt.json"
+        module._publish_outputs([(first, "private café"), (second, "{\"complete\": true}\n")])
+        self.assertEqual(first.read_bytes(), "private café".encode("utf-8"))
+        self.assertEqual(json.loads(second.read_text(encoding="utf-8")), {"complete": True})
+        self.assertEqual(set(self.root.iterdir()), {first, second})
+
+    def test_cli_existing_and_dangling_symlink_outputs_are_refused(self):
+        source = self.root / "private-source.txt"
+        source.write_text("original private source", encoding="utf-8")
+        existing = self.root / "existing-source-link.txt"
+        try:
+            existing.symlink_to(source)
+        except OSError as exc:
+            if os.name == "nt" and getattr(exc, "winerror", None) == 1314:
+                self.skipTest("Windows symlink privilege unavailable; required on Ubuntu")
+            raise
+        missing = self.root / "missing-source.txt"
+        dangling = self.root / "dangling-source-link.txt"
+        dangling.symlink_to(missing)
+        packet = self.root / "packet.json"
+        packet.write_text("{}", encoding="utf-8")
+        base = ["--packet", str(packet), "--source-root", str(self.root)]
+        other = self.root / "receipt.json"
+        for destination in (existing, dangling):
+            for tool, evaluator, arguments in (
+                (module, "evaluate_packet", [*base, "--html-out", str(destination)]),
+                (ledger, "review_ledger", [*base, "--html-out", str(destination),
+                                           "--json-out", str(other)]),
+                (paired, "check_replay", [*base, "--out", str(destination)]),
+            ):
+                with self.subTest(tool=tool.__name__, destination=destination.name), \
+                        contextlib.redirect_stderr(io.StringIO()), \
+                        patch.object(tool, evaluator, side_effect=AssertionError("must preflight first")):
+                    with self.assertRaises(SystemExit) as error:
+                        tool.main(arguments)
+                    self.assertEqual(error.exception.code, 2)
+                self.assertEqual(source.read_text(encoding="utf-8"), "original private source")
+                self.assertTrue(existing.is_symlink())
+                self.assertTrue(dangling.is_symlink())
+                self.assertFalse(missing.exists())
+                self.assertFalse(other.exists())
+
+    def test_second_output_race_preserves_competing_file_and_rolls_back_first(self):
+        for name, parent_alias in (("ordinary", False), ("normalized-parent", True)):
+            with self.subTest(path_form=name):
+                actual_root = self.root / name
+                actual_root.mkdir()
+                # The redundant parent segment exercises normalization on every
+                # platform, including hosts without Windows 8.3 short names.
+                requested_root = actual_root / ".." / name if parent_alias else actual_root
+                first, second = requested_root / "view.html", requested_root / "receipt.json"
+                second_identity = second.resolve()
+                real_link = os.link
+                injected = []
+                def raced_link(source, destination):
+                    if Path(destination).resolve() == second_identity:
+                        injected.append(str(destination))
+                        Path(destination).write_text("another process owns this", encoding="utf-8")
+                    return real_link(source, destination)
+                with patch.object(module.os, "link", side_effect=raced_link):
+                    with self.assertRaises(ValueError):
+                        module._publish_outputs([(first, "private view"), (second, "private receipt")])
+                self.assertEqual(len(injected), 1, "competing-file race must actually execute")
+                self.assertFalse(first.exists())
+                self.assertEqual(second.read_text(encoding="utf-8"), "another process owns this")
+                self.assertEqual(set(actual_root.resolve().iterdir()), {second_identity})
+
+    def test_staging_failure_leaves_no_published_output(self):
+        first, second = self.root / "view.html", self.root / "receipt.json"
+        real_fsync = os.fsync
+        calls = 0
+        def failed_sync(fd):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise OSError("injected write failure")
+            return real_fsync(fd)
+        with patch.object(module.os, "fsync", side_effect=failed_sync):
+            with self.assertRaises(ValueError):
+                module._publish_outputs([(first, "private view"), (second, "private receipt")])
+        self.assertFalse(first.exists())
+        self.assertFalse(second.exists())
+        self.assertEqual(list(self.root.iterdir()), [])
 
 
 if __name__ == "__main__":

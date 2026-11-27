@@ -16,11 +16,11 @@
 #   4. install\install.ps1 hashes itself against docs/HASH.txt (download-
 #      integrity check) and then chains rules+memory+optional sub-installers
 #
-# Security note: download-integrity != tamper-proof. A bad actor with push
-# access to the upstream repo can ship a malicious tag along with a matching
-# HASH.txt; the gate only catches MitM / corrupt-download. For high-trust
-# installs, prefer `git clone --branch v0.x.y --depth 1` from a clean shell
-# and verify the tag's GPG signature before running install.ps1.
+# Security note: the hash gate detects disagreement between script and hash
+# bytes, not replacement of both. Current starter tags are unsigned. For
+# repeatable source selection, clone, inspect and check out a full reviewed
+# commit SHA before running install.ps1. A source pin does not authenticate
+# the publisher or lock every dependency.
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference    = 'SilentlyContinue'
@@ -52,7 +52,7 @@ $python = Get-Command python -ErrorAction SilentlyContinue
 if (-not $python) {
     Write-Host ""
     Write-Host "  ERROR: Python is not on PATH." -ForegroundColor Red
-    Write-Host "  Install Python 3.11+ from https://www.python.org/downloads/"
+    Write-Host "  Install Python 3.13+ from https://www.python.org/downloads/"
     Write-Host "  (tick 'Add Python to PATH' during install)."
     Write-Host ""
     return
@@ -73,7 +73,7 @@ if ($LASTEXITCODE -ne 0 -or $pyVersion -match 'not found' -or $python.Source -ma
         Write-Host "    $($python.Source)"
         Write-Host ""
         Write-Host "  Fix it (1 minute):"
-        Write-Host "    1. Download Python 3.11 or newer from https://www.python.org/downloads/"
+        Write-Host "    1. Download Python 3.13 or newer from https://www.python.org/downloads/"
         Write-Host "    2. Run the installer."
         Write-Host "    3. CRITICAL: tick 'Add python.exe to PATH' on the first screen."
         Write-Host "    4. Click Install."

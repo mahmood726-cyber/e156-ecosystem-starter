@@ -90,7 +90,7 @@
 
 <details style="margin: 0 0 28px; padding: 12px 16px; background:#f0f6ff; border-right:3px solid #0366d6; border-left:none; border-radius:4px; font-size:0.95em;">
   <summary style="cursor:pointer; font-weight:600;">پہلے سے پرانا ورژن انسٹال ہے؟ (اپ ڈیٹ)</summary>
-  <p style="margin:10px 0 0;">اگر آپ نے پہلے انسٹالر چلایا ہے (مثلاً مارچ میں v0.7.0)، صرف <strong>یہی one-liner دوبارہ چلائیں</strong> اس صفحے کے اوپر سے۔ نیا bootstrap آخری tagged release لائے گا اور آپ کے قواعد + یادداشت کے ٹیمپلیٹس کو اوور رائٹ کرے گا۔ آپ کی ذاتی فائلیں (<code>*.md.user</code>) محفوظ رہتی ہیں۔ انسٹال شدہ ورژن چیک کرنے کے لیے، کسی بھی Codespace ٹرمنل میں <code>e156 version</code> چلائیں۔</p>
+  <p style="margin:10px 0 0; overflow-wrap:anywhere;">مقامی تنصیب کو اپ ڈیٹ کرنے کے لیے کٹ کے فولڈر سے <code>.\scripts\update-ecosystem.ps1</code> چلائیں۔ یہ پہلے سے طے شدہ طور پر <code>main</code> برانچ ڈاؤن لوڈ کرتا ہے؛ <code>-Ref v0.7.0</code> واضح طور پر اس پرانے ورژن کو منتخب کرتا ہے۔ موجودہ یادداشت محفوظ رہتی ہے۔ قواعد اور سیاق کی فائلیں اپ ڈیٹ کرنے سے پہلے <code>*.user</code> بیک اپ بنتے ہیں، اور پچھلے بیک اپ تبدیل نہیں ہوتے۔</p>
   <p style="margin:8px 0 0;"><strong>i18n نکتہ:</strong> Codespace کے اندر سب کچھ اردو میں حاصل کرنے کے لیے، <a href="https://github.com/settings/codespaces">github.com/settings/codespaces</a> پر اپنے Codespaces user secrets میں <code>E156_LANG=ur</code> شامل کریں۔ یہ ہر codespace پر لاگو ہوتا ہے جو آپ کھولیں۔</p>
 </details>
 
@@ -134,7 +134,7 @@ ls ~/.claude/rules</code></pre>
 
 <h2>پیشگی شرائط</h2>
 <ul>
-  <li><strong>Python 3.11+</strong> از <a href="https://www.python.org/downloads/">python.org/downloads</a> ("Add python.exe to PATH" کو ٹک کریں)۔</li>
+  <li><strong>Python 3.13+</strong> از <a href="https://www.python.org/downloads/">python.org/downloads</a> ("Add python.exe to PATH" کو ٹک کریں)۔</li>
   <li><strong>Node.js 20+</strong> از <a href="https://nodejs.org/en/download">nodejs.org</a>۔</li>
   <li>ایک AI ایجنٹ CLI: <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a> (مفت)، <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> (ادائیگی کے ساتھ)، یا <a href="https://github.com/openai/codex">OpenAI Codex</a>۔</li>
 </ul>

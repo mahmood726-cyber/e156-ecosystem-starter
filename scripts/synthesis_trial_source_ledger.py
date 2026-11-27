@@ -30,7 +30,7 @@ def _viewer():
     return module
 
 
-def _exact_binding(quote: str, binding: dict, expected) -> bool:
+def _exact_binding(quote: str, binding: dict, expected, *, numeric_percentage=False) -> bool:
     """Check a reviewer-selected occurrence, never infer its scientific meaning."""
     if not isinstance(quote, str) or not isinstance(binding, dict):
         return False
@@ -39,6 +39,11 @@ def _exact_binding(quote: str, binding: dict, expected) -> bool:
         return False
     if quote[offset:offset + len(text)] != text:
         return False
+    if numeric_percentage:
+        return (isinstance(expected, str) and text == expected
+                and re.fullmatch(r"(?:0|[1-9][0-9]*)(?:\.[0-9]{1,8})?%", text) is not None
+                and _viewer()._complete_number_at(quote, offset, text)
+                and quote[offset + len(text):offset + len(text) + 1] != "%")
     if type(expected) is int:
         if expected < 0 or text not in {str(expected), format(expected, ",")}:
             return False
@@ -55,6 +60,8 @@ def _exact_binding(quote: str, binding: dict, expected) -> bool:
 def _bindings_for(case: dict):
     comparison = case.get("comparison", {})
     kind = comparison.get("kind") if isinstance(comparison, dict) else None
+    if not isinstance(kind, str):
+        return []
     if kind in {"integer_count", "variance_label"}:
         return [
             ("published_value", "published", comparison.get("published")),
@@ -116,14 +123,15 @@ def review_ledger(packet: dict, root: Path) -> dict:
             outcomes.append(_hold(row_id, "both archived source excerpts required", checked))
             continue
         tier = row.get("source_tier")
-        if tier not in SUPPORTED_TIERS:
+        if not isinstance(tier, str) or tier not in SUPPORTED_TIERS:
             outcomes.append(_hold(row_id, "primary evidence tier T1/T2/T3 required; prior syntheses T4 are unverified", checked))
             continue
         trial_key = row.get("trial_key")
         if not isinstance(trial_key, str) or not trial_key.strip():
             outcomes.append(_hold(row_id, "typed trial key missing", checked))
             continue
-        if row.get("trial_key_type") not in {"REGISTRY", "DOI", "OTHER_SOURCE_ID"}:
+        if (not isinstance(row.get("trial_key_type"), str)
+                or row["trial_key_type"] not in {"REGISTRY", "DOI", "OTHER_SOURCE_ID"}):
             outcomes.append(_hold(row_id, "trial key type unknown", checked))
             continue
         if row.get("trial_key_type") == "REGISTRY":
@@ -145,7 +153,8 @@ def review_ledger(packet: dict, root: Path) -> dict:
             continue
         bad = [
             name for name, side, value in required
-            if not _exact_binding(checked["evidence"][side]["quote"], bindings.get(name), value)
+            if not _exact_binding(checked["evidence"][side]["quote"], bindings.get(name), value,
+                                  numeric_percentage=name == "published_percentage")
         ]
         if bad:
             outcomes.append(_hold(row_id, "unbound or ambiguous source-cell offsets: " + ", ".join(bad), checked))
@@ -219,12 +228,12 @@ def main(argv=None) -> int:
     parser.add_argument("--json-out", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        packet = json.loads(args.packet.read_text(encoding="utf-8"))
-        report = review_ledger(packet, args.source_root)
         viewer = _viewer()
-        args.html_out.parent.mkdir(parents=True, exist_ok=True)
-        args.json_out.parent.mkdir(parents=True, exist_ok=True)
-        args.html_out.write_text(viewer.render_html(to_viewer_report(report)), encoding="utf-8")
+        viewer._prepare_outputs([args.html_out, args.json_out], protected=[args.packet])
+        packet = json.loads(args.packet.read_text(encoding="utf-8"))
+        protected = [args.packet, *viewer._source_paths(packet, args.source_root)]
+        html_out, json_out = viewer._prepare_outputs([args.html_out, args.json_out], protected=protected)
+        report = review_ledger(packet, args.source_root)
         # Persist source locators and row statuses, not raw private quotes, in JSON.
         public_rows = []
         for row in report["rows"]:
@@ -239,11 +248,13 @@ def main(argv=None) -> int:
                 for side in ("published", "primary") if side in evidence
             }
             public_rows.append(record)
-        args.json_out.write_text(json.dumps({
+        receipt = json.dumps({
             "synthesis_id": report["synthesis_id"], "rows": public_rows,
             "counts": report["counts"], "duplicate_preflight": report["duplicate_preflight"],
             "certified": False,
-        }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        }, indent=2, sort_keys=True) + "\n"
+        viewer._publish_outputs([(html_out, viewer.render_html(to_viewer_report(report))),
+                                 (json_out, receipt)], protected=protected)
     except (ValueError, OSError, TypeError, json.JSONDecodeError) as exc:
         parser.exit(2, "Ledger input/output refused: " + str(exc) + "\n")
     print(json.dumps({"rows": len(report["rows"]), "counts": report["counts"],

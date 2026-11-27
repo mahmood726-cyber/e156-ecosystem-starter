@@ -86,7 +86,7 @@
 
 <details style="margin: 0 0 28px; padding: 12px 16px; background:#f0f6ff; border-left:3px solid #0366d6; border-radius:4px; font-size:0.95em;">
   <summary style="cursor:pointer; font-weight:600;">Déjà installé une version précédente ? (mise à jour)</summary>
-  <p style="margin:10px 0 0;">Si vous avez exécuté l'installateur auparavant (par ex. v0.7.0 en mars), <strong>relancez simplement la même ligne de commande</strong> en haut de cette page. Le nouveau bootstrap récupère la dernière version taguée et écrase vos règles + modèles de mémoire. Vos fichiers édités (<code>*.md.user</code>) sont préservés. Pour vérifier la version installée, dans n'importe quel terminal Codespace exécutez <code>e156 version</code>.</p>
+  <p style="margin:10px 0 0; overflow-wrap:anywhere;">Pour mettre à jour une installation locale, exécutez <code>.\scripts\update-ecosystem.ps1</code> depuis le dossier du kit. Par défaut, le script télécharge la branche <code>main</code> ; <code>-Ref v0.7.0</code> sélectionne explicitement cette ancienne version. La mémoire existante est conservée. Les règles et fichiers de contexte sont actualisés après sauvegarde des fichiers existants en <code>*.user</code>, sans remplacer les sauvegardes précédentes.</p>
   <p style="margin:8px 0 0;"><strong>Conseil i18n :</strong> pour avoir tout en français à l'intérieur du Codespace, ajoutez <code>E156_LANG=fr</code> à vos secrets utilisateur Codespaces sur <a href="https://github.com/settings/codespaces">github.com/settings/codespaces</a>. Cela s'applique à chaque codespace que vous ouvrez.</p>
 </details>
 <aside class="notice" role="note" style="background:#fff5b1; border-left:4px solid #ffd33d;">
@@ -134,7 +134,7 @@ ls ~/.claude/rules</code></pre>
 
 <h2>Prérequis</h2>
 <ul>
-  <li><strong>Python 3.11+</strong> depuis <a href="https://www.python.org/downloads/">python.org/downloads</a> (cocher « Add python.exe to PATH »).</li>
+  <li><strong>Python 3.13+</strong> depuis <a href="https://www.python.org/downloads/">python.org/downloads</a> (cocher « Add python.exe to PATH »).</li>
   <li><strong>Node.js 20+</strong> depuis <a href="https://nodejs.org/en/download">nodejs.org</a>.</li>
   <li>Une CLI d'agent IA : <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a> (gratuit), <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> (payant), ou <a href="https://github.com/openai/codex">OpenAI Codex</a>.</li>
 </ul>

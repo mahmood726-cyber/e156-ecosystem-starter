@@ -31,6 +31,10 @@ The entrypoint is **scripts/synthesis_paired_model_replay.py** and it reuses the
 
 ## How to invoke
 
+Use a new `--out` filename. Existing files and input/source/engine aliases are
+refused before the numerical engine runs. See the shared
+[output publication and retry requirements](SYNTHESIS-SOURCE-TRIAL-PILOT.md#run-offline).
+
 Preflight (does not fit any model):
 
     python scripts/synthesis_paired_model_replay.py --packet /private/paired.json --source-root /private/captures --out /private/preflight.json

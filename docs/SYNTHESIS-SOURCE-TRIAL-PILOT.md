@@ -54,6 +54,16 @@ are **reviewer declarations**, not automatically authenticated semantic facts.
 
 ## Run offline
 
+Choose a **new output filename** for every run. Existing reports, input packets,
+archived sources and aliases of those files are refused before evaluation.
+The ledger's HTML and JSON destinations must also differ. Complete UTF-8 files
+are staged and published without replacing an existing destination; this requires
+a filesystem supporting hard links, such as local NTFS. Unsupported filesystems
+refuse publication. A caught failure rolls back files published by that attempt.
+Process or power loss between two publications can leave a partial output set;
+inspect it and choose fresh destinations before retrying. This is not a
+transaction across multiple files.
+
 Python 3.10+, standard library only. Store permitted source archives and generated
 HTML outside the public repository. Example command syntax:
 

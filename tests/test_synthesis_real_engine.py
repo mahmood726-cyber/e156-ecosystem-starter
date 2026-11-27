@@ -9,11 +9,15 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import contextlib
+import io
+import json
 import math
 import os
 import tempfile
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 TEST_ROOT = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
@@ -215,6 +219,39 @@ class PinnedEngineIntegration(unittest.TestCase):
         self.assertEqual(paired.SUPPORTED_ENGINE_GIT_BLOB_SHA1,
                          "768aeb1e8dd892f388dffe6c636293be92a74107")
         self.assertEqual(len(self.digest), 64)
+
+    def test_real_engine_cli_preserves_sources_and_refuses_output_reuse_before_fit(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            packet = self._synthetic_paired_packet(root)
+            packet_path = root / "packet.json"
+            packet_path.write_text(json.dumps(packet), encoding="utf-8")
+            original_files = {p: p.read_bytes() for p in root.iterdir()}
+            source = root / packet["trials"][0]["primary_trial"]["path"]
+            out = root / "result.json"
+            args = ["--packet", str(packet_path), "--source-root", str(root),
+                    "--engine-file", os.environ["SYNTHESIS_PINNED_ENGINE_FILE"],
+                    "--engine-sha256", self.digest]
+            for alias in (packet_path, source):
+                with self.subTest(alias=alias.name), contextlib.redirect_stderr(io.StringIO()), \
+                        patch.object(paired, "_run_engine", side_effect=AssertionError("must not fit")):
+                    with self.assertRaises(SystemExit) as error:
+                        paired.main([*args, "--out", str(alias)])
+                    self.assertEqual(error.exception.code, 2)
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(paired.main([*args, "--out", str(out)]), 0)
+            result = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(result["status"], "PAIRED_MODEL_REPLAYED_FOR_REVIEW")
+            self.assertEqual(result["model_fit"], "ACTUALLY_EXECUTED")
+            published = out.read_bytes()
+            with contextlib.redirect_stderr(io.StringIO()), \
+                    patch.object(paired, "_run_engine", side_effect=AssertionError("must not fit")):
+                with self.assertRaises(SystemExit) as error:
+                    paired.main([*args, "--out", str(out)])
+            self.assertEqual(error.exception.code, 2)
+            self.assertEqual(out.read_bytes(), published)
+            for path, content in original_files.items():
+                self.assertEqual(path.read_bytes(), content)
 
 
 if __name__ == "__main__":

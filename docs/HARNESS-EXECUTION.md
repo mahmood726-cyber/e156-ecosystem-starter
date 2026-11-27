@@ -105,7 +105,10 @@ The prediction must be a JSON object with a string `disposition` equal to
 Malformed disposition types, including arrays and objects, follow the core
 runner's ordinary `ABSTAIN` / `OUTPUT_VALIDATION` policy and any configured
 fallback route. The settled response and usage remain available for cached
-replay. The native Pydantic adapter retains its existing `REFUSED` /
+replay. Required prediction strings must also encode as UTF-8: lone Unicode
+surrogates follow the same output-validation policy before study publication.
+Accented text, CJK characters and supplementary Unicode characters remain valid.
+The native Pydantic adapter retains its existing `REFUSED` /
 `OUTPUT_VALIDATION` policy. See the [validation repair record](HARNESS-VALIDATION-FIXES-2026-11-27.md).
 
 New execution and recovery require the returned model identity to match the

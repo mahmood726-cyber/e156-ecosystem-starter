@@ -144,11 +144,11 @@ def test_planted_sentinel_checkout_pin_drift_is_refused(vl, workflow_text):
     assert any("Sentinel CI checkout pin differs" in p for p in drift), drift
 
 
-@pytest.mark.parametrize("dropped", range(10))
+@pytest.mark.parametrize("dropped", range(11))
 def test_planted_missing_limb_is_refused(vl, workflow_text, dropped):
     """Delete any one limb from verify-local: the CI step it mirrored is now
     unmatched, and parity must say so."""
-    assert len(vl.LIMBS) == 10
+    assert len(vl.LIMBS) == 11
     limbs = [l for i, l in enumerate(vl.LIMBS) if i != dropped]
     drift = vl.find_drift(workflow_text, limbs=limbs)
     job, step = vl.LIMBS[dropped].ci_steps[0]
@@ -294,6 +294,41 @@ def test_real_shellcheck_limb_with_no_tool_on_path(vl, tmp_path):
     assert (code, res[0][1]) == (2, vl.NOEXEC)
     code, res = vl.run_limbs([shellcheck], ctx, allow_missing=["shellcheck"], out=_silent)
     assert (code, res[0][1]) == (0, vl.NOT_RUN)
+
+
+def test_updater_limb_missing_windows_shell_is_visible(vl, tmp_path):
+    limb = next(l for l in vl.LIMBS if l.name == "archive-updater-windows")
+    code, results = vl.run_limbs([limb], _ctx(vl, tmp_path), out=_silent)
+    assert (code, results[0][1]) == (2, vl.NOEXEC)
+    assert "powershell.exe" in results[0][2]
+
+
+@pytest.mark.parametrize("defect", [None, "missing", "skipped", "failure", "error", "duplicate", "absent-report", "malformed"])
+def test_updater_limb_refuses_false_green_reports(vl, tmp_path, defect):
+    ctx = _ctx(vl, tmp_path, which=lambda name: name)
+    calls = []
+    def runner(cmd, timeout=1800):
+        calls.append(cmd)
+        if "import pytest" in cmd:
+            return 0, ""
+        assert "tests/test_install_meta_harness.py" in cmd
+        assert "tests/test_update_ecosystem.py" in cmd
+        report = Path(next(arg.split("=", 1)[1] for arg in cmd if arg.startswith("--junitxml=")))
+        cases = [f'<testcase name="{name}" />' for name in sorted(vl.UPDATER_CASES)]
+        if defect == "missing":
+            cases.pop()
+        elif defect in ("skipped", "failure", "error"):
+            cases[0] = cases[0].replace(" />", f"><{defect}/></testcase>")
+        elif defect == "duplicate":
+            cases.append(cases[0])
+        if defect != "absent-report":
+            report.write_text("broken XML" if defect == "malformed" else
+                              "<testsuites><testsuite>" + "".join(cases) + "</testsuite></testsuites>", encoding="utf-8")
+        return 0, "pytest returned zero"
+    ctx.run = runner
+    verdict, detail = vl.limb_archive_updater_windows(ctx)
+    assert verdict == (vl.PASS if defect is None else vl.REFUSED), detail
+    assert len(calls) == 2
 
 
 def test_unknown_allow_missing_name_is_a_usage_error(vl, capsys):

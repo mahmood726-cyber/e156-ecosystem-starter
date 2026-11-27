@@ -371,6 +371,61 @@ def test_valid_prediction_dispositions_retain_their_fields(job, prediction):
     assert report["status"] == "COMPLETED" and report["prediction"] == prediction
 
 
+@pytest.mark.parametrize("disposition,field", [
+    ("NO_FLAG", "reason"), ("FLAG", "flag_root_id"),
+    ("FLAG", "evidence_locator"), ("ABSTAIN", "stop_point"),
+])
+@pytest.mark.parametrize("surrogate", ["\ud800", "\udfff"], ids=["high", "low"])
+def test_prediction_rejects_unencodable_returned_fields(disposition, field, surrogate):
+    prediction = {"disposition": disposition, "reason": "SYNTHETIC reason",
+                  "flag_root_id": "synthetic-root", "evidence_locator": "synthetic-location",
+                  "stop_point": "synthetic-stop"}
+    prediction[field] += surrogate
+    # JSON escapes make a valid provider envelope; decoding the nested prediction
+    # must not introduce a string that cannot be published in UTF-8 artifacts.
+    with pytest.raises(context.Refused, match="UTF-8"):
+        runtime.prediction(answer(json.dumps(prediction)))
+
+
+@pytest.mark.parametrize("disposition,field", [
+    ("NO_FLAG", "reason"), ("FLAG", "flag_root_id"),
+    ("FLAG", "evidence_locator"), ("ABSTAIN", "stop_point"),
+])
+def test_unencodable_prediction_uses_frozen_fallback_and_cached_replay(job, disposition, field):
+    prediction = {"disposition": disposition, "reason": "SYNTHETIC reason",
+                  "flag_root_id": "synthetic-root", "evidence_locator": "synthetic-location",
+                  "stop_point": "synthetic-stop"}
+    prediction[field] += "\ud800"
+    raw = answer(json.dumps(prediction))
+    provider = Provider([raw, answer(model="synthetic-large")])
+    report = run(job, provider)
+    assert report["status"] == "COMPLETED" and report["prediction"]["disposition"] == "NO_FLAG"
+    assert [request["model"] for request in provider.requests] == ["synthetic-test-model", "synthetic-large"]
+    first = runtime.Journal.operations(report["events"])["model:0"]
+    assert first["finish"]["kind"] == "FINISHED" and first["finish"]["data"] == raw
+    assert report["usage"]["model_calls"] == 2 and report["usage"]["model_tokens"] == 60
+    assert report["accounting"]["unresolved_reserved"] == runtime.units()
+    assert run(job, provider, create=False) == report
+    assert provider.calls == provider.counts == 2
+
+
+@pytest.mark.parametrize("disposition", ["FLAG", "NO_FLAG", "ABSTAIN"])
+@pytest.mark.parametrize("escaped", [False, True], ids=["literal", "escaped"])
+def test_valid_unicode_prediction_fields_are_preserved(job, disposition, escaped):
+    job[0]["routes"]["extract"] = ["small"]
+    prediction = {"disposition": disposition, "reason": "SYNTHETIC café 研究 🙂"}
+    if disposition == "FLAG":
+        prediction.update(flag_root_id="synthetic-研究", evidence_locator="synthetic-é-🙂")
+    elif disposition == "ABSTAIN":
+        prediction["stop_point"] = "synthetic-研究-🙂"
+    provider = Provider([answer(json.dumps(prediction, ensure_ascii=escaped))])
+    report = run(job, provider)
+    assert report["status"] == "COMPLETED" and report["prediction"] == prediction
+    assert json.loads(json.dumps(report, ensure_ascii=False).encode("utf-8")) == report
+    assert run(job, provider, create=False) == report
+    assert provider.calls == provider.counts == 1
+
+
 @pytest.mark.parametrize("defect", ["usage_missing", "usage_overrun", "forbidden_tool", "source_drift", "config_drift", "ledger_tamper"])
 def test_fail_closed_boundaries(job, defect):
     provider = Provider()

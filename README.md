@@ -102,7 +102,7 @@ cd e156-ecosystem-starter
 
 The installer will:
 
-1. Verify its own SHA against `docs/HASH.txt` ([download-integrity check](docs/index.html#security) — catches MitM/corruption between Pages CDN and your laptop, **not** a repo compromise; for high-trust installs use the signed-tag git-clone path)
+1. Compare its own SHA with `docs/HASH.txt` ([download-integrity check](docs/index.html#security)). This detects disagreement between the downloaded script and hash file; it cannot authenticate the publisher or detect an attacker replacing both. For a repeatable installation, review and check out an exact commit. Current starter tags are unsigned.
 2. Detect which agent CLIs are on PATH and print install URLs for any missing
 3. Copy `rules/*.md` into each agent's config dir (`.claude/rules/`, `.gemini/rules/`, `.codex/rules/`)
 4. Drop `AGENTS.md` + `CLAUDE.md` + `GEMINI.md` + `CODEX.md` into each config dir

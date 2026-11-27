@@ -90,7 +90,7 @@
 
 <details style="margin: 0 0 28px; padding: 12px 16px; background:#f0f6ff; border-right:3px solid #0366d6; border-left:none; border-radius:4px; font-size:0.95em;">
   <summary style="cursor:pointer; font-weight:600;">سبق وثبّتت نسخة قديمة؟ (التحديث)</summary>
-  <p style="margin:10px 0 0;">إذا شغّلت المثبِّت سابقاً (مثلاً v0.7.0 في مارس)، <strong>أعِد تشغيل نفس السطر الواحد</strong> أعلى هذه الصفحة. الـ bootstrap الجديد سيسحب آخر إصدار موسوم ويستبدل قواعدك وقوالب الذاكرة. ملفاتك المحرَّرة (<code>*.md.user</code>) محفوظة. للتحقق من النسخة المثبَّتة، في أي طرفية Codespace شغّل <code>e156 version</code>.</p>
+  <p style="margin:10px 0 0; overflow-wrap:anywhere;">لتحديث تثبيت محلي، شغّل <code>.\scripts\update-ecosystem.ps1</code> من مجلد الحزمة. ينزّل البرنامج الفرع <code>main</code> افتراضياً؛ ويختار <code>-Ref v0.7.0</code> ذلك الإصدار القديم صراحةً. تُحفظ الذاكرة الموجودة، وتُحدّث القواعد وملفات السياق بعد حفظ نسخ احتياطية <code>*.user</code> دون استبدال النسخ الاحتياطية السابقة.</p>
   <p style="margin:8px 0 0;"><strong>نصيحة i18n:</strong> للحصول على كل شيء بالعربية داخل الـ Codespace، أضف <code>E156_LANG=ar</code> إلى أسرار المستخدم في <a href="https://github.com/settings/codespaces">github.com/settings/codespaces</a>. ينطبق على كل codespace تفتحه.</p>
 </details>
 <aside class="notice" role="note" style="background:#fff5b1; border-right:4px solid #ffd33d; border-left:none;">
@@ -138,7 +138,7 @@ ls ~/.claude/rules</code></pre>
 
 <h2>المتطلبات الأساسية</h2>
 <ul>
-  <li><strong>Python 3.11+</strong> من <a href="https://www.python.org/downloads/">python.org/downloads</a> (مع تحديد "Add python.exe to PATH").</li>
+  <li><strong>Python 3.13+</strong> من <a href="https://www.python.org/downloads/">python.org/downloads</a> (مع تحديد "Add python.exe to PATH").</li>
   <li><strong>Node.js 20+</strong> من <a href="https://nodejs.org/en/download">nodejs.org</a>.</li>
   <li>واجهة سطر أوامر لوكيل ذكاء اصطناعي: <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a> (مجاني)، <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> (مدفوع)، أو <a href="https://github.com/openai/codex">OpenAI Codex</a>.</li>
 </ul>
