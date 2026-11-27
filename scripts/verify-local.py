@@ -159,7 +159,7 @@ class Context:
             return override
         hit = self.need("bash")
         # On Windows, C:\Windows\System32\bash.exe is the WSL launcher, not Git
-        # Bash: it runs in a different filesystem. Prefer Git for Windows' bash.
+        # Bash: it runs in a different filesystem. Prefer Git Bash on Windows.
         if os.name == "nt" and "system32" in hit.lower():
             git = self.which("git")
             if git:
