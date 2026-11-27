@@ -6,10 +6,13 @@ import argparse
 from contextlib import closing
 from datetime import datetime, timezone
 import hashlib
+import hmac
 import json
 import math
+import os
 from pathlib import Path
 import sqlite3
+import tempfile
 import time
 
 if __package__:
@@ -46,7 +49,7 @@ class ReceivedInvalid(Refused):
 
 def profile():
     directory = Path(__file__).parent
-    names = ("harness_runtime.py", "harness_provider.py", "harness_context.py", "harness_worker.py", "harness_trace.py",
+    names = ("harness_runtime.py", "harness_provider.py", "harness_context.py", "harness_derivation.py", "harness_worker.py", "harness_trace.py",
              "component_source.py", "component_lock.py", "synthesis_replay.py", "synthesis_blind_eval.py", "bounded_native.py")
     return {name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
             for name in names if (directory / name).exists()}
@@ -55,6 +58,13 @@ def profile():
 def configuration(config, manifest):
     require(isinstance(config, dict) and config.get("schema") == "e156-harness-runtime-v1", "runtime schema mismatch")
     require(config.get("context_sha256") == digest(manifest), "context binding mismatch")
+    if "request_policy" in config:
+        require(config["request_policy"] == {"service_tier": "default"}, "unsupported request policy")
+    if "progress_policy" in config:
+        policy = config["progress_policy"]
+        require(isinstance(policy, dict) and set(policy) == {"repeated_result_limit"}, "invalid progress policy")
+        integer(policy["repeated_result_limit"], "repeated result limit", minimum=2)
+        require(policy["repeated_result_limit"] <= 100, "repeated result limit too large")
     for field in ("project_id", "task", "task_kind"):
         require(isinstance(config.get(field), str) and config[field].strip(), f"{field} required")
     limits = config.get("limits")
@@ -97,6 +107,49 @@ def model_usage(raw, model, quote):
                  cost_microusd=price(model, usage["input_tokens"], usage["output_tokens"]))
 
 
+def response_usage(raw, model, quote, request_policy=None):
+    """Validate the supported envelope and request identity before settlement.
+
+    Keep model_usage's historical accounting contract for offline artifacts;
+    newly received and recovered responses must also satisfy this boundary.
+    Final message text is parsed separately, retaining the ABSTAIN policy.
+    """
+    require(isinstance(raw, dict), "malformed provider response")
+    require(raw.get("model") == model["model"], "provider model identity mismatch")
+    if request_policy is not None:
+        require(raw.get("service_tier") == request_policy["service_tier"], "provider service tier mismatch")
+    require(isinstance(raw.get("id"), str) and bool(raw["id"]), "provider response id required")
+    require(isinstance(raw.get("status"), str), "malformed provider status")
+    require(isinstance(raw.get("output"), list), "malformed provider output")
+    calls = []
+    for item in raw["output"]:
+        require(isinstance(item, dict), "malformed provider output item")
+        kind = item.get("type")
+        if kind == "message":
+            require(item.get("role") == "assistant" and isinstance(item.get("content"), list)
+                    and bool(item["content"]), "malformed provider message")
+            require(all(isinstance(part, dict) and part.get("type") == "output_text"
+                        and isinstance(part.get("text"), str) for part in item["content"]),
+                    "unsupported provider message content")
+        elif kind == "function_call":
+            require(all(isinstance(item.get(key), str) and bool(item[key]) for key in ("name", "call_id"))
+                    and isinstance(item.get("arguments"), str), "malformed provider function call")
+            calls.append(item)
+        elif kind == "reasoning":
+            require(isinstance(item.get("id"), str) and bool(item["id"])
+                    and isinstance(item.get("summary"), list), "malformed provider reasoning item")
+            require(all(isinstance(part, dict) and part.get("type") == "summary_text"
+                        and isinstance(part.get("text"), str) for part in item["summary"]),
+                    "malformed provider reasoning summary")
+            require(item.get("encrypted_content") is None or isinstance(item["encrypted_content"], str),
+                    "malformed provider reasoning state")
+        else:
+            raise Refused("unsupported provider output item")
+        require(item.get("id") is None or isinstance(item["id"], str), "malformed provider item id")
+    require(len(calls) <= 1 and (not calls or raw["status"] == "completed"), "unsupported parallel/incomplete tool call")
+    return model_usage(raw, model, quote)
+
+
 def accounting(operations):
     """Keep observations separate from unresolved and recovered-time ceilings."""
     observed, unresolved, recovered_wall = units(), units(), units()
@@ -118,15 +171,38 @@ class Journal:
         self.path = context.control_path(path, root, manifest, sqlite=True, creating=create)
         self.config, self.manifest, self.root = config, manifest, root
         self.anchor = {"config_sha256": digest(config), "context_sha256": digest(manifest), "code": profile()}
+        if "progress_policy" in config:
+            self.anchor["progress_policy"] = dict(config["progress_policy"])
         self.revalidate()
         if create:
-            self.path.touch(exist_ok=False)
-            with closing(sqlite3.connect(self.path)) as con:
-                con.execute(TABLE)
-                self._append(con, [], {"kind": "READY", "anchor": self.anchor})
-                con.commit()
+            self._initialize()
         require(self.path.is_file(), "journal missing; explicit initialization required")
         self.events()
+
+    def _initialize(self):
+        """Publish only a closed, committed journal; retain interrupted staging."""
+        if self.path.exists():
+            raise FileExistsError(self.path)
+        # Keep the staging basename as short as run.sqlite: SQLite also needs
+        # room for its rollback suffix under Windows' native path limit.
+        descriptor, name = tempfile.mkstemp(prefix=".j", dir=self.path.parent)
+        os.close(descriptor)
+        candidate = context.control_path(name, self.root, self.manifest, sqlite=True, creating=True)
+        with closing(sqlite3.connect(candidate)) as con:
+            con.execute("PRAGMA synchronous=FULL")
+            require(con.execute("PRAGMA journal_mode").fetchone() == ("delete",), "unsupported journal mode")
+            con.execute("BEGIN IMMEDIATE")
+            con.execute(TABLE)
+            self._append(con, [], {"kind": "READY", "anchor": self.anchor})
+            con.commit()
+            self._read(con)
+        self.revalidate()
+        # Recheck sidecars immediately before exclusive publication. Neither a
+        # racing creator nor an existing target is ever replaced. A process
+        # interruption leaves private staging evidence, never a partial target.
+        context.control_path(self.path, self.root, self.manifest, sqlite=True, creating=True)
+        os.link(context.guard(candidate), self.path)
+        candidate.unlink()
 
     def revalidate(self):
         require(digest(self.config) == self.anchor["config_sha256"] and digest(self.manifest) == self.anchor["context_sha256"],
@@ -182,6 +258,10 @@ class Journal:
                 require(key not in operations, "duplicate reservation")
                 _numbers(event["reserved"])
                 require(event.get("request_sha256") == digest(event["request"]), "request digest mismatch")
+                witness_fields = {"execution_witness", "execution_witness_sha256"} & set(event)
+                require(not witness_fields or witness_fields == {"execution_witness", "execution_witness_sha256"}, "incomplete execution witness")
+                if witness_fields:
+                    require(isinstance(event["execution_witness"], dict) and event["execution_witness_sha256"] == digest(event["execution_witness"]), "execution witness digest mismatch")
                 operations[key] = {"reservation": event, "finish": None}
             elif kind in {"FINISHED", "UNRESOLVED"}:
                 require(key in operations and operations[key]["finish"] is None, "invalid operation transition")
@@ -212,8 +292,11 @@ class Journal:
             for key in total: total[key] += used[key]
         return total
 
-    def operation(self, key, request, reserve, execute):
+    def operation(self, key, request, reserve, execute, *, witness=None):
         _numbers(reserve)
+        require(witness is None or isinstance(witness, dict), "execution witness must be an object")
+        if "native_runtime" in self.config and key.split(":", 1)[0] in {"count", "model"}:
+            require(witness is not None, "native model/count requires execution witness")
         with closing(self._connect()) as con:
             con.execute("BEGIN IMMEDIATE")
             events = self._read(con)
@@ -221,17 +304,28 @@ class Journal:
             if key in operations:
                 op = operations[key]
                 require(op["reservation"]["request_sha256"] == digest(request), "request bytes changed")
+                prior = op["reservation"]
+                require(("execution_witness" in prior) == (witness is not None), "execution witness presence changed")
+                if witness is not None:
+                    require(prior["execution_witness_sha256"] == digest(witness), "execution witness changed")
                 final = op["finish"]
                 if final is None or final["kind"] == "UNRESOLVED":
                     raise Unresolved("in-flight or interrupted operation needs reconciliation")
                 return final["data"]
             if any(op["finish"] is None or op["finish"]["kind"] == "UNRESOLVED" for op in operations.values()):
                 raise Unresolved("unresolved operation prevents further execution")
+            if "native_runtime" in self.config and key.startswith("model:"):
+                count = operations.get("count:" + key[6:])
+                require(count and count["finish"] and count["finish"]["kind"] == "FINISHED"
+                        and count["reservation"]["request_sha256"] == digest(request)
+                        and count["reservation"].get("execution_witness_sha256") == digest(witness),
+                        "native model/count witness or request mismatch")
             used = self.totals(operations)
             if reserve["wall_ms"] <= 0 or any(used[field] + reserve[field] > self.config["limits"][field] for field in RESOURCES):
                 raise BudgetStop("reservation exceeds remaining budget")
             self._append(con, events, {"kind": "RESERVED", "id": key, "request": request,
-                                      "request_sha256": digest(request), "reserved": reserve})
+                                      "request_sha256": digest(request), "reserved": reserve,
+                                      **({"execution_witness": witness, "execution_witness_sha256": digest(witness)} if witness is not None else {})})
             con.commit()
         started = time.monotonic()
         try:
@@ -283,6 +377,10 @@ class Journal:
             count = operations.get("count:" + key[6:])
             require(count and count["finish"] and count["finish"]["kind"] == "FINISHED"
                     and count["reservation"]["request_sha256"] == digest(request), "matching completed count required")
+            if "native_runtime" in self.config:
+                require(isinstance(reservation.get("execution_witness"), dict)
+                        and count["reservation"].get("execution_witness_sha256") == reservation.get("execution_witness_sha256"),
+                        "matching native count/model execution witness required for recovery")
             quote = count["finish"]["data"]
             integer(quote.get("input_tokens"), "input count")
             models = {digest(m): m for m in self.config["models"].values()
@@ -295,7 +393,11 @@ class Journal:
             require(reservation["reserved"] == expected, "recovery reservation policy mismatch")
             raw = receipt.get("response")
             require(receipt.get("response_sha256") == digest(raw), "recovered response digest mismatch")
-            usage = model_usage(raw, model, quote)
+            if "native_runtime" in self.config:
+                if __package__: from scripts import harness_native_pydantic as native
+                else: import harness_native_pydantic as native
+                native.validate_recovery_response(raw, self.config, quote)
+            usage = response_usage(raw, model, quote, self.config.get("request_policy"))
             require(isinstance(raw.get("id"), str) and raw["id"], "recovered response id required")
             received = op["finish"].get("received") if op["finish"] else None
             if isinstance(received, dict):
@@ -313,7 +415,7 @@ class Journal:
         used = self.totals(self.operations(self.events()))
         return min(self.config["limits"]["request_ms"], self.config["limits"]["wall_ms"] - used["wall_ms"])
 
-    def report(self, status, prediction=None):
+    def report(self, status, prediction=None, *, stop=None):
         events = self.events()
         return {"schema": "e156-harness-run-v1", "status": status, "prediction": prediction,
                 "run_id": digest(events[0]), "journal_sha256": digest(events[-1]),
@@ -322,7 +424,24 @@ class Journal:
                 "usage": self.totals(self.operations(events)), "actual_billed_usd": None,
                 "resource_accounting": "VALIDATED_USAGE_OR_UNRESOLVED_RESERVATION",
                 "cost_basis": "CONSERVATIVE_FROZEN_PRICE_POLICY_NOT_INVOICE",
-                "scientific_disposition": "HOLD", "events": events}
+                "scientific_disposition": "HOLD", "events": events,
+                **({"stop": stop} if stop is not None else {})}
+
+
+class Progress:
+    """Opt-in exact consecutive-result guard; IDs do not constitute progress."""
+    def __init__(self, limit):
+        self.limit, self.previous, self.repetitions = limit, None, 0
+
+    def observe(self, request, result):
+        signature = (digest(request), digest(result))
+        same = self.previous is not None and all(hmac.compare_digest(a, b) for a, b in zip(signature, self.previous))
+        self.repetitions = self.repetitions + 1 if same else 1
+        self.previous = signature
+        if self.limit is not None and self.repetitions >= self.limit:
+            return {"reason": "REPEATED_TOOL_RESULT", "tool_request_sha256": signature[0],
+                    "result_sha256": signature[1], "repetitions": self.repetitions, "limit": self.limit}
+        return None
 
 
 def price(model, inputs, outputs):
@@ -345,9 +464,11 @@ def prediction(response):
     text = "".join(c.get("text", "") for item in response["output"] if item.get("type") == "message"
                    for c in item.get("content", []) if c.get("type") == "output_text")
     result = context.strict_json(text.encode("utf-8"))
-    require(isinstance(result, dict) and result.get("disposition") in {"FLAG", "NO_FLAG", "ABSTAIN"}, "invalid prediction")
-    fields = ["reason"] + (["flag_root_id", "evidence_locator"] if result["disposition"] == "FLAG" else
-                           ["stop_point"] if result["disposition"] == "ABSTAIN" else [])
+    require(isinstance(result, dict), "prediction must be an object")
+    disposition = result.get("disposition")
+    require(isinstance(disposition, str) and disposition in {"FLAG", "NO_FLAG", "ABSTAIN"}, "invalid prediction")
+    fields = ["reason"] + (["flag_root_id", "evidence_locator"] if disposition == "FLAG" else
+                           ["stop_point"] if disposition == "ABSTAIN" else [])
     for key in fields: require(isinstance(result.get(key), str) and result[key].strip(), "prediction evidence/reason required")
     return {key: result[key] for key in ["disposition", *fields]}
 
@@ -360,6 +481,8 @@ def run(config, manifest, root, state, *, provider=None, allow_paid=False, creat
     base = [{"role": "user", "content": config["task"]}, {"role": "user", "content": json.dumps(
         {"trust": packed["trust"], "catalog": packed["catalog"], "evidence": packed["evidence_text"], "truncated": packed["truncated"]})}]
     transcript, route_index, last_prediction = list(base), 0, None
+    progress_limit = config.get("progress_policy", {}).get("repeated_result_limit")
+    progress = Progress(progress_limit)
     route = config["routes"][config["task_kind"]]
     tools = tool_schemas(packed["tools"])
     try:
@@ -370,6 +493,7 @@ def run(config, manifest, root, state, *, provider=None, allow_paid=False, creat
             payload = {"model": model["model"], "input": transcript, "instructions": SYSTEM + "\n" + "\n".join(packed["instructions"]),
                        "tools": tools, "parallel_tool_calls": False, "max_output_tokens": model["max_output_tokens"],
                        "store": False, "include": ["reasoning.encrypted_content"]}
+            payload.update(config.get("request_policy", {}))
             payload_sha = digest(payload)
             def count(timeout):
                 require(context.timestamp(model["price_expires_at"]) > datetime.now(timezone.utc), "price policy expired")
@@ -385,11 +509,12 @@ def run(config, manifest, root, state, *, provider=None, allow_paid=False, creat
                 require(context.timestamp(model["price_expires_at"]) > datetime.now(timezone.utc), "price policy expired")
                 raw = provider.respond(payload, timeout)
                 try:
-                    usage = model_usage(raw, model, quote)
+                    usage = response_usage(raw, model, quote, config.get("request_policy"))
                 except Refused:
                     raise ReceivedInvalid(raw) from None
                 return raw, usage
             response = journal.operation(f"model:{turn}", payload, reserve, respond)
+            response_usage(response, model, quote, config.get("request_policy"))
             if response["status"] == "cancelled":
                 return journal.report("CANCELLED")
             calls = [item for item in response["output"] if item.get("type") == "function_call"]
@@ -415,7 +540,11 @@ def run(config, manifest, root, state, *, provider=None, allow_paid=False, creat
                         return result, units(tool_calls=1)
                     result = journal.operation("tool:" + call_id, {"name": name, "arguments": args},
                                                units(tool_calls=1, wall_ms=journal.allowance()), execute)
-                    transcript.append({"type": "function_call_output", "call_id": call_id, "output": json.dumps(result, ensure_ascii=False)})
+                    transcript.append({"type": "function_call_output", "call_id": call_id,
+                                       "output": json.dumps(result, ensure_ascii=False, sort_keys=True)})
+                    stop = progress.observe({"name": name, "arguments": args}, result)
+                    if stop:
+                        return journal.report("STALLED", stop=stop)
                 continue
             try:
                 last_prediction = prediction(response)
@@ -423,6 +552,7 @@ def run(config, manifest, root, state, *, provider=None, allow_paid=False, creat
                 last_prediction = {"disposition": "ABSTAIN", "reason": "Invalid structured response", "stop_point": "OUTPUT_VALIDATION"}
             if last_prediction["disposition"] == "ABSTAIN" and route_index + 1 < len(route):
                 route_index += 1
+                progress = Progress(progress_limit)
                 transcript = list(base) + [{"role": "user", "content": "A previous attempt abstained or failed output validation. Recheck the source; abstain if unresolved."}]
                 continue
             return journal.report("COMPLETED", last_prediction)

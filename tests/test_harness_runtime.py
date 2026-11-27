@@ -56,6 +56,149 @@ def job(tmp_path):
     return config, graph, tmp_path, tmp_path / "run.sqlite"
 
 
+INITIALIZATION_CRASH_PHASES = ("before_ready", "before_commit", "after_commit", "before_publish", "after_publish")
+
+
+def crash_initialization(config, graph, root, state, phase):
+    """Real process loss around SQLite commit/publication, using synthetic input."""
+    config_path = state.with_name(state.name + ".test-config.json")
+    graph_path = state.with_name(state.name + ".test-context.json")
+    for path, value in ((config_path, config), (graph_path, graph)):
+        path.write_text(json.dumps(value), encoding="utf-8")
+    script = '''import json,os,sqlite3,sys
+from pathlib import Path
+sys.path.insert(0,sys.argv[1])
+from scripts import harness_runtime as r
+root,state,config,graph=map(Path,sys.argv[2:6])
+phase=sys.argv[6]
+if phase=="before_ready":
+    r.Journal._append=lambda *a,**k: os._exit(91)
+elif phase in {"before_commit","after_commit"}:
+    original_connect=sqlite3.connect
+    class Interrupted(sqlite3.Connection):
+        def commit(self):
+            if phase=="before_commit": os._exit(91)
+            super().commit()
+            os._exit(91)
+    def connect(*a,**k):
+        return original_connect(*a,**k,factory=Interrupted)
+    sqlite3.connect=connect
+else:
+    original_link=os.link
+    def link(*a,**k):
+        if phase=="before_publish": os._exit(91)
+        original_link(*a,**k)
+        os._exit(91)
+    os.link=link
+r.Journal(state,json.loads(config.read_text()),json.loads(graph.read_text()),root,create=True)
+'''
+    result = subprocess.run([sys.executable, "-I", "-S", "-B", "-c", script,
+                             str(Path(runtime.__file__).parents[1]), str(root), str(state),
+                             str(config_path), str(graph_path), phase], capture_output=True, timeout=15)
+    assert result.returncode == 91, result.stderr
+
+
+@pytest.mark.parametrize("phase", INITIALIZATION_CRASH_PHASES)
+def test_journal_initialization_process_loss_publishes_only_complete_state(job, phase):
+    config, graph, root, state = job
+    crash_initialization(config, graph, root, state, phase)
+    assert state.exists() == (phase == "after_publish")
+    staging = [p for p in root.glob(".j*") if not p.name.endswith("-journal")]
+    assert len(staging) == 1 and staging[0].is_file()
+    before = {p.name: p.read_bytes() for p in root.glob(".j*")}
+    if state.exists():
+        assert [e["kind"] for e in runtime.Journal(state, config, graph, root).events()] == ["READY"]
+        with pytest.raises(FileExistsError): runtime.Journal(state, config, graph, root, create=True)
+    else:
+        with pytest.raises(context.Refused, match="missing"):
+            runtime.Journal(state, config, graph, root)
+    assert {p.name: p.read_bytes() for p in root.glob(".j*")} == before
+
+
+def test_initialization_preserves_existing_corrupt_target(job):
+    config, graph, root, state = job
+    before = b"SYNTHETIC corrupt journal evidence"
+    state.write_bytes(before)
+    with pytest.raises(FileExistsError): runtime.Journal(state, config, graph, root, create=True)
+    assert state.read_bytes() == before
+    assert not list(root.glob(".j*"))
+
+
+def test_initialization_exclusive_publication_preserves_racing_target(job, monkeypatch):
+    config, graph, root, state = job
+    original = runtime.os.link
+    before = b"SYNTHETIC competing creator evidence"
+    def racing_link(source, destination):
+        state.write_bytes(before)
+        return original(source, destination)
+    monkeypatch.setattr(runtime.os, "link", racing_link)
+    with pytest.raises(FileExistsError): runtime.Journal(state, config, graph, root, create=True)
+    assert state.read_bytes() == before
+    candidate, = root.glob(".j*")
+    assert [e["kind"] for e in runtime.Journal(candidate, config, graph, root).events()] == ["READY"]
+
+
+def test_initialization_rechecks_sidecar_before_publication(job, monkeypatch):
+    config, graph, root, state = job
+    sidecar = Path(str(state) + "-journal")
+    original = runtime.Journal._read
+    before = b"SYNTHETIC newly appearing sidecar"
+    def appeared(journal, connection):
+        events = original(journal, connection)
+        sidecar.write_bytes(before)
+        return events
+    monkeypatch.setattr(runtime.Journal, "_read", appeared)
+    with pytest.raises(context.Refused): runtime.Journal(state, config, graph, root, create=True)
+    assert not state.exists() and sidecar.read_bytes() == before
+    assert len(list(root.glob(".j*"))) == 1
+
+
+def test_initialization_refuses_symlink_target_without_touching_destination(job):
+    config, graph, root, state = job
+    destination = root / "existing-evidence"
+    before = b"SYNTHETIC linked target evidence"
+    destination.write_bytes(before)
+    try:
+        state.symlink_to(destination)
+    except OSError as exc:
+        pytest.skip("symlink creation unavailable: " + type(exc).__name__)
+    with pytest.raises(context.Refused, match="linked"):
+        runtime.Journal(state, config, graph, root, create=True)
+    assert destination.read_bytes() == before and state.is_symlink()
+    assert not list(root.glob(".j*"))
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows SQLite rollback path boundary")
+def test_initialization_preserves_windows_rollback_path_budget(job, monkeypatch):
+    config, graph, root, _ = job
+    padding = 239 - len(str(root)) - 1
+    assert padding > 0, "use a shorter pytest base directory for the Windows path-boundary probe"
+    parent = root / ("p" * padding)
+    parent.mkdir()
+    control, state = parent / "old.sqlite", parent / "run.sqlite"
+    assert len(str(control)) == len(str(state)) == 250
+    assert len(str(state) + "-journal") == 258
+    # Establish that the former direct-initialization path supports this exact
+    # native SQLite rollback-path budget before checking staged publication.
+    with sqlite3.connect(control) as con:
+        con.execute("BEGIN IMMEDIATE")
+        con.execute("CREATE TABLE evidence (value TEXT)")
+        con.execute("INSERT INTO evidence VALUES ('SYNTHETIC boundary control')")
+        con.commit()
+    original = runtime.os.link
+    published = []
+    def record_publication(source, destination):
+        assert len(str(source)) <= len(str(destination))
+        published.append(str(source))
+        return original(source, destination)
+    monkeypatch.setattr(runtime.os, "link", record_publication)
+    journal = runtime.Journal(state, config, graph, root, create=True)
+    assert published and [e["kind"] for e in journal.events()] == ["READY"]
+    assert not list(parent.glob(".j*"))
+    with sqlite3.connect(control) as con:
+        assert con.execute("SELECT value FROM evidence").fetchone() == ("SYNTHETIC boundary control",)
+
+
 class Provider:
     def __init__(self, responses=None):
         self.counts = 0
@@ -75,8 +218,8 @@ class Provider:
         return item
 
 
-def answer(text='{"disposition":"NO_FLAG","reason":"Synthetic answer only"}'):
-    return {"id": "synthetic-response", "status": "completed", "output": [
+def answer(text='{"disposition":"NO_FLAG","reason":"Synthetic answer only"}', *, model="synthetic-test-model"):
+    return {"id": "synthetic-response", "model": model, "service_tier": "default", "status": "completed", "output": [
         {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": text}]}],
         "usage": {"input_tokens": 20, "output_tokens": 10, "total_tokens": 30}}
 
@@ -98,6 +241,52 @@ def test_run_trace_usage_and_resume_without_repeated_call(job):
     assert again["prediction"] == result["prediction"]
     assert provider.calls == provider.counts == 1
     assert len(result["events"]) >= 5
+
+
+def test_explicit_default_tier_is_sent_and_unsupported_policy_refused(job):
+    config, graph, _, _ = job
+    config["request_policy"] = {"service_tier": "default"}
+    provider = Provider()
+    assert run(job, provider)["status"] == "COMPLETED"
+    assert provider.requests[0]["service_tier"] == "default"
+    config["request_policy"] = {"service_tier": "auto"}
+    with pytest.raises(context.Refused, match="request policy"): runtime.configuration(config, graph)
+
+
+def test_native_execution_witness_is_mandatory_and_replay_bound(job):
+    config, graph, root, db = job
+    config["native_runtime"] = {"fixture": "SYNTHETIC journal contract, not a native adapter"}
+    journal = runtime.Journal(db, config, graph, root, create=True)
+    request = {"SYNTHETIC": "wire request"}
+    witness = {"SYNTHETIC": "native request"}
+    reserve = runtime.units(wall_ms=1000)
+    executed = []
+    def count(timeout):
+        executed.append(True)
+        return {"input_tokens": 1}, runtime.units()
+    with pytest.raises(context.Refused, match="requires execution witness"):
+        journal.operation("count:0", request, reserve, count)
+    assert not executed and len(journal.events()) == 1
+    journal.operation("count:0", request, reserve, count, witness=witness)
+    assert journal.operation("count:0", request, reserve, count, witness=witness) == {"input_tokens": 1}
+    assert len(executed) == 1
+    with pytest.raises(context.Refused, match="witness changed"):
+        journal.operation("count:0", request, reserve, count, witness={"SYNTHETIC": "changed native request"})
+    with pytest.raises(context.Refused, match="witness or request mismatch"):
+        journal.operation("model:0", request, reserve, count, witness={"SYNTHETIC": "other native request"})
+    assert len(executed) == 1
+
+
+def test_execution_witness_hash_cannot_be_dropped_or_forged(job):
+    config, graph, root, db = job
+    journal = runtime.Journal(db, config, graph, root, create=True)
+    journal.operation("count:0", {}, runtime.units(wall_ms=1000), lambda t: ({}, runtime.units()), witness={"SYNTHETIC": True})
+    for defect in ("missing", "changed"):
+        events = copy.deepcopy(journal.events())
+        if defect == "missing": events[1].pop("execution_witness_sha256")
+        else: events[1]["execution_witness"]["SYNTHETIC"] = False
+        with pytest.raises(context.Refused, match="execution witness"):
+            runtime.Journal.operations(events)
 
 
 def test_tool_round_is_recorded_and_replayed(job):
@@ -134,11 +323,52 @@ def test_unknown_network_outcome_retains_reservation_and_never_retries(job):
 
 
 def test_abstention_escalates_using_frozen_route_and_keeps_attempts(job):
-    provider = Provider([answer('{"disposition":"ABSTAIN","reason":"Synthetic uncertainty","stop_point":"synthetic"}'), answer()])
+    provider = Provider([answer('{"disposition":"ABSTAIN","reason":"Synthetic uncertainty","stop_point":"synthetic"}'),
+                         answer(model="synthetic-large")])
     result = run(job, provider)
     assert result["status"] == "COMPLETED"
     assert [r["model"] for r in provider.requests] == ["synthetic-test-model", "synthetic-large"]
     assert result["usage"]["model_calls"] == 2
+
+
+@pytest.mark.parametrize("disposition", [[], {}, None, False, 0, 1.5, "UNSUPPORTED"])
+def test_invalid_disposition_abstains_with_settled_usage_and_cached_resume(job, disposition):
+    job[0]["routes"]["extract"] = ["small"]
+    raw = answer(json.dumps({"disposition": disposition, "reason": "SYNTHETIC invalid disposition"}))
+    provider = Provider([raw])
+    report = run(job, provider)
+    assert report["status"] == "COMPLETED"
+    assert report["prediction"] == {"disposition": "ABSTAIN", "reason": "Invalid structured response",
+                                     "stop_point": "OUTPUT_VALIDATION"}
+    operation = runtime.Journal.operations(report["events"])["model:0"]
+    assert operation["finish"]["kind"] == "FINISHED" and operation["finish"]["data"] == raw
+    assert report["usage"]["model_tokens"] == 30 and report["usage"]["model_calls"] == 1
+    assert report["accounting"]["unresolved_reserved"] == runtime.units()
+    assert run(job, provider, create=False) == report
+    assert provider.calls == provider.counts == 1
+
+
+@pytest.mark.parametrize("disposition", [[], {}])
+def test_invalid_disposition_uses_frozen_fallback_and_replays_all_attempts(job, disposition):
+    provider = Provider([answer(json.dumps({"disposition": disposition, "reason": "SYNTHETIC malformed response"})),
+                         answer(model="synthetic-large")])
+    report = run(job, provider)
+    assert report["status"] == "COMPLETED" and report["prediction"]["disposition"] == "NO_FLAG"
+    assert [request["model"] for request in provider.requests] == ["synthetic-test-model", "synthetic-large"]
+    assert report["usage"]["model_calls"] == 2 and report["usage"]["model_tokens"] == 60
+    assert run(job, provider, create=False) == report
+    assert provider.calls == provider.counts == 2
+
+
+@pytest.mark.parametrize("prediction", [
+    {"disposition": "FLAG", "reason": "SYNTHETIC flag", "flag_root_id": "synthetic-root", "evidence_locator": "synthetic-locator"},
+    {"disposition": "NO_FLAG", "reason": "SYNTHETIC no flag"},
+    {"disposition": "ABSTAIN", "reason": "SYNTHETIC abstention", "stop_point": "synthetic-stop"},
+])
+def test_valid_prediction_dispositions_retain_their_fields(job, prediction):
+    job[0]["routes"]["extract"] = ["small"]
+    report = run(job, Provider([answer(json.dumps(prediction))]))
+    assert report["status"] == "COMPLETED" and report["prediction"] == prediction
 
 
 @pytest.mark.parametrize("defect", ["usage_missing", "usage_overrun", "forbidden_tool", "source_drift", "config_drift", "ledger_tamper"])
@@ -273,3 +503,115 @@ def test_nonterminal_provider_response_keeps_full_reservation(job, status):
     assert result["status"] == "UNRESOLVED"
     assert result["usage"]["model_tokens"] == 120
     assert provider.calls == 1
+
+
+def invalid_response(defect):
+    """Malformed/deviating synthetic replies, never real provider evidence."""
+    raw = answer()
+    if defect == "null_content": raw["output"][0]["content"] = None
+    elif defect == "null_part": raw["output"][0]["content"] = [None]
+    elif defect == "invalid_text": raw["output"][0]["content"][0]["text"] = []
+    elif defect == "invalid_arguments":
+        raw["output"] = [{"type": "function_call", "name": "read_evidence", "call_id": "synthetic-call", "arguments": None}]
+    elif defect == "unknown_output": raw["output"] = [{"type": "web_search_call"}]
+    elif defect == "invalid_status": raw["status"] = []
+    elif defect == "wrong_model": raw["model"] = "synthetic-other-model"
+    elif defect == "missing_model": raw.pop("model")
+    elif defect == "wrong_tier": raw["service_tier"] = "flex"
+    elif defect == "missing_tier": raw.pop("service_tier")
+    else: raise AssertionError("unknown synthetic defect")
+    return raw
+
+
+INVALID_RESPONSES = ("null_content", "null_part", "invalid_text", "invalid_arguments", "unknown_output",
+                     "invalid_status", "wrong_model", "missing_model", "wrong_tier", "missing_tier")
+
+
+@pytest.mark.parametrize("defect", INVALID_RESPONSES)
+def test_invalid_response_is_retained_before_settlement_and_never_retried(job, defect):
+    job[0]["request_policy"] = {"service_tier": "default"}
+    raw = invalid_response(defect)
+    provider = Provider([raw])
+    first = run(job, provider)
+    assert first["status"] == "UNRESOLVED" and first["prediction"] is None
+    operation = runtime.Journal.operations(first["events"])["model:0"]
+    assert operation["finish"]["kind"] == "UNRESOLVED"
+    assert operation["finish"]["received"] == raw
+    assert first["accounting"]["unresolved_reserved"]["model_tokens"] == 120
+    resumed = run(job, provider, create=False)
+    assert resumed["status"] == "UNRESOLVED"
+    assert resumed["events"] == first["events"]
+    assert provider.calls == provider.counts == 1
+
+
+@pytest.mark.parametrize("defect", INVALID_RESPONSES)
+def test_recovery_validates_response_before_changing_journal(job, defect):
+    from test_harness_trace import receipt_for, journal_for
+    job[0]["request_policy"] = {"service_tier": "default"}
+    provider = Provider([TimeoutError("SYNTHETIC unknown response")])
+    assert run(job, provider)["status"] == "UNRESOLVED"
+    journal = journal_for(job)
+    before = journal.events()
+    with pytest.raises(context.Refused):
+        journal.reconcile(receipt_for(job, invalid_response(defect)))
+    assert journal.events() == before
+    assert journal.reconcile(receipt_for(job))["status"] == "RECONCILED_NOT_RESUMED"
+    assert run(job, provider, create=False)["status"] == "COMPLETED"
+    assert provider.calls == provider.counts == 1
+
+
+@pytest.mark.parametrize("defect", ("wrong_model", "missing_model"))
+def test_model_identity_is_required_without_explicit_tier_policy(job, defect):
+    assert "request_policy" not in job[0]
+    assert run(job, Provider([invalid_response(defect)]))["status"] == "UNRESOLVED"
+
+
+def test_unconfigured_tier_does_not_invent_a_default_requirement(job):
+    raw = answer()
+    raw["service_tier"] = "flex"
+    assert run(job, Provider([raw]))["status"] == "COMPLETED"
+
+
+def test_valid_envelope_with_invalid_final_json_retains_abstention_policy(job):
+    job[0]["routes"]["extract"] = ["small"]
+    result = run(job, Provider([answer("SYNTHETIC invalid JSON")]))
+    assert result["status"] == "COMPLETED"
+    assert result["prediction"] == {"disposition": "ABSTAIN", "reason": "Invalid structured response",
+                                    "stop_point": "OUTPUT_VALIDATION"}
+    assert runtime.Journal.operations(result["events"])["model:0"]["finish"]["kind"] == "FINISHED"
+
+
+def test_native_recovery_validates_before_irreversible_settlement(job):
+    """Synthetic transaction contract; no SDK, environment claim or provider call."""
+    from scripts import harness_native_pydantic as native
+    config, graph, root, state = job
+    config["routes"]["extract"] = ["small"]
+    del config["models"]["large"]
+    config["request_policy"] = {"service_tier": "default"}
+    config["native_runtime"] = {"schema": native.SCHEMA, "profile": native.profile(),
+                                "environment_sha256": "0" * 64, "policy": copy.deepcopy(native.POLICY)}
+    journal = runtime.Journal(state, config, graph, root, create=True)
+    model = config["models"]["small"]
+    request = {"model": model["model"], "max_output_tokens": model["max_output_tokens"], "service_tier": "default"}
+    witness = {"synthetic_transaction_fixture": True}
+    journal.operation("count:0", request, runtime.units(wall_ms=1000), lambda _: ({"input_tokens": 20}, runtime.units()), witness=witness)
+    def interrupted(_): raise TimeoutError("SYNTHETIC unknown response")
+    with pytest.raises(runtime.Unresolved):
+        journal.operation("model:0", request, runtime.units(model_calls=1, model_tokens=120,
+            cost_microusd=runtime.price(model, 20, 100), wall_ms=1000), interrupted, witness=witness)
+    events = journal.events(); reservation = journal.operations(events)["model:0"]["reservation"]
+    raw = {**answer(), "model": model["model"], "service_tier": "default"}
+    receipt = {"schema": "e156-harness-recovery-v1", "reviewer": "SYNTHETIC reviewer", "reason": "SYNTHETIC recovery",
+        "evidence_reference": "SYNTHETIC transaction test", "attestation": "I verified this terminal response belongs to this exact request",
+        "config_sha256": context.digest(config), "context_sha256": context.digest(graph), "journal_sha256": context.digest(events[-1]),
+        "operation_id": "model:0", "reservation_sha256": context.digest(reservation), "request_sha256": context.digest(request),
+        "response": raw, "response_sha256": context.digest(raw)}
+    bad = copy.deepcopy(receipt)
+    bad["response"]["output"] = [{"type": "web_search_call"}]
+    bad["response_sha256"] = context.digest(bad["response"])
+    with pytest.raises(context.Refused, match="native recovered response"):
+        journal.reconcile(bad)
+    assert journal.events() == events
+    assert journal.operations(events)["model:0"]["finish"]["kind"] == "UNRESOLVED"
+    assert journal.reconcile(receipt)["status"] == "RECONCILED_NOT_RESUMED"
+    assert journal.operations(journal.events())["model:0"]["finish"]["kind"] == "RECONCILED"

@@ -64,12 +64,22 @@ benchmark became our own result.
 
 ## Measured recovery experiment
 
-The [protocol](../benchmarks/harness-recovery-protocol.json) was written before
-execution and is hash-bound in the [measurement](../benchmarks/recovery/development-windows.json).
-The [runner](../benchmarks/harness_recovery.py) uses the SAME existing E156 replay
+**2026-11-26 repair:** the comparison had retained anchors from before the
+reviewed fixture update. A fresh run refused all 18 starts and attempted no
+resumes; that [failed report](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/benchmarks/recovery/development-stale-anchors-2026-11-26.json)
+is preserved. After full source-backed replay against the current reviewed
+anchors, the [new measurement](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/benchmarks/recovery/development-repaired-2026-11-26.json)
+completed all 18 scenarios: direct replay and revalidated LangGraph satisfy 6/6
+each; deliberately cached LangGraph satisfies 2/6 and exposes four expected
+mutation failures. CI now repeats the comparison and retains per-case attempts
+even if a later case interrupts the run. See the [repair record](HARNESS-REVIEW-FIXES-2026-11-26.md).
+
+The [protocol](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/benchmarks/harness-recovery-protocol.json) was written before
+execution and is hash-bound in the [measurement](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/benchmarks/recovery/development-windows.json).
+The [runner](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/benchmarks/harness_recovery.py) uses the SAME existing E156 replay
 verifier in three strategies. LangGraph 1.2.20 and SQLite checkpointer 3.1.3 run in
 a separate environment. Exact Windows wheels are recorded in the
-[dependency lock](../benchmarks/requirements-recovery-windows.lock).
+[dependency lock](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/benchmarks/requirements-recovery-windows.lock).
 
 Each strategy audits each of two existing OA development bundles, exits its first
 Python process, then resumes in a new process. Between processes, the runner

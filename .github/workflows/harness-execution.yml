@@ -7,9 +7,19 @@ on:
       - 'scripts/harness_*.py'
       - 'scripts/bounded_native.py'
       - 'scripts/component_source.py'
-      - 'scripts/synthesis_access_controls.py'
+      - 'scripts/synthesis_*.py'
+      - '.gitattributes'
+      - 'examples/synthesis-replay-*/**'
       - 'tests/test_synthesis_access_controls.py'
+      - 'tests/test_synthesis_study_preflight.py'
+      - 'tests/test_synthesis_matched_eval.py'
       - 'tests/test_harness_*.py'
+      - 'tests/native_*checks.py'
+      - 'benchmarks/harness-execution-*.json'
+      - 'benchmarks/requirements-execution-windows.lock'
+      - 'benchmarks/harness_recovery.py'
+      - 'benchmarks/harness-recovery-protocol.json'
+      - 'benchmarks/requirements-recovery-windows.lock'
       - 'requirements-ci.lock'
       - '.github/workflows/harness-execution.yml'
   workflow_dispatch:
@@ -34,7 +44,27 @@ jobs:
       - name: Install locked test dependencies
         run: python -m pip install --require-hashes -r requirements-ci.lock
       - name: Exercise synthetic execution, recovery and context contracts
-        run: python -m pytest tests/test_harness_context.py tests/test_harness_runtime.py tests/test_harness_trace.py tests/test_harness_provider.py tests/test_synthesis_access_controls.py -q --junitxml=execution-results.xml
+        run: python -m pytest tests/test_harness_context.py tests/test_harness_derivation.py tests/test_harness_runtime.py tests/test_harness_trace.py tests/test_harness_progress.py tests/test_harness_execution_benchmark.py tests/test_harness_recovery.py tests/test_harness_provider.py tests/test_harness_study_runner.py tests/test_harness_study_records.py tests/test_synthesis_access_controls.py tests/test_synthesis_study_preflight.py tests/test_synthesis_matched_eval.py -q --junitxml=execution-results.xml
+      - name: Require actual study process controls
+        shell: python
+        run: |
+          import xml.etree.ElementTree as ET
+          root = ET.parse('execution-results.xml').getroot()
+          required = {'test_actual_child_watchdog_expires_without_parent_supervisor',
+                      'test_actual_child_watchdog_covers_snapshot_validation',
+                      'test_provider_child_owns_total_deadline_without_parent_supervisor',
+                      'test_child_case_lock_fences_parent_and_stale_dispatch',
+                      'test_finished_child_settled_after_parent_loss_without_dispatch',
+                      'test_complete_prepare_execute_measure_freeze_mask_compare'}
+          required.update(f'{name}[{phase}]' for name in (
+              'test_journal_initialization_process_loss_publishes_only_complete_state',
+              'test_initialization_process_loss_can_abort_and_freeze_every_planned_slot')
+              for phase in ('before_ready', 'before_commit', 'after_commit', 'before_publish', 'after_publish'))
+          required.update('test_invalid_disposition_is_recorded_as_abstention_and_replays_without_calls[' + kind + ']'
+                          for kind in ('array', 'object'))
+          cases = [case for case in root.findall('.//testcase') if case.get('name') in required]
+          if {case.get('name') for case in cases} != required or any(list(case) for case in cases):
+              raise SystemExit('Required real-process study controls missing, skipped, or failed')
       - name: Require actual Windows rights boundary controls
         if: matrix.os == 'windows-2022'
         shell: python
@@ -42,10 +72,103 @@ jobs:
           import xml.etree.ElementTree as ET
           root = ET.parse('execution-results.xml').getroot()
           required = {'test_manifest_cannot_be_its_own_decision_log',
+                      'test_initialization_preserves_windows_rollback_path_budget',
+                      'test_windows_junction_evidence_root_refused',
                       'test_windows_junction_manifest_and_log_are_refused'}
           cases = [case for case in root.findall('.//testcase') if case.get('name') in required]
           if {case.get('name') for case in cases} != required or any(list(case) for case in cases):
               raise SystemExit('Required Windows rights boundary controls missing, skipped, or failed')
+
+  comparison:
+    name: Native harness synthetic comparison (Windows)
+    runs-on: windows-2022
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+      - name: Install exact Windows benchmark wheels
+        run: 'python -m pip install --only-binary=:all: --require-hashes -r benchmarks/requirements-execution-windows.lock'
+      - name: Execute all development cases with actual frameworks
+        run: python -m scripts.harness_execution_benchmark --cases benchmarks/harness-execution-development.json --split development --output comparison.json
+      - name: Require complete successful development execution
+        shell: python
+        run: |
+          import json
+          report = json.load(open('comparison.json', encoding='utf-8'))
+          protocol = report['protocol']
+          expected = len(report['cases']) * len(protocol['arms']) * protocol['repetitions']
+          if len(report['rows']) != expected or not all(r['contract_satisfied'] for r in report['rows']):
+              raise SystemExit('Missing, failed, or apparatus-error development observation')
+      - name: Retain every attempted comparison
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-harness-comparison
+          path: comparison.json*
+          if-no-files-found: error
+
+  recovery:
+    name: Actual replay recovery comparison (Windows)
+    runs-on: windows-2022
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+      - name: Install exact recovery comparison wheels
+        run: 'python -m pip install --only-binary=:all: --require-hashes -r benchmarks/requirements-recovery-windows.lock'
+      - name: Interrupt and resume every development recovery scenario
+        run: python benchmarks/harness_recovery.py --output recovery.json
+      - name: Require complete expected recovery behavior
+        shell: python
+        run: |
+          import itertools, json
+          report = json.load(open('recovery.json', encoding='utf-8'))
+          protocol = json.load(open('benchmarks/harness-recovery-protocol.json', encoding='utf-8'))
+          expected = set(itertools.product(protocol['fixtures'], protocol['strategies'], protocol['scenarios']))
+          rows = report['cases']
+          observed = [(r['fixture'], r['strategy'], r['scenario']) for r in rows]
+          if len(rows) != len(expected) or set(observed) != expected or report['attempted_cases'] != len(expected):
+              raise SystemExit('Incomplete or duplicated recovery schedule')
+          for row in rows:
+              cached = row['strategy'] == 'langgraph_cached'
+              unchanged = row['scenario'] == 'unchanged'
+              outcome = 'COMPLETED' if cached or unchanged else 'REFUSED'
+              if (row['initial']['outcome'] != 'PAUSED' or row['resumed']['outcome'] != outcome
+                  or row['integrity_contract_satisfied'] is not (unchanged or not cached)
+                  or row['verifier_calls_initial'] != 1
+                  or row['verifier_calls_resumed'] != (0 if cached else 1)):
+                  raise SystemExit('Recovery contract or intentional cached-control behavior changed')
+      - name: Retain every attempted recovery comparison
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-harness-recovery-comparison
+          path: recovery.json*
+          if-no-files-found: error
+
+  native-study:
+    name: Native Pydantic development study (Windows)
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+      - name: Create isolated native environment
+        run: python -m venv native-env
+      - name: Install exact Windows native wheels
+        run: 'native-env/Scripts/python.exe -m pip install --only-binary=:all: --require-hashes -r benchmarks/requirements-execution-windows.lock'
+      - name: Verify source-only native loader contracts
+        run: native-env/Scripts/python.exe -B -c "import sys, unittest; suite = unittest.defaultTestLoader.loadTestsFromName('tests.native_environment_checks'); result = unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(not (result.wasSuccessful() and result.testsRun >= 17 and not result.skipped))"
+      - name: Exercise actual Pydantic Agent and recovery contracts
+        run: native-env/Scripts/python.exe -B -c "import sys, unittest; suite = unittest.defaultTestLoader.loadTestsFromName('tests.native_pydantic_checks'); result = unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(not (result.wasSuccessful() and result.testsRun >= 18 and not result.skipped))"
+      - name: Exercise isolated native study execution and immutable export
+        run: native-env/Scripts/python.exe -B -c "import sys, unittest; suite = unittest.defaultTestLoader.loadTestsFromName('tests.native_study_checks'); result = unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(not (result.wasSuccessful() and result.testsRun >= 5 and not result.skipped))"
 
   worker:
     name: Actual Linux Docker containment
@@ -64,7 +187,7 @@ jobs:
       - name: Pull exact reviewed worker image
         run: docker pull "$HARNESS_DOCKER_IMAGE"
       - name: Exercise actual container boundaries and cleanup
-        run: python -m pytest tests/test_harness_worker.py -q --junitxml=worker-results.xml
+        run: python -m pytest tests/test_harness_worker.py tests/test_harness_derivation.py -q --junitxml=worker-results.xml
       - name: Require actual containment tests without skips
         run: |
           python - <<'PY'
@@ -72,6 +195,7 @@ jobs:
           root = ET.parse('worker-results.xml').getroot()
           cases = root.findall('.//testcase')
           required = {'test_real_worker_readonly_network_credentials_and_limits',
+                      'test_real_worker_derivation_and_recompute',
                       'test_real_worker_supervisor_status_and_proxy_boundary',
                       'test_real_worker_host_process_loss_expires_container',
                       'test_real_worker_output_overflow_refuses',

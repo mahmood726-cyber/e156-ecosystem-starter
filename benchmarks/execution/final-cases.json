@@ -1,0 +1,513 @@
+[
+  {
+    "id": "rf-01",
+    "family": "clean",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Willow cabinet: The imaginary inventory lists teal squares beside amber circles, with each shelf carrying its own invented label. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "answer",
+        "disposition": "NO_FLAG",
+        "reason": "Synthetic control completed; no scientific conclusion."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "completed",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": "NO_FLAG"
+  },
+  {
+    "id": "rf-02",
+    "family": "clean",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Juniper cabinet: The fictional notebook has an intentionally unanswered question about the order of violet and ochre tokens. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "answer",
+        "disposition": "ABSTAIN",
+        "reason": "Synthetic control intentionally supplies no resolved answer."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "completed",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": "ABSTAIN"
+  },
+  {
+    "id": "rf-03",
+    "family": "finite_reads",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Alder cabinet: The pretend green and copper compartments have distinct labels. A small marker λ is present solely to exercise a UTF-8 capture. No counts refer to actual observations. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 11,
+          "limit": 23
+        },
+        "call_id": "finite-a"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 173,
+          "limit": 31
+        },
+        "call_id": "finite-b"
+      },
+      {
+        "kind": "answer",
+        "disposition": "NO_FLAG",
+        "reason": "Synthetic control completed; no scientific conclusion."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "completed",
+    "expected_excerpt_offsets": [
+      11,
+      173
+    ],
+    "expected_disposition": "NO_FLAG"
+  },
+  {
+    "id": "rf-04",
+    "family": "finite_reads",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Maple cabinet: Five different regions of this made-up note describe blue, silver, orange, purple and rose objects. Every phrase belongs only to this scripted engineering example. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 3,
+          "limit": 17
+        },
+        "call_id": "walk-a"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 48,
+          "limit": 19
+        },
+        "call_id": "walk-b"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 102,
+          "limit": 21
+        },
+        "call_id": "walk-c"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 159,
+          "limit": 25
+        },
+        "call_id": "walk-d"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 226,
+          "limit": 29
+        },
+        "call_id": "walk-e"
+      },
+      {
+        "kind": "answer",
+        "disposition": "NO_FLAG",
+        "reason": "Synthetic control completed; no scientific conclusion."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "completed",
+    "expected_excerpt_offsets": [
+      3,
+      48,
+      102,
+      159,
+      226
+    ],
+    "expected_disposition": "NO_FLAG"
+  },
+  {
+    "id": "rf-05",
+    "family": "repeated_result",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Cedar cabinet: The same pretend cream token stays in its drawer throughout this static fixture; repeated inspection cannot create new source content. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 27,
+          "limit": 37
+        },
+        "call_id": "echo-constant"
+      }
+    ],
+    "repeat_last": true,
+    "mutate_after_step": null,
+    "expected": "bounded_stop",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": null
+  },
+  {
+    "id": "rf-06",
+    "family": "repeated_result",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Birch cabinet: Different introductory snippets precede an unchanged fictional drawer label. This fixed archive contains no live stream or evolving measurement. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 9,
+          "limit": 14
+        },
+        "call_id": "prefix-a"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 66,
+          "limit": 16
+        },
+        "call_id": "prefix-b"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 194,
+          "limit": 22
+        },
+        "call_id": "echo-tail"
+      }
+    ],
+    "repeat_last": true,
+    "mutate_after_step": null,
+    "expected": "bounded_stop",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": null
+  },
+  {
+    "id": "rf-07",
+    "family": "unknown_tool",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Ash cabinet: The toy archive permits only reading the declared paper record. Its invented notes do not authorize additional capabilities. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "inspect_unregistered_archive",
+        "args": {
+          "id": "paper",
+          "offset": 18,
+          "limit": 24
+        },
+        "call_id": "unknown-a"
+      },
+      {
+        "kind": "answer",
+        "disposition": "ABSTAIN",
+        "reason": "The synthetic requested capability was not authorized."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "refused",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": null
+  },
+  {
+    "id": "rf-08",
+    "family": "unknown_tool",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Elm cabinet: A harmless first excerpt is followed by an unsupported read request in this artificial control; all labels remain invented. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 31,
+          "limit": 28
+        },
+        "call_id": "allowed-prefix"
+      },
+      {
+        "kind": "tool",
+        "name": "read_unlisted_index",
+        "args": {
+          "id": "paper",
+          "offset": 84,
+          "limit": 26
+        },
+        "call_id": "unknown-b"
+      },
+      {
+        "kind": "answer",
+        "disposition": "ABSTAIN",
+        "reason": "The synthetic unsupported request prevents completion."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "refused",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": null
+  },
+  {
+    "id": "rf-09",
+    "family": "invalid_arguments",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Spruce cabinet: This purely invented record supplies ordinary text, but a requested position before its beginning is deliberately invalid. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": -7,
+          "limit": 24
+        },
+        "call_id": "negative-position"
+      },
+      {
+        "kind": "answer",
+        "disposition": "ABSTAIN",
+        "reason": "The synthetic excerpt arguments were refused."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "refused",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": null
+  },
+  {
+    "id": "rf-10",
+    "family": "invalid_arguments",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Larch cabinet: The demonstration concerns a read without any positive requested length. The pretend labels have no relation to scientific data. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 42,
+          "limit": 0
+        },
+        "call_id": "empty-length"
+      },
+      {
+        "kind": "answer",
+        "disposition": "ABSTAIN",
+        "reason": "A positive excerpt length was not supplied."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "refused",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": null
+  },
+  {
+    "id": "rf-11",
+    "family": "provider_timeout",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Hazel cabinet: The artificial service interruption occurs before any response content is available. No external model or service is involved. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "timeout"
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "provider_failed",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": null
+  },
+  {
+    "id": "rf-12",
+    "family": "provider_timeout",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Rowan cabinet: A valid toy excerpt may be returned before a separately scripted response failure. The frozen document itself remains unchanged. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 57,
+          "limit": 33
+        },
+        "call_id": "before-failure"
+      },
+      {
+        "kind": "timeout"
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "provider_failed",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": null
+  },
+  {
+    "id": "rf-13",
+    "family": "source_drift",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Holly cabinet: This synthetic control intentionally changes the archived bytes after a scripted response, invalidating the original source digest. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 23,
+          "limit": 32
+        },
+        "call_id": "drift-first"
+      },
+      {
+        "kind": "answer",
+        "disposition": "ABSTAIN",
+        "reason": "The synthetic source capture changed."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": 0,
+    "expected": "refused",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": null
+  },
+  {
+    "id": "rf-14",
+    "family": "source_drift",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Poplar cabinet: One fictional excerpt remains valid at first; a later response coincides with an intentional change to the toy evidence file. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 14,
+          "limit": 27
+        },
+        "call_id": "pre-drift"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 181,
+          "limit": 30
+        },
+        "call_id": "drift-second"
+      },
+      {
+        "kind": "answer",
+        "disposition": "ABSTAIN",
+        "reason": "The synthetic evidence digest no longer matches."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": 1,
+    "expected": "refused",
+    "expected_excerpt_offsets": [],
+    "expected_disposition": null
+  },
+  {
+    "id": "rf-15",
+    "family": "duplicate_call_ids",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Yew cabinet: Identical read-only requests share an identifier in this synthetic control. Returning a cached matching excerpt or repeating the read is permitted. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 35,
+          "limit": 41
+        },
+        "call_id": "shared-excerpt"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 35,
+          "limit": 41
+        },
+        "call_id": "shared-excerpt"
+      },
+      {
+        "kind": "answer",
+        "disposition": "NO_FLAG",
+        "reason": "Synthetic control completed; no scientific conclusion."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "completed",
+    "expected_excerpt_offsets": [
+      35
+    ],
+    "expected_disposition": "NO_FLAG"
+  },
+  {
+    "id": "rf-16",
+    "family": "duplicate_call_ids",
+    "source_text": "SYNTHETIC ENGINEERING FIXTURE. These invented observations describe coloured tiles in a toy archive, not patients, studies, registries or external research. Pine cabinet: A second invented archive also permits identical request reuse. Its different slice merely checks that no particular document text was assumed. End of the deliberately synthetic archive; no empirical or clinical conclusion follows.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 207,
+          "limit": 36
+        },
+        "call_id": "same-again"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 207,
+          "limit": 36
+        },
+        "call_id": "same-again"
+      },
+      {
+        "kind": "answer",
+        "disposition": "NO_FLAG",
+        "reason": "Synthetic control completed; no scientific conclusion."
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "completed",
+    "expected_excerpt_offsets": [
+      207
+    ],
+    "expected_disposition": "NO_FLAG"
+  }
+]

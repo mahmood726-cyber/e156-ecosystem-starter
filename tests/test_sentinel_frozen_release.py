@@ -8,6 +8,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -15,6 +16,72 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN = "5808f2bdc024506fa3d49a367c88b42b15fdf164"
+
+
+def _windows_python_preflight(tmp_path, version=None, exit_code=0, *, store_stub=False):
+    """Execute the real PowerShell helper against a synthetic version process.
+
+    These isolated command fixtures never invoke pip, Sentinel, or a provider.
+    """
+    powershell = shutil.which("powershell.exe")
+    if os.name != "nt" or powershell is None:
+        pytest.skip("Actual Windows PowerShell process required")
+    binary_dir = tmp_path / ("WindowsApps" if store_stub else "bin")
+    binary_dir.mkdir()
+    marker = tmp_path / "python-was-invoked"
+    if version is not None:
+        (binary_dir / "python.cmd").write_text(
+            '@echo off\nif not "%~1"=="-c" exit /b 19\n'
+            f'echo called>"{marker}"\necho {version}\nexit /b {exit_code}\n',
+            encoding="ascii",
+        )
+    result = subprocess.run(
+        [powershell, "-NoProfile", "-NonInteractive", "-Command",
+         ". $env:E156_TEST_INSTALLER -Import; "
+         "try { Assert-RealPython; Write-Output 'ACCEPTED' } "
+         "catch { [Console]::Error.WriteLine($_.Exception.Message); exit 17 }"],
+        cwd=ROOT, capture_output=True, text=True, timeout=30,
+        env={**os.environ, "PATH": str(binary_dir),
+             "E156_TEST_INSTALLER": str(ROOT / "scripts" / "install-sentinel.ps1")},
+    )
+    return result, marker
+
+
+@pytest.mark.parametrize("version", ["3.13.0", "3.13.9", "3.14.0"])
+def test_windows_python_preflight_accepts_supported_versions(tmp_path, version):
+    result, marker = _windows_python_preflight(tmp_path, version)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "ACCEPTED" in result.stdout and marker.is_file()
+
+
+@pytest.mark.parametrize("version", ["3.9.19", "3.11.14", "3.12.10"])
+def test_windows_python_preflight_refuses_unsupported_versions(tmp_path, version):
+    result, marker = _windows_python_preflight(tmp_path, version)
+    assert result.returncode == 17, result.stdout + result.stderr
+    assert "Sentinel requires Python 3.13+" in result.stderr
+    assert version in result.stderr and marker.is_file()
+    assert "ACCEPTED" not in result.stdout
+
+
+@pytest.mark.parametrize("version,exit_code", [("not-a-version", 0), ("3.13.0", 7)])
+def test_windows_python_preflight_refuses_unverifiable_process(tmp_path, version, exit_code):
+    result, marker = _windows_python_preflight(tmp_path, version, exit_code)
+    assert result.returncode == 17, result.stdout + result.stderr
+    assert "Python version could not be verified" in result.stderr and marker.is_file()
+
+
+def test_windows_python_preflight_explains_missing_python(tmp_path):
+    result, marker = _windows_python_preflight(tmp_path)
+    assert result.returncode == 17, result.stdout + result.stderr
+    assert "Python is not on PATH" in result.stderr and "3.13+" in result.stderr
+    assert not marker.exists()
+
+
+def test_windows_python_preflight_refuses_store_alias_without_executing(tmp_path):
+    result, marker = _windows_python_preflight(tmp_path, "3.13.0", store_stub=True)
+    assert result.returncode == 17, result.stdout + result.stderr
+    assert "Microsoft Store stub" in result.stderr and "3.13+" in result.stderr
+    assert not marker.exists()
 
 
 def updater():

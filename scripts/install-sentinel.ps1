@@ -7,7 +7,7 @@
 # SHA-lockfile presence, etc.) BEFORE code leaves the laptop.
 #
 # Usage:
-#   .\scripts\install-sentinel.ps1 -Repo C:\Projects\my-paper
+#   .\scripts\install-sentinel.ps1 -Repo ..\my-paper
 #   .\scripts\install-sentinel.ps1 -Repo . -Mode warn    # explicit nonblocking opt-in (default: block)
 #   .\scripts\install-sentinel.ps1 -Repo . -SkipPipInstall
 #   .\scripts\install-sentinel.ps1 -Import               # dot-source for tests
@@ -30,29 +30,26 @@ function Test-SentinelInstalled {
 }
 
 function Assert-RealPython {
-    # Defends against the Microsoft Store python.exe stub on Windows 10/11,
-    # which is on PATH but is a 0-byte alias that exits non-zero when called.
-    # Without this check pip install fails 6 lines deep with a confusing
-    # "Python was not found" RemoteException.
-    $py = Get-Command python -ErrorAction SilentlyContinue
+    # The pinned Sentinel pyproject.toml requires Python >=3.13. Query the
+    # selected executable before pip runs; PATH presence alone is insufficient.
+    $py = Get-Command python -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $py) {
         throw @"
 Python is not on PATH.
 
-Install Python 3.11+ from https://www.python.org/downloads/
+Install Python 3.13+ from https://www.python.org/downloads/
 (tick 'Add python.exe to PATH' on the first installer screen),
 then close and reopen PowerShell.
 "@
     }
-    $version = & $py.Source --version 2>&1
-    if ($LASTEXITCODE -ne 0 -or $version -notmatch '^Python \d' -or $py.Source -match 'WindowsApps') {
+    if ($py.Source -match 'WindowsApps') {
         throw @"
 Python on your PATH is the Microsoft Store stub, not a real Python install.
 
 Found at: $($py.Source)
 
 Fix it:
-  1. Download Python 3.11+ from https://www.python.org/downloads/
+  1. Download Python 3.13+ from https://www.python.org/downloads/
   2. Run the installer.
   3. CRITICAL: tick 'Add python.exe to PATH' on the first screen.
   4. Close and reopen PowerShell.
@@ -61,6 +58,19 @@ Fix it:
 Optional: also disable the Store alias in
   Settings > Apps > Advanced app settings > App execution aliases
 "@
+    }
+    try {
+        $versionOutput = & $py.Source -c 'import sys; print(sys.version_info.major, sys.version_info.minor, sys.version_info.micro, sep=chr(46))' 2>&1
+        $versionExit = $LASTEXITCODE
+    } catch {
+        throw 'Python version could not be verified. Install Python 3.13+ and reopen PowerShell.'
+    }
+    $versionText = ($versionOutput | Out-String).Trim()
+    if ($versionExit -ne 0 -or $versionText -notmatch '^\d+\.\d+\.\d+$') {
+        throw 'Python version could not be verified. Install Python 3.13+ and reopen PowerShell.'
+    }
+    if ([version]$versionText -lt [version]'3.13.0') {
+        throw "Sentinel requires Python 3.13+; selected Python is $versionText. Install Python 3.13+, reopen PowerShell, and rerun this installer."
     }
 }
 

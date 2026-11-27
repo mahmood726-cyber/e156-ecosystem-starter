@@ -1,0 +1,216 @@
+[
+  {
+    "id": "dev-clean",
+    "family": "clean",
+    "source_text": "SYNTHETIC evidence for execution tests only. ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789. No clinical finding is asserted.",
+    "steps": [
+      {
+        "kind": "answer",
+        "disposition": "NO_FLAG",
+        "reason": "Synthetic scripted outcome"
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "completed",
+    "expected_disposition": "NO_FLAG",
+    "expected_excerpt_offsets": []
+  },
+  {
+    "id": "dev-finite_reads",
+    "family": "finite_reads",
+    "source_text": "SYNTHETIC evidence for execution tests only. ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789. No clinical finding is asserted.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 0,
+          "limit": 12
+        },
+        "call_id": "a"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 14,
+          "limit": 12
+        },
+        "call_id": "b"
+      },
+      {
+        "kind": "answer",
+        "disposition": "NO_FLAG",
+        "reason": "Synthetic scripted outcome"
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "completed",
+    "expected_disposition": "NO_FLAG",
+    "expected_excerpt_offsets": [
+      0,
+      14
+    ]
+  },
+  {
+    "id": "dev-repeated_result",
+    "family": "repeated_result",
+    "source_text": "SYNTHETIC evidence for execution tests only. ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789. No clinical finding is asserted.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 0,
+          "limit": 12
+        },
+        "call_id": "repeat"
+      }
+    ],
+    "repeat_last": true,
+    "mutate_after_step": null,
+    "expected": "bounded_stop",
+    "expected_disposition": null,
+    "expected_excerpt_offsets": []
+  },
+  {
+    "id": "dev-unknown_tool",
+    "family": "unknown_tool",
+    "source_text": "SYNTHETIC evidence for execution tests only. ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789. No clinical finding is asserted.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "not_authorized",
+        "args": {
+          "id": "paper",
+          "offset": 0,
+          "limit": 12
+        },
+        "call_id": "bad"
+      },
+      {
+        "kind": "answer",
+        "disposition": "ABSTAIN",
+        "reason": "Synthetic scripted outcome"
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "refused",
+    "expected_disposition": null,
+    "expected_excerpt_offsets": []
+  },
+  {
+    "id": "dev-invalid_arguments",
+    "family": "invalid_arguments",
+    "source_text": "SYNTHETIC evidence for execution tests only. ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789. No clinical finding is asserted.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 0,
+          "limit": -1
+        },
+        "call_id": "invalid"
+      },
+      {
+        "kind": "answer",
+        "disposition": "ABSTAIN",
+        "reason": "Synthetic scripted outcome"
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "refused",
+    "expected_disposition": null,
+    "expected_excerpt_offsets": []
+  },
+  {
+    "id": "dev-provider_timeout",
+    "family": "provider_timeout",
+    "source_text": "SYNTHETIC evidence for execution tests only. ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789. No clinical finding is asserted.",
+    "steps": [
+      {
+        "kind": "timeout"
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "provider_failed",
+    "expected_disposition": null,
+    "expected_excerpt_offsets": []
+  },
+  {
+    "id": "dev-source_drift",
+    "family": "source_drift",
+    "source_text": "SYNTHETIC evidence for execution tests only. ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789. No clinical finding is asserted.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 0,
+          "limit": 12
+        },
+        "call_id": "drift"
+      },
+      {
+        "kind": "answer",
+        "disposition": "ABSTAIN",
+        "reason": "Synthetic scripted outcome"
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": 0,
+    "expected": "refused",
+    "expected_disposition": null,
+    "expected_excerpt_offsets": []
+  },
+  {
+    "id": "dev-duplicate_call_ids",
+    "family": "duplicate_call_ids",
+    "source_text": "SYNTHETIC evidence for execution tests only. ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789. No clinical finding is asserted.",
+    "steps": [
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 0,
+          "limit": 12
+        },
+        "call_id": "same"
+      },
+      {
+        "kind": "tool",
+        "name": "read_evidence",
+        "args": {
+          "id": "paper",
+          "offset": 0,
+          "limit": 12
+        },
+        "call_id": "same"
+      },
+      {
+        "kind": "answer",
+        "disposition": "NO_FLAG",
+        "reason": "Synthetic scripted outcome"
+      }
+    ],
+    "repeat_last": false,
+    "mutate_after_step": null,
+    "expected": "completed",
+    "expected_disposition": "NO_FLAG",
+    "expected_excerpt_offsets": [
+      0
+    ]
+  }
+]

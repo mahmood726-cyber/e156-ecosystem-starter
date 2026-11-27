@@ -1,8 +1,11 @@
 """Explicit, non-retrying OpenAI Responses transport. Credentials never enter traces."""
 import json
+import math
 import os
 from pathlib import Path
 import sys
+import threading
+import time
 import urllib.error
 import urllib.request
 
@@ -28,10 +31,14 @@ class Responses:
 
     def _post(self, endpoint, payload, timeout):
         # A socket timeout alone is not a total deadline (a server can drip bytes).
-        # The existing process-group/Windows Job Object transport bounds the child.
+        # The child's own deadline survives loss of its parent supervisor.
+        require(type(timeout) in (int, float) and math.isfinite(timeout) and timeout > 0,
+                "finite positive provider timeout required")
+        deadline = time.monotonic() + timeout
         launcher = "import sys; sys.path.insert(0,sys.argv[1]); import harness_provider; harness_provider.main()"
         raw = bounded_native.run([sys.executable, "-I", "-S", "-c", launcher, str(Path(__file__).parent)],
-            timeout=timeout, input=json.dumps({"endpoint": endpoint, "payload": payload, "timeout": timeout}).encode("utf-8"))
+            timeout=timeout, input=json.dumps({"endpoint": endpoint, "payload": payload, "timeout": timeout,
+                                              "deadline": deadline}, allow_nan=False).encode("utf-8"))
         return strict_json(raw)
 
     def _direct_post(self, endpoint, payload, timeout):
@@ -53,19 +60,41 @@ class Responses:
             raise Refused("provider transport failed; outcome may be unknown") from exc
 
     def count(self, payload, timeout):
+        # Keep supported input-affecting settings aligned with generation while
+        # excluding generation-only controls (output limits, storage, tier).
         return self._post("responses/input_tokens", {k: payload[k] for k in
-                          ("model", "input", "instructions", "tools") if k in payload}, timeout)
+                          ("model", "input", "instructions", "tools", "parallel_tool_calls",
+                           "reasoning", "text", "tool_choice") if k in payload}, timeout)
 
     def respond(self, payload, timeout):
         return self._post("responses", payload, timeout)
 
 
 def main():
+    watchdog = None
     try:
         raw = sys.stdin.buffer.read(8 * 1024 * 1024 + 1)
         require(len(raw) <= 8 * 1024 * 1024, "request oversized")
         request = strict_json(raw)
-        result = Responses(allow_paid=True)._direct_post(**request)
+        require(isinstance(request, dict) and set(request) == {"endpoint", "payload", "timeout", "deadline"},
+                "provider child request fields mismatch")
+        require(request["endpoint"] in {"responses", "responses/input_tokens"}
+                and isinstance(request["payload"], dict), "invalid provider child request")
+        require(type(request["timeout"]) in (int, float) and math.isfinite(request["timeout"])
+                and request["timeout"] > 0, "invalid provider child timeout")
+        require(type(request["deadline"]) in (int, float) and math.isfinite(request["deadline"]),
+                "invalid provider child deadline")
+        remaining = min(request["timeout"], request["deadline"] - time.monotonic())
+        require(0 < remaining <= threading.TIMEOUT_MAX, "provider child deadline expired or unsupported")
+        watchdog = threading.Timer(remaining, lambda: os._exit(124))
+        watchdog.daemon = True
+        watchdog.start()
+        remaining = min(request["timeout"], request["deadline"] - time.monotonic())
+        require(remaining > 0, "provider child deadline expired")
+        result = Responses(allow_paid=True)._direct_post(request["endpoint"], request["payload"], remaining)
         sys.stdout.write(json.dumps(result, allow_nan=False))
     except Exception:
         raise SystemExit(2) from None
+    finally:
+        if watchdog is not None:
+            watchdog.cancel()

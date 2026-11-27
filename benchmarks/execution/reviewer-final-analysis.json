@@ -1,0 +1,2154 @@
+{
+  "commit": "b8507b050136ddce6b90cbb72cebf2e4a1a4f9d9",
+  "execution_count": 1,
+  "cases": 16,
+  "attempted": 192,
+  "satisfied": 192,
+  "apparatus_errors": 0,
+  "failures": [],
+  "identities_verified": true,
+  "dependency_manifest_sha256": "39b571a2ac9d5b8eed6c6b02e79ad6ec82eee619f537d60c02d98fce8b677274",
+  "family_outcomes": [
+    {
+      "family": "clean",
+      "arm": "e156_baseline",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "tool_attempts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "family": "clean",
+      "arm": "e156_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "tool_attempts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "family": "clean",
+      "arm": "deepagents",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "tool_attempts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "family": "clean",
+      "arm": "pydantic_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "tool_attempts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "family": "duplicate_call_ids",
+      "arm": "e156_baseline",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "tool_attempts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "family": "duplicate_call_ids",
+      "arm": "e156_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "tool_attempts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "family": "duplicate_call_ids",
+      "arm": "deepagents",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "tool_attempts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "family": "duplicate_call_ids",
+      "arm": "pydantic_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "tool_attempts": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "family": "finite_reads",
+      "arm": "e156_baseline",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        3,
+        3,
+        6,
+        6,
+        6,
+        3
+      ],
+      "tool_attempts": [
+        2,
+        2,
+        5,
+        5,
+        5,
+        2
+      ]
+    },
+    {
+      "family": "finite_reads",
+      "arm": "e156_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        3,
+        6,
+        6,
+        3,
+        6,
+        3
+      ],
+      "tool_attempts": [
+        2,
+        5,
+        5,
+        2,
+        5,
+        2
+      ]
+    },
+    {
+      "family": "finite_reads",
+      "arm": "deepagents",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        3,
+        6,
+        3,
+        6,
+        6,
+        3
+      ],
+      "tool_attempts": [
+        2,
+        5,
+        2,
+        5,
+        5,
+        2
+      ]
+    },
+    {
+      "family": "finite_reads",
+      "arm": "pydantic_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        6,
+        3,
+        3,
+        3,
+        6,
+        6
+      ],
+      "tool_attempts": [
+        5,
+        2,
+        2,
+        2,
+        5,
+        5
+      ]
+    },
+    {
+      "family": "invalid_arguments",
+      "arm": "e156_baseline",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "UNRESOLVED": 6
+      },
+      "model_calls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "tool_attempts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "family": "invalid_arguments",
+      "arm": "e156_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "UNRESOLVED": 6
+      },
+      "model_calls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "tool_attempts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "family": "invalid_arguments",
+      "arm": "deepagents",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "REFUSED": 6
+      },
+      "model_calls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "tool_attempts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "family": "invalid_arguments",
+      "arm": "pydantic_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "REFUSED": 6
+      },
+      "model_calls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "tool_attempts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "family": "provider_timeout",
+      "arm": "e156_baseline",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "UNRESOLVED": 6
+      },
+      "model_calls": [
+        1,
+        2,
+        2,
+        1,
+        2,
+        1
+      ],
+      "tool_attempts": [
+        0,
+        1,
+        1,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "family": "provider_timeout",
+      "arm": "e156_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "UNRESOLVED": 6
+      },
+      "model_calls": [
+        2,
+        2,
+        1,
+        1,
+        1,
+        2
+      ],
+      "tool_attempts": [
+        1,
+        1,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "family": "provider_timeout",
+      "arm": "deepagents",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "PROVIDER_FAILED": 6
+      },
+      "model_calls": [
+        2,
+        1,
+        2,
+        1,
+        1,
+        2
+      ],
+      "tool_attempts": [
+        1,
+        0,
+        1,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "family": "provider_timeout",
+      "arm": "pydantic_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "PROVIDER_FAILED": 6
+      },
+      "model_calls": [
+        2,
+        1,
+        1,
+        1,
+        2,
+        2
+      ],
+      "tool_attempts": [
+        1,
+        0,
+        0,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "family": "repeated_result",
+      "arm": "e156_baseline",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "BUDGET_STOP": 6
+      },
+      "model_calls": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "tool_attempts": [
+        3,
+        3,
+        1,
+        1,
+        1,
+        3
+      ]
+    },
+    {
+      "family": "repeated_result",
+      "arm": "e156_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "STALLED": 6
+      },
+      "model_calls": [
+        5,
+        3,
+        3,
+        5,
+        3,
+        5
+      ],
+      "tool_attempts": [
+        3,
+        1,
+        1,
+        3,
+        1,
+        3
+      ]
+    },
+    {
+      "family": "repeated_result",
+      "arm": "deepagents",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "BUDGET_STOP": 6
+      },
+      "model_calls": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "tool_attempts": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ]
+    },
+    {
+      "family": "repeated_result",
+      "arm": "pydantic_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "STALLED": 6
+      },
+      "model_calls": [
+        5,
+        3,
+        5,
+        3,
+        5,
+        3
+      ],
+      "tool_attempts": [
+        5,
+        3,
+        5,
+        3,
+        5,
+        3
+      ]
+    },
+    {
+      "family": "source_drift",
+      "arm": "e156_baseline",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "REFUSED": 6
+      },
+      "model_calls": [
+        2,
+        2,
+        2,
+        1,
+        1,
+        1
+      ],
+      "tool_attempts": [
+        1,
+        1,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "family": "source_drift",
+      "arm": "e156_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "REFUSED": 6
+      },
+      "model_calls": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        2
+      ],
+      "tool_attempts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "family": "source_drift",
+      "arm": "deepagents",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "REFUSED": 6
+      },
+      "model_calls": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        2
+      ],
+      "tool_attempts": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "family": "source_drift",
+      "arm": "pydantic_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "REFUSED": 6
+      },
+      "model_calls": [
+        2,
+        1,
+        2,
+        1,
+        1,
+        2
+      ],
+      "tool_attempts": [
+        2,
+        1,
+        2,
+        1,
+        1,
+        2
+      ]
+    },
+    {
+      "family": "unknown_tool",
+      "arm": "e156_baseline",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "REFUSED": 6
+      },
+      "model_calls": [
+        1,
+        2,
+        1,
+        2,
+        2,
+        1
+      ],
+      "tool_attempts": [
+        0,
+        1,
+        0,
+        1,
+        1,
+        0
+      ]
+    },
+    {
+      "family": "unknown_tool",
+      "arm": "e156_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "REFUSED": 6
+      },
+      "model_calls": [
+        1,
+        1,
+        2,
+        2,
+        2,
+        1
+      ],
+      "tool_attempts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        0
+      ]
+    },
+    {
+      "family": "unknown_tool",
+      "arm": "deepagents",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        2,
+        2,
+        3,
+        2,
+        3,
+        3
+      ],
+      "tool_attempts": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "family": "unknown_tool",
+      "arm": "pydantic_guarded",
+      "attempted": 6,
+      "satisfied": 6,
+      "statuses": {
+        "COMPLETED": 6
+      },
+      "model_calls": [
+        2,
+        2,
+        3,
+        3,
+        3,
+        2
+      ],
+      "tool_attempts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        0
+      ]
+    }
+  ],
+  "paired_model_calls": [
+    {
+      "guarded": "e156_guarded",
+      "comparator": "e156_baseline",
+      "attempted_pairs": 48,
+      "both_valid_pairs": 48,
+      "guarded_calls": 108,
+      "comparator_calls": 120,
+      "saved_calls": 12,
+      "fewer_pairs": 6,
+      "tied_pairs": 42,
+      "more_pairs": 0,
+      "pairs": [
+        {
+          "case_id": "rf-01",
+          "family": "clean",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-01",
+          "family": "clean",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-01",
+          "family": "clean",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-02",
+          "family": "clean",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-02",
+          "family": "clean",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-02",
+          "family": "clean",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-03",
+          "family": "finite_reads",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-03",
+          "family": "finite_reads",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-03",
+          "family": "finite_reads",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-04",
+          "family": "finite_reads",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 6,
+          "comparator_calls": 6,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-04",
+          "family": "finite_reads",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 6,
+          "comparator_calls": 6,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-04",
+          "family": "finite_reads",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 6,
+          "comparator_calls": 6,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-05",
+          "family": "repeated_result",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 6,
+          "saved_calls": 3
+        },
+        {
+          "case_id": "rf-05",
+          "family": "repeated_result",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 6,
+          "saved_calls": 3
+        },
+        {
+          "case_id": "rf-05",
+          "family": "repeated_result",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 6,
+          "saved_calls": 3
+        },
+        {
+          "case_id": "rf-06",
+          "family": "repeated_result",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 5,
+          "comparator_calls": 6,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-06",
+          "family": "repeated_result",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 5,
+          "comparator_calls": 6,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-06",
+          "family": "repeated_result",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 5,
+          "comparator_calls": 6,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-07",
+          "family": "unknown_tool",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-07",
+          "family": "unknown_tool",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-07",
+          "family": "unknown_tool",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-08",
+          "family": "unknown_tool",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-08",
+          "family": "unknown_tool",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-08",
+          "family": "unknown_tool",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-09",
+          "family": "invalid_arguments",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-09",
+          "family": "invalid_arguments",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-09",
+          "family": "invalid_arguments",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-10",
+          "family": "invalid_arguments",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-10",
+          "family": "invalid_arguments",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-10",
+          "family": "invalid_arguments",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-11",
+          "family": "provider_timeout",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-11",
+          "family": "provider_timeout",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-11",
+          "family": "provider_timeout",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-12",
+          "family": "provider_timeout",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-12",
+          "family": "provider_timeout",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-12",
+          "family": "provider_timeout",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-13",
+          "family": "source_drift",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-13",
+          "family": "source_drift",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-13",
+          "family": "source_drift",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-14",
+          "family": "source_drift",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-14",
+          "family": "source_drift",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-14",
+          "family": "source_drift",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-15",
+          "family": "duplicate_call_ids",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-15",
+          "family": "duplicate_call_ids",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-15",
+          "family": "duplicate_call_ids",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-16",
+          "family": "duplicate_call_ids",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-16",
+          "family": "duplicate_call_ids",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-16",
+          "family": "duplicate_call_ids",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        }
+      ]
+    },
+    {
+      "guarded": "e156_guarded",
+      "comparator": "deepagents",
+      "attempted_pairs": 48,
+      "both_valid_pairs": 48,
+      "guarded_calls": 108,
+      "comparator_calls": 126,
+      "saved_calls": 18,
+      "fewer_pairs": 12,
+      "tied_pairs": 36,
+      "more_pairs": 0,
+      "pairs": [
+        {
+          "case_id": "rf-01",
+          "family": "clean",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-01",
+          "family": "clean",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-01",
+          "family": "clean",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-02",
+          "family": "clean",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-02",
+          "family": "clean",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-02",
+          "family": "clean",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-03",
+          "family": "finite_reads",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-03",
+          "family": "finite_reads",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-03",
+          "family": "finite_reads",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-04",
+          "family": "finite_reads",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 6,
+          "comparator_calls": 6,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-04",
+          "family": "finite_reads",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 6,
+          "comparator_calls": 6,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-04",
+          "family": "finite_reads",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 6,
+          "comparator_calls": 6,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-05",
+          "family": "repeated_result",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 6,
+          "saved_calls": 3
+        },
+        {
+          "case_id": "rf-05",
+          "family": "repeated_result",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 6,
+          "saved_calls": 3
+        },
+        {
+          "case_id": "rf-05",
+          "family": "repeated_result",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 6,
+          "saved_calls": 3
+        },
+        {
+          "case_id": "rf-06",
+          "family": "repeated_result",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 5,
+          "comparator_calls": 6,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-06",
+          "family": "repeated_result",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 5,
+          "comparator_calls": 6,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-06",
+          "family": "repeated_result",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 5,
+          "comparator_calls": 6,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-07",
+          "family": "unknown_tool",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 2,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-07",
+          "family": "unknown_tool",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 2,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-07",
+          "family": "unknown_tool",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 2,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-08",
+          "family": "unknown_tool",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 3,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-08",
+          "family": "unknown_tool",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 3,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-08",
+          "family": "unknown_tool",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 3,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-09",
+          "family": "invalid_arguments",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-09",
+          "family": "invalid_arguments",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-09",
+          "family": "invalid_arguments",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-10",
+          "family": "invalid_arguments",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-10",
+          "family": "invalid_arguments",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-10",
+          "family": "invalid_arguments",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-11",
+          "family": "provider_timeout",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-11",
+          "family": "provider_timeout",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-11",
+          "family": "provider_timeout",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-12",
+          "family": "provider_timeout",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-12",
+          "family": "provider_timeout",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-12",
+          "family": "provider_timeout",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-13",
+          "family": "source_drift",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-13",
+          "family": "source_drift",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-13",
+          "family": "source_drift",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-14",
+          "family": "source_drift",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-14",
+          "family": "source_drift",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-14",
+          "family": "source_drift",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-15",
+          "family": "duplicate_call_ids",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-15",
+          "family": "duplicate_call_ids",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-15",
+          "family": "duplicate_call_ids",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-16",
+          "family": "duplicate_call_ids",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-16",
+          "family": "duplicate_call_ids",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-16",
+          "family": "duplicate_call_ids",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        }
+      ]
+    },
+    {
+      "guarded": "e156_guarded",
+      "comparator": "pydantic_guarded",
+      "attempted_pairs": 48,
+      "both_valid_pairs": 48,
+      "guarded_calls": 108,
+      "comparator_calls": 114,
+      "saved_calls": 6,
+      "fewer_pairs": 6,
+      "tied_pairs": 42,
+      "more_pairs": 0,
+      "pairs": [
+        {
+          "case_id": "rf-01",
+          "family": "clean",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-01",
+          "family": "clean",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-01",
+          "family": "clean",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-02",
+          "family": "clean",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-02",
+          "family": "clean",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-02",
+          "family": "clean",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-03",
+          "family": "finite_reads",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-03",
+          "family": "finite_reads",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-03",
+          "family": "finite_reads",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-04",
+          "family": "finite_reads",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 6,
+          "comparator_calls": 6,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-04",
+          "family": "finite_reads",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 6,
+          "comparator_calls": 6,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-04",
+          "family": "finite_reads",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 6,
+          "comparator_calls": 6,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-05",
+          "family": "repeated_result",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-05",
+          "family": "repeated_result",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-05",
+          "family": "repeated_result",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-06",
+          "family": "repeated_result",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 5,
+          "comparator_calls": 5,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-06",
+          "family": "repeated_result",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 5,
+          "comparator_calls": 5,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-06",
+          "family": "repeated_result",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 5,
+          "comparator_calls": 5,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-07",
+          "family": "unknown_tool",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 2,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-07",
+          "family": "unknown_tool",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 2,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-07",
+          "family": "unknown_tool",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 2,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-08",
+          "family": "unknown_tool",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 3,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-08",
+          "family": "unknown_tool",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 3,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-08",
+          "family": "unknown_tool",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 3,
+          "saved_calls": 1
+        },
+        {
+          "case_id": "rf-09",
+          "family": "invalid_arguments",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-09",
+          "family": "invalid_arguments",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-09",
+          "family": "invalid_arguments",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-10",
+          "family": "invalid_arguments",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-10",
+          "family": "invalid_arguments",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-10",
+          "family": "invalid_arguments",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-11",
+          "family": "provider_timeout",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-11",
+          "family": "provider_timeout",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-11",
+          "family": "provider_timeout",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-12",
+          "family": "provider_timeout",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-12",
+          "family": "provider_timeout",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-12",
+          "family": "provider_timeout",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-13",
+          "family": "source_drift",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-13",
+          "family": "source_drift",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-13",
+          "family": "source_drift",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 1,
+          "comparator_calls": 1,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-14",
+          "family": "source_drift",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-14",
+          "family": "source_drift",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-14",
+          "family": "source_drift",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 2,
+          "comparator_calls": 2,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-15",
+          "family": "duplicate_call_ids",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-15",
+          "family": "duplicate_call_ids",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-15",
+          "family": "duplicate_call_ids",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-16",
+          "family": "duplicate_call_ids",
+          "repetition": 0,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-16",
+          "family": "duplicate_call_ids",
+          "repetition": 1,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        },
+        {
+          "case_id": "rf-16",
+          "family": "duplicate_call_ids",
+          "repetition": 2,
+          "both_valid": true,
+          "guarded_calls": 3,
+          "comparator_calls": 3,
+          "saved_calls": 0
+        }
+      ]
+    }
+  ],
+  "limitations": "Sixteen mechanism-held-out synthetic tasks with three repeated schedules; repetitions are not independent tasks. No scientific accuracy, live-model quality, real-token saving or speed ranking measured."
+}

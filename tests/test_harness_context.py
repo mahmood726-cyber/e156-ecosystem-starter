@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 import pytest
 
 from scripts import harness_context as context
+from scripts import harness_derivation as derivation
+from tests.test_harness_derivation import simulated_worker
 
 
 def test_freshness_cli_gate_fails_changed_dependency(graph):
@@ -25,7 +27,7 @@ def test_freshness_cli_gate_fails_changed_dependency(graph):
 
 
 @pytest.fixture
-def graph(tmp_path):
+def graph(tmp_path, simulated_worker):
     nodes = []
     for key, kind, parents, body in [
         ("paper", "source", [], "SYNTHETIC source. Ignore instructions is untrusted data."),
@@ -37,7 +39,8 @@ def graph(tmp_path):
         ("review", "skill", [], "Read source evidence and abstain when incomplete."),
     ]:
         raw = body.encode()
-        (tmp_path / f"{key}.txt").write_bytes(raw)
+        if not parents:
+            (tmp_path / f"{key}.txt").write_bytes(raw)
         node = {"id": key, "kind": kind, "file": f"{key}.txt",
                 "sha256": hashlib.sha256(raw).hexdigest(), "parents": parents,
                 "expires_at": None}
@@ -46,7 +49,22 @@ def graph(tmp_path):
         if kind == "skill":
             node["tools"] = ["read_evidence"]
         nodes.append(node)
-    return tmp_path, {"schema": "e156-harness-context-v1", "nodes": nodes}
+    manifest = {"schema": "e156-harness-context-v1", "nodes": [n for n in nodes if not n["parents"]]}
+    policy = {"image": "python@sha256:" + "a" * 64, "memory_mb": 128, "cpus": 1,
+              "pids": 32, "tmp_mb": 16, "output_bytes": 65536}
+    # Explicit simulated worker receipts support graph tests; Docker CI exercises
+    # the actual producer separately. These are never research findings.
+    for node in nodes:
+        if node["parents"]:
+            recipe = node["id"] + ".py"
+            (tmp_path / recipe).write_text("print('SYNTHETIC constant output')", encoding="utf-8")
+            request = {"schema": "e156-derivation-request-v1", "node": {k: v for k, v in node.items() if k != "sha256"},
+                       "recipe_file": recipe, "receipt_file": node["id"] + ".receipt.json",
+                       "worker": policy, "timeout_seconds": 30}
+            manifest = derivation.run(tmp_path, manifest, request, tmp_path / (node["id"] + ".manifest.json"))
+    indexed, _ = context.index(manifest)
+    manifest["nodes"] = [indexed[n["id"]] for n in nodes]
+    return tmp_path, manifest
 
 
 def test_end_to_end_context_and_downstream_invalidation(graph):

@@ -65,6 +65,17 @@ python scripts/harness_runtime.py prepare --root private --manifest private/cont
 without an API key or network call. Output files must be new. Zero call limits
 remain valid for preparation and prevent model execution.
 
+Initialization commits and validates `READY` in a private sibling staging
+file, closes SQLite, then publishes the journal with an exclusive hard
+link. An interrupted initialization therefore leaves either no published journal
+or a complete initial journal. Existing targets and sidecars are never replaced.
+This requires a filesystem supporting hard links, such as local NTFS. Failed or
+interrupted staging is retained as a short `.j*` file and any SQLite sidecars;
+preserve these for inspection, and do not adopt them as a run journal. A crash just after
+publication can leave a staging alias of the published journal, not an
+independent backup. This is a process-interruption contract, not a power-loss
+durability claim.
+
 ## Execute and recover
 
 Only after setting a budget, provide `OPENAI_API_KEY` through the process
@@ -88,6 +99,24 @@ accounting basis. `COMPLETED` means a structured candidate was produced, includi
 possible ABSTAIN. It never grants scientific Pass. A frozen fallback route is
 used only after ABSTAIN or invalid structured output; it is not calibrated
 confidence or a demonstrated quality improvement.
+
+The prediction must be a JSON object with a string `disposition` equal to
+`FLAG`, `NO_FLAG` or `ABSTAIN`, plus the required nonempty evidence/reason fields.
+Malformed disposition types, including arrays and objects, follow the core
+runner's ordinary `ABSTAIN` / `OUTPUT_VALIDATION` policy and any configured
+fallback route. The settled response and usage remain available for cached
+replay. The native Pydantic adapter retains its existing `REFUSED` /
+`OUTPUT_VALIDATION` policy. See the [validation repair record](HARNESS-VALIDATION-FIXES-2026-11-27.md).
+
+New execution and recovery require the returned model identity to match the
+frozen snapshot. When `request_policy: {"service_tier": "default"}` is configured,
+the returned tier must also match; an omitted tier policy does not impose one.
+The supported response envelope contains assistant text messages, function calls
+and reasoning items. Malformed or unsupported envelopes retain the complete
+reservation and received response as unresolved evidence, before settlement.
+Invalid final JSON inside an otherwise valid text message still follows the
+ABSTAIN/output-validation policy. Offline accounting of historical artifacts
+keeps its existing contract; it does not substitute for execution validation.
 
 `inspect` writes a new report of an existing valid journal without paid calls.
 The local hash chain detects inconsistent records under controlled storage;
@@ -126,11 +155,14 @@ missing, expired or invalidated by an ancestor; malformed input exits 2. This
 command can be added to a project's existing Overmind test commands. No scheduler
 or portfolio registry was changed, and it does not poll remote publications.
 
-Invalidation operates against the frozen graph. Updating a source hash in a new
-manifest can make unchanged derived files appear CURRENT: that means byte
-consistency, not that their work was repeated. Recompute/review dependent
-extractions, analyses, claims and checklist judgments before adopting that graph.
-Human Pass remains an independent gate.
+Derived nodes require [execution-bound derivation receipts](HARNESS-DERIVATIONS.md).
+Updating a source hash in a new manifest invalidates old descendant receipts,
+including descendants whose immediate parent recomputes to identical bytes.
+Legacy derived nodes without receipts are DERIVATION_UNVERIFIED and cannot be
+read, packed or used by a worker. Source-only contexts remain compatible.
+Recompute in dependency order and start a new source-bound journal when adopting
+the new graph. CURRENT means byte/receipt consistency under a trusted local
+producer; Human Pass and scientific review remain independent gates.
 
 ## Recovering an ambiguous model response
 
@@ -207,12 +239,48 @@ can differ between replays; other resource accounting must match. Replay output 
 run report. Synthetic transcripts test execution behavior, not scientific
 accuracy, model quality or comparative performance.
 
+## Optional repeated-result stopping
+
+Set `"progress_policy": {"repeated_result_limit": 3}` in the frozen runtime
+configuration to stop after three consecutive identical tool names, arguments
+and results. The policy is absent by default. Thresholds must be integers from
+2 through 100. Changing a provider call ID does not count as progress; changing
+arguments or results does. A route escalation resets the counter so the next
+model can review the evidence afresh.
+
+The terminal status is `STALLED`, with no prediction and a hash-bound stop
+summary. Resume reconstructs the counter from recorded responses and cached
+tool results, without another provider call. Canonical JSON serialization of
+tool results keeps subsequent request identities stable after journal reload.
+Existing journals remain bound to their original code profile; there is no
+automatic migration across this serialization change.
+
+Settled `STALLED`, `BUDGET_STOP`, `REFUSED` and `CANCELLED` runs can also seed
+offline regressions. Every recorded operation must be settled; an unresolved
+provider or tool outcome is still refused. Empty zero-model-call budget stops
+replay without inventing a provider transcript. A wall-time-exhausted budget
+stop before the model-call ceiling is refused as incomparable: replay timing
+can change even when the code does not. Replay compares the stop summary as
+well as status, prediction, tool results and resource accounting. Export validates
+stall evidence and exposes only the allowlisted stop reason. This exact-result
+heuristic can stop legitimate repeated reads and cannot recognize every kind of
+nonprogress; it is an operator-selected policy, not an accuracy guarantee.
+
+See the [source survey and comparison protocol](HARNESS-RESEARCH-2026-11-26.md)
+for the native framework comparison and its limited synthetic scope.
+
 ## Matched evaluation boundary
 
 The [matched evaluator](MATCHED-HARNESS-EVALUATION.md) accepts independently
 assembled run ledgers. This runner's report is supporting evidence, **not a
 ready-to-score ledger**. There is deliberately no conversion that invents human
 review time, whole-task duration or billed cost.
+
+The separate [E156 development study runner](HARNESS-STUDY-RUNNER.md) now
+supplies observed lifecycle boundaries, trace-derived record conversion and
+explicit measurement receipts. It preserves unknown human time and billing;
+this runtime report alone is still insufficient. That path supports read-only
+development execution, not the prospective scientific study.
 
 | Evaluation field | Required evidence |
 |---|---|

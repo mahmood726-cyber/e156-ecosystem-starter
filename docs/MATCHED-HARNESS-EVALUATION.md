@@ -9,6 +9,12 @@ The exposed StepWise/STROKEWALK examples and synthetic tests are development
 material. They must not become the untouched scientific test sample. Preserve
 the existing protected Simo cohort and labels.
 
+The [prospective study preparation](HARNESS-PROSPECTIVE-STUDY.md) specifies the
+next comparison's outstanding fairness, sampling, integration and independent
+review decisions. Its [file-backed preflight](HARNESS-STUDY-PREFLIGHT.md) resolves
+declared configuration/reference hashes to actual files and checks task lineage.
+These checks strengthen preparation without conferring scientific validation.
+
 ## Reused implementation and bounded addition
 
 Within e156-ecosystem-starter, `scripts/synthesis_blind_eval.py` already validates
@@ -30,6 +36,13 @@ model/tool execution, reservations and complete traces as separate supporting
 evidence. Its accounting is not automatically converted into observed human
 review time, end-to-end duration or billed USD; see the guide's matched-evaluation
 boundary before assembling a run ledger. The scientific study remains unstarted.
+
+The [development study runner](HARNESS-STUDY-RUNNER.md) now provides the E156
+read-only orchestration and trace-to-ledger bridge. Its explicit `development`
+purpose admits exposed source material without inventing unseen/custody receipts.
+It requires supplied human-time measurements before freezing a ledger and keeps
+missing billing unknown. Live native comparator adapters and the independent
+scientific study remain pending.
 
 ## Prospective comparison
 

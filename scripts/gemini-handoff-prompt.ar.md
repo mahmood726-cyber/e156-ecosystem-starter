@@ -13,7 +13,7 @@
 
 2. **شخِّص المتطلبات الأساسية المفقودة وأخبرني بما يجب تثبيته.** نفّذ
    `python --version`، `Rscript --version`، `node --version`، `gh --version`،
-   `git --version`. لكلّ واحد مفقود أو قديم جداً (Python <3.11، R <4.5، Node <20)،
+   `git --version`. لكلّ واحد مفقود أو قديم جداً (Python <3.13، R <4.5، Node <20)،
    اطبع رابط التثبيت الدقيق وسطراً واحداً يشرح لماذا هو مهم لعمل E156. لا تثبّتها
    بنفسك — اتركني أرى القائمة وأقرّر.
 
@@ -40,10 +40,11 @@
    python /workspaces/e156-ecosystem-starter/scripts/reuse.py find "<ما تحتاجه>"
    ```
    (مثل "forest plot" و "aact loader"). تُعيد الأداة دالة الـkit والملف المطلوب نسخهما
-   بالضبط. ثم نفّذ
-   `pip install git+https://github.com/mahmood726-cyber/e156-student-starter.git@main`
-   و `student new <slug>` لبناء الهيكل تحت `~/code/<slug>/`. في `docs/<criterion>.md`
-   للمستودع الجديد، اذكر المستودعات السابقة بالاسم.
+   بالضبط. اتبع [دليل المصدر المراجع](https://github.com/mahmood726-cyber/e156-ecosystem-starter/blob/main/STUDENT-WORKFLOW.md#create-a-first-paper-from-reviewed-student-source):
+   انسخ المراجعة المحددة وشغّل `python -m bin.student new --template T0 --slug <slug>`
+   من مجلدها مع إعداد `LOCALAPPDATA` المؤقت الموضح، ثم ثبّت خطاف Sentinel في workbook.
+   الورقة تحت `~/code/student-state/e156/workbook/<slug>/`؛ مجلد workbook هو مستودع Git.
+   في `docs/<criterion>.md` للورقة، اذكر المستودعات السابقة بالاسم.
 
 6. **اقرأ STUDENT-WORKFLOW.md** على
    https://raw.githubusercontent.com/mahmood726-cyber/e156-ecosystem-starter/main/STUDENT-WORKFLOW.md
