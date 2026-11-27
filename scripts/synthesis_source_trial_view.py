@@ -13,7 +13,9 @@ import hmac
 import html
 import importlib.util
 import json
+import os
 import re
+import tempfile
 from pathlib import Path
 
 IDENTITY = (
@@ -24,6 +26,99 @@ IDENTITY = (
 UNKNOWN = {"", "unknown", "n/a", "not reported", "not enough info", "unavailable"}
 MAX_TEXT_BYTES = 2_000_000
 MAX_IMAGE_BYTES = 5_000_000
+
+
+def _source_paths(packet, root: Path):
+    """Collect declared text/image paths, including missing captures, for output isolation."""
+    pending = [packet]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, dict):
+            if isinstance(value.get("path"), str) and "sha256" in value:
+                yield root / value["path"]
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(value)
+
+
+def _prepare_outputs(outputs, *, protected=()):
+    """Require distinct, new destinations without writing or creating directories."""
+    try:
+        forbidden = {os.path.normcase(str(Path(path).resolve())) for path in protected}
+        prepared, identities = [], set()
+        for value in outputs:
+            path = Path(value)
+            # lexists also refuses dangling links, which exists() would miss.
+            if os.path.lexists(path):
+                raise ValueError("Output already exists; choose a new output filename")
+            path = path.resolve()
+            identity = os.path.normcase(str(path))
+            if identity in forbidden or identity in identities:
+                raise ValueError("Output destinations must be distinct from inputs and each other")
+            if os.path.lexists(path):
+                raise ValueError("Output already exists; choose a new output filename")
+            parent = path.parent
+            while not parent.exists():
+                if parent.parent == parent:
+                    raise ValueError("Output filesystem root is unavailable")
+                parent = parent.parent
+            if not parent.is_dir():
+                raise ValueError("Output parent must be a directory")
+            identities.add(identity)
+            prepared.append(path)
+        return prepared
+    except (OSError, RuntimeError) as exc:
+        raise ValueError("Unable to validate output destinations") from exc
+
+
+def _publish_outputs(outputs, *, protected=()):
+    """Stage complete UTF-8 files, then atomically publish without replacing any file.
+
+    Hard-link creation is the no-clobber publication primitive on Windows and POSIX.
+    A filesystem that cannot provide it refuses rather than falling back to an
+    overwriting rename. Multi-output failures roll back this attempt's own links.
+    """
+    outputs = list(outputs)
+    paths = _prepare_outputs([path for path, _ in outputs], protected=protected)
+    staged, published = [], []
+    failure = None
+    try:
+        for path, (_, content) in zip(paths, outputs):
+            data = content.encode("utf-8")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            fd, name = tempfile.mkstemp(prefix=".synthesis-output-", suffix=".tmp", dir=path.parent)
+            temporary = Path(name)
+            staged.append((temporary, path))
+            with os.fdopen(fd, "wb") as stream:
+                stream.write(data)
+                stream.flush()
+                os.fsync(stream.fileno())
+        for temporary, path in staged:
+            os.link(temporary, path)
+            published.append((temporary, path))
+    except BaseException as exc:
+        failure = exc
+    cleanup_failed = False
+    if failure is not None:
+        for temporary, path in reversed(published):
+            try:
+                # Do not remove a competing file or symlink that replaced our link.
+                if os.path.samestat(temporary.stat(), path.stat(follow_symlinks=False)):
+                    path.unlink()
+            except FileNotFoundError:
+                continue
+            except OSError:
+                cleanup_failed = True
+    for temporary, _ in staged:
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            cleanup_failed = True
+    if isinstance(failure, (KeyboardInterrupt, SystemExit)):
+        raise failure
+    if failure is not None or cleanup_failed:
+        raise ValueError("Output publication failed; existing files were not overwritten. "
+                         "Inspect new destinations before retrying") from None
 
 
 def _meaningful(value):
@@ -336,10 +431,12 @@ def main(argv=None) -> int:
     parser.add_argument("--html-out", type=Path, required=True, help="private standalone HTML reviewer view")
     args = parser.parse_args(argv)
     try:
+        _prepare_outputs([args.html_out], protected=[args.packet])
         packet = json.loads(args.packet.read_text(encoding="utf-8"))
+        protected = [args.packet, *_source_paths(packet, args.source_root)]
+        output, = _prepare_outputs([args.html_out], protected=protected)
         report = evaluate_packet(packet, args.source_root)
-        args.html_out.parent.mkdir(parents=True, exist_ok=True)
-        args.html_out.write_text(render_html(report), encoding="utf-8")
+        _publish_outputs([(output, render_html(report))], protected=protected)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         parser.exit(2, "Input/output failure: " + str(exc) + "\n")
     # Do not print quotes, local paths or manuscript text to stdout.
