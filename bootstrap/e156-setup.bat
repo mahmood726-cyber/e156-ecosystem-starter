@@ -3,7 +3,7 @@ REM e156-setup.bat -- one-click installer for the E156 ecosystem starter.
 REM
 REM Double-click this file. It will:
 REM   1. Check Python is installed
-REM   2. Download the latest ecosystem-starter release
+REM   2. Download the selected ecosystem-starter source ref
 REM   3. Extract to %TEMP%
 REM   4. Run install.ps1 (which chains Sentinel/Overmind/ProjectIndex)
 REM
@@ -37,7 +37,7 @@ if errorlevel 1 (
     echo.
     echo   ERROR: Python is not installed or not on your PATH.
     echo.
-    echo   Install Python 3.11 or newer from:
+    echo   Install Python 3.13 or newer from:
     echo     https://www.python.org/downloads/
     echo.
     echo   IMPORTANT: During install, tick "Add Python to PATH" on the first screen.
@@ -56,7 +56,7 @@ if errorlevel 1 (
     echo   ERROR: Python on your PATH is the Microsoft Store stub, not a real Python install.
     echo.
     echo   Fix it:
-    echo     1. Download Python 3.11+ from https://www.python.org/downloads/
+    echo     1. Download Python 3.13+ from https://www.python.org/downloads/
     echo     2. Run the installer.
     echo     3. CRITICAL: tick "Add python.exe to PATH" on the first screen.
     echo     4. Close this window and re-run this file.
@@ -132,7 +132,7 @@ if %EXIT_CODE% equ 0 (
     echo   Scroll up to see what went wrong.
     echo.
     echo   Common causes:
-    echo     - Python too old (need 3.11+)
+    echo     - Python too old (need 3.13+)
     echo     - No internet mid-install (pip failed)
     echo     - Ran from a network drive with restricted permissions
 )

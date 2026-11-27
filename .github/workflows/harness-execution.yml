@@ -62,6 +62,8 @@ jobs:
               for phase in ('before_ready', 'before_commit', 'after_commit', 'before_publish', 'after_publish'))
           required.update('test_invalid_disposition_is_recorded_as_abstention_and_replays_without_calls[' + kind + ']'
                           for kind in ('array', 'object'))
+          required.update('test_prediction_unicode_is_recorded_and_replays_without_calls[' + kind + ']'
+                          for kind in ('reason-high', 'flag-root-low', 'evidence-high', 'stop-low', 'valid-unicode'))
           cases = [case for case in root.findall('.//testcase') if case.get('name') in required]
           if {case.get('name') for case in cases} != required or any(list(case) for case in cases):
               raise SystemExit('Required real-process study controls missing, skipped, or failed')

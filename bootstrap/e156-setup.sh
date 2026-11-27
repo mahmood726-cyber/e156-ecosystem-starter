@@ -46,7 +46,7 @@ fi
 say "[1/4] Checking prerequisites"
 command -v python >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1 || {
     echo "  ERROR: Python is not installed or not on PATH." >&2
-    echo "  Install Python 3.11+ first:"
+    echo "  Install Python 3.13+ first:"
     echo "    - Ubuntu/Debian:  sudo apt install python3 python3-pip"
     echo "    - Fedora/RHEL:    sudo dnf install python3 python3-pip"
     echo "    - macOS (brew):   brew install python"
