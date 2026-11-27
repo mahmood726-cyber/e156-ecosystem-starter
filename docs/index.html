@@ -16,6 +16,7 @@
 <link rel="alternate" hreflang="x-default" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/">
 <style>
   * { box-sizing: border-box; }
+  body { overflow-wrap: anywhere; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     max-width: 780px;
@@ -79,7 +80,7 @@
   .cloud-banner .micro { display: block; margin-top: 14px; font-size: 0.85em; opacity: 0.85; }
   .cloud-banner .micro a { color: white; text-decoration: underline; }
   /* Click-to-copy buttons on every <pre><code> block. Positioned in the top-right corner. */
-  pre { position: relative; }
+  pre { position: relative; padding-top: 48px; }
   .copy-btn { position: absolute; top: 6px; right: 6px; background: white; border: 1px solid #d0d7de; border-radius: 4px; padding: 4px 10px; font-size: 0.75em; color: #1a1a1a; cursor: pointer; opacity: 0.55; transition: opacity 0.15s, background 0.15s; font-family: inherit; }
   pre:hover .copy-btn { opacity: 1; }
   .copy-btn:hover { background: #f6f8fa; }
@@ -859,10 +860,7 @@ paywall finding rests on a denominator of <strong>one</strong>.</p>
     btn.className = 'copy-btn';
     btn.textContent = copyLabel;
     btn.setAttribute('aria-label', 'Copy code to clipboard');
-    // role="status" + aria-live="polite" so screen readers announce the
-    // textContent change ("Copy" -> "Copied") without interrupting current
-    // narration. WCAG 4.1.3 status messages.
-    btn.setAttribute('role', 'status');
+    // Keep native button semantics and announce feedback politely.
     btn.setAttribute('aria-live', 'polite');
     btn.addEventListener('click', function () {
       var text = code.innerText;
@@ -899,7 +897,9 @@ paywall finding rests on a denominator of <strong>one</strong>.</p>
           var ok = document.execCommand('copy');
           document.body.removeChild(ta);
           if (ok) { done(); } else { fail(); }
-        } catch (e) { fail(); }
+        } catch (e) { fail(); } finally {
+          if (ta && ta.parentNode) { ta.parentNode.removeChild(ta); }
+        }
       }
     });
     pre.appendChild(btn);

@@ -114,7 +114,8 @@ if ($installExit -eq 0) {
     Write-Host ""
     Write-Host "Update complete." -ForegroundColor Green
     Write-Host "  Your memory was preserved. Rules and context files were refreshed."
-    Write-Host "  Any local edits to rules/*.md are backed up as *.user."
+    Write-Host "  Local edits to rules, routing indexes, and context files were backed up."
+    Write-Host "  Backups sit beside each file as .user or timestamped .user-* files."
     exit 0
 } else {
     Write-Host ""

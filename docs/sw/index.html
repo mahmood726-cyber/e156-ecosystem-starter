@@ -14,6 +14,7 @@
 <link rel="alternate" hreflang="x-default" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/">
 <style>
   * { box-sizing: border-box; }
+  body { overflow-wrap: anywhere; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; max-width: 780px; margin: 0 auto; padding: 48px 24px 96px; color: #1a1a1a; line-height: 1.55; }
   header { text-align: center; margin-bottom: 32px; }
   h1 { font-size: 2.4em; margin: 0 0 0.3em; letter-spacing: -0.02em; }
@@ -38,7 +39,7 @@
   .cloud-banner h2 { color: white; border: none; margin: 0 0 8px; padding: 0; font-size: 1.3em; }
   .cloud-banner p { margin: 0 0 16px; }
   .cloud-banner a.codespace-cta { display: inline-block; background: white; color: #1a7f37; font-weight: 700; padding: 12px 28px; border-radius: 8px; text-decoration: none; }
-  pre { position: relative; }
+  pre { position: relative; padding-top: 48px; }
   .copy-btn { position: absolute; top: 6px; right: 6px; background: white; border: 1px solid #d0d7de; border-radius: 4px; padding: 4px 10px; font-size: 0.75em; color: #1a1a1a; cursor: pointer; opacity: 0.55; font-family: inherit; }
   pre:hover .copy-btn { opacity: 1; }
   .copy-btn[data-state="copied"] { background: #2da44e; color: white; border-color: #2da44e; opacity: 1; }
@@ -146,7 +147,7 @@ cd e156-ecosystem-starter</code></pre>
   &middot; Tafsiri ya Kiswahili imetolewa kwa nia njema; ikiwa na shaka ya kiufundi, toleo la Kiingereza ndilo la kutegemewa.
 </footer>
 <script>
-(function(){'use strict';document.querySelectorAll('pre').forEach(function(pre){var code=pre.querySelector('code');if(!code)return;var btn=document.createElement('button');btn.type='button';btn.className='copy-btn';btn.textContent='Nakili';btn.setAttribute('aria-label','Nakili msimbo');btn.setAttribute('role','status');btn.setAttribute('aria-live','polite');btn.addEventListener('click',function(){var t=code.innerText;var ok=function(){btn.textContent='Imenakiliwa';btn.setAttribute('data-state','copied');setTimeout(function(){btn.textContent='Nakili';btn.removeAttribute('data-state');},1600);};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(function(){});}else{try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();}catch(e){}}});pre.appendChild(btn);});})();
+(function(){'use strict';document.querySelectorAll('pre').forEach(function(pre){var code=pre.querySelector('code');if(!code)return;var btn=document.createElement('button');btn.type='button';btn.className='copy-btn';btn.textContent='Nakili';btn.setAttribute('aria-label','Nakili msimbo');btn.setAttribute('aria-live','polite');var copyLabel=btn.textContent;btn.addEventListener('click',function(){var t=code.innerText;var ok=function(){btn.textContent='Imenakiliwa';btn.setAttribute('data-state','copied');setTimeout(function(){btn.textContent='Nakili';btn.removeAttribute('data-state');},1600);};var fail=function(){var range=document.createRange();range.selectNodeContents(code);var selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);btn.textContent='Ctrl+C';setTimeout(function(){btn.textContent=copyLabel;},2400);};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(fail);}else{try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();var copied=document.execCommand('copy');document.body.removeChild(ta);if(copied){ok();}else{fail();}}catch(e){fail();}finally{if(ta&&ta.parentNode){ta.parentNode.removeChild(ta);}}}});pre.appendChild(btn);});})();
 </script>
 </body>
 </html>
