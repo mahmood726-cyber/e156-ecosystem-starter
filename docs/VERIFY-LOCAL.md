@@ -14,6 +14,7 @@ CI step, and prints one verdict per limb:
 | Limb | Mirrors CI step |
 |---|---|
 | `pytest` | python-tests / Run pytest |
+| `archive-updater-windows` | Windows archive installer tests and mandatory updater controls (needs `powershell.exe`; missing, skipped, or duplicate controls refuse verification) |
 | `bash-install-sh` | bash-tests / Run bash test suite |
 | `bash-handoff-locale` | bash-tests / Run handoff-locale bash tests |
 | `hash-check` | hash-check / Verify docs/HASH.txt + docs/HASH-linux.txt |

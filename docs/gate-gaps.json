@@ -511,7 +511,7 @@
       ],
       "source": "scripts/verify-local.py docstring; docs/VERIFY-LOCAL.md; port S-A report.",
       "seal": {
-        "scripts/verify-local.py": "450a55b56def3f84e48a0af303b0c3350ff0bc60a7906ee96f98f9f52201194c"
+        "scripts/verify-local.py": "823fd4a69ed5f8b5ae29cf827280117513000c6f3287f00b92e2f043d1375afe"
       }
     },
     {
@@ -527,7 +527,7 @@
       ],
       "source": ".github/workflows/test.yml meta-harness-unpack-windows job and tests/test_install_meta_harness.py. Updater contract: tests/test_update_ecosystem.py, scripts/update-ecosystem.ps1 and install/install.ps1 copy helpers.",
       "seal": {
-        ".github/workflows/test.yml#jobs.meta-harness-unpack-windows": "60a595cf28eba0b2fa8142e6b744d30400e393c230b61630df2e96484b551792"
+        ".github/workflows/test.yml#jobs.meta-harness-unpack-windows": "0ed2f8ffbf9d35a1cc9d738337e54995fd463b6a4c6f43672c4d30c44bd6f1c8"
       }
     },
     {

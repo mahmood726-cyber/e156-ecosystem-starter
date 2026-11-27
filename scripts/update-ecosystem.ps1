@@ -78,6 +78,12 @@ Write-Ok "downloaded to $zip"
 
 Write-Step "Extracting..."
 try {
+    # A parent PowerShell 7 process can leave its incompatible Archive module
+    # ahead of Windows PowerShell's modules in inherited PSModulePath.
+    if ($PSVersionTable.PSEdition -eq 'Desktop') {
+        $archiveManifest = Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Archive\Microsoft.PowerShell.Archive.psd1'
+        Import-Module -Name $archiveManifest -Force -ErrorAction Stop
+    }
     Expand-Archive -Path $zip -DestinationPath $workspace -Force -ErrorAction Stop
 } catch {
     Write-Host "ERROR: extract failed ($($_.Exception.Message))" -ForegroundColor Red

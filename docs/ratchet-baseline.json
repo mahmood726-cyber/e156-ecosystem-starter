@@ -100,7 +100,7 @@
   "pytest:tests/test_synthesis_v13_nma_preflight.py": 0,
   "pytest:tests/test_trial_identity_screen.py": 28,
   "pytest:tests/test_update_ecosystem.py": 1,
-  "pytest:tests/test_verify_local.py": 37,
+  "pytest:tests/test_verify_local.py": 39,
   "pytest:tests/test_windows_install_smoke.py": 6
  },
  "sets": {
@@ -1655,6 +1655,8 @@
    "test_sentinel_limb_refuses_missing_clone",
    "test_sentinel_limb_refuses_wrong_commit",
    "test_unknown_allow_missing_name_is_a_usage_error",
+   "test_updater_limb_missing_windows_shell_is_visible",
+   "test_updater_limb_refuses_false_green_reports",
    "test_version_constant"
   ],
   "pytest-names:tests/test_windows_install_smoke.py": [

@@ -65,7 +65,9 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -203,6 +205,40 @@ def limb_pytest(ctx):
     return _verdict(*ctx.run([sys.executable, "-m", "pytest", "tests/", "-q"]))
 
 
+UPDATER_CASES = frozenset(
+    f"test_updater_preserves_each_local_edit_and_memory_across_updates[{mode}]"
+    for mode in ("base", "full")
+)
+
+
+def check_updater_report(report):
+    """Shared local/CI guard: both actual updater controls must run and pass."""
+    root = ET.parse(report).getroot()
+    cases = [case for case in root.findall(".//testcase") if case.get("name") in UPDATER_CASES]
+    if (len(cases) != len(UPDATER_CASES)
+            or {case.get("name") for case in cases} != UPDATER_CASES
+            or any(list(case) for case in cases)):
+        raise ValueError("Required updater controls missing, skipped, duplicated, or failed")
+
+
+def limb_archive_updater_windows(ctx):
+    ctx.need("powershell.exe")
+    rc, out = ctx.run([sys.executable, "-c", "import pytest"], timeout=60)
+    if rc != 0:
+        raise ToolMissing("pytest not importable by this Python (python -m pip install pytest)")
+    with tempfile.TemporaryDirectory(prefix="e156-updater-verify-") as directory:
+        report = Path(directory) / "archive-results.xml"
+        rc, out = ctx.run([sys.executable, "-m", "pytest", "tests/test_install_meta_harness.py",
+                           "tests/test_update_ecosystem.py", "-v", f"--junitxml={report}"])
+        if rc != 0:
+            return _verdict(rc, out)
+        try:
+            check_updater_report(report)
+        except (OSError, ET.ParseError, ValueError) as exc:
+            return REFUSED, str(exc)
+    return PASS, _tail(out)
+
+
 def limb_bash_install_sh(ctx):
     return _verdict(*ctx.run([ctx.bash(), "tests/test-install-sh.bash"]))
 
@@ -276,9 +312,12 @@ class Limb:
 
 LIMBS = (
     Limb("pytest", "pytest tests/",
-         (("python-tests", "Run pytest"),
-          ("meta-harness-unpack-windows", "Run actual Bash installer and negative release cases")),
+         (("python-tests", "Run pytest"),),
          limb_pytest),
+    Limb("archive-updater-windows", "actual archive installers and updater preservation; no skipped updater controls",
+         (("meta-harness-unpack-windows", "Run actual archive installer and updater preservation cases"),
+          ("meta-harness-unpack-windows", "Require actual updater preservation controls")),
+         limb_archive_updater_windows),
     Limb("bash-install-sh", "bash tests/test-install-sh.bash", (("bash-tests", "Run bash test suite"),), limb_bash_install_sh),
     Limb("bash-handoff-locale", "bash tests/test-handoff-locale.bash",
          (("bash-tests", "Run handoff-locale bash tests"),), limb_bash_handoff_locale),

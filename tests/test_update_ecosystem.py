@@ -48,6 +48,17 @@ exit 0
     archive = tmp_path / "local-update.zip"
     with zipfile.ZipFile(archive, "w") as bundle:
         bundle.writestr("e156-ecosystem-starter-main/install/install.ps1", installer)
+    # Model an incompatible module inherited from a parent PowerShell process.
+    # The real updater must explicitly load its host's bundled Archive module.
+    inherited_modules = tmp_path / "inherited modules"
+    incompatible = inherited_modules / "Microsoft.PowerShell.Archive" / "99.0.0"
+    incompatible.mkdir(parents=True)
+    (incompatible / "Microsoft.PowerShell.Archive.psd1").write_text(
+        "@{RootModule='Microsoft.PowerShell.Archive.psm1'; ModuleVersion='99.0.0'; "
+        "FunctionsToExport=@('Expand-Archive')}\n", encoding="utf-8")
+    (incompatible / "Microsoft.PowerShell.Archive.psm1").write_text(
+        "function Expand-Archive { throw 'INCOMPATIBLE_INHERITED_ARCHIVE_MODULE' }\n"
+        "Export-ModuleMember -Function Expand-Archive\n", encoding="utf-8")
     driver = tmp_path / "run-update.ps1"
     driver.write_text(r"""param([string]$Updater, [switch]$Full)
 $ErrorActionPreference = 'Stop'
@@ -57,15 +68,22 @@ function Invoke-WebRequest {
     Copy-Item -LiteralPath $env:UPDATE_TEST_ARCHIVE -Destination $OutFile -ErrorAction Stop
 }
 & $Updater -Full:$Full
+exit $LASTEXITCODE
 """, encoding="utf-8")
     environment = {
         **os.environ,
         "TEMP": str(tmp_path), "TMP": str(tmp_path),
+        "PSModulePath": str(inherited_modules) + os.pathsep + os.environ.get("PSModulePath", ""),
         "UPDATE_TEST_ARCHIVE": str(archive),
         "UPDATE_TEST_SOURCE": str(source),
         "UPDATE_TEST_TARGET": str(target),
         "UPDATE_TEST_INSTALL_SOURCE": str(ROOT / "install" / "install.ps1"),
     }
+    control = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-NonInteractive", "-Command", "Expand-Archive"],
+        env=environment, capture_output=True, text=True, timeout=15)
+    assert control.returncode != 0, "Incompatible module control unexpectedly succeeded"
+    assert "INCOMPATIBLE_INHERITED_ARCHIVE_MODULE" in control.stdout + control.stderr
     command = [POWERSHELL, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
                "-File", str(driver), "-Updater", str(ROOT / "scripts" / "update-ecosystem.ps1")]
     if full:
@@ -76,7 +94,9 @@ function Invoke-WebRequest {
                 (target / name).write_text("SECOND USER EDIT " + name, encoding="utf-8")
         result = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=45)
         assert result.returncode == 0, result.stdout + result.stderr
-        forwarded = json.loads((target / "invocation.json").read_text(encoding="utf-8"))
+        receipt = target / "invocation.json"
+        assert receipt.is_file(), "Installer receipt missing:\n" + result.stdout + result.stderr
+        forwarded = json.loads(receipt.read_text(encoding="utf-8"))
         assert forwarded == {"Force": False, "NonInteractive": True, "Full": full}
         for name in entries:
             destination = target / name

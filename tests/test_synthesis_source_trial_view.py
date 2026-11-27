@@ -1102,18 +1102,29 @@ class OutputPublicationTests(unittest.TestCase):
                 self.assertFalse(other.exists())
 
     def test_second_output_race_preserves_competing_file_and_rolls_back_first(self):
-        first, second = self.root / "view.html", self.root / "receipt.json"
-        real_link = os.link
-        def raced_link(source, destination):
-            if Path(destination) == second:
-                second.write_text("another process owns this", encoding="utf-8")
-            return real_link(source, destination)
-        with patch.object(module.os, "link", side_effect=raced_link):
-            with self.assertRaises(ValueError):
-                module._publish_outputs([(first, "private view"), (second, "private receipt")])
-        self.assertFalse(first.exists())
-        self.assertEqual(second.read_text(encoding="utf-8"), "another process owns this")
-        self.assertEqual(set(self.root.iterdir()), {second})
+        for name, parent_alias in (("ordinary", False), ("normalized-parent", True)):
+            with self.subTest(path_form=name):
+                actual_root = self.root / name
+                actual_root.mkdir()
+                # The redundant parent segment exercises normalization on every
+                # platform, including hosts without Windows 8.3 short names.
+                requested_root = actual_root / ".." / name if parent_alias else actual_root
+                first, second = requested_root / "view.html", requested_root / "receipt.json"
+                second_identity = second.resolve()
+                real_link = os.link
+                injected = []
+                def raced_link(source, destination):
+                    if Path(destination).resolve() == second_identity:
+                        injected.append(str(destination))
+                        Path(destination).write_text("another process owns this", encoding="utf-8")
+                    return real_link(source, destination)
+                with patch.object(module.os, "link", side_effect=raced_link):
+                    with self.assertRaises(ValueError):
+                        module._publish_outputs([(first, "private view"), (second, "private receipt")])
+                self.assertEqual(len(injected), 1, "competing-file race must actually execute")
+                self.assertFalse(first.exists())
+                self.assertEqual(second.read_text(encoding="utf-8"), "another process owns this")
+                self.assertEqual(set(actual_root.resolve().iterdir()), {second_identity})
 
     def test_staging_failure_leaves_no_published_output(self):
         first, second = self.root / "view.html", self.root / "receipt.json"

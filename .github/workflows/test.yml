@@ -149,13 +149,9 @@ jobs:
       - name: Require actual updater preservation controls
         shell: python
         run: |
-          import xml.etree.ElementTree as ET
-          root = ET.parse('archive-results.xml').getroot()
-          required = {'test_updater_preserves_each_local_edit_and_memory_across_updates[base]',
-                      'test_updater_preserves_each_local_edit_and_memory_across_updates[full]'}
-          cases = [case for case in root.findall('.//testcase') if case.get('name') in required]
-          if {case.get('name') for case in cases} != required or any(list(case) for case in cases):
-              raise SystemExit('Required updater controls missing, skipped, or failed')
+          import runpy
+          verifier = runpy.run_path('scripts/verify-local.py')
+          verifier['check_updater_report']('archive-results.xml')
 
   hash-check:
     name: HASH files in sync with install scripts
