@@ -14,6 +14,7 @@
 <link rel="alternate" hreflang="x-default" href="https://mahmood726-cyber.github.io/e156-ecosystem-starter/">
 <style>
   * { box-sizing: border-box; }
+  body { overflow-wrap: anywhere; }
   /* Noto Nastaliq Urdu renders Urdu in the traditional Nastaliq style; fall back to system Arabic font then sans-serif. Larger line-height because Nastaliq stacks vertically. */
   body { font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Tahoma", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; max-width: 780px; margin: 0 auto; padding: 48px 24px 96px; color: #1a1a1a; line-height: 2.0; }
   header { text-align: center; margin-bottom: 32px; }
@@ -40,7 +41,7 @@
   .cloud-banner h2 { color: white; border: none; margin: 0 0 8px; padding: 0; font-size: 1.3em; }
   .cloud-banner p { margin: 0 0 16px; }
   .cloud-banner a.codespace-cta { display: inline-block; background: white; color: #1a7f37; font-weight: 700; padding: 12px 28px; border-radius: 8px; text-decoration: none; }
-  pre { position: relative; }
+  pre { position: relative; padding-top: 48px; }
   .copy-btn { position: absolute; top: 6px; left: 6px; background: white; border: 1px solid #d0d7de; border-radius: 4px; padding: 4px 10px; font-size: 0.75em; color: #1a1a1a; cursor: pointer; opacity: 0.55; font-family: inherit; direction: ltr; }
   pre:hover .copy-btn { opacity: 1; }
   .copy-btn[data-state="copied"] { background: #2da44e; color: white; border-color: #2da44e; opacity: 1; }
@@ -160,7 +161,7 @@ ls ~/.claude/rules</code></pre>
   · اردو ترجمہ نیک نیتی سے فراہم کیا گیا ہے؛ تکنیکی شک کی صورت میں انگریزی ورژن مرجع ہے۔ <a href="https://github.com/mahmood726-cyber/e156-ecosystem-starter/issues/new?title=اردو+ترجمہ+کی+بہتری">تصحیح تجویز کریں</a>۔
 </footer>
 <script>
-(function(){'use strict';document.querySelectorAll('pre').forEach(function(pre){var code=pre.querySelector('code');if(!code)return;var btn=document.createElement('button');btn.type='button';btn.className='copy-btn';btn.textContent='نقل کریں';btn.setAttribute('aria-label','کوڈ نقل کریں');btn.setAttribute('role','status');btn.setAttribute('aria-live','polite');btn.addEventListener('click',function(){var t=code.innerText;var ok=function(){btn.textContent='نقل ہوگیا';btn.setAttribute('data-state','copied');setTimeout(function(){btn.textContent='نقل کریں';btn.removeAttribute('data-state');},1600);};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(function(){});}else{try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();}catch(e){}}});pre.appendChild(btn);});})();
+(function(){'use strict';document.querySelectorAll('pre').forEach(function(pre){var code=pre.querySelector('code');if(!code)return;var btn=document.createElement('button');btn.type='button';btn.className='copy-btn';btn.textContent='نقل کریں';btn.setAttribute('aria-label','کوڈ نقل کریں');btn.setAttribute('aria-live','polite');var copyLabel=btn.textContent;btn.addEventListener('click',function(){var t=code.innerText;var ok=function(){btn.textContent='نقل ہوگیا';btn.setAttribute('data-state','copied');setTimeout(function(){btn.textContent='نقل کریں';btn.removeAttribute('data-state');},1600);};var fail=function(){var range=document.createRange();range.selectNodeContents(code);var selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);btn.textContent='Ctrl+C';setTimeout(function(){btn.textContent=copyLabel;},2400);};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(fail);}else{try{var ta=document.createElement('textarea');ta.value=t;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();var copied=document.execCommand('copy');document.body.removeChild(ta);if(copied){ok();}else{fail();}}catch(e){fail();}finally{if(ta&&ta.parentNode){ta.parentNode.removeChild(ta);}}}});pre.appendChild(btn);});})();
 </script>
 </body>
 </html>
