@@ -331,6 +331,46 @@ def test_abstention_escalates_using_frozen_route_and_keeps_attempts(job):
     assert result["usage"]["model_calls"] == 2
 
 
+@pytest.mark.parametrize("disposition", [[], {}, None, False, 0, 1.5, "UNSUPPORTED"])
+def test_invalid_disposition_abstains_with_settled_usage_and_cached_resume(job, disposition):
+    job[0]["routes"]["extract"] = ["small"]
+    raw = answer(json.dumps({"disposition": disposition, "reason": "SYNTHETIC invalid disposition"}))
+    provider = Provider([raw])
+    report = run(job, provider)
+    assert report["status"] == "COMPLETED"
+    assert report["prediction"] == {"disposition": "ABSTAIN", "reason": "Invalid structured response",
+                                     "stop_point": "OUTPUT_VALIDATION"}
+    operation = runtime.Journal.operations(report["events"])["model:0"]
+    assert operation["finish"]["kind"] == "FINISHED" and operation["finish"]["data"] == raw
+    assert report["usage"]["model_tokens"] == 30 and report["usage"]["model_calls"] == 1
+    assert report["accounting"]["unresolved_reserved"] == runtime.units()
+    assert run(job, provider, create=False) == report
+    assert provider.calls == provider.counts == 1
+
+
+@pytest.mark.parametrize("disposition", [[], {}])
+def test_invalid_disposition_uses_frozen_fallback_and_replays_all_attempts(job, disposition):
+    provider = Provider([answer(json.dumps({"disposition": disposition, "reason": "SYNTHETIC malformed response"})),
+                         answer(model="synthetic-large")])
+    report = run(job, provider)
+    assert report["status"] == "COMPLETED" and report["prediction"]["disposition"] == "NO_FLAG"
+    assert [request["model"] for request in provider.requests] == ["synthetic-test-model", "synthetic-large"]
+    assert report["usage"]["model_calls"] == 2 and report["usage"]["model_tokens"] == 60
+    assert run(job, provider, create=False) == report
+    assert provider.calls == provider.counts == 2
+
+
+@pytest.mark.parametrize("prediction", [
+    {"disposition": "FLAG", "reason": "SYNTHETIC flag", "flag_root_id": "synthetic-root", "evidence_locator": "synthetic-locator"},
+    {"disposition": "NO_FLAG", "reason": "SYNTHETIC no flag"},
+    {"disposition": "ABSTAIN", "reason": "SYNTHETIC abstention", "stop_point": "synthetic-stop"},
+])
+def test_valid_prediction_dispositions_retain_their_fields(job, prediction):
+    job[0]["routes"]["extract"] = ["small"]
+    report = run(job, Provider([answer(json.dumps(prediction))]))
+    assert report["status"] == "COMPLETED" and report["prediction"] == prediction
+
+
 @pytest.mark.parametrize("defect", ["usage_missing", "usage_overrun", "forbidden_tool", "source_drift", "config_drift", "ledger_tamper"])
 def test_fail_closed_boundaries(job, defect):
     provider = Provider()

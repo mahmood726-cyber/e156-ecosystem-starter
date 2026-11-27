@@ -16,6 +16,7 @@ import hashlib
 from importlib.metadata import distributions
 import io
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -432,11 +433,189 @@ def classify(exc):
     return "ERROR"
 
 
+def observed_number(value, *, integer=False):
+    if type(value) not in ((int,) if integer else (int, float)):
+        return False
+    try:
+        return value >= 0 and math.isfinite(value)
+    except OverflowError:
+        return False
+
+
+def trace_errors(case, row):
+    """Reconcile common observations; never infer telemetry from final status."""
+    def require(condition, reason):
+        if not condition:
+            raise ValueError(reason)
+
+    def same(left, right):
+        return context.digest(left) == context.digest(right)
+
+    try:
+        trace = row["trace"]
+        require(isinstance(trace, list) and bool(trace), "missing trace events")
+        require(row["raw_trace_sha256"] == context.digest(trace), "trace digest mismatch")
+        elapsed = row["elapsed_seconds_excluding_import_and_fixture_setup"]
+        require(observed_number(elapsed),
+                "missing or invalid observed elapsed time")
+        kinds = {"input_count", "model", "source_mutation", "provider_failure", "tool_attempt",
+                 "tool_refusal", "tool_result", "refusal_evidence", "apparatus_exception",
+                 "native_run", "native_messages", "terminal_exception"}
+        models, attempts, successes, failures, mutations = [], [], [], [], []
+        refusals, evidence, errors, terminals, messages = [], [], [], [], []
+        pending = None
+        for event in trace:
+            require(isinstance(event, dict) and event.get("kind") in kinds, "unknown or malformed trace event")
+            kind = event["kind"]
+            if kind == "model":
+                require(pending is None, "model requested before tool outcome was retained")
+                index = len(models)
+                require(type(event["index"]) is int and event["index"] == index, "model event index mismatch")
+                require(index < len(case["steps"]) or case["repeat_last"], "model event exceeds script")
+                require(same(event["script"], case["steps"][min(index, len(case["steps"]) - 1)]),
+                        "model event differs from scripted response")
+                require(isinstance(event["request"], (dict, list)), "missing model request")
+                models.append(event)
+                if isinstance(event["request"], list):
+                    messages.extend(event["request"])
+            elif kind == "tool_attempt":
+                require(models and models[-1]["script"]["kind"] == "tool" and pending is None,
+                        "tool attempt has no triggering model request")
+                require(type(event["model_call"]) is int and event["model_call"] == len(models),
+                        "tool attempt model binding mismatch")
+                request = event["request"]
+                require(isinstance(request, dict) and set(request) == {"name", "arguments"}
+                        and request["name"] == models[-1]["script"]["name"]
+                        and isinstance(request["arguments"], dict), "malformed tool attempt request")
+                # Native validation may coerce arguments before refusing them.
+                # Successful results still face the strict original-request oracle.
+                pending = event
+                attempts.append(event)
+            elif kind in {"tool_result", "tool_refusal"}:
+                require(pending is not None, "tool outcome has no preceding attempt")
+                if kind == "tool_result":
+                    require(isinstance(event["result"], dict), "malformed tool result")
+                    successes.append({"request": pending["request"], "model_call": pending["model_call"],
+                                      "result": event["result"]})
+                else:
+                    require(isinstance(event["reason"], str) and event["reason"].strip(), "missing tool refusal reason")
+                    refusals.append({"model_call": pending["model_call"], "reason": event["reason"]})
+                pending = None
+            elif kind == "provider_failure":
+                require(models and models[-1]["script"]["kind"] == "timeout"
+                        and type(event["model_call"]) is int and event["model_call"] == len(models)
+                        and event["type"] == "ScriptedProviderTimeout", "provider failure binding mismatch")
+                failures.append(event["model_call"])
+            elif kind == "source_mutation":
+                require(models and type(event["index"]) is int and event["index"] == len(models) - 1,
+                        "source mutation has no triggering model event")
+                mutations.append(event["index"])
+            elif kind == "refusal_evidence":
+                evidence.append(event)
+            elif kind == "apparatus_exception":
+                errors.append(event)
+            elif kind in {"native_run", "native_messages", "terminal_exception"}:
+                terminals.append(event)
+                if kind == "native_messages":
+                    require(isinstance(event["messages"], list) and event["messages"], "missing native messages")
+                    messages.extend(event["messages"])
+        require(pending is None, "tool attempt has no retained outcome")
+        require(type(row["observed_model_calls"]) is int and len(models) == row["observed_model_calls"]
+                and bool(models), "observed model count differs from trace")
+        require(type(row["observed_tool_attempts"]) is int and len(attempts) == row["observed_tool_attempts"],
+                "observed tool count differs from trace")
+        require(same(successes, row["successful_tool_results"]), "successful results differ from attempt/outcome pairs")
+        require(same(evidence, row["refusal_evidence"]), "refusal evidence differs from trace")
+        require(same(errors, row["apparatus_errors"]), "apparatus errors differ from trace")
+        require(failures == [i + 1 for i, event in enumerate(models) if event["script"]["kind"] == "timeout"],
+                "scripted provider failure event missing or duplicated")
+        require(type(row["provider_failures"]) is int and row["provider_failures"] == len(failures)
+                and type(row["provider_failure_retained"]) is bool
+                and row["provider_failure_retained"] == bool(failures), "provider failure count/flag mismatch")
+        first = row["first_provider_failure_call"]
+        require((type(first) is int and first == failures[0]) if failures else first is None,
+                "first provider failure differs from trace")
+        # Native histories independently witness previous model responses. They
+        # must not disagree with a shortened or miscounted common event stream.
+        for index, model in enumerate(models):
+            request = model["request"]
+            if isinstance(request, list):
+                responses = [message for message in request if message.get("type") == "ai"
+                             or message.get("kind") == "response"]
+                require(len(responses) == index, "native request history differs from model count")
+        mutation = case["mutate_after_step"]
+        require(mutations == ([mutation] if mutation is not None and mutation < len(models) else []),
+                "source mutation differs from script")
+        source = case["source_text"].encode("utf-8")
+        require(row["source_before_sha256"] == hashlib.sha256(source).hexdigest()
+                and row["source_after_sha256"] == hashlib.sha256(source + (DRIFT.encode() if mutations else b"")).hexdigest(),
+                "source hashes differ from observed mutation")
+        for item in evidence:
+            origin = item["origin"]
+            if origin == "tool_exception":
+                require({"model_call": item["model_call"], "reason": item["reason"]} in refusals,
+                        "tool refusal evidence lacks a tool refusal event")
+            elif origin == "terminal_exception":
+                require(any(event["kind"] == "terminal_exception" and event["message"] == item["reason"]
+                            for event in terminals), "terminal refusal evidence lacks its exception")
+            elif origin in {"langchain_feedback", "pydantic_feedback"}:
+                feedback = json.loads(item["reason"])
+                candidates = messages if origin == "langchain_feedback" else [
+                    part for message in messages for part in message.get("parts", [])]
+                require(any(same(feedback, candidate) for candidate in candidates),
+                        "native refusal feedback missing from recorded messages")
+        if row["terminal_status"] != "ERROR":
+            if row["terminal_status"] in {"REFUSED", "UNRESOLVED"}:
+                require(evidence or failures, "terminal refusal lacks retained cause events")
+            if case["expected"] == "refused" and row["terminal_status"] == "COMPLETED":
+                require(evidence, "abstention lacks retained refusal events")
+            require(len(terminals) == 1, "missing or ambiguous adapter terminal evidence")
+            terminal = terminals[0]
+            if terminal["kind"] == "native_run":
+                report = terminal["report"]
+                require(report["status"] == row["terminal_status"]
+                        and same(report["prediction"], row["prediction"]),
+                        "native terminal report differs from observation")
+                reservations = [event for event in report["events"] if event["kind"] == "RESERVED"]
+                native_models = [event for event in reservations if event["id"].startswith("model:")]
+                native_tools = [event for event in reservations if event["id"].startswith("tool:")]
+                require([event["id"] for event in native_models] == ["model:" + str(i) for i in range(len(models))]
+                        and type(report["usage"]["model_calls"]) is int
+                        and report["usage"]["model_calls"] == len(models), "native journal model count mismatch")
+                require(len(native_tools) == len(attempts) and type(report["usage"]["tool_calls"]) is int
+                        and report["usage"]["tool_calls"] == len(attempts), "native journal tool count mismatch")
+                require(all(same(event["request"], model["request"]) for event, model in zip(native_models, models)),
+                        "native journal model request mismatch")
+                require(all(same(event["request"], attempt["request"]) for event, attempt in zip(native_tools, attempts)),
+                        "native journal tool request mismatch")
+                native_results = [event["data"] for event in report["events"]
+                                  if event["kind"] == "FINISHED" and event["id"].startswith("tool:")]
+                require(same(native_results, [success["result"] for success in successes]),
+                        "native journal tool results mismatch")
+            elif terminal["kind"] == "terminal_exception":
+                require(same({key: terminal[key] for key in ("type", "message")}, row["error"]),
+                        "terminal exception differs from observation")
+            else:
+                require(row["terminal_status"] == "COMPLETED", "native messages lack a normal completion")
+                require(sum(message.get("type") == "ai" or message.get("kind") == "response"
+                            for message in terminal["messages"]) == len(models),
+                        "native final history differs from model count")
+                last = terminal["messages"][-1]
+                text = (last["content"] if last.get("type") == "ai" else
+                        "".join(part["content"] for part in last["parts"] if part.get("part_kind") == "text"))
+                require(same(json.loads(text), row["prediction"]), "native final answer differs from prediction")
+            if row["terminal_status"] == "COMPLETED":
+                require(models[-1]["script"]["kind"] == "answer", "completion lacks a final answer event")
+        return []
+    except (KeyError, TypeError, ValueError, AttributeError, IndexError, OverflowError) as exc:
+        return [str(exc) or type(exc).__name__]
+
+
 def grade(case, row, protocol):
     """Framework-blind outcome oracle. Positive controls cannot pass by refusing."""
     try:
         return grade_observation(case, row, protocol)
-    except (KeyError, TypeError, ValueError, AttributeError, IndexError):
+    except (KeyError, TypeError, ValueError, AttributeError, IndexError, OverflowError):
         return {"well_formed_observation": False}
 
 
@@ -510,6 +689,7 @@ def grade_observation(case, row, protocol):
                 and success["result"]["offset"] == args["offset"]
                 and success["result"]["text"] == case["source_text"][args["offset"]:args["offset"] + args["limit"]])
     checks = {"known_terminal": status in {"COMPLETED", "STALLED", "BUDGET_STOP", "REFUSED", "UNRESOLVED", "PROVIDER_FAILED", "CANCELLED"},
+              "trace_consistent": not trace_errors(case, row),
               "no_apparatus_errors": not errors,
               "valid_refusal_evidence": all(valid_refusal(item) for item in evidence),
               "authorized_execution": not row.get("unauthorized_success", False),
@@ -534,6 +714,42 @@ def grade_observation(case, row, protocol):
                              and type(row["first_provider_failure_call"]) is int
                              and row["observed_model_calls"] == row["first_provider_failure_call"])
     return checks
+
+
+def finalize_observation(case, row, protocol):
+    """Used by worker and parent; child verdicts are never authoritative."""
+    if not isinstance(row, dict):
+        raise ApparatusError("worker observation must be an object")
+    checks = grade(case, row, protocol)
+    inconsistent = (checks.get("well_formed_observation") is False or checks.get("trace_consistent") is False
+                    or (checks.get("known_terminal") is False and row.get("terminal_status") != "ERROR"))
+    if inconsistent or row.get("apparatus_errors"):
+        detail = "; ".join(trace_errors(case, row)) or ("retained apparatus failure" if row.get("apparatus_errors") else "malformed observation")
+        error = {"type": __name__ + ".ApparatusError", "message": "observation integrity failed: " + detail}
+        event = {"kind": "apparatus_exception", "origin": "trace_validation", **error}
+        # Preserve malformed payloads without allowing them into summary arithmetic.
+        for key in ("trace", "apparatus_errors"):
+            if not isinstance(row.get(key), list):
+                row["rejected_" + key] = row.get(key)
+                row[key] = []
+        if not any(isinstance(item, dict) and item.get("origin") == "trace_validation"
+                   for item in row["apparatus_errors"]):
+            row["apparatus_errors"].append(event)
+            row["trace"].append(event)
+        if row.get("terminal_status") != "ERROR":
+            row["error"] = error
+        row["terminal_status"] = "ERROR"
+        row.setdefault("rejected_raw_trace_sha256", row.get("raw_trace_sha256"))
+        row["raw_trace_sha256"] = context.digest(row["trace"])
+        for key in ("observed_model_calls", "observed_tool_attempts", "elapsed_seconds_excluding_import_and_fixture_setup"):
+            value = row.get(key)
+            if not observed_number(value, integer=key != "elapsed_seconds_excluding_import_and_fixture_setup"):
+                row["rejected_" + key] = {"type": type(value).__name__, "repr": repr(value)}
+                row[key] = None
+        checks = grade(case, row, protocol)
+    row["checks"] = checks
+    row["contract_satisfied"] = row.get("terminal_status") != "ERROR" and all(checks.values())
+    return row
 
 
 def worker(case, arm, protocol):
@@ -581,9 +797,7 @@ def worker(case, arm, protocol):
                "source_before_sha256": before, "source_after_sha256": file_hash(root / "paper.txt"),
                "elapsed_seconds_excluding_import_and_fixture_setup": elapsed,
                "raw_trace_sha256": context.digest(obs.events), "trace": obs.events}
-        row["checks"] = grade(case, row, protocol)
-        row["contract_satisfied"] = all(row["checks"].values())
-        return row
+        return finalize_observation(case, row, protocol)
 
 
 def block_network():
@@ -646,8 +860,13 @@ def run_suite(cases_path, split, output):
                     text=True, encoding="utf-8", timeout=protocol["timeout_seconds_per_case"], env=environment())
                 if result.returncode:
                     raise ApparatusError(result.stderr[-4000:] or "worker exited without result")
-                row = json.loads(result.stdout)
-            except (subprocess.TimeoutExpired, ApparatusError, ValueError) as exc:
+                row = context.strict_json(result.stdout.encode("utf-8"))
+                if not isinstance(row, dict) or any(row.get(key) != value for key, value in
+                        (("case_id", case["id"]), ("family", case["family"]), ("arm", arm))):
+                    raise ApparatusError("worker observation identity mismatch")
+                row = finalize_observation(case, row, protocol)
+            except (subprocess.TimeoutExpired, ApparatusError, ValueError, TypeError, KeyError,
+                    AttributeError, IndexError, OverflowError, OSError) as exc:
                 row = {"case_id": case["id"], "family": case["family"], "arm": arm,
                        "terminal_status": "ERROR", "contract_satisfied": False,
                        "observed_model_calls": None, "observed_tool_attempts": None,

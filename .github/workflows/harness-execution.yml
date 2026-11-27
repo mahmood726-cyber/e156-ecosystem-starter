@@ -60,6 +60,8 @@ jobs:
               'test_journal_initialization_process_loss_publishes_only_complete_state',
               'test_initialization_process_loss_can_abort_and_freeze_every_planned_slot')
               for phase in ('before_ready', 'before_commit', 'after_commit', 'before_publish', 'after_publish'))
+          required.update('test_invalid_disposition_is_recorded_as_abstention_and_replays_without_calls[' + kind + ']'
+                          for kind in ('array', 'object'))
           cases = [case for case in root.findall('.//testcase') if case.get('name') in required]
           if {case.get('name') for case in cases} != required or any(list(case) for case in cases):
               raise SystemExit('Required real-process study controls missing, skipped, or failed')

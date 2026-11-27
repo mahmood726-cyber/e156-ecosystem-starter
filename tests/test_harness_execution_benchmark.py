@@ -4,26 +4,26 @@ import hashlib
 import json
 import shutil
 import subprocess
+from types import SimpleNamespace
 import pytest
 
 from scripts import harness_execution_benchmark as benchmark
 
 
-@pytest.fixture
-def example():
+@pytest.fixture(scope="module")
+def observed_example():
     protocol = benchmark.load(benchmark.PROTOCOL)
     case = benchmark.load(benchmark.ROOT / "benchmarks/harness-execution-development.json")[1]
-    sha = benchmark.hashlib.sha256(case["source_text"].encode()).hexdigest()
-    successes = [{"request": {"name": "read_evidence", "arguments": step["args"]}, "model_call": index + 1,
-                  "result": {"sha256": sha, "offset": step["args"]["offset"],
-                             "text": case["source_text"][step["args"]["offset"]:step["args"]["offset"] + step["args"]["limit"]]}}
-                 for index, step in enumerate(case["steps"]) if step["kind"] == "tool"]
-    row = {"terminal_status": "COMPLETED", "prediction": {"disposition": "NO_FLAG"},
-           "observed_model_calls": 3, "observed_tool_attempts": 2, "successful_tool_results": successes,
-           "source_before_sha256": sha, "source_after_sha256": sha, "refusal_retained": False,
-           "refusal_evidence": [], "apparatus_errors": [], "trace": [],
-           "provider_failure_retained": False, "provider_failures": 0}
+    row = benchmark.worker(case, "e156_baseline", protocol)
     return case, row, protocol
+
+
+@pytest.fixture
+def example(observed_example):
+    # Worker observations and expected cases cross a JSON boundary in the real
+    # suite. Isolate them so mutating telemetry cannot also mutate its oracle.
+    case, row, protocol = observed_example
+    return copy.deepcopy(case), copy.deepcopy(row), copy.deepcopy(protocol)
 
 
 def test_positive_control_requires_completion_evidence_and_unchanged_source(example):
@@ -41,23 +41,23 @@ def test_oracle_detects_invented_excerpt_or_unauthorized_execution(example):
     for field, value in (("text", "invented"), ("sha256", "0" * 64), ("offset", 99)):
         changed = copy.deepcopy(row)
         changed["successful_tool_results"][0]["result"][field] = value
-        assert not all(benchmark.grade(case, changed, protocol).values())
+        assert not benchmark.grade(case, rehash(changed), protocol)["valid_successes"]
     changed = copy.deepcopy(row)
     changed["successful_tool_results"][0]["request"]["name"] = "execute"
-    assert not all(benchmark.grade(case, changed, protocol).values())
+    assert not benchmark.grade(case, rehash(changed), protocol)["valid_successes"]
 
 
 def test_stops_and_provider_failures_cannot_fabricate_predictions(example):
-    case, row, protocol = example
-    case = {**case, "expected": "bounded_stop"}
-    row = {**row, "terminal_status": "STALLED", "prediction": None}
+    _, _, protocol = example
+    case = development_case("repeated_result")
+    row = benchmark.worker(case, "e156_guarded", protocol)
     assert all(benchmark.grade(case, row, protocol).values())
     assert not all(benchmark.grade(case, {**row, "prediction": {"disposition": "NO_FLAG"}}, protocol).values())
-    case["expected"] = "provider_failed"
-    row.update(terminal_status="PROVIDER_FAILED", provider_failure_retained=True, provider_failures=1, first_provider_failure_call=3)
+    case = development_case("provider_timeout")
+    row = benchmark.worker(case, "e156_baseline", protocol)
     assert all(benchmark.grade(case, row, protocol).values())
     for changes in ({"terminal_status": "ERROR"}, {"terminal_status": "unknown"}, {"provider_failures": 2},
-                    {"provider_failure_retained": False}, {"first_provider_failure_call": 1}):
+                    {"provider_failure_retained": False}, {"first_provider_failure_call": 2}):
         assert not all(benchmark.grade(case, {**row, **changes}, protocol).values())
 
 
@@ -66,13 +66,36 @@ def development_case(family):
     return next(case for case in cases if case["family"] == family)
 
 
+def rehash(row):
+    row["raw_trace_sha256"] = benchmark.context.digest(row["trace"])
+    return row
+
+
+def scripted_abstention(case, row, messages=(), dialect="langchain"):
+    """A complete synthetic native-feedback transcript, with an actual answer step."""
+    row = copy.deepcopy(row)
+    row["trace"] = [event for event in row["trace"] if event["kind"] not in {"native_run", "native_messages", "terminal_exception"}]
+    step = case["steps"][0]
+    previous = ({"type": "ai", "content": "", "tool_calls": [
+        {"name": step["name"], "args": step["args"], "id": step["call_id"]}]} if dialect == "langchain" else
+        {"kind": "response", "parts": [{"part_kind": "tool-call", "tool_name": step["name"],
+            "args": step["args"], "tool_call_id": step["call_id"]}]})
+    history = [previous, *messages]
+    row["trace"].append({"kind": "model", "index": 1, "request": history, "script": case["steps"][1]})
+    text = benchmark.answer(case["steps"][1])
+    last = ({"type": "ai", "content": text} if dialect == "langchain" else
+            {"kind": "response", "parts": [{"part_kind": "text", "content": text}]})
+    row["trace"].append({"kind": "native_messages", "messages": [*history, last]})
+    row.update(terminal_status="COMPLETED", prediction=json.loads(text), observed_model_calls=2, error=None)
+    return rehash(row)
+
+
 def test_abstention_requires_retained_refusal():
     case = development_case("unknown_tool")
     protocol = benchmark.load(benchmark.PROTOCOL)
     row = benchmark.worker(case, "e156_baseline", protocol)
-    row = {**row, "prediction": {"disposition": "ABSTAIN"}}
-    assert not all(benchmark.grade(case, row, protocol).values())  # Contradicts terminal REFUSED.
-    row["terminal_status"] = "COMPLETED"
+    assert not all(benchmark.grade(case, {**row, "prediction": {"disposition": "ABSTAIN"}}, protocol).values())
+    row = scripted_abstention(case, row)
     assert all(benchmark.grade(case, row, protocol).values())
     for changes in ({"refusal_evidence": [], "refusal_retained": False}, {"trace": []},
                     {"refusal_retained": False}, {"prediction": {"disposition": "NO_FLAG"}}):
@@ -94,7 +117,7 @@ def test_legitimate_e156_refusals_have_explicit_bound_causes(arm, family, cause)
     assert all(event in row["trace"] and event["reason"] for event in row["refusal_evidence"])
     changed = copy.deepcopy(row)
     changed["refusal_evidence"][0]["request"] = {"name": "unrelated", "arguments": {}}
-    assert not all(benchmark.grade(case, changed, protocol).values())
+    assert not all(benchmark.grade(case, rehash(changed), protocol).values())
 
 
 @pytest.mark.parametrize("arm", ["e156_baseline", "e156_guarded"])
@@ -164,10 +187,10 @@ def test_refusal_oracle_rejects_contradictions_and_unsupported_causes():
         assert not all(benchmark.grade(case, {**row, **changes}, protocol).values())
     changed = copy.deepcopy(row)
     changed["refusal_evidence"][0]["cause"] = "source_drift"
-    assert not all(benchmark.grade(case, changed, protocol).values())
+    assert not all(benchmark.grade(case, rehash(changed), protocol).values())
     changed = copy.deepcopy(row)
     changed["refusal_evidence"][0]["reason"] = "unrecognized guard failure"
-    assert not all(benchmark.grade(case, changed, protocol).values())
+    assert not all(benchmark.grade(case, rehash(changed), protocol).values())
 
 
 @pytest.mark.parametrize("changes", [
@@ -212,13 +235,13 @@ def test_native_refusal_cause_requires_matching_feedback(tmp_path, dialect, mess
     obs = benchmark.Observer(case, tmp_path, {})
     obs.step([])
     obs.feedback([message], dialect)
-    row.update(terminal_status="COMPLETED", prediction={"disposition": "ABSTAIN"},
-               refusal_evidence=obs.refusal_evidence, trace=obs.events)
+    row.update(refusal_evidence=obs.refusal_evidence, trace=obs.events)
+    row = scripted_abstention(case, row, [message], dialect)
     assert all(benchmark.grade(case, row, protocol).values())
     for bad_reason in ('not JSON', '{}', json.dumps({"tool_call_id": "other"})):
         changed = copy.deepcopy(row)
         changed["refusal_evidence"][0]["reason"] = bad_reason
-        assert not all(benchmark.grade(case, changed, protocol).values())
+        assert not all(benchmark.grade(case, rehash(changed), protocol).values())
 
 
 def test_coercion_cannot_borrow_a_future_valid_request(example):
@@ -264,6 +287,139 @@ def test_worker_environment_drops_credentials_and_tracing(monkeypatch):
     env = benchmark.environment()
     assert "SYNTHETIC_PROVIDER_API_KEY" not in env and "LANGSMITH_API_KEY" not in env
     assert env["LANGCHAIN_TRACING_V2"] == "false"
+
+
+def test_dropped_live_adapter_trace_is_an_error_in_attempted_denominator(monkeypatch):
+    case = development_case("finite_reads")
+    protocol = benchmark.load(benchmark.PROTOCOL)
+    original = benchmark.e156
+    captured = []
+    def lose_telemetry(obs, *args):
+        result = original(obs, *args)
+        captured.extend(obs.events)
+        obs.events.clear()
+        return result
+    monkeypatch.setattr(benchmark, "e156", lose_telemetry)
+    row = benchmark.worker(case, "e156_baseline", protocol)
+    assert sum(event["kind"] == "model" for event in captured) == row["observed_model_calls"] == 3
+    assert len(row["successful_tool_results"]) == 2
+    assert row["terminal_status"] == "ERROR" and not row["contract_satisfied"]
+    assert any(event.get("origin") == "trace_validation" for event in row["apparatus_errors"])
+    summary = benchmark.summarize([row])[0]
+    assert summary["attempted"] == summary["apparatus_errors"] == 1 and summary["satisfied"] == 0
+
+
+def test_reproduced_empty_trace_false_counts_and_hash_cannot_pass(example):
+    case, row, protocol = copy.deepcopy(example)
+    row.update(trace=[], observed_model_calls=6, observed_tool_attempts=0, raw_trace_sha256="0" * 64,
+               contract_satisfied=True)
+    assert not all(benchmark.grade(case, row, protocol).values())
+    finalized = benchmark.finalize_observation(case, row, protocol)
+    assert finalized["terminal_status"] == "ERROR" and not finalized["contract_satisfied"]
+    assert finalized["rejected_raw_trace_sha256"] == "0" * 64
+
+
+@pytest.mark.parametrize("mutation", ["drop_model", "model_index", "model_script", "model_count",
+    "tool_count", "drop_attempt", "drop_result", "extra_result", "attempt_request", "result_payload",
+    "drop_terminal", "prediction", "source_hash", "bool_index", "bool_failure_count"])
+def test_trace_event_and_counter_disagreements_fail_after_rehash(example, mutation):
+    case, row, protocol = copy.deepcopy(example)
+    models = [event for event in row["trace"] if event["kind"] == "model"]
+    if mutation == "drop_model": row["trace"].remove(models[0])
+    elif mutation == "model_index": models[1]["index"] = 0
+    elif mutation == "bool_index": models[0]["index"] = False
+    elif mutation == "model_script": models[0]["script"]["args"]["offset"] = 99
+    elif mutation == "model_count": row["observed_model_calls"] += 1
+    elif mutation == "tool_count": row["observed_tool_attempts"] = 0
+    elif mutation == "bool_failure_count": row["provider_failures"] = False
+    elif mutation.startswith("drop_"):
+        kind = {"drop_attempt": "tool_attempt", "drop_result": "tool_result", "drop_terminal": "native_run"}[mutation]
+        row["trace"].remove(next(event for event in row["trace"] if event["kind"] == kind))
+    elif mutation == "extra_result": row["trace"].append(copy.deepcopy(next(event for event in row["trace"] if event["kind"] == "tool_result")))
+    elif mutation == "attempt_request": next(event for event in row["trace"] if event["kind"] == "tool_attempt")["request"]["arguments"]["offset"] = 99
+    elif mutation == "result_payload": next(event for event in row["trace"] if event["kind"] == "tool_result")["result"]["text"] = "invented"
+    elif mutation == "prediction": row["prediction"] = {"disposition": "NO_FLAG", "reason": "not the recorded answer"}
+    elif mutation == "source_hash": row["source_before_sha256"] = row["source_after_sha256"] = "0" * 64
+    rehash(row)
+    assert not benchmark.grade(case, row, protocol)["trace_consistent"]
+    assert benchmark.finalize_observation(case, row, protocol)["terminal_status"] == "ERROR"
+
+
+def test_cached_reads_cannot_hide_a_dropped_model_from_native_journal():
+    case = development_case("repeated_result")
+    protocol = benchmark.load(benchmark.PROTOCOL)
+    row = benchmark.worker(case, "e156_baseline", protocol)
+    last = next(event for event in reversed(row["trace"]) if event["kind"] == "model")
+    row["trace"].remove(last)
+    row["observed_model_calls"] -= 1
+    rehash(row)
+    assert "native journal model count mismatch" in benchmark.trace_errors(case, row)
+    assert benchmark.finalize_observation(case, row, protocol)["terminal_status"] == "ERROR"
+
+
+@pytest.mark.parametrize("family,kind", [("provider_timeout", "provider_failure"),
+                                       ("source_drift", "source_mutation"),
+                                       ("invalid_arguments", "tool_refusal"),
+                                       ("unknown_tool", "refusal_evidence")])
+def test_required_failure_and_refusal_events_cannot_be_omitted(family, kind):
+    case = development_case(family)
+    protocol = benchmark.load(benchmark.PROTOCOL)
+    row = benchmark.worker(case, "e156_baseline", protocol)
+    row["trace"] = [event for event in row["trace"] if event["kind"] != kind]
+    if kind == "provider_failure":
+        row.update(provider_failures=0, provider_failure_retained=False, first_provider_failure_call=None)
+    if kind == "refusal_evidence":
+        row.update(refusal_evidence=[], refusal_retained=False)
+    rehash(row)
+    assert benchmark.finalize_observation(case, row, protocol)["terminal_status"] == "ERROR"
+
+
+@pytest.mark.parametrize("value", [10**400, float("nan"), float("inf"), True])
+def test_bad_elapsed_values_are_serializable_apparatus_errors(example, value):
+    case, row, protocol = copy.deepcopy(example)
+    row["elapsed_seconds_excluding_import_and_fixture_setup"] = value
+    result = benchmark.finalize_observation(case, row, protocol)
+    assert result["terminal_status"] == "ERROR" and not result["contract_satisfied"]
+    assert result["elapsed_seconds_excluding_import_and_fixture_setup"] is None
+    assert result["rejected_elapsed_seconds_excluding_import_and_fixture_setup"]["repr"] == repr(value)
+    json.dumps(result, allow_nan=False)
+
+
+def test_parent_normalizes_retained_apparatus_failure_even_with_consistent_trace(example):
+    case, row, protocol = copy.deepcopy(example)
+    event = {"kind": "apparatus_exception", "origin": "injected", "type": "builtins.RuntimeError", "message": "review test"}
+    row["trace"].append(event)
+    row["apparatus_errors"].append(event)
+    result = benchmark.finalize_observation(case, rehash(row), protocol)
+    assert result["terminal_status"] == "ERROR" and not result["contract_satisfied"]
+    assert event in result["apparatus_errors"]
+    assert benchmark.summarize([result])[0]["apparatus_errors"] == 1
+
+
+@pytest.mark.parametrize("corruption", ["false_pass", "missing_fields", "not_object", "malformed_json",
+                                      "nonfinite_extra", "false_fail"])
+def test_parent_regrades_untrusted_child_results_and_retains_every_attempt(example, tmp_path, monkeypatch, corruption):
+    case, row, protocol = copy.deepcopy(example)
+    protocol.update(arms=["e156_baseline"], repetitions=1)
+    cases_path = tmp_path / "development.json"
+    cases_path.write_text(json.dumps([case]), encoding="utf-8")
+    original_load = benchmark.load
+    monkeypatch.setattr(benchmark, "load", lambda path: protocol if path == benchmark.PROTOCOL else original_load(path))
+    monkeypatch.setattr(benchmark, "dependency_manifest", lambda: {name: {"version": "test-only"} for name in benchmark.PACKAGES})
+    if corruption == "false_pass": row.update(trace=[], observed_tool_attempts=0, contract_satisfied=True)
+    elif corruption == "missing_fields": row = {key: row[key] for key in ("case_id", "family", "arm")}
+    elif corruption == "not_object": row = []
+    elif corruption == "nonfinite_extra": row["unused_metadata"] = float("nan")
+    elif corruption == "false_fail": row.update(contract_satisfied=False, checks={"invented_failure": False})
+    stdout = "{" if corruption == "malformed_json" else json.dumps(row)
+    monkeypatch.setattr(benchmark.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=stdout, stderr=""))
+    output = tmp_path / "observations.json"
+    report = benchmark.run_suite(cases_path, "development", output)
+    assert report["attempted"] == len(report["rows"]) == 1
+    attempt = report["rows"][0]
+    assert attempt["contract_satisfied"] == (corruption == "false_fail")
+    assert (attempt["terminal_status"] == "ERROR") == (corruption != "false_fail")
+    assert [json.loads(line) for line in output.with_suffix(".json.attempts.jsonl").read_text().splitlines()] == report["rows"]
 
 
 def test_published_evidence_hashes_survive_windows_git_checkout(tmp_path):
