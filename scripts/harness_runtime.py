@@ -469,7 +469,12 @@ def prediction(response):
     require(isinstance(disposition, str) and disposition in {"FLAG", "NO_FLAG", "ABSTAIN"}, "invalid prediction")
     fields = ["reason"] + (["flag_root_id", "evidence_locator"] if disposition == "FLAG" else
                            ["stop_point"] if disposition == "ABSTAIN" else [])
-    for key in fields: require(isinstance(result.get(key), str) and result[key].strip(), "prediction evidence/reason required")
+    for key in fields:
+        require(isinstance(result.get(key), str) and result[key].strip(), "prediction evidence/reason required")
+        try:
+            result[key].encode("utf-8")
+        except UnicodeEncodeError:
+            raise Refused("prediction evidence/reason must encode as UTF-8") from None
     return {key: result[key] for key in ["disposition", *fields]}
 
 

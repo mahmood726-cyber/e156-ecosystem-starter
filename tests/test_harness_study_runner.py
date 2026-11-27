@@ -289,6 +289,52 @@ def test_invalid_disposition_is_recorded_as_abstention_and_replays_without_calls
     assert len(frozen["runs"]["records"]) == len(plan["schedule"])
 
 
+@pytest.mark.parametrize("prediction,invalid", [
+    ({"disposition": "NO_FLAG", "reason": "SYNTHETIC \ud800"}, True),
+    ({"disposition": "FLAG", "reason": "SYNTHETIC reason", "flag_root_id": "synthetic-\udfff",
+      "evidence_locator": "synthetic-location"}, True),
+    ({"disposition": "FLAG", "reason": "SYNTHETIC reason", "flag_root_id": "synthetic-root",
+      "evidence_locator": "synthetic-\ud800"}, True),
+    ({"disposition": "ABSTAIN", "reason": "SYNTHETIC reason", "stop_point": "synthetic-\udfff"}, True),
+    ({"disposition": "NO_FLAG", "reason": "SYNTHETIC café 研究 🙂"}, False),
+], ids=["reason-high", "flag-root-low", "evidence-high", "stop-low", "valid-unicode"])
+def test_prediction_unicode_is_recorded_and_replays_without_calls(study, prediction, invalid):
+    raw = response(json.dumps(prediction))
+    for fixture in study["fixtures"].values():
+        fixture["responses"] = [raw]
+    plan = runner.prepare(**study); key = plan["schedule"][0]
+    assert runner.execute(study["work"]) == {"status": "CASE_RECORDED", "case_id": key, "runtime_status": "COMPLETED"}
+    state = runner.read(study["work"] / "state.json")
+    item = state["cases"][key]
+    assert item["status"] == "FINISHED"
+    report = runner.read(study["work"] / item["record_file"])["report"]
+    expected = {"disposition": "ABSTAIN", "reason": "Invalid structured response",
+                "stop_point": "OUTPUT_VALIDATION"} if invalid else prediction
+    assert report["prediction"] == expected
+    operation = runtime.Journal.operations(report["events"])["model:0"]
+    assert operation["finish"]["kind"] == "FINISHED" and operation["finish"]["data"] == raw
+    assert report["usage"]["model_tokens"] == 30 and report["usage"]["model_calls"] == 1
+    assert report["accounting"]["unresolved_reserved"] == runtime.units()
+    class NoCalls:
+        def count(self, *args): pytest.fail("cached resume must not count tokens again")
+        def respond(self, *args): pytest.fail("cached resume must not request another response")
+    case = plan["cases"][key]; directory = study["work"] / "cases" / key
+    assert runtime.run(case["config"], case["context"], directory / "inputs", directory / "run.sqlite",
+                       provider=NoCalls(), create=False) == report
+    assert runner.read(study["work"] / "state.json") == state
+    runner.abort(study["work"])
+    rows = runner.records(study["work"])
+    assert len(rows) == len(plan["schedule"])
+    record = rows[key]["matched_record"]
+    assert record["status"] == "COMPLETE" and record["prediction"]["disposition"] == expected["disposition"]
+    if invalid:
+        assert record["prediction"]["stop_point"] == "OUTPUT_VALIDATION"
+    assert record["usage"]["model_tokens"] == 30
+    frozen = runner.freeze(study["work"], measurements_for(study["work"]))
+    assert frozen["status"] == "DEVELOPMENT_LEDGER_FROZEN"
+    assert len(frozen["runs"]["records"]) == len(plan["schedule"])
+
+
 def test_post_preflight_guard_change_refused(study, monkeypatch):
     original = runner.preflight.preflight
     def changed(*args):
