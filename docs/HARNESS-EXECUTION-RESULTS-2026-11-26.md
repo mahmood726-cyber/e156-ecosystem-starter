@@ -4,6 +4,8 @@ Historical campaign: these final cases were consumed before the
 [refusal-oracle repair](HARNESS-REVIEW-FIXES-2026-11-26.md). Its recorded results
 remain unchanged; the final cases have not been rerun or relabelled as unseen.
 Post-repair verification uses the known development set and fault-injection tests.
+The [27 November validation repair](HARNESS-VALIDATION-FIXES-2026-11-27.md) adds
+trace consistency checks; this historical campaign remains unchanged.
 
 All four configurations satisfied all final synthetic execution contracts. The independent final campaign ran once on 16 previously withheld cases, with three repetitions per configuration: **192/192 observations satisfied, zero contract failures, zero apparatus errors**. There are 16 distinct cases, not 48 independent tasks per arm.
 

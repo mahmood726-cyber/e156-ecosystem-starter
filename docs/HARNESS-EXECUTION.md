@@ -100,6 +100,14 @@ possible ABSTAIN. It never grants scientific Pass. A frozen fallback route is
 used only after ABSTAIN or invalid structured output; it is not calibrated
 confidence or a demonstrated quality improvement.
 
+The prediction must be a JSON object with a string `disposition` equal to
+`FLAG`, `NO_FLAG` or `ABSTAIN`, plus the required nonempty evidence/reason fields.
+Malformed disposition types, including arrays and objects, follow the core
+runner's ordinary `ABSTAIN` / `OUTPUT_VALIDATION` policy and any configured
+fallback route. The settled response and usage remain available for cached
+replay. The native Pydantic adapter retains its existing `REFUSED` /
+`OUTPUT_VALIDATION` policy. See the [validation repair record](HARNESS-VALIDATION-FIXES-2026-11-27.md).
+
 New execution and recovery require the returned model identity to match the
 frozen snapshot. When `request_policy: {"service_tier": "default"}` is configured,
 the returned tier must also match; an omitted tier policy does not impose one.
